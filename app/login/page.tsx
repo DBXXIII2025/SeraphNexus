@@ -34,16 +34,17 @@ function getLoginErrorMessage(message: string | null | undefined) {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
 
   const supabase = createClient();
   const nextParam = searchParams.get("next");
   const nextPath =
     nextParam && nextParam.startsWith("/") ? nextParam : "/admin";
+  const resetStatus = searchParams.get("reset");
 
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -112,6 +113,21 @@ export default function LoginPage() {
           autoComplete="current-password"
           required
         />
+
+        <div className="mb-3 text-right">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-purple-300 hover:text-purple-200"
+          >
+            Forgot password?
+          </Link>
+        </div>
+
+        {resetStatus === "success" && !error ? (
+          <div className="mb-3 text-sm text-green-400">
+            Password updated. Sign in with your new password.
+          </div>
+        ) : null}
 
         {error && (
           <div className="text-sm text-red-400 mb-3">{error}</div>
