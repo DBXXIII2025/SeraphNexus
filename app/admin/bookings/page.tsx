@@ -613,7 +613,6 @@ export default async function AdminBookingsPage() {
   const rentalRows = isRental ? ((rows || []) as LooseRow[]) : [];
   const rentalConfirmedCount = rentalRows.filter((row) => row.status === "confirmed").length;
   const rentalPendingCount = rentalRows.filter((row) => row.status === "pending").length;
-  const rentalCompletedCount = rentalRows.filter((row) => row.status === "completed").length;
 
   return (
     <div className="space-y-6 text-white">
@@ -646,15 +645,15 @@ export default async function AdminBookingsPage() {
           tone="alert"
         />
         <SummaryCard
-          label={isRental ? "Confirmed / completed" : "Confirmed bookings"}
+          label={isRental ? "Confirmed stays" : "Confirmed bookings"}
           value={
             isRental
-              ? `${rentalConfirmedCount} / ${rentalCompletedCount}`
+              ? String(rentalConfirmedCount)
               : String(serviceConfirmedCount)
           }
           detail={
             isRental
-              ? "Confirmed stays and completed stays in the current queue."
+              ? "Confirmed reservations still active in the current queue."
               : "Bookings already confirmed with the customer."
           }
           tone="success"
