@@ -1,0 +1,16 @@
+export const BUSINESS_RUNTIME_SELECT = [
+  "id",
+  "created_at",
+  "owner_id",
+  "name",
+  "description",
+  "is_published",
+  "slug",
+  "business_type",
+  "stripe_account_id",
+  "stripe_customer_id",
+  "stripe_onboarding_complete",
+  "stripe_charges_enabled",
+  "stripe_payouts_enabled",
+  "plan",
+].join(", ");

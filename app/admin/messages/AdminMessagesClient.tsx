@@ -1,0 +1,763 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { getAdminStatusBadgeClass } from "@/lib/adminStatus";
+
+type ConversationItem = {
+  id: string;
+  business_id: string;
+  client_name: string | null;
+  client_email: string;
+  client_phone: string | null;
+  subject: string | null;
+  source: string | null;
+  context_type: string | null;
+  context_id: string | null;
+  booking_id: string | null;
+  last_message_at: string | null;
+  last_message_excerpt: string | null;
+  business_unread_count: number;
+  client_unread_count: number;
+};
+
+type MessageItem = {
+  id: string;
+  sender_type: "business" | "client";
+  body: string;
+  created_at: string | null;
+  read_at_business: string | null;
+  read_at_client: string | null;
+};
+
+type ThreadConversation = {
+  id: string;
+  business_id: string;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  subject: string | null;
+  context_type: string | null;
+  context_id: string | null;
+  booking_id: string | null;
+  source: string | null;
+  owner_user_id: string | null;
+  last_message_at: string | null;
+};
+
+type ThreadBusiness = {
+  id: string;
+  name: string | null;
+  owner_id: string | null;
+  business_type: string | null;
+};
+
+type ConversationThreadResponse = {
+  conversation?: ThreadConversation;
+  business?: ThreadBusiness;
+  messages?: MessageItem[];
+  error?: string;
+};
+
+type ConversationListResponse = {
+  conversations?: ConversationItem[];
+  targetBusinessId?: string | null;
+  error?: string;
+};
+
+function isConversationSelected(
+  conversations: ConversationItem[],
+  conversationId: string | null
+) {
+  return Boolean(
+    conversationId &&
+      conversations.some((conversation) => conversation.id === conversationId)
+  );
+}
+
+function getFallbackConversationId(conversations: ConversationItem[]) {
+  return conversations[0]?.id || null;
+}
+
+function formatTimestamp(value: string | null) {
+  if (!value) {
+    return "No activity yet";
+  }
+
+  return new Date(value).toLocaleString();
+}
+
+function createClientMessageId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function getContextLabel(conversation: {
+  context_type?: string | null;
+  context_id?: string | null;
+  booking_id?: string | null;
+  source?: string | null;
+}) {
+  const contextType = conversation.context_type || null;
+  const contextId = conversation.context_id || conversation.booking_id || null;
+
+  if (contextType && contextId) {
+    return `${contextType.replace(/_/g, " ")} - ${contextId}`;
+  }
+
+  if (contextType) {
+    return contextType.replace(/_/g, " ");
+  }
+
+  if (conversation.source) {
+    return conversation.source.replace(/_/g, " ");
+  }
+
+  return "general inquiry";
+}
+
+function getUnreadState(conversation: ConversationItem) {
+  if (conversation.business_unread_count > 0) {
+    return {
+      label:
+        conversation.business_unread_count === 1
+          ? "Awaiting response"
+          : `${conversation.business_unread_count} awaiting response`,
+      className: getAdminStatusBadgeClass("awaiting_response"),
+    };
+  }
+
+  return {
+    label: "Up to date",
+    className: getAdminStatusBadgeClass("up_to_date"),
+  };
+}
+
+export default function AdminMessagesClient({
+  businessId,
+  activeBusinessId,
+  activeBusinessName,
+  activeBusinessType,
+  scopedBusinessId,
+  scopedBusinessName,
+  scopedBusinessType,
+  initialConversations,
+  initialSelectedConversationId,
+  initialMessages,
+}: {
+  businessId: string;
+  activeBusinessId: string;
+  activeBusinessName: string;
+  activeBusinessType: string | null;
+  scopedBusinessId: string;
+  scopedBusinessName: string;
+  scopedBusinessType: string | null;
+  initialConversations: ConversationItem[];
+  initialSelectedConversationId: string | null;
+  initialMessages: MessageItem[];
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const supabase = useMemo(() => createClient(), []);
+  const [conversations, setConversations] =
+    useState<ConversationItem[]>(initialConversations);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
+    isConversationSelected(initialConversations, initialSelectedConversationId)
+      ? initialSelectedConversationId
+      : getFallbackConversationId(initialConversations)
+  );
+  const [messages, setMessages] = useState<MessageItem[]>(initialMessages);
+  const [threadConversation, setThreadConversation] =
+    useState<ThreadConversation | null>(null);
+  const [threadBusiness, setThreadBusiness] = useState<ThreadBusiness | null>(null);
+  const [draft, setDraft] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [unsendingMessageId, setUnsendingMessageId] = useState<string | null>(null);
+  const [authPresent, setAuthPresent] = useState(true);
+  const [pollingEnabled, setPollingEnabled] = useState(true);
+  const authLostHandledRef = useRef(false);
+
+  const syncSelectedConversationInUrl = useCallback((conversationId: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const currentConversationId =
+      params.get("conversation") || params.get("conversationId");
+
+    if (conversationId) {
+      params.set("conversation", conversationId);
+      params.delete("conversationId");
+    } else {
+      params.delete("conversation");
+      params.delete("conversationId");
+    }
+
+    const query = params.toString();
+    if ((conversationId || null) !== (currentConversationId || null)) {
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    }
+  }, [pathname, router, searchParams]);
+
+  const handleUnauthorized = useCallback((reason: string) => {
+    if (authLostHandledRef.current) {
+      return;
+    }
+
+    authLostHandledRef.current = true;
+    setAuthPresent(false);
+    setPollingEnabled(false);
+    setSyncError("Your session ended. Redirecting out of messages.");
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[admin-messages] auth lost", {
+        businessId,
+        reason,
+        authPresent: false,
+        pollingEnabled: false,
+      });
+    }
+
+    router.replace("/explore");
+  }, [businessId, router]);
+
+  const selectedConversation = useMemo(
+    () =>
+      conversations.find(
+        (conversation) => conversation.id === selectedConversationId
+      ) || null,
+    [conversations, selectedConversationId]
+  );
+
+  const sortedMessages = useMemo(
+    () =>
+      [...messages].sort((a, b) => {
+        const left = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const right = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return left - right;
+      }),
+    [messages]
+  );
+
+  const refreshConversations = useCallback(async () => {
+    if (!pollingEnabled) {
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams();
+      params.set("businessId", businessId);
+
+      const res = await fetch(`/api/messages/conversations?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const data = (await res.json()) as ConversationListResponse;
+      if (res.status === 401) {
+        handleUnauthorized("refreshConversations");
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load inbox");
+      }
+
+      const nextConversations = Array.isArray(data.conversations)
+        ? data.conversations
+        : [];
+      setConversations(nextConversations);
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[admin-messages] conversations refreshed", {
+          activeBusinessId,
+          activeBusinessType,
+          scopedBusinessId,
+          scopedBusinessType,
+          selectedConversationId,
+          count: nextConversations.length,
+        });
+      }
+
+      if (nextConversations.length === 0) {
+        if (selectedConversationId !== null) {
+          setSelectedConversationId(null);
+          syncSelectedConversationInUrl(null);
+        }
+        setMessages([]);
+        setThreadConversation(null);
+        setThreadBusiness(null);
+      } else if (!isConversationSelected(nextConversations, selectedConversationId)) {
+        const fallbackConversationId = getFallbackConversationId(nextConversations);
+        setSelectedConversationId(fallbackConversationId);
+        syncSelectedConversationInUrl(fallbackConversationId);
+        setMessages([]);
+        setThreadConversation(null);
+        setThreadBusiness(null);
+      }
+
+      setSyncError(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to refresh inbox";
+      setSyncError(message);
+    }
+  }, [
+    activeBusinessId,
+    activeBusinessType,
+    businessId,
+    pollingEnabled,
+    scopedBusinessId,
+    scopedBusinessType,
+    selectedConversationId,
+    syncSelectedConversationInUrl,
+    handleUnauthorized,
+  ]);
+
+  const refreshThread = useCallback(async (targetConversationId: string) => {
+    if (!pollingEnabled) {
+      return;
+    }
+
+    if (!isConversationSelected(conversations, targetConversationId)) {
+      setMessages([]);
+      setThreadConversation(null);
+      setThreadBusiness(null);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `/api/messages/thread?conversationId=${encodeURIComponent(targetConversationId)}`,
+        { cache: "no-store" }
+      );
+      const data = (await res.json()) as ConversationThreadResponse;
+      if (res.status === 401) {
+        handleUnauthorized("refreshThread");
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load conversation");
+      }
+
+      const nextMessages = Array.isArray(data.messages) ? data.messages : [];
+      setMessages(nextMessages);
+      setThreadConversation(data.conversation || null);
+      setThreadBusiness(data.business || null);
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[admin-messages] thread updated", {
+          conversationId: targetConversationId,
+          count: nextMessages.length,
+          businessId: data.business?.id || null,
+        });
+      }
+
+      setSyncError(null);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to refresh conversation";
+
+      if (message === "Conversation not found") {
+        setMessages([]);
+        setThreadConversation(null);
+        setThreadBusiness(null);
+        await refreshConversations();
+      }
+
+      setSyncError(message);
+    }
+  }, [conversations, handleUnauthorized, pollingEnabled, refreshConversations]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) {
+        return;
+      }
+
+      const hasSession = Boolean(data.session);
+      setAuthPresent(hasSession);
+      setPollingEnabled(hasSession);
+
+      if (!hasSession) {
+        handleUnauthorized("initial-session-check");
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      const hasSession = Boolean(session);
+      setAuthPresent(hasSession);
+      setPollingEnabled(hasSession);
+
+      if (!hasSession) {
+        handleUnauthorized(`auth-event:${event}`);
+      } else {
+        authLostHandledRef.current = false;
+        setSyncError(null);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [businessId, handleUnauthorized, router, supabase]);
+
+  useEffect(() => {
+    if (!pollingEnabled) {
+      return;
+    }
+
+    void refreshConversations();
+  }, [businessId, pollingEnabled, refreshConversations]);
+
+  useEffect(() => {
+    if (!pollingEnabled) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void refreshConversations();
+      if (
+        selectedConversationId &&
+        isConversationSelected(conversations, selectedConversationId)
+      ) {
+        void refreshThread(selectedConversationId);
+      }
+    }, 4000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [
+    businessId,
+    conversations,
+    pollingEnabled,
+    refreshConversations,
+    refreshThread,
+    selectedConversationId,
+  ]);
+
+  useEffect(() => {
+    if (!pollingEnabled) {
+      return;
+    }
+
+    if (
+      selectedConversationId &&
+      isConversationSelected(conversations, selectedConversationId)
+    ) {
+      void refreshThread(selectedConversationId);
+    } else {
+      setMessages([]);
+      setThreadConversation(null);
+      setThreadBusiness(null);
+    }
+  }, [conversations, pollingEnabled, refreshThread, selectedConversationId]);
+
+  useEffect(() => {
+    syncSelectedConversationInUrl(selectedConversationId);
+  }, [selectedConversationId, syncSelectedConversationInUrl]);
+
+  async function handleSend() {
+    const body = draft.trim();
+    if (!body || !selectedConversationId || loading || !authPresent) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId: selectedConversationId,
+          body,
+          isPrivate,
+          clientMessageId: createClientMessageId(),
+        }),
+      });
+
+      const data = (await res.json()) as { error?: string };
+      if (res.status === 401) {
+        handleUnauthorized("sendMessage");
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+
+      setDraft("");
+      setIsPrivate(false);
+      await refreshThread(selectedConversationId);
+      await refreshConversations();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to send message";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleUnsend(messageId: string) {
+    if (!selectedConversationId || unsendingMessageId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Unsend this message? It will be hidden from both you and the client."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setUnsendingMessageId(messageId);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/messages/unsend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messageId }),
+      });
+
+      const data = (await res.json()) as { error?: string };
+      if (res.status === 401) {
+        handleUnauthorized("unsendMessage");
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to unsend message");
+      }
+
+      setMessages((current) => current.filter((message) => message.id !== messageId));
+      await refreshConversations();
+      await refreshThread(selectedConversationId);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to unsend message";
+      setError(message);
+    } finally {
+      setUnsendingMessageId(null);
+    }
+  }
+
+  return (
+    <div className="grid gap-6 text-[var(--text-main)] lg:grid-cols-[360px,1fr]">
+      <div className="premium-card p-6">
+        <h1 className="text-xl font-semibold">Messages</h1>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+          Inbox for {scopedBusinessName}. Conversations do not cross the active business
+          context.
+        </p>
+
+        <div className="mt-4 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3 text-sm text-[var(--text-soft)]">
+          <p>Active business: {activeBusinessName}</p>
+          <p>Inbox scope: {scopedBusinessType || activeBusinessType || "business"}</p>
+        </div>
+
+        {syncError ? (
+          <div className="mt-4 rounded-2xl border border-[rgba(212,175,55,0.3)] bg-[rgba(212,175,55,0.14)] px-4 py-3 text-sm text-[var(--text-main)]">
+            {syncError}
+          </div>
+        ) : null}
+
+        <div className="mt-5 space-y-3">
+          {conversations.length === 0 ? (
+            <p className="text-sm text-[var(--text-soft)]">
+              No conversations yet for this business.
+            </p>
+          ) : (
+            conversations.map((conversation) => {
+              const unread = getUnreadState(conversation);
+
+              return (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedConversationId(conversation.id);
+                    syncSelectedConversationInUrl(conversation.id);
+                  }}
+                  className={`block w-full rounded-2xl border px-4 py-4 text-left transition ${
+                    conversation.id === selectedConversationId
+                      ? "border-[rgba(193,18,31,0.24)] bg-[rgba(193,18,31,0.1)] shadow-[0_14px_28px_rgba(193,18,31,0.12)]"
+                      : "border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] hover:border-[rgba(212,175,55,0.16)] hover:bg-[rgba(31,25,25,0.92)]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">
+                        {conversation.client_name ||
+                          conversation.client_email ||
+                          "Client"}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--text-soft)]">
+                        {conversation.subject || "Conversation"}
+                      </p>
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
+                        {getContextLabel(conversation)}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full border px-2 py-1 text-xs font-semibold ${unread.className}`}
+                    >
+                      {unread.label}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-[var(--text-soft)]">
+                    {conversation.last_message_excerpt || "No messages yet"}
+                  </p>
+                  <p className="mt-3 text-xs text-[var(--text-muted)]">
+                    {formatTimestamp(conversation.last_message_at)}
+                  </p>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      <div className="surface-card p-6">
+        {conversations.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.66)] p-6 text-sm text-[var(--text-soft)]">
+            No conversations yet. New client messages for this business will appear here.
+          </div>
+        ) : !selectedConversation ? (
+          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.66)] p-6 text-sm text-[var(--text-soft)]">
+            Select a conversation to view and respond.
+          </div>
+        ) : (
+          <>
+            <div className="border-b border-[var(--border-soft)] pb-4">
+              <h2 className="text-lg font-semibold">
+                {threadConversation?.client_name ||
+                  selectedConversation.client_name ||
+                  threadConversation?.client_email ||
+                  selectedConversation.client_email ||
+                  "Client"}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">
+                {threadConversation?.subject || selectedConversation.subject || "Conversation"}
+              </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                  <p>Business: {threadBusiness?.name || scopedBusinessName}</p>
+                  <p>Type: {threadBusiness?.business_type || scopedBusinessType || "business"}</p>
+                </div>
+                <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                  <p>Context: {getContextLabel(threadConversation || selectedConversation)}</p>
+                  <p>
+                    Contact:{" "}
+                    {threadConversation?.client_email ||
+                      selectedConversation.client_email ||
+                      "No email"}
+                    {threadConversation?.client_phone
+                      ? ` | ${threadConversation.client_phone}`
+                      : selectedConversation.client_phone
+                        ? ` | ${selectedConversation.client_phone}`
+                        : ""}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-[var(--text-muted)]">
+                Last activity:{" "}
+                {formatTimestamp(
+                  threadConversation?.last_message_at ||
+                    selectedConversation.last_message_at
+                )}
+              </p>
+            </div>
+
+            <div className="mt-5 space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.74)] p-4">
+              {sortedMessages.length === 0 ? (
+                <p className="text-sm text-[var(--text-soft)]">No messages yet.</p>
+              ) : (
+                sortedMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`rounded-xl px-4 py-3 ${
+                      message.sender_type === "business"
+                        ? "ml-auto max-w-[85%] border border-[rgba(193,18,31,0.24)] bg-[rgba(193,18,31,0.14)]"
+                        : "max-w-[85%] border border-[var(--border-soft)] bg-[rgba(31,25,25,0.92)]"
+                    }`}
+                  >
+                    <p className="text-sm leading-6 text-[var(--text-main)]">{message.body}</p>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {formatTimestamp(message.created_at)}{" "}
+                        {message.sender_type === "business"
+                          ? message.read_at_client
+                            ? "| Client read"
+                            : "| Awaiting client read"
+                          : message.read_at_business
+                            ? "| Business read"
+                            : "| Awaiting business reply"}
+                      </p>
+                      {message.sender_type === "business" ? (
+                        <button
+                          type="button"
+                          onClick={() => handleUnsend(message.id)}
+                          disabled={unsendingMessageId === message.id}
+                          className="text-xs font-medium text-[var(--accent-gold-soft)] underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {unsendingMessageId === message.id ? "Unsending..." : "Unsend"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder="Write a message for this client"
+                className="input-field min-h-[140px]"
+              />
+              <label className="flex items-center gap-2 text-sm text-[var(--text-soft)]">
+                <input
+                  type="checkbox"
+                  checked={isPrivate}
+                  onChange={(event) => setIsPrivate(event.target.checked)}
+                />
+                Mark as private client access information
+              </label>
+              {error ? (
+                <div className="rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  {error}
+                </div>
+              ) : null}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-[var(--text-muted)]">
+                  Messages stay attached to this business-scoped thread for later retrieval.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={loading || !draft.trim()}
+                  className="btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? "Sending..." : "Reply to customer"}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

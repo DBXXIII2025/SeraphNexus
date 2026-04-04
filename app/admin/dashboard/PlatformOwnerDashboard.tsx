@@ -1,0 +1,175 @@
+import Link from "next/link";
+import { getPlatformAdminData } from "@/lib/platformAdminData";
+import { getPlatformIncomeAudit, getPlatformOwnerBusinessAudits } from "@/lib/platformOwnerCleanup";
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(value) ? value : 0);
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "No timestamp";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleString();
+}
+
+export default async function PlatformOwnerDashboard({
+  ownerUserId,
+}: {
+  ownerUserId: string;
+}) {
+  const [platformData, cleanupAudits] = await Promise.all([
+    getPlatformAdminData(),
+    getPlatformOwnerBusinessAudits(ownerUserId),
+  ]);
+  const incomeAudit = getPlatformIncomeAudit();
+  const testBusinessCandidates = cleanupAudits.filter((business) => business.isLikelyTestBusiness);
+
+  return (
+    <div className="space-y-6 text-[var(--text-main)]">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {platformData.metrics.map((metric) => (
+          <div key={metric.label} className="metric-card p-6">
+            <p className="section-kicker">{metric.label}</p>
+            <p
+              className={`mt-5 text-4xl font-semibold ${
+                metric.tone === "success"
+                  ? "text-[var(--accent-gold-soft)]"
+                  : metric.tone === "alert"
+                    ? "text-[var(--accent-soft)]"
+                    : "text-[var(--text-strong)]"
+              }`}
+            >
+              {metric.value}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">{metric.detail}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
+        <div className="surface-card p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="section-kicker">Platform Health</p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+                Businesses needing attention
+              </h2>
+            </div>
+            <Link href="/admin/platform" className="btn-secondary px-4 py-2 text-sm font-medium">
+              Open platform control
+            </Link>
+          </div>
+          <div className="mt-5 space-y-3">
+            {platformData.businessesNeedingAttention.slice(0, 6).map((business) => (
+              <div key={business.id} className="table-row-panel p-4">
+                <p className="font-medium text-[var(--text-strong)]">{business.name}</p>
+                <p className="mt-1 text-sm text-[var(--text-soft)]">
+                  {business.businessType || "business"} · {business.plan} plan
+                </p>
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
+                  {!business.legalAccepted ? "Legal acceptance missing" : null}
+                  {!business.legalAccepted && (!business.stripeReady || !business.isPublished) ? " · " : ""}
+                  {!business.stripeReady ? "Stripe not ready" : null}
+                  {!business.stripeReady && !business.isPublished ? " · " : ""}
+                  {!business.isPublished ? "Not published" : null}
+                </p>
+              </div>
+            ))}
+            {platformData.businessesNeedingAttention.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+                No businesses are currently flagged by onboarding, legal, or payout readiness checks.
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <section className="premium-card p-6">
+            <p className="section-kicker">Support Queue</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+              Business owner support
+            </h2>
+            <div className="mt-5 space-y-3">
+              {platformData.supportThreads.slice(0, 5).map((thread) => (
+                <div key={thread.id} className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4">
+                  <p className="font-medium text-[var(--text-strong)]">
+                    {thread.businessName || "Business"}
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--text-soft)]">
+                    {thread.ownerEmail || "Owner"} · {thread.unreadForPlatform} unread
+                  </p>
+                  <p className="mt-2 text-xs text-[var(--text-muted)]">
+                    {thread.lastMessageExcerpt || "No messages yet"} · {formatDateTime(thread.lastMessageAt)}
+                  </p>
+                </div>
+              ))}
+              {platformData.supportThreads.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+                  No platform support threads yet.
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="surface-card p-6">
+            <p className="section-kicker">Income Audit</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+              Revenue posture
+            </h2>
+            <div className="mt-4 space-y-3 text-sm text-[var(--text-soft)]">
+              <p>Projected MRR from current plans: {formatCurrency(platformData.totalMRR)}</p>
+              <p>Known stored platform fee revenue: {formatCurrency(platformData.transactionPlatformRevenue)}</p>
+              <p>Subscription ledger in DB: {incomeAudit.hasSubscriptionLedger ? "Yes" : "No"}</p>
+              <p>Stored order platform fees: {incomeAudit.hasStoredOrderPlatformFees ? "Yes" : "No"}</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section className="surface-card p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="section-kicker">Test Business Audit</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+              Platform-owner test/demo businesses
+            </h2>
+          </div>
+          <Link href="/admin/platform" className="btn-secondary px-4 py-2 text-sm font-medium">
+            Review cleanup
+          </Link>
+        </div>
+        <div className="mt-5 space-y-3">
+          {testBusinessCandidates.slice(0, 5).map((business) => (
+            <div key={business.id} className="table-row-panel p-4">
+              <p className="font-medium text-[var(--text-strong)]">{business.name}</p>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">
+                {business.businessType || "business"} · {business.totalDependencies} dependent records
+              </p>
+              <p className="mt-2 text-xs text-[var(--text-muted)]">
+                {business.dependencyCounts.length > 0
+                  ? business.dependencyCounts.slice(0, 4).map((item) => `${item.label}: ${item.count}`).join(" · ")
+                  : "No known dependencies"}
+              </p>
+            </div>
+          ))}
+          {testBusinessCandidates.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+              No likely test or demo businesses were detected for the platform-owner account.
+            </div>
+          ) : null}
+        </div>
+      </section>
+    </div>
+  );
+}

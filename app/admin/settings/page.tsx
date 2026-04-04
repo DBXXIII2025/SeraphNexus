@@ -1,0 +1,352 @@
+import { redirect } from "next/navigation";
+import { getBusinessProfileCompletion } from "@/lib/businessProfileCompletion";
+import { getBusinessReadinessState } from "@/lib/businessReadiness";
+import { loadBusinessLogoById } from "@/lib/businessLogos";
+import ConnectStripeButton from "@/components/ConnectStripeButton";
+import BusinessLogoManager from "@/app/admin/settings/BusinessLogoManager";
+import { getActiveBusiness } from "@/lib/getActiveBusiness";
+import { getPaymentReadiness } from "@/lib/paymentReadiness";
+import { getPlatformAdminSession } from "@/lib/platformAdmin";
+
+type SettingsPageProps = {
+  searchParams?: Promise<{
+    businessId?: string;
+    setup?: string;
+    stripe?: string;
+    message?: string;
+  }>;
+};
+
+type SettingsBusiness = {
+  id: string;
+  name: string | null;
+  slug?: string | null;
+  description?: string | null;
+  business_type?: string | null;
+  is_published?: boolean | null;
+  stripe_account_id?: string | null;
+  stripe_onboarding_complete?: boolean | null;
+  stripe_charges_enabled?: boolean | null;
+  stripe_payouts_enabled?: boolean | null;
+};
+
+function StatusRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | boolean;
+}) {
+  return (
+    <div className="table-row-panel flex items-center justify-between px-4 py-3">
+      <span className="text-sm text-[var(--text-soft)]">{label}</span>
+      <span className="text-sm font-medium text-[var(--text-strong)]">
+        {typeof value === "boolean" ? (value ? "Yes" : "No") : value}
+      </span>
+    </div>
+  );
+}
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
+  const { user, isPlatformAdmin } = await getPlatformAdminSession();
+
+  if (isPlatformAdmin) {
+    redirect("/admin/platform");
+  }
+
+  const params = searchParams ? await searchParams : undefined;
+  const businessId = params?.businessId?.trim();
+  const business = (await getActiveBusiness(businessId)) as SettingsBusiness | null;
+  const logoState = business ? await loadBusinessLogoById(business.id) : null;
+
+  const setup = params?.setup;
+  const stripeState = params?.stripe;
+  const message = params?.message;
+  const paymentReadiness = business ? getPaymentReadiness(business) : null;
+  const profileCompletion = business ? getBusinessProfileCompletion(business) : null;
+  const readiness =
+    business && user?.id
+      ? await getBusinessReadinessState({
+          business,
+          userId: user.id,
+        })
+      : null;
+
+  return (
+    <div className="space-y-6 text-[var(--text-main)]">
+      <section className="premium-card p-6 lg:p-7">
+        <div className="section-header-copy">
+          <p className="section-kicker">Settings</p>
+          <h1 className="section-title">Business identity, payouts, and launch control</h1>
+          <p className="section-description">
+            Manage identity, payout posture, and publish readiness for the active business.
+          </p>
+        </div>
+      </section>
+
+      {setup === "stripe" && paymentReadiness?.status === "not_started" ? (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+          Connect Stripe next so this business can accept payments.
+        </div>
+      ) : null}
+      {stripeState === "connected" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+          Stripe onboarding returned successfully. Account status has been refreshed.
+        </div>
+      ) : null}
+      {stripeState === "refresh" ? (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+          Stripe status was refreshed. Review the payment readiness panel below for the next step.
+        </div>
+      ) : null}
+      {stripeState === "error" ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {message || "Stripe onboarding could not be completed."}
+        </div>
+      ) : null}
+      {message === "published" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+          Business published successfully. It is now visible on public routes.
+        </div>
+      ) : null}
+      {message === "unpublished" ? (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+          Business unpublished successfully. It is no longer publicly visible.
+        </div>
+      ) : null}
+      {message === "publish-error" ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          Publish status could not be updated.
+        </div>
+      ) : null}
+      {message === "forbidden" ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          You do not have permission to publish this business.
+        </div>
+      ) : null}
+      {message === "missing-business" ? (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+          Select an active business before trying to change publish state.
+        </div>
+      ) : null}
+      {message === "profile-incomplete" ? (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+          Complete the business profile before publishing. Add the missing public details in the business profile editor.
+        </div>
+      ) : null}
+      {message === "readiness-incomplete" ? (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+          This business is not publish-ready yet. Review the readiness blockers below and complete the next required step.
+        </div>
+      ) : null}
+
+      {!business ? (
+        <div className="empty-state">No active business found.</div>
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[1.08fr,0.92fr]">
+          <div className="space-y-6">
+            <section className="surface-card p-6">
+              <div className="section-header-copy">
+                <p className="section-kicker">Identity</p>
+                <h2 className="section-title">Business identity</h2>
+                <p className="section-description">
+                  Upload a compact logo for admin identity blocks and public-facing headers.
+                </p>
+              </div>
+
+              <div className="mt-5">
+                <BusinessLogoManager
+                  businessId={business.id}
+                  businessName={business.name || "Active business"}
+                  initialLogoUrl={logoState?.logoUrl || null}
+                  isConfigured={logoState?.schemaReady ?? false}
+                  configurationMessage={logoState?.errorMessage || null}
+                />
+              </div>
+
+              <div className="form-section mt-5 text-sm text-[var(--text-soft)]">
+                This logo stays compact by design. It reinforces trust and business identity without turning settings or public pages into image-led layouts.
+              </div>
+            </section>
+
+            <section className="surface-card p-6">
+              <div className="section-header">
+                <div className="section-header-copy">
+                  <p className="section-kicker">Profile</p>
+                  <h2 className="section-title">Business profile</h2>
+                  <p className="section-description">
+                    Core public business details used across public pages.
+                  </p>
+                </div>
+                <a
+                  href={`/admin/customize?businessId=${encodeURIComponent(business.id)}`}
+                  className="btn-secondary px-4 py-2 text-sm font-medium"
+                >
+                  Edit business profile
+                </a>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                <StatusRow
+                  label="Profile readiness"
+                  value={profileCompletion?.canPublishProfile ? "Ready" : "Needs details"}
+                />
+                <StatusRow
+                  label="Completion"
+                  value={`${profileCompletion?.progressPercent || 0}%`}
+                />
+              </div>
+
+              {profileCompletion ? (
+                <div className="mt-5 rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+                  {profileCompletion.summary}
+                </div>
+              ) : null}
+            </section>
+          </div>
+
+          <div className="space-y-6">
+            {readiness ? (
+              <section className="premium-card p-6">
+                <div className="section-header-copy">
+                  <p className="section-kicker">Launch</p>
+                  <h2 className="section-title">Launch readiness</h2>
+                  <p className="section-description">
+                    Combined status across profile, legal, payments, and offerings.
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  <StatusRow label="Readiness status" value={readiness.label} />
+                  <StatusRow
+                    label="Public live state"
+                    value={readiness.isLive ? "Live" : business.is_published ? "Published with blockers" : "Not live"}
+                  />
+                </div>
+
+                <div className="mt-5 rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+                  {readiness.summary}
+                </div>
+
+                {readiness.blockers.length > 0 ? (
+                  <div className="mt-5 space-y-3">
+                    {readiness.blockers.map((blocker) => (
+                      <div key={blocker.id} className="form-section">
+                        <p className="text-sm font-medium text-[var(--text-strong)]">
+                          {blocker.label}
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--text-soft)]">{blocker.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {!readiness.isLive ? (
+                  <div className="mt-5">
+                    <a
+                      href={readiness.nextActionHref}
+                      className="btn-secondary px-4 py-2 text-sm font-medium"
+                    >
+                      {readiness.nextActionLabel}
+                    </a>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+
+            <section className="surface-card p-6">
+              <div className="section-header-copy">
+                <p className="section-kicker">Payments</p>
+                <h2 className="section-title">Stripe Connect</h2>
+                <p className="section-description">
+                  Stripe Connect status and payout posture for {business.name || "this business"}.
+                </p>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                <StatusRow label="Stripe account ID" value={business.stripe_account_id || "Not connected"} />
+                <StatusRow label="Onboarding complete" value={Boolean(business.stripe_onboarding_complete)} />
+                <StatusRow label="Charges enabled" value={Boolean(business.stripe_charges_enabled)} />
+                <StatusRow label="Payouts enabled" value={Boolean(business.stripe_payouts_enabled)} />
+                <StatusRow label="Payment readiness" value={paymentReadiness?.label || "Unknown"} />
+              </div>
+
+              {paymentReadiness ? (
+                <div className="mt-5 rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+                  {paymentReadiness.summary}
+                </div>
+              ) : null}
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                {paymentReadiness?.status !== "payment_ready" ? (
+                  <ConnectStripeButton
+                    businessId={business.id}
+                    label={paymentReadiness?.actionLabel || "Connect Stripe"}
+                    className="w-full sm:w-auto lg:w-auto"
+                  />
+                ) : null}
+                {business.stripe_account_id ? (
+                  <a
+                    href={`/api/stripe/return?businessId=${encodeURIComponent(business.id)}`}
+                    className="btn-secondary px-4 py-2 text-sm font-medium"
+                  >
+                    Refresh payment status
+                  </a>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="surface-card p-6">
+              <div className="section-header-copy">
+                <p className="section-kicker">Publishing</p>
+                <h2 className="section-title">Publish business</h2>
+                <p className="section-description">
+                  Control whether this business is discoverable on Explore and public client routes.
+                </p>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                <StatusRow label="Public visibility" value={business.is_published ? "Published" : "Unpublished"} />
+                <StatusRow label="Public slug" value={business.slug || "No slug set"} />
+              </div>
+
+              <div className="form-section mt-5 text-sm text-[var(--text-soft)]">
+                {business.is_published
+                  ? "This business is currently visible on public routes and Explore."
+                  : "This business is currently hidden from Explore and public slug routes."}
+              </div>
+
+              {profileCompletion && !profileCompletion.canPublishProfile ? (
+                <div className="mt-5 rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+                  This business cannot be published live until its public profile is complete. Add the core business details in the profile editor first.
+                </div>
+              ) : null}
+
+              {paymentReadiness && !paymentReadiness.canPublishLive ? (
+                <div className="mt-5 rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+                  This business cannot be published live until payment setup is ready. Complete Stripe onboarding and enable charges and payouts first.
+                </div>
+              ) : null}
+
+              <form action="/api/admin/business/publish" method="POST" className="mt-5">
+                <input type="hidden" name="business_id" value={business.id} />
+                <input type="hidden" name="is_published" value={business.is_published ? "false" : "true"} />
+                <button
+                  type="submit"
+                  disabled={!business.is_published && !readiness?.canPublishLive}
+                  className={
+                    business.is_published
+                      ? "rounded-xl border border-red-500/30 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/10"
+                      : "btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                  }
+                >
+                  {business.is_published ? "Unpublish business" : "Publish business"}
+                </button>
+              </form>
+            </section>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
