@@ -12,10 +12,10 @@ type PricingClientProps = {
 
 const PLANS = [
   {
-    tier: "free",
-    label: "Free",
+    tier: "trial",
+    label: "Trial",
     priceLabel: "$0/mo",
-    summary: "Launch fast with core public pages, checkout, and business operations.",
+    summary: "Private invite-only access for the restricted launch tier.",
     highlights: ["10% platform fee", "Core storefront and checkout", "Basic admin tools"],
   },
   {
@@ -192,6 +192,10 @@ export default function PricingClient({
                     >
                       {billingPlan === plan.tier ? "Starting checkout..." : `Choose ${plan.label}`}
                     </button>
+                  ) : plan.tier === "trial" ? (
+                    <span className="btn-secondary inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium text-[var(--text-soft)]">
+                      Trial granted privately
+                    </span>
                   ) : (
                     <span className="btn-secondary inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium text-[var(--text-soft)]">
                       Included by default

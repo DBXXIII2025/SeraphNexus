@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
+import { hasOperationalAccess } from "@/lib/accessPlan";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { stripe } from "@/lib/stripe";
 import { fetchCatalogItemsByIds } from "@/lib/catalog";
 import {
@@ -12,7 +14,6 @@ import {
 import {
   getNetPayoutCents,
   getPlatformFeePercent,
-  normalizeBusinessPlan,
 } from "@/lib/planConfig";
 import {
   getPublicPath,
@@ -286,7 +287,7 @@ export async function POST(req: Request) {
     const { data: business, error: businessError } = await supabaseAdmin
       .from("businesses")
       .select(
-        "id, name, slug, stripe_account_id, stripe_charges_enabled, plan, business_type"
+        "id, owner_id, name, slug, stripe_account_id, stripe_charges_enabled, plan, business_type"
       )
       .eq("id", safeBusinessId)
       .single();
@@ -339,7 +340,23 @@ export async function POST(req: Request) {
       });
     }
 
-    const normalizedPlan = normalizeBusinessPlan(business.plan);
+    const normalizedPlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: business.id,
+        owner_id: business.owner_id || null,
+        plan: business.plan,
+      },
+    });
+
+    if (!hasOperationalAccess(normalizedPlan)) {
+      return errorResponse({
+        status: 403,
+        error: "This business is not enabled for checkout yet.",
+        code: "CHECKOUT_BUSINESS_ACCESS_INACTIVE",
+        step: "business.plan.validate",
+      });
+    }
+
     const feePercent = getPlatformFeePercent(normalizedPlan);
     logCheckoutStage("business_resolved", {
       businessId: safeBusinessId,

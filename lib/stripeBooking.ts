@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
+import { hasOperationalAccess } from "@/lib/accessPlan";
 import { requireEnv } from "@/lib/env";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { sendBookingEmail, sendBookingSMS } from "@/lib/notify";
 import { getPlatformFeePercent } from "@/lib/planConfig";
 import { stripe } from "@/lib/stripe";
@@ -84,7 +86,7 @@ export async function createBookingCheckoutSession(
 
   const { data: business } = await supabaseAdmin
     .from("businesses")
-    .select("stripe_account_id, plan")
+    .select("id, owner_id, stripe_account_id, plan")
     .eq("id", normalizedInput.business_id)
     .single();
 
@@ -92,7 +94,19 @@ export async function createBookingCheckoutSession(
     throw new Error("Business has not connected Stripe account");
   }
 
-  const feePercent = getPlatformFeePercent(business.plan);
+  const effectivePlan = await resolveAccessPlanForBusiness({
+    business: {
+      id: business.id,
+      owner_id: business.owner_id || null,
+      plan: business.plan,
+    },
+  });
+
+  if (!hasOperationalAccess(effectivePlan)) {
+    throw new Error("Business is not enabled for checkout");
+  }
+
+  const feePercent = getPlatformFeePercent(effectivePlan);
 
   const applicationFee = Math.round(totalAmountCents * feePercent);
 

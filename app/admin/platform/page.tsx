@@ -1,12 +1,20 @@
 import Link from "next/link";
+import { getConfiguredAppUrl } from "@/lib/appUrl";
+import { getActiveAccessGrantList } from "@/lib/accessGrantAdmin";
+import { getPlatformAdminData } from "@/lib/platformAdminData";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { getPlatformSettings } from "@/lib/platformSettings";
-import { getPlatformAdminData } from "@/lib/platformAdminData";
 import {
   getPlatformIncomeAudit,
   getPlatformOwnerBusinessAudits,
-  PLATFORM_OWNER_CLEANUP_SEQUENCE,
 } from "@/lib/platformOwnerCleanup";
+
+type PlatformPageProps = {
+  searchParams?: Promise<{
+    success?: string;
+    error?: string;
+  }>;
+};
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -29,7 +37,71 @@ function formatDateTime(value: string | null | undefined) {
   return parsed.toLocaleString();
 }
 
-export default async function PlatformPage() {
+function getStatusCopy(
+  type: "success" | "error",
+  value: string | undefined
+) {
+  if (!value) {
+    return null;
+  }
+
+  if (type === "success") {
+    if (value === "trial-granted") {
+      return "Trial access granted to the existing account.";
+    }
+
+    if (value === "invite-created") {
+      return "Email-bound private trial invite created.";
+    }
+
+    if (value === "grant-revoked") {
+      return "Access grant revoked.";
+    }
+  }
+
+  if (value === "forbidden") {
+    return "Platform admin access is required.";
+  }
+
+  if (value === "grant-email-required") {
+    return "An existing user email is required to grant trial access.";
+  }
+
+  if (value === "grant-user-not-found") {
+    return "No existing account matched that email address.";
+  }
+
+  if (value === "grant-failed") {
+    return "Trial access could not be granted.";
+  }
+
+  if (value === "invite-email-required") {
+    return "An email address is required to create an invite.";
+  }
+
+  if (value === "invite-create-failed") {
+    return "Invite creation failed.";
+  }
+
+  if (value === "grant-id-required") {
+    return "A grant id is required to revoke access.";
+  }
+
+  if (value === "revoke-failed") {
+    return "Grant revocation failed.";
+  }
+
+  if (value === "unknown-action") {
+    return "Unknown access-grant action.";
+  }
+
+  return "The access-grant action could not be completed.";
+}
+
+export default async function PlatformPage({
+  searchParams,
+}: PlatformPageProps) {
+  const params = searchParams ? await searchParams : undefined;
   const settings = await getPlatformSettings();
   const { user, isPlatformAdmin } = await getPlatformAdminSession();
 
@@ -47,10 +119,15 @@ export default async function PlatformPage() {
         </section>
 
         <div className="surface-panel border-yellow-500/20 px-4 py-3 text-sm text-yellow-100">
-          Platform editing is restricted to accounts whose profile is marked as a platform admin.
+          Platform editing is restricted to accounts whose profile is marked as
+          a platform admin.
         </div>
 
-        <form action="/api/admin/platform" method="POST" className="surface-card space-y-5 p-6">
+        <form
+          action="/api/admin/platform"
+          method="POST"
+          className="surface-card space-y-5 p-6"
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm text-gray-300">
               <span className="form-label">Platform name</span>
@@ -121,20 +198,28 @@ export default async function PlatformPage() {
     );
   }
 
-  const [platformData, cleanupAudits] = await Promise.all([
+  const [platformData, , activeGrants] = await Promise.all([
     getPlatformAdminData(),
     getPlatformOwnerBusinessAudits(user!.id),
+    getActiveAccessGrantList(),
   ]);
   const incomeAudit = getPlatformIncomeAudit();
+  const grantCreateLinkBase = getConfiguredAppUrl() || "";
+  const successMessage = getStatusCopy("success", params?.success);
+  const errorMessage = getStatusCopy("error", params?.error);
 
   return (
     <div className="space-y-6 text-[var(--text-main)]">
       <section className="premium-card p-6 lg:p-7">
         <div className="section-header-copy">
           <p className="section-kicker">Platform Control</p>
-          <h1 className="section-title">Platform-owner controls and business health</h1>
+          <h1 className="section-title">
+            Platform-owner controls and business health
+          </h1>
           <p className="section-description">
-            Platform-owner controls, business health, support oversight, and dependency-aware cleanup reporting for businesses owned by this account.
+            Platform-owner controls, business health, support oversight, and
+            dependency-aware cleanup reporting for businesses owned by this
+            account.
           </p>
         </div>
       </section>
@@ -143,18 +228,36 @@ export default async function PlatformPage() {
         {platformData.metrics.map((metric) => (
           <div key={metric.label} className="metric-card p-5">
             <p className="section-kicker">{metric.label}</p>
-            <p className="mt-3 text-3xl font-semibold text-[var(--text-strong)]">{metric.value}</p>
-            <p className="mt-2 text-sm text-[var(--text-soft)]">{metric.detail}</p>
+            <p className="mt-3 text-3xl font-semibold text-[var(--text-strong)]">
+              {metric.value}
+            </p>
+            <p className="mt-2 text-sm text-[var(--text-soft)]">
+              {metric.detail}
+            </p>
           </div>
         ))}
       </section>
+
+      {successMessage ? (
+        <div className="surface-panel border-emerald-500/30 px-4 py-3 text-sm text-emerald-200">
+          {successMessage}
+        </div>
+      ) : null}
+
+      {errorMessage ? (
+        <div className="surface-panel border-red-500/30 px-4 py-3 text-sm text-red-200">
+          {errorMessage}
+        </div>
+      ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
         <div className="surface-card p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Insights</p>
-              <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">Top performing businesses</h2>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+                Top performing businesses
+              </h2>
             </div>
             <span className="text-sm text-[var(--text-soft)]">
               Platform-wide gross volume
@@ -165,17 +268,25 @@ export default async function PlatformPage() {
               <div key={business.id} className="table-row-panel p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-medium text-[var(--text-strong)]">{business.name}</p>
+                    <p className="font-medium text-[var(--text-strong)]">
+                      {business.name}
+                    </p>
                     <p className="mt-1 text-sm text-[var(--text-soft)]">
-                      {business.businessType || "business"} - {business.plan} plan
+                      {business.businessType || "business"} - {business.plan}{" "}
+                      plan
                     </p>
                     <p className="mt-2 text-xs text-[var(--text-muted)]">
-                      Owner {business.ownerEmail || "unknown"} - Last activity {formatDateTime(business.lastActivityAt)}
+                      Owner {business.ownerEmail || "unknown"} - Last activity{" "}
+                      {formatDateTime(business.lastActivityAt)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-[var(--text-strong)]">{formatCurrency(business.grossRevenue)}</p>
-                    <p className="mt-1 text-xs text-[var(--text-muted)]">{business.transactions} txns</p>
+                    <p className="font-semibold text-[var(--text-strong)]">
+                      {formatCurrency(business.grossRevenue)}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">
+                      {business.transactions} txns
+                    </p>
                   </div>
                 </div>
               </div>
@@ -186,12 +297,26 @@ export default async function PlatformPage() {
         <div className="space-y-6">
           <section className="surface-card p-6">
             <p className="section-kicker">Income Audit</p>
-            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">Real revenue posture</h2>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+              Real revenue posture
+            </h2>
             <div className="mt-4 space-y-3 text-sm text-[var(--text-soft)]">
-              <p>Projected MRR from plan assignments: {formatCurrency(platformData.totalMRR)}</p>
-              <p>Known stored platform fees: {formatCurrency(platformData.transactionPlatformRevenue)}</p>
-              <p>Subscription ledger table present: {incomeAudit.hasSubscriptionLedger ? "Yes" : "No"}</p>
-              <p>Stored order platform fees: {incomeAudit.hasStoredOrderPlatformFees ? "Yes" : "No"}</p>
+              <p>
+                Projected MRR from plan assignments:{" "}
+                {formatCurrency(platformData.totalMRR)}
+              </p>
+              <p>
+                Known stored platform fees:{" "}
+                {formatCurrency(platformData.transactionPlatformRevenue)}
+              </p>
+              <p>
+                Subscription ledger table present:{" "}
+                {incomeAudit.hasSubscriptionLedger ? "Yes" : "No"}
+              </p>
+              <p>
+                Stored order platform fees:{" "}
+                {incomeAudit.hasStoredOrderPlatformFees ? "Yes" : "No"}
+              </p>
             </div>
             <div className="mt-4 space-y-2 text-xs text-[var(--text-muted)]">
               {incomeAudit.notes.map((note) => (
@@ -204,18 +329,26 @@ export default async function PlatformPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="section-kicker">Support</p>
-                <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">Business-owner support</h2>
+                <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+                  Business-owner support
+                </h2>
               </div>
-              <Link href="/admin/messages" className="btn-secondary px-4 py-2 text-sm font-medium">
+              <Link
+                href="/admin/messages"
+                className="btn-secondary px-4 py-2 text-sm font-medium"
+              >
                 Open inbox
               </Link>
             </div>
             <div className="mt-4 space-y-3">
               {platformData.supportThreads.slice(0, 5).map((thread) => (
                 <div key={thread.id} className="table-row-panel p-4">
-                  <p className="font-medium text-[var(--text-strong)]">{thread.businessName || "Business"}</p>
+                  <p className="font-medium text-[var(--text-strong)]">
+                    {thread.businessName || "Business"}
+                  </p>
                   <p className="mt-1 text-sm text-[var(--text-soft)]">
-                    {thread.ownerEmail || "Owner"} - {thread.unreadForPlatform} unread
+                    {thread.ownerEmail || "Owner"} - {thread.unreadForPlatform}{" "}
+                    unread
                   </p>
                   <p className="mt-2 text-xs text-[var(--text-muted)]">
                     {thread.lastMessageExcerpt || "No messages yet"}
@@ -224,6 +357,159 @@ export default async function PlatformPage() {
               ))}
             </div>
           </section>
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+        <div className="surface-card p-6">
+          <p className="section-kicker">Trial Grants</p>
+          <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+            Grant private trial access
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
+            Attach trial access directly to an existing account or issue a
+            one-time email-bound invite.
+          </p>
+
+          <form
+            action="/api/admin/platform/access-grants"
+            method="POST"
+            className="mt-5 space-y-4"
+          >
+            <input type="hidden" name="action" value="grant_trial" />
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Existing user email</span>
+              <input name="email" type="email" required className="input-field" />
+            </label>
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Business ID</span>
+              <input
+                name="business_id"
+                className="input-field"
+                placeholder="Optional business scope"
+              />
+            </label>
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Expires at</span>
+              <input
+                name="expires_at"
+                type="datetime-local"
+                className="input-field"
+              />
+            </label>
+            <button
+              type="submit"
+              className="btn-primary px-4 py-2 text-sm font-medium"
+            >
+              Grant trial access
+            </button>
+          </form>
+
+          <form
+            action="/api/admin/platform/access-grants"
+            method="POST"
+            className="mt-8 space-y-4"
+          >
+            <input type="hidden" name="action" value="create_invite" />
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Invite email</span>
+              <input name="email" type="email" required className="input-field" />
+            </label>
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Business ID</span>
+              <input
+                name="business_id"
+                className="input-field"
+                placeholder="Optional business scope"
+              />
+            </label>
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Invite expiry</span>
+              <input
+                name="expires_at"
+                type="datetime-local"
+                className="input-field"
+              />
+            </label>
+            <button
+              type="submit"
+              className="btn-secondary px-4 py-2 text-sm font-medium"
+            >
+              Create email-bound invite
+            </button>
+          </form>
+        </div>
+
+        <div className="surface-card p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="section-kicker">Active Grants</p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+                Trial access inventory
+              </h2>
+            </div>
+            <span className="text-sm text-[var(--text-soft)]">
+              {activeGrants.length} active
+            </span>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {activeGrants.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+                No active trial grants or invites.
+              </div>
+            ) : (
+              activeGrants.map((grant) => (
+                <div key={grant.id} className="table-row-panel p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-[var(--text-strong)]">
+                        {grant.email || "No email"} | {grant.plan}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--text-soft)]">
+                        {grant.businessName ||
+                          grant.businessId ||
+                          "All businesses for account"}
+                      </p>
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
+                        Granted by {grant.grantedBy || "unknown"} |{" "}
+                        {formatDateTime(grant.grantedAt)}
+                      </p>
+                      {grant.expiresAt ? (
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">
+                          Expires {formatDateTime(grant.expiresAt)}
+                        </p>
+                      ) : null}
+                      {grant.activatedAt ? (
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">
+                          Activated {formatDateTime(grant.activatedAt)}
+                        </p>
+                      ) : null}
+                      {grant.inviteToken ? (
+                        <p className="mt-2 break-all text-xs text-[var(--accent-gold-soft)]">
+                          Invite link: {grantCreateLinkBase}/signup?invite=
+                          {grant.inviteToken}
+                          {grant.email
+                            ? `&email=${encodeURIComponent(grant.email)}`
+                            : ""}
+                        </p>
+                      ) : null}
+                    </div>
+                    <form action="/api/admin/platform/access-grants" method="POST">
+                      <input type="hidden" name="action" value="revoke_grant" />
+                      <input type="hidden" name="grant_id" value={grant.id} />
+                      <button
+                        type="submit"
+                        className="btn-secondary px-4 py-2 text-sm font-medium"
+                      >
+                        Revoke
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </section>
     </div>

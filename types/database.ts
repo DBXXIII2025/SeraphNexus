@@ -25,7 +25,7 @@ export interface Database {
           stripe_onboarding_complete: boolean;
           stripe_charges_enabled: boolean;
           stripe_payouts_enabled: boolean;
-          plan?: "basic" | "free" | "pro" | "elite" | "growth" | null;
+          plan?: "basic" | "free" | "inactive" | "trial" | "pro" | "elite" | "growth" | null;
           refund_policy?: string | null;
           late_fee_disclosure?: string | null;
         };
@@ -44,7 +44,7 @@ export interface Database {
           stripe_onboarding_complete?: boolean;
           stripe_charges_enabled?: boolean;
           stripe_payouts_enabled?: boolean;
-          plan?: "basic" | "free" | "pro" | "elite" | "growth" | null;
+          plan?: "basic" | "free" | "inactive" | "trial" | "pro" | "elite" | "growth" | null;
           refund_policy?: string | null;
           late_fee_disclosure?: string | null;
         };
@@ -63,7 +63,7 @@ export interface Database {
           stripe_onboarding_complete?: boolean;
           stripe_charges_enabled?: boolean;
           stripe_payouts_enabled?: boolean;
-          plan?: "basic" | "free" | "pro" | "elite" | "growth" | null;
+          plan?: "basic" | "free" | "inactive" | "trial" | "pro" | "elite" | "growth" | null;
           refund_policy?: string | null;
           late_fee_disclosure?: string | null;
         };

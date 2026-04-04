@@ -1,4 +1,5 @@
 import { BUSINESS_RUNTIME_SELECT } from "@/lib/businessFields";
+import { resolveAccessPlansForBusinesses } from "@/lib/accessGrants";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeBusinessPlanRecords } from "@/lib/businessPlan";
 import type { ActiveBusiness } from "@/lib/getActiveBusiness";
@@ -23,5 +24,17 @@ export async function getUserBusinesses(): Promise<ActiveBusiness[]> {
     return [];
   }
 
-  return data ? normalizeBusinessPlanRecords(data as unknown as ActiveBusiness[]) : [];
+  if (!data) {
+    return [];
+  }
+
+  const normalizedBusinesses = normalizeBusinessPlanRecords(
+    data as unknown as ActiveBusiness[]
+  );
+
+  return resolveAccessPlansForBusinesses({
+    businesses: normalizedBusinesses,
+    userId: user.id,
+    email: user.email || null,
+  });
 }

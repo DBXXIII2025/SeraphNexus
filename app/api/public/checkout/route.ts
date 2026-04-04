@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
-import { normalizeBusinessPlan } from "@/lib/planConfig";
 
 type BusinessesTable = {
   select: (query: string) => {
     eq: (column: string, value: string) => {
       single: () => Promise<{
-        data: { plan?: string | null } | null;
+        data: { id?: string | null; owner_id?: string | null; plan?: string | null } | null;
         error: { message: string } | null;
       }>;
     };
@@ -67,9 +67,15 @@ export async function POST(req: Request) {
       });
     }
 
-    const normalizedPlan = normalizeBusinessPlan(business.plan);
+    const normalizedPlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: String(business.id || ""),
+        owner_id: business.owner_id || null,
+        plan: business.plan,
+      },
+    });
 
-    if (normalizedPlan === "free") {
+    if (normalizedPlan === "inactive") {
       return errorResponse({
         status: 403,
         error: "This business is not enabled for checkout yet.",

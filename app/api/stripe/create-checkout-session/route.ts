@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
+import { hasOperationalAccess } from "@/lib/accessPlan";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { stripe } from "@/lib/stripe";
 import { getPublicPath } from "@/lib/businessModules";
 import { getPlatformFeePercent } from "@/lib/planConfig";
@@ -103,7 +105,7 @@ export async function POST(req: Request) {
 
     const { data: business, error: businessError } = await supabase
       .from("businesses")
-      .select("id, name, slug, business_type, stripe_account_id, stripe_charges_enabled, plan")
+      .select("id, owner_id, name, slug, business_type, stripe_account_id, stripe_charges_enabled, plan")
       .eq("id", business_id)
       .single();
 
@@ -149,6 +151,23 @@ export async function POST(req: Request) {
         error: "This business is not ready to accept payments yet.",
         code: "LEGACY_CHECKOUT_STRIPE_CHARGES_DISABLED",
         step: "business.stripe.validate",
+      });
+    }
+
+    const effectivePlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: business.id,
+        owner_id: business.owner_id || null,
+        plan: business.plan,
+      },
+    });
+
+    if (!hasOperationalAccess(effectivePlan)) {
+      return errorResponse({
+        status: 403,
+        error: "This business is not enabled for checkout yet.",
+        code: "LEGACY_CHECKOUT_PLAN_RESTRICTED",
+        step: "business.plan.validate",
       });
     }
 
@@ -239,7 +258,7 @@ export async function POST(req: Request) {
     const price = pricing.price;
     const priceAdjustment = pricing.priceAdjustment;
 
-    const feePercent = getPlatformFeePercent(business.plan);
+    const feePercent = getPlatformFeePercent(effectivePlan);
     const applicationFee = Math.round(price * 100 * feePercent);
     const baseUrl = getBaseUrl(req);
 

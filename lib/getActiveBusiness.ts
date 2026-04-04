@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { BUSINESS_RUNTIME_SELECT } from "@/lib/businessFields";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeBusinessPlanRecord } from "@/lib/businessPlan";
 import type { PlanTier } from "@/lib/planConfig";
@@ -39,6 +40,28 @@ export async function getActiveBusiness(
 
   if (!user) return null;
 
+  async function normalizeBusiness(data: ActiveBusinessRow | null) {
+    if (!data) {
+      return null;
+    }
+
+    const normalized = normalizeBusinessPlanRecord(data);
+    const plan = await resolveAccessPlanForBusiness({
+      business: {
+        id: normalized.id,
+        owner_id: normalized.owner_id,
+        plan: normalized.plan,
+      },
+      userId: user.id,
+      email: user.email || null,
+    });
+
+    return {
+      ...normalized,
+      plan,
+    };
+  }
+
   if (requestedBusinessId) {
     const { data } = await supabase
       .from("businesses")
@@ -47,7 +70,7 @@ export async function getActiveBusiness(
       .eq("owner_id", user.id)
       .maybeSingle();
 
-    if (data) return normalizeBusinessPlanRecord(data as unknown as ActiveBusinessRow);
+    if (data) return normalizeBusiness(data as unknown as ActiveBusinessRow);
   }
 
   if (activeId) {
@@ -58,7 +81,7 @@ export async function getActiveBusiness(
       .eq("owner_id", user.id)
       .maybeSingle();
 
-    if (data) return normalizeBusinessPlanRecord(data as unknown as ActiveBusinessRow);
+    if (data) return normalizeBusiness(data as unknown as ActiveBusinessRow);
   }
 
   const { data, error } = await supabase
@@ -79,5 +102,5 @@ export async function getActiveBusiness(
     return null;
   }
 
-  return data ? normalizeBusinessPlanRecord(data as unknown as ActiveBusinessRow) : null;
+  return data ? normalizeBusiness(data as unknown as ActiveBusinessRow) : null;
 }

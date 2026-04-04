@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       name: business_name,
       slug,
       stripe_account_id: account.id,
-      plan: "free",
+      plan: "inactive",
     });
 
     if (businessError) {

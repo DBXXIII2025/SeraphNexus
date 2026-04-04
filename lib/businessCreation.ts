@@ -142,7 +142,7 @@ export async function createBusinessRecord(args: {
         name: args.name,
         slug,
         business_type: args.businessType,
-        plan: "free",
+        plan: "inactive",
         is_published: false,
       })
       .select("id,owner_id,name,slug,business_type,plan,is_published")

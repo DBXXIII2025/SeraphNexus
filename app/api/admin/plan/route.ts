@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       typeof body?.businessId === "string" ? body.businessId.trim() : "";
     const plan = body?.plan;
 
-    if (!businessId || !isPlanTier(plan)) {
+    if (!businessId || !isPlanTier(plan) || (plan !== "pro" && plan !== "elite")) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 

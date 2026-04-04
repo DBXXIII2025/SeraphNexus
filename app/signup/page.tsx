@@ -27,15 +27,17 @@ export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const nextParam = searchParams.get("next");
+  const inviteToken = searchParams.get("invite") || "";
+  const invitedEmail = searchParams.get("email") || "";
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(invitedEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const nextParam = searchParams.get("next");
   const nextPath =
     nextParam && nextParam.startsWith("/") ? nextParam : "/admin";
 
@@ -81,6 +83,39 @@ export default function SignupPage() {
       return;
     }
 
+    if (inviteToken && data.user?.id) {
+      try {
+        const response = await fetch("/api/auth/access-grants/activate-invite", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            inviteToken,
+            userId: data.user.id,
+            email,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(
+            typeof payload?.error === "string"
+              ? payload.error
+              : "Invite activation failed."
+          );
+        }
+      } catch (activationError) {
+        setError(
+          activationError instanceof Error
+            ? activationError.message
+            : "Account created, but trial invite activation failed."
+        );
+        setLoading(false);
+        return;
+      }
+    }
+
     if (data.session) {
       router.push(nextPath);
       router.refresh();
@@ -103,6 +138,12 @@ export default function SignupPage() {
         <p className="mb-6 text-center text-sm text-gray-400">
           Create your Seraph Nexus account.
         </p>
+
+        {inviteToken ? (
+          <div className="mb-4 rounded-lg border border-[rgba(212,175,55,0.16)] bg-[rgba(212,175,55,0.08)] px-3 py-2 text-xs text-[var(--accent-gold-soft)]">
+            Private trial invite detected. Sign up with the invited email to activate it.
+          </div>
+        ) : null}
 
         <div className="mb-4 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-gray-400">
           New accounts continue into the correct workspace path after signup.

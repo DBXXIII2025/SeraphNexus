@@ -28,22 +28,8 @@ export default function UpgradeClient({
     setLoadingPlan(plan);
 
     try {
-      if (plan === "free") {
-        const res = await fetch("/api/admin/plan", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ businessId, plan }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data?.error || "Failed to update plan");
-        }
-
-        window.location.reload();
-        return;
+      if (plan !== "pro" && plan !== "elite") {
+        throw new Error("Trial and inactive access are managed by the platform admin.");
       }
 
       const res = await fetch("/api/stripe/create-subscription", {
@@ -75,7 +61,7 @@ export default function UpgradeClient({
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {(Object.keys(PLAN_DEFINITIONS) as PlanTier[]).map((tier) => {
+        {(["trial", "pro", "elite"] as PlanTier[]).map((tier) => {
           const plan = PLAN_DEFINITIONS[tier];
           const isCurrent = tier === currentPlan;
 
@@ -150,8 +136,8 @@ export default function UpgradeClient({
                   ? "Current Plan"
                   : loadingPlan === tier
                     ? "Starting checkout..."
-                    : tier === "free"
-                      ? "Switch to Free"
+                    : tier === "trial"
+                      ? "Trial managed by platform admin"
                       : `Upgrade to ${plan.label}`}
               </button>
             </div>

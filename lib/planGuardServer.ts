@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import {
   comparePlans,
   normalizeBusinessPlan,
@@ -16,11 +17,7 @@ export async function requirePlan(feature: "leads") {
     return { ok: false, status: 401, error: "Unauthorized" };
   }
 
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("id, plan")
-    .eq("owner_id", user.id)
-    .maybeSingle();
+  const business = await getActiveBusiness();
 
   if (!business) {
     return { ok: false, status: 404, error: "Business not found" };

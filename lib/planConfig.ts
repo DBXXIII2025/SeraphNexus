@@ -1,6 +1,8 @@
-export type PlanTier = "free" | "pro" | "elite";
+import { normalizeAccessPlan, type AccessPlan } from "@/lib/accessPlan";
+
+export type PlanTier = AccessPlan;
 export type LegacyPlanTier = "basic" | "growth";
-export type StoredBusinessPlan = PlanTier | LegacyPlanTier;
+export type StoredBusinessPlan = PlanTier | LegacyPlanTier | "free";
 
 export type PlanFeature =
   | "advanced_analytics"
@@ -18,18 +20,32 @@ type PlanDefinition = {
 };
 
 const PLAN_ORDER: Record<PlanTier, number> = {
-  free: 0,
-  pro: 1,
-  elite: 2,
+  inactive: 0,
+  trial: 1,
+  pro: 2,
+  elite: 3,
 };
 
 export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
-  free: {
-    tier: "free",
-    label: "Free",
+  inactive: {
+    tier: "inactive",
+    label: "Inactive",
     monthlyPriceLabel: "$0/month",
     transactionFeeRate: 0.1,
-    description: "Launch with core booking, ordering, and payments tools.",
+    description: "Restricted account state until trial access or paid billing is enabled.",
+    features: [],
+    highlights: [
+      "Account created but not enabled",
+      "No operational access until activation",
+      "Upgrade or receive a private trial grant",
+    ],
+  },
+  trial: {
+    tier: "trial",
+    label: "Trial",
+    monthlyPriceLabel: "$0/month",
+    transactionFeeRate: 0.1,
+    description: "Private invite-only trial access for the restricted launch tier.",
     features: [],
     highlights: [
       "Core storefront and checkout",
@@ -70,7 +86,12 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
 };
 
 export function isPlanTier(value: unknown): value is PlanTier {
-  return value === "free" || value === "pro" || value === "elite";
+  return (
+    value === "inactive" ||
+    value === "trial" ||
+    value === "pro" ||
+    value === "elite"
+  );
 }
 
 export function isStoredBusinessPlan(
@@ -78,6 +99,8 @@ export function isStoredBusinessPlan(
 ): value is StoredBusinessPlan {
   return (
     value === "free" ||
+    value === "inactive" ||
+    value === "trial" ||
     value === "pro" ||
     value === "elite" ||
     value === "basic" ||
@@ -86,15 +109,7 @@ export function isStoredBusinessPlan(
 }
 
 export function normalizeBusinessPlan(value: unknown): PlanTier {
-  if (value === "growth") {
-    return "pro";
-  }
-
-  if (value === "basic") {
-    return "free";
-  }
-
-  return isPlanTier(value) ? value : "free";
+  return normalizeAccessPlan(value);
 }
 
 export function getPlanDefinition(value: unknown) {
