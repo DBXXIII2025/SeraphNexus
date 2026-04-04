@@ -8,10 +8,10 @@ export async function GET(req: Request) {
   const code = url.searchParams.get("code");
   const nextParam = url.searchParams.get("next");
   const safeNext =
-    nextParam && nextParam.startsWith("/") ? nextParam : "/admin";
+    nextParam && nextParam.startsWith("/") ? nextParam : "/";
 
- const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-const supabaseAnonKey = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const supabaseAnonKey = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
   const cookieStore = await cookies();
 
