@@ -32,6 +32,7 @@ import {
 } from "@/lib/checkoutIntents";
 import { trackLeadEventServer } from "@/lib/leads.server";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import type { Database } from "@/types/database";
 
 export const runtime = "nodejs";
@@ -859,12 +860,14 @@ export async function POST(req: Request) {
             .eq("id", propertyId)
             .eq("business_id", safeBusinessId)
             .maybeSingle(),
-          supabaseAdmin
-            .from("rental_reservations")
-            .select("id, status, payment_status, check_in_date, check_out_date")
-            .eq("business_id", safeBusinessId)
-            .eq("property_id", propertyId)
-            .order("check_in_date", { ascending: true }),
+          applyVisibleFilter(
+            supabaseAdmin
+              .from("rental_reservations")
+              .select("id, status, payment_status, check_in_date, check_out_date")
+              .eq("business_id", safeBusinessId)
+              .eq("property_id", propertyId)
+              .order("check_in_date", { ascending: true })
+          ),
           supabaseAdmin
             .from("rental_availability_blocks")
             .select("id, start_date, end_date, reason")
@@ -1190,12 +1193,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ url: session.url, sessionId: session.id });
     }
 
-    const { data: bookings } = await supabaseAdmin
-      .from("bookings")
-      .select("start_time, end_time, status")
-      .eq("business_id", safeBusinessId)
-      .eq("date", slot.date)
-      .neq("status", "cancelled");
+    const { data: bookings } = await applyVisibleFilter(
+      supabaseAdmin
+        .from("bookings")
+        .select("start_time, end_time, status")
+        .eq("business_id", safeBusinessId)
+        .eq("date", slot.date)
+    );
 
     const bookingSlot = {
       date: slot.date,
@@ -1240,13 +1244,14 @@ export async function POST(req: Request) {
     recentStart.setDate(recentStart.getDate() - 30);
     const recentStartStr = recentStart.toISOString().slice(0, 10);
 
-    const { data: recentBookings } = await supabaseAdmin
-      .from("bookings")
-      .select("date, start_time, end_time, created_at, status")
-      .eq("business_id", safeBusinessId)
-      .gte("date", recentStartStr)
-      .lte("date", slot.date)
-      .neq("status", "cancelled");
+    const { data: recentBookings } = await applyVisibleFilter(
+      supabaseAdmin
+        .from("bookings")
+        .select("date, start_time, end_time, created_at, status")
+        .eq("business_id", safeBusinessId)
+        .gte("date", recentStartStr)
+        .lte("date", slot.date)
+    );
 
     const { data: pricingRules } = await supabaseAdmin
       .from("pricing_rules")

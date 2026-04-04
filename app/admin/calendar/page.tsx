@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { isRentalBusinessType } from "@/lib/businessModules";
 import CalendarClient from "./CalendarClient";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 export default async function AdminCalendarPage() {
   const supabase = await createClient();
@@ -28,12 +29,14 @@ export default async function AdminCalendarPage() {
     );
   }
 
-  const { data: bookings, error } = await supabase
-    .from("bookings")
-    .select("id, date, start_time, end_time, customer_email, status")
-    .eq("business_id", business.id)
-    .order("date", { ascending: true })
-    .order("start_time", { ascending: true });
+  const { data: bookings, error } = await applyVisibleFilter(
+    supabase
+      .from("bookings")
+      .select("id, date, start_time, end_time, customer_email, status")
+      .eq("business_id", business.id)
+      .order("date", { ascending: true })
+      .order("start_time", { ascending: true })
+  );
 
   if (error) {
     return (

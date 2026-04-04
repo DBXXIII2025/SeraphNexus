@@ -1,11 +1,12 @@
-﻿import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 export default async function DashboardCalendarPage() {
   const supabase = await createClient();
 
   const bookingsTable = supabase.from("bookings") as any;
 
-  const { data: bookings, error } = await bookingsTable.select("*");
+  const { data: bookings, error } = await applyVisibleFilter(bookingsTable.select("*"));
 
   if (error) {
     return <div>Error loading calendar</div>;
@@ -27,4 +28,3 @@ export default async function DashboardCalendarPage() {
     </div>
   );
 }
-

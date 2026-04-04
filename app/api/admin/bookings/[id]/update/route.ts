@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOwnedBookingContext } from "@/lib/adminBookingOwnership";
+import { buildCancelledStatusUpdate } from "@/lib/transactionVisibility";
 
 type BookingsTable = {
   update: (payload: Record<string, unknown>) => {
@@ -27,9 +28,14 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const payload =
+    body?.status === "cancelled"
+      ? { ...body, ...buildCancelledStatusUpdate("owner", "cancelled") }
+      : body;
+
   const bookingsTable = access.supabase.from("bookings") as unknown as BookingsTable;
   const { error } = await bookingsTable
-    .update(body)
+    .update(payload)
     .eq("id", id)
     .eq("business_id", access.businessId);
 

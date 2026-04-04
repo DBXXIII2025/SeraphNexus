@@ -12,6 +12,7 @@ import {
 } from "@/lib/pricing/engine";
 import { trackLeadEventServer } from "@/lib/leads.server";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 type BookingWindowRow = {
   date?: string | null;
@@ -151,12 +152,13 @@ export async function POST(req: Request) {
       });
     }
 
-    const { data: bookings } = await supabase
-      .from("bookings")
-      .select("start_time, end_time, status")
-      .eq("business_id", business_id)
-      .eq("date", date)
-      .neq("status", "cancelled");
+    const { data: bookings } = await applyVisibleFilter(
+      supabase
+        .from("bookings")
+        .select("start_time, end_time, status")
+        .eq("business_id", business_id)
+        .eq("date", date)
+    );
 
     const bookingSlot = {
       date,
@@ -187,13 +189,14 @@ export async function POST(req: Request) {
     recentStart.setDate(recentStart.getDate() - 30);
     const recentStartStr = recentStart.toISOString().slice(0, 10);
 
-    const { data: recentBookings } = await supabase
-      .from("bookings")
-      .select("date, start_time, end_time, created_at, status")
-      .eq("business_id", business_id)
-      .gte("date", recentStartStr)
-      .lte("date", date)
-      .neq("status", "cancelled");
+    const { data: recentBookings } = await applyVisibleFilter(
+      supabase
+        .from("bookings")
+        .select("date, start_time, end_time, created_at, status")
+        .eq("business_id", business_id)
+        .gte("date", recentStartStr)
+        .lte("date", date)
+    );
 
     const { data: pricingRules } = await supabase
       .from("pricing_rules")

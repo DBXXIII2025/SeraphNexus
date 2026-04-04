@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
+import { buildCancelledStatusUpdate } from "@/lib/transactionVisibility";
 
 type OrdersTable = {
   select: (query: string) => {
@@ -125,10 +126,7 @@ export async function POST(
 
     step = "order.update";
     await ordersTable
-      .update({
-        status: "canceled",
-        payment_status: "refunded",
-      })
+      .update(buildCancelledStatusUpdate("owner", "canceled", { payment_status: "refunded" }))
       .eq("id", order.id)
       .eq("business_id", business.id);
 

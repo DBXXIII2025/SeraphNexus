@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { errorResponse, logRouteError } from "@/lib/apiErrors";
+import { buildCancelledStatusUpdate } from "@/lib/transactionVisibility";
 
 const ALLOWED_STATUSES = new Set([
   "preparing",
@@ -90,8 +91,13 @@ export async function POST(
     });
   }
 
+  const payload =
+    status === "canceled"
+      ? buildCancelledStatusUpdate("owner", "canceled")
+      : { status };
+
   const { error: updateError } = await ordersTable
-    .update({ status })
+    .update(payload)
     .eq("id", id)
     .eq("business_id", business.id);
 

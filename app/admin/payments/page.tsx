@@ -10,6 +10,7 @@ import {
   resolveRentalPlatformFee,
 } from "@/lib/paymentMath";
 import { formatReservationRange } from "@/lib/rentalAvailability";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 type OrderRow = {
   id: string;
@@ -118,22 +119,28 @@ export default async function AdminPaymentsPage() {
   ] = await Promise.all([
     isRental
       ? Promise.resolve({ data: [] as OrderRow[] })
-      : supabase
-          .from("orders")
-          .select("*")
-          .eq("business_id", business.id)
-          .order("created_at", { ascending: false }),
+      : applyVisibleFilter(
+          supabase
+            .from("orders")
+            .select("*")
+            .eq("business_id", business.id)
+            .order("created_at", { ascending: false })
+        ),
     isRental
-      ? supabase
-          .from("rental_reservations")
-          .select("*")
-          .eq("business_id", business.id)
-          .order("created_at", { ascending: false })
-      : supabase
-          .from("bookings")
-          .select("*")
-          .eq("business_id", business.id)
-          .order("created_at", { ascending: false }),
+      ? applyVisibleFilter(
+          supabase
+            .from("rental_reservations")
+            .select("*")
+            .eq("business_id", business.id)
+            .order("created_at", { ascending: false })
+        )
+      : applyVisibleFilter(
+          supabase
+            .from("bookings")
+            .select("*")
+            .eq("business_id", business.id)
+            .order("created_at", { ascending: false })
+        ),
     isRental
       ? Promise.resolve({ data: [] as CheckoutIntentRow[] })
       : supabase

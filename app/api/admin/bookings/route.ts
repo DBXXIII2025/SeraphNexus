@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isRentalBusinessType } from "@/lib/businessModules";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 export async function GET() {
   try {
@@ -41,10 +42,12 @@ export async function GET() {
 
     // 3. Get bookings
     const isRental = isRentalBusinessType(business.business_type);
-    const { data: bookings, error } = await (isRental ? reservationsTable : bookingsTable)
-      .select("*")
-      .eq("business_id", business.id)
-      .order(isRental ? "check_in_date" : "created_at", { ascending: false });
+    const { data: bookings, error } = await applyVisibleFilter(
+      (isRental ? reservationsTable : bookingsTable)
+        .select("*")
+        .eq("business_id", business.id)
+        .order(isRental ? "check_in_date" : "created_at", { ascending: false })
+    );
 
     if (error) {
       return NextResponse.json(

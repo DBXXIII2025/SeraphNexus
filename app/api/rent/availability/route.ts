@@ -10,6 +10,7 @@ import {
 } from "@/lib/rentalAvailability";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
 import type { Database } from "@/types/database";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 export const runtime = "nodejs";
 
@@ -131,14 +132,16 @@ export async function GET(req: Request) {
     stage = "availability-load";
     const [{ data: reservations, error: reservationsError }, { data: blocks, error: blocksError }] =
       await Promise.all([
-        supabase
-          .from("rental_reservations")
-          .select(
-            "id, business_id, property_id, status, payment_status, guest_name, guest_email, guest_phone, check_in_date, check_out_date, stripe_session_id, payment_intent_id, amount_total, platform_fee, metadata"
-          )
-          .eq("business_id", businessId)
-          .eq("property_id", propertyId)
-          .order("check_in_date", { ascending: true }),
+        applyVisibleFilter(
+          supabase
+            .from("rental_reservations")
+            .select(
+              "id, business_id, property_id, status, payment_status, guest_name, guest_email, guest_phone, check_in_date, check_out_date, stripe_session_id, payment_intent_id, amount_total, platform_fee, metadata"
+            )
+            .eq("business_id", businessId)
+            .eq("property_id", propertyId)
+            .order("check_in_date", { ascending: true })
+        ),
         supabase
           .from("rental_availability_blocks")
           .select("id, property_id, start_date, end_date, reason")

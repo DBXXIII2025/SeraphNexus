@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendBookingSMS } from "@/lib/sms";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 const supabase = createAdminClient();
 
@@ -14,12 +15,14 @@ export async function GET(req: Request) {
 
   const dateStr = in24h.toISOString().slice(0, 10);
 
-  const { data: bookings, error } = await supabase
-    .from("bookings")
-    .select("id, date, start_time, phone")
-    .eq("status", "confirmed")
-    .eq("reminder_sent", false)
-    .eq("date", dateStr);
+  const { data: bookings, error } = await applyVisibleFilter(
+    supabase
+      .from("bookings")
+      .select("id, date, start_time, phone")
+      .eq("status", "confirmed")
+      .eq("reminder_sent", false)
+      .eq("date", dateStr)
+  );
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

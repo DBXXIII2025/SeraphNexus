@@ -9,6 +9,7 @@ import {
   resolveRentalGrossAmount,
   resolveRentalPlatformFee,
 } from "@/lib/paymentMath";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 type OrderRow = {
   total_amount?: number | null;
@@ -53,21 +54,27 @@ export default async function RevenuePage() {
   const [ordersResult, bookingsResult, reservationsResult] = await Promise.all([
     isRental
       ? Promise.resolve({ data: [] as OrderRow[] })
-      : supabase
-          .from("orders")
-          .select("*")
-          .eq("business_id", business.id),
+      : applyVisibleFilter(
+          supabase
+            .from("orders")
+            .select("*")
+            .eq("business_id", business.id)
+        ),
     isRental
       ? Promise.resolve({ data: [] as BookingRow[] })
-      : supabase
-          .from("bookings")
-          .select("amount_total, total_amount, amount, platform_fee, created_at, payment_status")
-          .eq("business_id", business.id),
+      : applyVisibleFilter(
+          supabase
+            .from("bookings")
+            .select("amount_total, total_amount, amount, platform_fee, created_at, payment_status")
+            .eq("business_id", business.id)
+        ),
     isRental
-      ? supabase
-          .from("rental_reservations")
-          .select("amount_total, platform_fee, created_at, payment_status")
-          .eq("business_id", business.id)
+      ? applyVisibleFilter(
+          supabase
+            .from("rental_reservations")
+            .select("amount_total, platform_fee, created_at, payment_status")
+            .eq("business_id", business.id)
+        )
       : Promise.resolve({ data: [] as RentalReservationRow[] }),
   ]);
 

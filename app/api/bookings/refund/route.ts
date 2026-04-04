@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { sendBookingEmail, sendBookingSMS } from "@/lib/notify";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
+import { buildCancelledStatusUpdate } from "@/lib/transactionVisibility";
 
 type BookingsTable = {
   select: (query: string) => {
@@ -125,10 +126,7 @@ export async function POST(req: Request) {
 
     step = "booking.update";
     await bookingsTable
-      .update({
-        status: "cancelled",
-        payment_status: "refunded",
-      })
+      .update(buildCancelledStatusUpdate("owner", "cancelled", { payment_status: "refunded" }))
       .eq("id", booking.id)
       .eq("business_id", business.id);
 

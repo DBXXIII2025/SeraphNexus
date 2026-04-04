@@ -21,6 +21,7 @@ import {
 import InAppTransactionCard, {
   type InAppTransactionSection,
 } from "@/components/confirmation/InAppTransactionCard";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 type TransactionCardRecord = {
   id: string;
@@ -128,12 +129,14 @@ export default async function TransactionsPage() {
   const cards: TransactionCardRecord[] = [];
 
   if (isBooking && !isRental) {
-    const { data: bookings } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("business_id", business.id)
-      .order("date", { ascending: false })
-      .order("start_time", { ascending: false });
+    const { data: bookings } = await applyVisibleFilter(
+      supabase
+        .from("bookings")
+        .select("*")
+        .eq("business_id", business.id)
+        .order("date", { ascending: false })
+        .order("start_time", { ascending: false })
+    );
 
     for (const row of bookings || []) {
       const record = row as unknown as Record<string, unknown>;
@@ -231,11 +234,13 @@ export default async function TransactionsPage() {
   }
 
   if (isRental) {
-    const { data: reservations } = await supabase
-      .from("rental_reservations")
-      .select("*")
-      .eq("business_id", business.id)
-      .order("check_in_date", { ascending: false });
+    const { data: reservations } = await applyVisibleFilter(
+      supabase
+        .from("rental_reservations")
+        .select("*")
+        .eq("business_id", business.id)
+        .order("check_in_date", { ascending: false })
+    );
 
     for (const row of reservations || []) {
       const record = row as unknown as Record<string, unknown>;
@@ -331,10 +336,12 @@ export default async function TransactionsPage() {
       };
     };
 
-    const { data: orders } = await ordersTable
-      .select("*")
-      .eq("business_id", business.id)
-      .order("created_at", { ascending: false });
+    const { data: orders } = await applyVisibleFilter(
+      ordersTable
+        .select("*")
+        .eq("business_id", business.id)
+        .order("created_at", { ascending: false })
+    );
 
     const orderIds = (orders || []).map((order) => String(order.id || ""));
     let orderItemsByOrderId = new Map<

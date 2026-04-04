@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { confirmBookingFromSessionId } from "@/lib/stripeBooking";
+import { buildCancelledStatusUpdate } from "@/lib/transactionVisibility";
 
 const supabase = createAdminClient();
 
@@ -105,7 +106,7 @@ export async function GET(req: Request) {
 
       const { error: cancelError } = await supabase
         .from("bookings")
-        .update({ status: "cancelled" })
+        .update(buildCancelledStatusUpdate("system", "cancelled"))
         .eq("id", booking.id);
 
       if (cancelError) {

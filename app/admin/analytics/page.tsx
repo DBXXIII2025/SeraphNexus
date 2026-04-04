@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 export default async function AdminAnalyticsPage() {
   const supabase = await createClient();
@@ -44,9 +45,11 @@ export default async function AdminAnalyticsPage() {
     );
   }
 
-  const { data: bookings, error } = await supabase
-    .from("bookings")
-    .select("date, start_time, end_time, status");
+  const { data: bookings, error } = await applyVisibleFilter(
+    supabase
+      .from("bookings")
+      .select("date, start_time, end_time, status")
+  );
 
   if (error) {
     return (

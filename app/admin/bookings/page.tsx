@@ -16,6 +16,7 @@ import {
   getAdminActionButtonClass,
   getAdminStatusBadgeClass,
 } from "@/lib/adminStatus";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 type ServiceBookingRecord = {
   id: string;
@@ -375,17 +376,21 @@ export default async function AdminBookingsPage() {
   const [{ data: rows }, { data: conversations }, { data: properties }, { data: intentRows }] =
     await Promise.all([
       isRental
-        ? supabase
-            .from("rental_reservations")
-            .select("*")
-            .eq("business_id", business.id)
-            .order("check_in_date", { ascending: true })
-        : supabase
-            .from("bookings")
-            .select("*")
-            .eq("business_id", business.id)
-            .order("date", { ascending: true })
-            .order("start_time", { ascending: true }),
+        ? applyVisibleFilter(
+            supabase
+              .from("rental_reservations")
+              .select("*")
+              .eq("business_id", business.id)
+              .order("check_in_date", { ascending: true })
+          )
+        : applyVisibleFilter(
+            supabase
+              .from("bookings")
+              .select("*")
+              .eq("business_id", business.id)
+              .order("date", { ascending: true })
+              .order("start_time", { ascending: true })
+          ),
       supabase
         .from("conversations")
         .select("id, booking_id")

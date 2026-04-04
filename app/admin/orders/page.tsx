@@ -6,6 +6,7 @@ import {
   getAdminActionButtonClass,
   getAdminStatusBadgeClass,
 } from "@/lib/adminStatus";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 type NormalizedItem = {
   name: string;
@@ -417,10 +418,12 @@ export default async function AdminOrdersPage() {
   }
 
   const ordersTable = supabase.from("orders") as unknown as OrdersTable;
-  const { data: orders } = await ordersTable
-    .select("*")
-    .eq("business_id", business.id)
-    .order("created_at", { ascending: false });
+  const { data: orders } = await applyVisibleFilter(
+    ordersTable
+      .select("*")
+      .eq("business_id", business.id)
+      .order("created_at", { ascending: false })
+  );
 
   const orderIds = (orders || []).map((order: LooseRow) => String(order.id));
   let orderItemsByOrderId = new Map<string, NormalizedItem[]>();

@@ -15,6 +15,7 @@ import {
   titleCaseStatus,
   type TransactionConfirmationPayload,
 } from "@/lib/transactionConfirmation";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 const supabaseAdmin = createAdminClient();
 
@@ -126,11 +127,14 @@ export async function GET(req: Request) {
       };
     };
     const { data: order } = result.orderId
-      ? await ordersTable.select("*").eq("id", result.orderId).maybeSingle()
-      : await ordersTable
-          .select("*")
-          .eq("stripe_session_id", sessionId)
-          .maybeSingle();
+      ? await applyVisibleFilter(
+          ordersTable.select("*").eq("id", result.orderId)
+        ).maybeSingle()
+      : await applyVisibleFilter(
+          ordersTable
+            .select("*")
+            .eq("stripe_session_id", sessionId)
+        ).maybeSingle();
 
     let orderItems: Array<{ name: string; quantity: number }> = [];
     if (result.orderId) {

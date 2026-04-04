@@ -13,6 +13,7 @@ import {
   titleCaseStatus,
   type TransactionConfirmationPayload,
 } from "@/lib/transactionConfirmation";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 const supabaseAdmin = createAdminClient();
 
@@ -165,22 +166,24 @@ export async function GET(req: Request) {
       sourceTableSelected: isRentalFlow ? "rental_reservations" : "bookings",
     });
 
-    let reservationLookup = await supabaseAdmin
-      .from("rental_reservations")
-      .select(
-        "id, status, payment_status, check_in_date, check_out_date, guest_email, guest_name, guest_phone, property_id"
-      )
-      .eq("stripe_session_id", sessionId)
-      .maybeSingle();
-
-    if (!reservationLookup.data && finalization.bookingId) {
-      reservationLookup = await supabaseAdmin
+    let reservationLookup = await applyVisibleFilter(
+      supabaseAdmin
         .from("rental_reservations")
         .select(
           "id, status, payment_status, check_in_date, check_out_date, guest_email, guest_name, guest_phone, property_id"
         )
-        .eq("id", finalization.bookingId)
-        .maybeSingle();
+        .eq("stripe_session_id", sessionId)
+    ).maybeSingle();
+
+    if (!reservationLookup.data && finalization.bookingId) {
+      reservationLookup = await applyVisibleFilter(
+        supabaseAdmin
+          .from("rental_reservations")
+          .select(
+            "id, status, payment_status, check_in_date, check_out_date, guest_email, guest_name, guest_phone, property_id"
+          )
+          .eq("id", finalization.bookingId)
+      ).maybeSingle();
     }
 
     if (reservationLookup.error) {
@@ -282,13 +285,14 @@ export async function GET(req: Request) {
     }
 
     const paymentIntentId = asString(checkoutIntent?.stripe_payment_intent_id);
-    let bookingLookup = await supabaseAdmin
-      .from("bookings")
-      .select(
-        "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
-      )
-      .eq("stripe_session_id", sessionId)
-      .maybeSingle();
+    let bookingLookup = await applyVisibleFilter(
+      supabaseAdmin
+        .from("bookings")
+        .select(
+          "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
+        )
+        .eq("stripe_session_id", sessionId)
+    ).maybeSingle();
 
     console.log("[stripe/booking-status]", {
       stage: "service_booking_lookup_attempt",
@@ -301,13 +305,14 @@ export async function GET(req: Request) {
     });
 
     if (!bookingLookup.data && paymentIntentId) {
-      bookingLookup = await supabaseAdmin
-        .from("bookings")
-        .select(
-          "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
-        )
-        .eq("payment_intent_id", paymentIntentId)
-        .maybeSingle();
+      bookingLookup = await applyVisibleFilter(
+        supabaseAdmin
+          .from("bookings")
+          .select(
+            "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
+          )
+          .eq("payment_intent_id", paymentIntentId)
+      ).maybeSingle();
 
       console.log("[stripe/booking-status]", {
         stage: "service_booking_lookup_attempt",
@@ -320,13 +325,14 @@ export async function GET(req: Request) {
     }
 
     if (!bookingLookup.data && finalization.bookingId) {
-      bookingLookup = await supabaseAdmin
-        .from("bookings")
-        .select(
-          "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
-        )
-        .eq("id", finalization.bookingId)
-        .maybeSingle();
+      bookingLookup = await applyVisibleFilter(
+        supabaseAdmin
+          .from("bookings")
+          .select(
+            "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
+          )
+          .eq("id", finalization.bookingId)
+      ).maybeSingle();
 
       console.log("[stripe/booking-status]", {
         stage: "service_booking_lookup_attempt",

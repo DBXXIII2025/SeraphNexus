@@ -8,6 +8,7 @@ import {
   type PricingRule,
 } from "@/lib/pricing/engine";
 import { errorResponse, logRouteError } from "@/lib/apiErrors";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 type SlotRow = {
   start: string;
@@ -150,12 +151,13 @@ export async function GET(req: Request) {
         .select("start_time, end_time")
         .eq("business_id", businessId)
         .eq("day_of_week", day),
-      supabase
-        .from("bookings")
-        .select("start_time, end_time, status, created_at")
-        .eq("business_id", businessId)
-        .eq("date", date)
-        .neq("status", "cancelled"),
+      applyVisibleFilter(
+        supabase
+          .from("bookings")
+          .select("start_time, end_time, status, created_at")
+          .eq("business_id", businessId)
+          .eq("date", date)
+      ),
       supabase
         .from("pricing_rules")
         .select(

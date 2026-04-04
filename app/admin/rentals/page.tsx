@@ -16,6 +16,7 @@ import {
   getAdminStatusBadgeClass,
 } from "@/lib/adminStatus";
 import type { Database } from "@/types/database";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -135,11 +136,13 @@ export default async function AdminRentalsPage({
       .from("property_content")
       .select("property_id, title, description")
       .eq("business_id", business.id),
-    supabase
-      .from("rental_reservations")
-      .select("*")
-      .eq("business_id", business.id)
-      .order("check_in_date", { ascending: true }),
+    applyVisibleFilter(
+      supabase
+        .from("rental_reservations")
+        .select("*")
+        .eq("business_id", business.id)
+        .order("check_in_date", { ascending: true })
+    ),
     supabase
       .from("rental_availability_blocks")
       .select("*")

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendBookingEmail, sendBookingSMS } from "@/lib/notify";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 
 const OPEN_HOUR = 9;
 const CLOSE_HOUR = 17;
@@ -133,13 +134,14 @@ export async function POST(req: Request) {
     const newStart = minutesToTime(newStartMinutes);
     const newEnd = minutesToTime(newEndMinutes);
 
-    const { data: others } = await supabase
-      .from("bookings")
-      .select("start_time, end_time, date")
-      .eq("business_id", business.id)
-      .eq("date", newDate)
-      .neq("id", id)
-      .neq("status", "cancelled");
+    const { data: others } = await applyVisibleFilter(
+      supabase
+        .from("bookings")
+        .select("start_time, end_time, date")
+        .eq("business_id", business.id)
+        .eq("date", newDate)
+        .neq("id", id)
+    );
 
     const conflict = ((others || []) as BookingTimeRow[]).some((b) => {
       if (!b.start_time || !b.end_time) return false;

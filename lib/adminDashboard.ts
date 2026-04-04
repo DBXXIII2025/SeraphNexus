@@ -5,6 +5,7 @@ import {
   isRentalBusinessType,
 } from "@/lib/businessModules";
 import { formatReservationRange } from "@/lib/rentalAvailability";
+import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import type { Database } from "@/types/database";
 
 type BusinessRow = Database["public"]["Tables"]["businesses"]["Row"];
@@ -649,11 +650,13 @@ export async function buildDashboardData(params: {
         .select("id, business_id, name, price")
         .eq("business_id", businessId)
         .order("name", { ascending: true }),
-      supabase
-        .from("rental_reservations")
-        .select("id, business_id, property_id, guest_name, guest_email, status, payment_status, amount_total, check_in_date, check_out_date, created_at")
-        .eq("business_id", businessId)
-        .order("created_at", { ascending: false }),
+      applyVisibleFilter(
+        supabase
+          .from("rental_reservations")
+          .select("id, business_id, property_id, guest_name, guest_email, status, payment_status, amount_total, check_in_date, check_out_date, created_at")
+          .eq("business_id", businessId)
+          .order("created_at", { ascending: false })
+      ),
       supabase
         .from("rental_availability_blocks")
         .select("id, business_id, property_id, start_date, end_date, reason, created_at")
@@ -686,10 +689,12 @@ export async function buildDashboardData(params: {
     const ordersTable = supabase.from("orders");
     const productsTable = supabase.from("products");
     const [{ data: orders }, { data: products }] = await Promise.all([
-      ordersTable
-        .select("id, business_id, customer_name, customer_email, status, payment_status, total_amount, created_at, fulfillment_type")
-        .eq("business_id", businessId)
-        .order("created_at", { ascending: false }),
+      applyVisibleFilter(
+        ordersTable
+          .select("id, business_id, customer_name, customer_email, status, payment_status, total_amount, created_at, fulfillment_type")
+          .eq("business_id", businessId)
+          .order("created_at", { ascending: false })
+      ),
       productsTable
         .select("id, business_id, name, price, created_at")
         .eq("business_id", businessId)
@@ -719,11 +724,13 @@ export async function buildDashboardData(params: {
       .select("id, business_id, name, price, duration, created_at")
       .eq("business_id", businessId)
       .order("created_at", { ascending: false }),
-    supabase
-      .from("bookings")
-      .select("id, business_id, guest_name, guest_email, customer_name, customer_email, status, payment_status, amount_total, total_amount, date, start_time, end_time, created_at")
-      .eq("business_id", businessId)
-      .order("created_at", { ascending: false }),
+    applyVisibleFilter(
+      supabase
+        .from("bookings")
+        .select("id, business_id, guest_name, guest_email, customer_name, customer_email, status, payment_status, amount_total, total_amount, date, start_time, end_time, created_at")
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false })
+    ),
   ]);
 
   console.log("[admin/dashboard] source records", {

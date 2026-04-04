@@ -209,6 +209,9 @@ export interface Database {
           id: string;
           business_id: string;
           property_id: string;
+          hidden_from_ui: boolean;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
           status: string | null;
           payment_status: string | null;
           stripe_session_id: string | null;
@@ -229,6 +232,9 @@ export interface Database {
           id?: string;
           business_id: string;
           property_id: string;
+          hidden_from_ui?: boolean;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
           status?: string | null;
           payment_status?: string | null;
           stripe_session_id?: string | null;
@@ -249,6 +255,9 @@ export interface Database {
           id?: string;
           business_id?: string;
           property_id?: string;
+          hidden_from_ui?: boolean;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
           status?: string | null;
           payment_status?: string | null;
           stripe_session_id?: string | null;
@@ -285,6 +294,9 @@ export interface Database {
           start_time: string | null;
           end_time: string | null;
           customer_email: string | null;
+          hidden_from_ui: boolean;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
           status: string;
           created_at: string | null;
           payment_status?: string | null;
@@ -314,6 +326,9 @@ export interface Database {
           start_time?: string | null;
           end_time?: string | null;
           customer_email?: string | null;
+          hidden_from_ui?: boolean;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
           status: string;
           created_at?: string | null;
           payment_status?: string | null;
@@ -343,6 +358,9 @@ export interface Database {
           start_time?: string | null;
           end_time?: string | null;
           customer_email?: string | null;
+          hidden_from_ui?: boolean;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
           status?: string | null;
           created_at?: string | null;
           payment_status?: string | null;
