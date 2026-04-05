@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { syncConversationLastMessageAt } from "@/lib/messages";
+import { canAccessPlanFeature } from "@/lib/planConfig";
 
 type JsonPayload = {
   messageId?: string;
@@ -69,7 +71,7 @@ export async function POST(req: Request) {
 
     const { data: business, error: businessError } = await supabaseAdmin
       .from("businesses")
-      .select("id, owner_id")
+      .select("id, owner_id, plan")
       .eq("id", conversation.business_id)
       .eq("owner_id", user.id)
       .maybeSingle();
@@ -80,6 +82,20 @@ export async function POST(req: Request) {
 
     if (!business?.id) {
       return jsonError("Forbidden", 403);
+    }
+
+    const effectivePlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: String(business.id),
+        owner_id: business.owner_id ? String(business.owner_id) : null,
+        plan: (business as { plan?: string | null }).plan || null,
+      },
+      userId: user.id,
+      email: user.email || null,
+    });
+
+    if (!canAccessPlanFeature(effectivePlan, "advanced_messaging")) {
+      return jsonError("Message unsend requires the Elite plan", 403);
     }
 
     const businessSenderId = conversation.owner_user_id

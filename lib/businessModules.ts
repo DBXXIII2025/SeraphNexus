@@ -1,4 +1,3 @@
-import { canAccessPlanFeature } from "@/lib/planConfig";
 import { getCanonicalPublicBusinessRoute } from "@/lib/publicBusinessRoutes";
 
 export type BusinessType =
@@ -262,20 +261,12 @@ export function getPublicPath(
 }
 
 export function getAdminNav(
-  businessType: string | null | undefined,
-  plan?: string | null
+  businessType: string | null | undefined
 ): AdminNavItem[] {
   const nav = [...getBusinessModule(businessType).adminNav];
-  const filteredNav = nav.filter((item) => {
-    if (item.href === "/admin/leads") {
-      return canAccessPlanFeature(plan, "lead_capture");
-    }
-
-    return true;
-  });
 
   return [
-    ...filteredNav,
+    ...nav,
     { href: "/admin/support", label: "Support" },
     { href: "/admin/upgrade", label: "Upgrade" },
     { href: "/admin/platform", label: "Platform" },

@@ -8,6 +8,7 @@ type BusinessLogoManagerProps = {
   initialLogoUrl: string | null;
   isConfigured: boolean;
   configurationMessage?: string | null;
+  lockedMessage?: string | null;
 };
 
 type RouteResponse = {
@@ -36,6 +37,7 @@ export default function BusinessLogoManager({
   initialLogoUrl,
   isConfigured,
   configurationMessage,
+  lockedMessage,
 }: BusinessLogoManagerProps) {
   const [logoUrl, setLogoUrl] = useState<string | null>(initialLogoUrl);
   const [isWorking, setIsWorking] = useState(false);
@@ -52,7 +54,7 @@ export default function BusinessLogoManager({
   }
 
   async function uploadLogo(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0 || !isConfigured) {
+    if (!fileList || fileList.length === 0 || !isConfigured || lockedMessage) {
       return;
     }
 
@@ -84,7 +86,7 @@ export default function BusinessLogoManager({
   }
 
   async function removeLogo() {
-    if (!isConfigured || !logoUrl) {
+    if (!isConfigured || !logoUrl || lockedMessage) {
       return;
     }
 
@@ -140,7 +142,9 @@ export default function BusinessLogoManager({
           <label
             className={`inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium transition ${
               isConfigured
-                ? "cursor-pointer border-white/10 bg-white/5 text-white hover:bg-white/10"
+                ? lockedMessage
+                  ? "cursor-not-allowed border-white/10 bg-black/20 text-gray-500"
+                  : "cursor-pointer border-white/10 bg-white/5 text-white hover:bg-white/10"
                 : "cursor-not-allowed border-white/10 bg-black/20 text-gray-500"
             }`}
           >
@@ -150,7 +154,7 @@ export default function BusinessLogoManager({
               type="file"
               accept="image/png,image/jpeg,image/webp"
               className="hidden"
-              disabled={!isConfigured || isWorking}
+              disabled={!isConfigured || Boolean(lockedMessage) || isWorking}
               onChange={(event) => void uploadLogo(event.target.files)}
             />
           </label>
@@ -158,7 +162,7 @@ export default function BusinessLogoManager({
           <button
             type="button"
             onClick={() => void removeLogo()}
-            disabled={!isConfigured || !logoUrl || isWorking}
+            disabled={!isConfigured || !logoUrl || Boolean(lockedMessage) || isWorking}
             className="rounded-md border border-red-500/20 px-3 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Remove logo
@@ -169,6 +173,12 @@ export default function BusinessLogoManager({
       {configurationMessage ? (
         <div className="mt-4 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
           {configurationMessage}
+        </div>
+      ) : null}
+
+      {lockedMessage ? (
+        <div className="mt-4 rounded-xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+          {lockedMessage}
         </div>
       ) : null}
 

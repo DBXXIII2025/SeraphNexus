@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import {
   findConversationForClientBusiness,
   getAuthorizedConversationForUser,
@@ -7,6 +8,7 @@ import {
   upsertConversationForClientBusiness,
 } from "@/lib/messages";
 import { trackLeadEventServer } from "@/lib/leads.server";
+import { canAccessPlanFeature } from "@/lib/planConfig";
 
 type JsonPayload = {
   conversationId?: string;
@@ -220,6 +222,43 @@ export async function POST(req: Request) {
       return expectsJson
         ? jsonError("Conversation access denied", 403)
         : redirectError(req, redirectTo);
+    }
+
+    if (access.role === "business") {
+      const supabaseAdmin = createAdminClient();
+      const { data: businessPlanRow } = await supabaseAdmin
+        .from("businesses")
+        .select("id, owner_id, plan")
+        .eq("id", access.business.id)
+        .maybeSingle();
+
+      if (!businessPlanRow?.id) {
+        return expectsJson
+          ? jsonError("Conversation access denied", 403)
+          : redirectError(req, redirectTo);
+      }
+
+      const effectivePlan = await resolveAccessPlanForBusiness({
+        business: {
+          id: String(businessPlanRow.id),
+          owner_id: businessPlanRow.owner_id ? String(businessPlanRow.owner_id) : null,
+          plan: businessPlanRow.plan,
+        },
+        userId: user?.id || null,
+        email: user?.email || null,
+      });
+
+      if (!canAccessPlanFeature(effectivePlan, "full_messaging")) {
+        return expectsJson
+          ? jsonError("Customer messaging requires a Pro or Elite plan.", 403)
+          : redirectError(req, redirectTo);
+      }
+
+      if (isPrivate && !canAccessPlanFeature(effectivePlan, "advanced_messaging")) {
+        return expectsJson
+          ? jsonError("Private message tools require the Elite plan.", 403)
+          : redirectError(req, redirectTo);
+      }
     }
 
     const senderUserId = user?.id || null;

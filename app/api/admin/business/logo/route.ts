@@ -1,16 +1,20 @@
-﻿import { NextResponse } from "next/server";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import {
   buildBusinessLogoStoragePath,
   BUSINESS_LOGOS_BUCKET,
   isAllowedBusinessLogoType,
   MAX_BUSINESS_LOGO_BYTES,
 } from "@/lib/businessLogos";
+import { canAccessPlanFeature } from "@/lib/planConfig";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 type OwnedBusinessRow = {
   id: string;
   name: string | null;
   logo_storage_path: string | null;
+  owner_id: string | null;
+  plan: string | null;
 };
 
 type DeleteBody = {
@@ -33,7 +37,7 @@ async function getOwnedBusiness(args: { businessId: string; userId: string }) {
   const supabaseAdmin = createAdminClient();
   const { data, error } = await supabaseAdmin
     .from("businesses")
-    .select("id, name, logo_storage_path")
+    .select("id, name, logo_storage_path, owner_id, plan")
     .eq("id", args.businessId)
     .eq("owner_id", args.userId)
     .maybeSingle();
@@ -49,6 +53,26 @@ async function getOwnedBusiness(args: { businessId: string; userId: string }) {
   }
 
   return (data || null) as OwnedBusinessRow | null;
+}
+
+async function assertStandardCustomizationAccess(args: {
+  business: OwnedBusinessRow;
+  userId: string;
+  userEmail: string | null;
+}) {
+  const effectivePlan = await resolveAccessPlanForBusiness({
+    business: {
+      id: args.business.id,
+      owner_id: args.business.owner_id,
+      plan: args.business.plan,
+    },
+    userId: args.userId,
+    email: args.userEmail,
+  });
+
+  if (!canAccessPlanFeature(effectivePlan, "standard_customization")) {
+    throw new Error("Business logo customization requires a Pro or Elite plan.");
+  }
 }
 
 export async function POST(req: Request) {
@@ -92,6 +116,12 @@ export async function POST(req: Request) {
     if (!ownedBusiness) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    await assertStandardCustomizationAccess({
+      business: ownedBusiness,
+      userId: user.id,
+      userEmail: user.email || null,
+    });
 
     const supabaseAdmin = createAdminClient();
     const storagePath = buildBusinessLogoStoragePath({
@@ -141,10 +171,13 @@ export async function POST(req: Request) {
       logoStoragePath: storagePath,
     });
   } catch (error: unknown) {
-    return NextResponse.json(
-      { error: getErrorMessage(error) },
-      { status: 500 }
-    );
+    const message = getErrorMessage(error);
+    const status =
+      message === "Business logo customization requires a Pro or Elite plan."
+        ? 403
+        : 500;
+
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
@@ -172,6 +205,12 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    await assertStandardCustomizationAccess({
+      business: ownedBusiness,
+      userId: user.id,
+      userEmail: user.email || null,
+    });
+
     const supabaseAdmin = createAdminClient();
     const { error: updateError } = await supabaseAdmin
       .from("businesses")
@@ -192,11 +231,18 @@ export async function DELETE(req: Request) {
         .remove([ownedBusiness.logo_storage_path]);
     }
 
-    return NextResponse.json({ success: true, logoUrl: null, logoStoragePath: null });
+    return NextResponse.json({
+      success: true,
+      logoUrl: null,
+      logoStoragePath: null,
+    });
   } catch (error: unknown) {
-    return NextResponse.json(
-      { error: getErrorMessage(error) },
-      { status: 500 }
-    );
+    const message = getErrorMessage(error);
+    const status =
+      message === "Business logo customization requires a Pro or Elite plan."
+        ? 403
+        : 500;
+
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import {
   filterMessagesForRole,
   getAuthorizedConversationForUser,
@@ -8,6 +9,7 @@ import {
   markConversationReadForClient,
   markConversationReadForClientAccessToken,
 } from "@/lib/messages";
+import { canAccessPlanFeature } from "@/lib/planConfig";
 
 type NormalizedMessage = {
   id: string;
@@ -74,6 +76,36 @@ export async function GET(req: Request) {
 
     if (!access.role || !access.conversation || !access.business) {
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    }
+
+    if (access.role === "business") {
+      const supabaseAdmin = createAdminClient();
+      const { data: business } = await supabaseAdmin
+        .from("businesses")
+        .select("id, owner_id, plan")
+        .eq("id", access.business.id)
+        .maybeSingle();
+
+      if (!business?.id) {
+        return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+      }
+
+      const effectivePlan = await resolveAccessPlanForBusiness({
+        business: {
+          id: String(business.id),
+          owner_id: business.owner_id ? String(business.owner_id) : null,
+          plan: business.plan,
+        },
+        userId: user?.id || null,
+        email: user?.email || null,
+      });
+
+      if (!canAccessPlanFeature(effectivePlan, "full_messaging")) {
+        return NextResponse.json(
+          { error: "Customer messaging requires a Pro or Elite plan." },
+          { status: 403 }
+        );
+      }
     }
 
     const messages = await getConversationMessages({

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
+import { canAccessPlanFeature } from "@/lib/planConfig";
 import { stripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -14,6 +16,7 @@ type BusinessRow = {
   name: string | null;
   owner_id: string;
   stripe_account_id: string | null;
+  plan?: string | null;
   email?: string | null;
 };
 
@@ -115,6 +118,23 @@ export async function POST(req: Request) {
 
     if (ownedBusiness.owner_id !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const effectivePlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: ownedBusiness.id,
+        owner_id: ownedBusiness.owner_id,
+        plan: ownedBusiness.plan || null,
+      },
+      userId: user.id,
+      email: user.email || null,
+    });
+
+    if (!canAccessPlanFeature(effectivePlan, "stripe_payments")) {
+      return NextResponse.json(
+        { error: "Stripe payments require a Pro or Elite plan." },
+        { status: 403 }
+      );
     }
 
     console.log(

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
+import { getPlanLimit } from "@/lib/planConfig";
 import { getTenantQuickstart } from "@/lib/tenantQuickstart";
 import ServiceImagesManager from "./ServiceImagesManager";
 import { sortServiceImages, type ServiceImageRecord } from "@/lib/serviceImages";
@@ -12,11 +13,20 @@ type ServiceRow = {
   price?: number | null;
 };
 
-export default async function AdminServicesPage() {
+export default async function AdminServicesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    error?: string;
+    success?: string;
+  }>;
+}) {
+  const params = searchParams ? await searchParams : undefined;
   const supabase = await createClient();
   const supabaseAdmin = createAdminClient();
   const business = await getActiveBusiness();
   const isDev = process.env.NODE_ENV !== "production";
+  const maxServices = business ? getPlanLimit(business.plan, "max_services") : null;
 
   if (!business) {
     return <div className="empty-state">No active business.</div>;
@@ -70,6 +80,38 @@ export default async function AdminServicesPage() {
 
   return (
     <div className="space-y-6 text-[var(--text-main)]">
+      {params?.success === "created" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+          Service created.
+        </div>
+      ) : null}
+
+      {params?.error === "service-limit" ? (
+        <div className="rounded-xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] p-4 text-sm text-[var(--accent-gold-soft)]">
+          Trial workspaces can save up to 5 services. Upgrade to Pro or Elite for an unlimited
+          service catalog.
+        </div>
+      ) : null}
+
+      {params?.error === "invalid-service" ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+          Enter a valid service name and price.
+        </div>
+      ) : null}
+
+      {params?.error === "save-failed" ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+          Service could not be saved.
+        </div>
+      ) : null}
+
+      {maxServices !== null ? (
+        <div className="rounded-xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] p-4 text-sm text-[var(--accent-gold-soft)]">
+          Trial workspaces can save up to {maxServices} services. Upgrade to Pro or Elite for an
+          unlimited service catalog.
+        </div>
+      ) : null}
+
       <section className="premium-card p-6 lg:p-7">
         <div className="grid gap-6 xl:grid-cols-[1.35fr,0.95fr]">
           <div>

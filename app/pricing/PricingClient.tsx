@@ -16,21 +16,33 @@ const PLANS = [
     label: "Trial",
     priceLabel: "$0/mo",
     summary: "Private invite-only access for the restricted launch tier.",
-    highlights: ["10% platform fee", "Core storefront and checkout", "Basic admin tools"],
+    highlights: [
+      "Invite-only free access",
+      "One business and capped catalog setup",
+      "Upgrade for payments, messaging, and analytics",
+    ],
   },
   {
     tier: "pro",
     label: "Pro",
     priceLabel: "$19/mo",
-    summary: "Lower fees and unlock stronger lead capture, branding, and analytics.",
-    highlights: ["5% platform fee", "Lead capture tools", "Advanced analytics"],
+    summary: "Enable payments, full messaging, basic analytics, and standard owner controls.",
+    highlights: [
+      "5% platform fee",
+      "Stripe payments, full messaging, and standard customization",
+      "Up to 2 businesses with unlimited services and products",
+    ],
   },
   {
     tier: "elite",
     label: "Elite",
     priceLabel: "$49/mo",
-    summary: "Best economics and full premium access for scaling operators.",
-    highlights: ["2% platform fee", "Premium feature access", "Best net payout posture"],
+    summary: "Best economics and the full premium operating stack for scaling businesses.",
+    highlights: [
+      "2% platform fee",
+      "Automation, advanced analytics, and advanced messaging",
+      "Priority explore boost with unlimited businesses",
+    ],
   },
 ] as const;
 

@@ -5,7 +5,8 @@ export const PUBLIC_BUSINESS_ROUTE_SELECT =
     slug,
     business_type,
     is_published,
-    description
+    description,
+    plan
   `;
 
 export const PUBLIC_EXPLORE_BUSINESSES_SELECT =
@@ -15,5 +16,6 @@ export const PUBLIC_EXPLORE_BUSINESSES_SELECT =
     slug,
     business_type,
     is_published,
-    description
+    description,
+    plan
   `;

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getAdminConversationSummaries } from "@/lib/messages";
+import { canAccessPlanFeature } from "@/lib/planConfig";
 
 export async function GET(req: Request) {
   try {
@@ -22,13 +24,30 @@ export async function GET(req: Request) {
     const supabaseAdmin = createAdminClient();
     const { data: business } = await supabaseAdmin
       .from("businesses")
-      .select("id, business_type")
+      .select("id, owner_id, business_type, plan")
       .eq("id", businessId)
       .eq("owner_id", user.id)
       .maybeSingle();
 
     if (!business?.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const effectivePlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: String(business.id),
+        owner_id: business.owner_id ? String(business.owner_id) : null,
+        plan: business.plan,
+      },
+      userId: user.id,
+      email: user.email || null,
+    });
+
+    if (!canAccessPlanFeature(effectivePlan, "full_messaging")) {
+      return NextResponse.json(
+        { error: "Customer messaging requires a Pro or Elite plan." },
+        { status: 403 }
+      );
     }
 
     if (process.env.NODE_ENV !== "production") {

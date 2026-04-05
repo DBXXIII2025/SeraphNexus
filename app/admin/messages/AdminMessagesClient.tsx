@@ -145,6 +145,7 @@ export default function AdminMessagesClient({
   scopedBusinessId,
   scopedBusinessName,
   scopedBusinessType,
+  canUseAdvancedMessagingTools,
   initialConversations,
   initialSelectedConversationId,
   initialMessages,
@@ -156,6 +157,7 @@ export default function AdminMessagesClient({
   scopedBusinessId: string;
   scopedBusinessName: string;
   scopedBusinessType: string | null;
+  canUseAdvancedMessagingTools: boolean;
   initialConversations: ConversationItem[];
   initialSelectedConversationId: string | null;
   initialMessages: MessageItem[];
@@ -482,7 +484,7 @@ export default function AdminMessagesClient({
         body: JSON.stringify({
           conversationId: selectedConversationId,
           body,
-          isPrivate,
+          isPrivate: canUseAdvancedMessagingTools ? isPrivate : false,
           clientMessageId: createClientMessageId(),
         }),
       });
@@ -705,7 +707,8 @@ export default function AdminMessagesClient({
                             ? "| Business read"
                             : "| Awaiting business reply"}
                       </p>
-                      {message.sender_type === "business" ? (
+                      {message.sender_type === "business" &&
+                      canUseAdvancedMessagingTools ? (
                         <button
                           type="button"
                           onClick={() => handleUnsend(message.id)}
@@ -728,14 +731,20 @@ export default function AdminMessagesClient({
                 placeholder="Write a message for this client"
                 className="input-field min-h-[140px]"
               />
-              <label className="flex items-center gap-2 text-sm text-[var(--text-soft)]">
+                      <label className="flex items-center gap-2 text-sm text-[var(--text-soft)]">
                 <input
                   type="checkbox"
                   checked={isPrivate}
                   onChange={(event) => setIsPrivate(event.target.checked)}
+                  disabled={!canUseAdvancedMessagingTools}
                 />
                 Mark as private client access information
               </label>
+              {!canUseAdvancedMessagingTools ? (
+                <p className="text-xs text-[var(--text-muted)]">
+                  Private notes and message unsend are available on Elite.
+                </p>
+              ) : null}
               {error ? (
                 <div className="rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                   {error}

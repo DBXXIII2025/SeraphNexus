@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
+import { getPlanLimit } from "@/lib/planConfig";
 import { createClient } from "@/lib/supabase/server";
 
 function parsePrice(value: unknown) {
@@ -46,7 +48,7 @@ export async function POST(req: Request) {
     const productsTable = supabase.from("products") as any;
 
     const businessQuery = businessesTable
-      .select("id, business_type")
+      .select("id, owner_id, business_type, plan")
       .eq("owner_id", user.id);
 
     if (businessId && String(businessId).trim()) {
@@ -56,7 +58,12 @@ export async function POST(req: Request) {
     const { data: businessData, error: businessError } = await businessQuery.single();
 
     const business = businessData as
-      | { id: string; business_type?: string | null }
+      | {
+          id: string;
+          owner_id?: string | null;
+          business_type?: string | null;
+          plan?: string | null;
+        }
       | null;
 
     if (businessError || !business) {
@@ -65,6 +72,16 @@ export async function POST(req: Request) {
         { status: 404 }
       );
     }
+
+    const effectivePlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: business.id,
+        owner_id: business.owner_id || null,
+        plan: business.plan || null,
+      },
+      userId: user.id,
+      email: user.email || null,
+    });
 
     const payload = {
       business_id: business.id,
@@ -83,6 +100,29 @@ export async function POST(req: Request) {
         .select()
         .single();
     } else {
+      const maxProducts = getPlanLimit(effectivePlan, "max_products");
+      if (maxProducts !== null) {
+        const { count, error: countError } = await productsTable
+          .select("id", { count: "exact", head: true })
+          .eq("business_id", business.id);
+
+        if (countError) {
+          return NextResponse.json(
+            { error: "Could not validate product limits" },
+            { status: 500 }
+          );
+        }
+
+        if ((count || 0) >= maxProducts) {
+          return NextResponse.json(
+            {
+              error: `Your current plan allows up to ${maxProducts} products. Upgrade to Pro or Elite for unlimited catalog items.`,
+            },
+            { status: 403 }
+          );
+        }
+      }
+
       result = await productsTable
         .insert(payload)
         .select()

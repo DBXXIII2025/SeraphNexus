@@ -1,4 +1,5 @@
 import { getPublicBusinessHrefState } from "@/lib/publicBusinessRoutes";
+import { normalizeBusinessPlan } from "@/lib/planConfig";
 
 export type Business = {
   id: string;
@@ -8,6 +9,7 @@ export type Business = {
   business_type: string | null;
   is_published: boolean | null;
   created_at?: string | null;
+  plan?: string | null;
 };
 
 export type PlatformSettings = {
@@ -198,6 +200,7 @@ function getScore(business: BusinessViewModel) {
   if (business.routeState.routeId !== "b") score += 3;
   if (business.description?.trim()) score += Math.min(4, Math.ceil(business.description.trim().length / 55));
   if (business.slug?.trim()) score += 1;
+  if (normalizeBusinessPlan(business.plan) === "elite") score += 5;
 
   return score;
 }

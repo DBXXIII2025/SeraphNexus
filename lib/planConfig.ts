@@ -5,9 +5,30 @@ export type LegacyPlanTier = "basic" | "growth";
 export type StoredBusinessPlan = PlanTier | LegacyPlanTier | "free";
 
 export type PlanFeature =
+  | "stripe_payments"
+  | "full_messaging"
+  | "basic_analytics"
+  | "standard_customization"
   | "advanced_analytics"
+  | "automation"
+  | "priority_listing"
+  | "team_roles"
+  | "advanced_customization"
+  | "advanced_messaging"
+  | "advanced_payments"
   | "lead_capture"
   | "branding_customization";
+
+export type PlanLimitKey =
+  | "max_businesses"
+  | "max_services"
+  | "max_products";
+
+type PlanLimits = {
+  max_businesses: number | null;
+  max_services: number | null;
+  max_products: number | null;
+};
 
 type PlanDefinition = {
   tier: PlanTier;
@@ -17,6 +38,7 @@ type PlanDefinition = {
   description: string;
   features: PlanFeature[];
   highlights: string[];
+  limits: PlanLimits;
 };
 
 const PLAN_ORDER: Record<PlanTier, number> = {
@@ -39,6 +61,11 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
       "No operational access until activation",
       "Upgrade or receive a private trial grant",
     ],
+    limits: {
+      max_businesses: 1,
+      max_services: 1,
+      max_products: 1,
+    },
   },
   trial: {
     tier: "trial",
@@ -48,10 +75,15 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     description: "Private invite-only trial access for the restricted launch tier.",
     features: [],
     highlights: [
-      "Core storefront and checkout",
-      "Stripe Connect payouts",
-      "Basic admin operations",
+      "Invite-only free access",
+      "One business with capped setup",
+      "Upgrade to enable payments and the full owner suite",
     ],
+    limits: {
+      max_businesses: 1,
+      max_services: 5,
+      max_products: 5,
+    },
   },
   pro: {
     tier: "pro",
@@ -59,12 +91,25 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     monthlyPriceLabel: "$19/month",
     transactionFeeRate: 0.05,
     description: "Lower fees and unlock more operational visibility.",
-    features: ["advanced_analytics", "lead_capture", "branding_customization"],
+    features: [
+      "stripe_payments",
+      "full_messaging",
+      "basic_analytics",
+      "standard_customization",
+      "lead_capture",
+      "branding_customization",
+    ],
     highlights: [
       "5% platform fee",
-      "Lead capture tools",
-      "Advanced analytics and branding controls",
+      "Stripe payments and full owner messaging",
+      "Basic analytics, lead capture, and standard customization",
+      "Up to 2 businesses",
     ],
+    limits: {
+      max_businesses: 2,
+      max_services: null,
+      max_products: null,
+    },
   },
   elite: {
     tier: "elite",
@@ -73,15 +118,31 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     transactionFeeRate: 0.02,
     description: "Lowest fee tier with full access for scaling businesses.",
     features: [
+      "stripe_payments",
+      "full_messaging",
+      "basic_analytics",
+      "standard_customization",
       "advanced_analytics",
+      "automation",
+      "priority_listing",
+      "team_roles",
+      "advanced_customization",
+      "advanced_messaging",
+      "advanced_payments",
       "lead_capture",
       "branding_customization",
     ],
     highlights: [
       "2% platform fee",
-      "Full premium feature access",
-      "Best net payout on each transaction",
+      "Automation, advanced analytics, and messaging tools",
+      "Priority explore boost and advanced customization",
+      "Unlimited businesses with future-ready premium payments",
     ],
+    limits: {
+      max_businesses: null,
+      max_services: null,
+      max_products: null,
+    },
   },
 };
 
@@ -134,6 +195,10 @@ export function getNetPayoutCents(totalCents: number, feeCents: number) {
 
 export function canAccessPlanFeature(plan: unknown, feature: PlanFeature) {
   return getPlanDefinition(plan).features.includes(feature);
+}
+
+export function getPlanLimit(plan: unknown, key: PlanLimitKey) {
+  return getPlanDefinition(plan).limits[key];
 }
 
 export function comparePlans(currentPlan: unknown, requiredPlan: PlanTier) {

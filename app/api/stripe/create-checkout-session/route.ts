@@ -5,7 +5,7 @@ import { hasOperationalAccess } from "@/lib/accessPlan";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { stripe } from "@/lib/stripe";
 import { getPublicPath } from "@/lib/businessModules";
-import { getPlatformFeePercent } from "@/lib/planConfig";
+import { canAccessPlanFeature, getPlatformFeePercent } from "@/lib/planConfig";
 import {
   calculateDemandScore,
   calculateSlotPrice,
@@ -167,6 +167,15 @@ export async function POST(req: Request) {
         status: 403,
         error: "This business is not enabled for checkout yet.",
         code: "LEGACY_CHECKOUT_PLAN_RESTRICTED",
+        step: "business.plan.validate",
+      });
+    }
+
+    if (!canAccessPlanFeature(effectivePlan, "stripe_payments")) {
+      return errorResponse({
+        status: 403,
+        error: "Payments are locked on this business plan.",
+        code: "LEGACY_CHECKOUT_PAYMENT_LOCKED",
         step: "business.plan.validate",
       });
     }

@@ -8,7 +8,17 @@ import {
 } from "@/lib/planConfig";
 
 const FEATURE_LABELS: Record<PlanFeature, string> = {
+  stripe_payments: "Stripe payments",
+  full_messaging: "Full messaging",
+  basic_analytics: "Basic analytics",
+  standard_customization: "Standard customization",
   advanced_analytics: "Advanced analytics",
+  automation: "Automation and reminders",
+  priority_listing: "Priority explore boost",
+  team_roles: "Team and staff roles",
+  advanced_customization: "Advanced customization",
+  advanced_messaging: "Advanced messaging tools",
+  advanced_payments: "Advanced payment features",
   lead_capture: "Lead capture",
   branding_customization: "Brand customization",
 };

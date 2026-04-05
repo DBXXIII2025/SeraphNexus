@@ -14,6 +14,7 @@ import {
 import {
   getNetPayoutCents,
   getPlatformFeePercent,
+  canAccessPlanFeature,
 } from "@/lib/planConfig";
 import {
   getPublicPath,
@@ -353,6 +354,15 @@ export async function POST(req: Request) {
         status: 403,
         error: "This business is not enabled for checkout yet.",
         code: "CHECKOUT_BUSINESS_ACCESS_INACTIVE",
+        step: "business.plan.validate",
+      });
+    }
+
+    if (!canAccessPlanFeature(normalizedPlan, "stripe_payments")) {
+      return errorResponse({
+        status: 403,
+        error: "Payments are locked on this business plan.",
+        code: "CHECKOUT_PLAN_PAYMENT_LOCKED",
         step: "business.plan.validate",
       });
     }

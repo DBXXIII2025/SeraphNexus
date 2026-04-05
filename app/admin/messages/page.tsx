@@ -13,6 +13,7 @@ import {
   getConversationMessages,
   markConversationReadForBusiness,
 } from "@/lib/messages";
+import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
 import AdminMessagesClient from "./AdminMessagesClient";
 
 export const dynamic = "force-dynamic";
@@ -267,6 +268,31 @@ export default async function AdminMessagesPage({
   }
   const scopedBusiness = activeBusiness;
 
+  if (!canAccessPlanFeature(scopedBusiness.plan, "full_messaging")) {
+    const plan = getPlanDefinition(scopedBusiness.plan);
+
+    return (
+      <div className="space-y-6 text-[var(--text-main)]">
+        <section className="premium-card p-6">
+          <p className="section-kicker">Messages</p>
+          <h1 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">
+            Customer inbox
+          </h1>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
+            Customer conversations stay visible in the owner workspace, but replying and inbox
+            operations require Pro or Elite. Your current plan is {plan.label}.
+          </p>
+          <Link
+            href="/admin/upgrade"
+            className="btn-primary mt-5 inline-flex px-4 py-2 text-sm font-medium"
+          >
+            Upgrade for messaging
+          </Link>
+        </section>
+      </div>
+    );
+  }
+
   if (process.env.NODE_ENV !== "production") {
     console.log("[admin/messages/page] context", {
       activeBusinessId: activeBusiness.id,
@@ -338,6 +364,10 @@ export default async function AdminMessagesPage({
       scopedBusinessId={scopedBusiness.id}
       scopedBusinessName={scopedBusiness.name || "Business"}
       scopedBusinessType={scopedBusiness.business_type || null}
+      canUseAdvancedMessagingTools={canAccessPlanFeature(
+        scopedBusiness.plan,
+        "advanced_messaging"
+      )}
       initialConversations={conversations}
       initialSelectedConversationId={effectiveSelectedConversationId}
       initialMessages={(messages || []).map((message: Record<string, unknown>) =>

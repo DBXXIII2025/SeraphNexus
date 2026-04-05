@@ -30,7 +30,11 @@ export async function POST(req: Request) {
       typeof body?.businessId === "string" ? body.businessId.trim() : "";
     const requestedPlan = body?.plan;
 
-    if (!requestedBusinessId || !isPlanTier(requestedPlan) || requestedPlan === "free") {
+    if (
+      !requestedBusinessId ||
+      !isPlanTier(requestedPlan) ||
+      (requestedPlan !== "pro" && requestedPlan !== "elite")
+    ) {
       return NextResponse.json({ error: "Invalid upgrade request" }, { status: 400 });
     }
 

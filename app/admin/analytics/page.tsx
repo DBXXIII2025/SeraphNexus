@@ -14,7 +14,7 @@ export default async function AdminAnalyticsPage() {
 
   const businessName = (business as { name?: string | null }).name || "your business";
 
-  if (!canAccessPlanFeature(business.plan, "advanced_analytics")) {
+  if (!canAccessPlanFeature(business.plan, "basic_analytics")) {
     const plan = getPlanDefinition(business.plan);
 
     return (
@@ -35,7 +35,7 @@ export default async function AdminAnalyticsPage() {
             Advanced analytics require a higher plan
           </h2>
           <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
-            Advanced analytics are available on Pro and Elite plans. Your current plan is {plan.label}.
+            Analytics are available on Pro and Elite plans. Your current plan is {plan.label}.
           </p>
           <Link href="/admin/upgrade" className="btn-primary mt-5 px-4 py-2 text-sm font-medium">
             Upgrade plan
@@ -63,6 +63,7 @@ export default async function AdminAnalyticsPage() {
   const total = safeBookings.length;
   const confirmed = safeBookings.filter((b) => b.status === "confirmed").length;
   const cancelled = safeBookings.filter((b) => b.status === "cancelled").length;
+  const completionRate = total > 0 ? Math.round((confirmed / total) * 100) : 0;
 
   const today = new Date();
   const upcoming = safeBookings.filter((b) => {
@@ -70,6 +71,15 @@ export default async function AdminAnalyticsPage() {
     const start = new Date(`${b.date}T${b.start_time || "00:00"}`);
     return start >= today && b.status === "confirmed";
   }).length;
+  const canUseAdvancedAnalytics = canAccessPlanFeature(
+    business.plan,
+    "advanced_analytics"
+  );
+  const daysWithBookings = new Set(
+    safeBookings
+      .map((booking) => booking.date || "")
+      .filter(Boolean)
+  ).size;
 
   return (
     <main className="space-y-6 text-[var(--text-main)]">
@@ -88,6 +98,45 @@ export default async function AdminAnalyticsPage() {
         <Stat title="Confirmed" value={confirmed} tone="success" />
         <Stat title="Cancelled" value={cancelled} tone="alert" />
         <Stat title="Upcoming" value={upcoming} />
+      </section>
+
+      <section className="surface-card p-6">
+        <p className="section-kicker">Performance</p>
+        <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+          Core analytics
+        </h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <Stat title="Completion rate" value={`${completionRate}%`} />
+          <Stat title="Active booking days" value={daysWithBookings} />
+          <Stat title="Current plan" value={getPlanDefinition(business.plan).label} />
+        </div>
+      </section>
+
+      <section className="surface-card p-6">
+        <p className="section-kicker">Advanced Analytics</p>
+        <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+          Customer insights and trend views
+        </h2>
+
+        {canUseAdvancedAnalytics ? (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <Stat
+              title="Conversion posture"
+              value={`${completionRate}%`}
+              tone={completionRate >= 60 ? "success" : "default"}
+            />
+            <Stat title="Upcoming demand" value={upcoming} />
+            <Stat title="Cancellation pressure" value={`${cancelled}`} tone="alert" />
+          </div>
+        ) : (
+          <div className="mt-5 rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-4 text-sm text-[var(--accent-gold-soft)]">
+            Elite adds advanced analytics, customer insight views, trend reporting, and richer
+            conversion monitoring.
+            <Link href="/admin/upgrade" className="btn-secondary ml-4 inline-flex px-4 py-2 text-sm font-medium">
+              Upgrade to Elite
+            </Link>
+          </div>
+        )}
       </section>
     </main>
   );

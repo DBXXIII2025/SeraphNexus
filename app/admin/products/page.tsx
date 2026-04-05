@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { isOrderBusinessType } from "@/lib/businessModules";
+import { getPlanLimit } from "@/lib/planConfig";
 import AdminProductsManager from "@/components/AdminProductsManager";
 
 export default async function ProductsPage() {
   const supabase = await createClient();
   const business = await getActiveBusiness();
   const isDev = process.env.NODE_ENV !== "production";
+  const maxProducts = business ? getPlanLimit(business.plan, "max_products") : null;
 
   if (!business) {
     return <div className="text-white">No active business</div>;
@@ -31,10 +33,19 @@ export default async function ProductsPage() {
   }
 
   return (
-    <AdminProductsManager
-      businessId={business.id}
-      businessType={business.business_type}
-      initialProducts={products || []}
-    />
+    <div className="space-y-6">
+      {maxProducts !== null ? (
+        <div className="rounded-xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+          Trial workspaces can save up to {maxProducts} products. Upgrade to Pro or Elite for an
+          unlimited catalog.
+        </div>
+      ) : null}
+
+      <AdminProductsManager
+        businessId={business.id}
+        businessType={business.business_type}
+        initialProducts={products || []}
+      />
+    </div>
   );
 }

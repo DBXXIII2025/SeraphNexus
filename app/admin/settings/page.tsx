@@ -6,6 +6,7 @@ import ConnectStripeButton from "@/components/ConnectStripeButton";
 import BusinessLogoManager from "@/app/admin/settings/BusinessLogoManager";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPaymentReadiness } from "@/lib/paymentReadiness";
+import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 
 type SettingsPageProps = {
@@ -23,6 +24,7 @@ type SettingsBusiness = {
   slug?: string | null;
   description?: string | null;
   business_type?: string | null;
+  plan?: string | null;
   is_published?: boolean | null;
   stripe_account_id?: string | null;
   stripe_onboarding_complete?: boolean | null;
@@ -63,6 +65,16 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const stripeState = params?.stripe;
   const message = params?.message;
   const paymentReadiness = business ? getPaymentReadiness(business) : null;
+  const plan = business ? getPlanDefinition(business.plan) : null;
+  const canUsePayments = business
+    ? canAccessPlanFeature(business.plan, "stripe_payments")
+    : false;
+  const canUseStandardCustomization = business
+    ? canAccessPlanFeature(business.plan, "standard_customization")
+    : false;
+  const canUseAdvancedCustomization = business
+    ? canAccessPlanFeature(business.plan, "advanced_customization")
+    : false;
   const profileCompletion = business ? getBusinessProfileCompletion(business) : null;
   const readiness =
     business && user?.id
@@ -161,6 +173,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   initialLogoUrl={logoState?.logoUrl || null}
                   isConfigured={logoState?.schemaReady ?? false}
                   configurationMessage={logoState?.errorMessage || null}
+                  lockedMessage={
+                    canUseStandardCustomization
+                      ? null
+                      : `Logo customization is locked on the ${plan?.label || "current"} plan. Upgrade to Pro or Elite for standard brand customization.`
+                  }
                 />
               </div>
 
@@ -277,15 +294,22 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </div>
               ) : null}
 
+              {!canUsePayments ? (
+                <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+                  Stripe payments are available on Pro and Elite. Upgrade this business to connect
+                  Stripe and accept live bookings or orders.
+                </div>
+              ) : null}
+
               <div className="mt-5 flex flex-wrap gap-3">
-                {paymentReadiness?.status !== "payment_ready" ? (
+                {canUsePayments && paymentReadiness?.status !== "payment_ready" ? (
                   <ConnectStripeButton
                     businessId={business.id}
                     label={paymentReadiness?.actionLabel || "Connect Stripe"}
                     className="w-full sm:w-auto lg:w-auto"
                   />
                 ) : null}
-                {business.stripe_account_id ? (
+                {canUsePayments && business.stripe_account_id ? (
                   <a
                     href={`/api/stripe/return?businessId=${encodeURIComponent(business.id)}`}
                     className="btn-secondary px-4 py-2 text-sm font-medium"
@@ -343,6 +367,40 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   {business.is_published ? "Unpublish business" : "Publish business"}
                 </button>
               </form>
+            </section>
+
+            <section className="surface-card p-6">
+              <div className="section-header-copy">
+                <p className="section-kicker">Premium Controls</p>
+                <h2 className="section-title">Advanced customization and roles</h2>
+                <p className="section-description">
+                  Elite unlocks advanced workspace branding, future staff roles, and premium
+                  operational controls.
+                </p>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                <StatusRow
+                  label="Standard customization"
+                  value={canUseStandardCustomization ? "Enabled" : "Locked"}
+                />
+                <StatusRow
+                  label="Advanced customization"
+                  value={canUseAdvancedCustomization ? "Enabled" : "Elite only"}
+                />
+              </div>
+
+              {!canUseAdvancedCustomization ? (
+                <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+                  Advanced customization, team and staff roles, and premium workspace controls are
+                  reserved for Elite.
+                </div>
+              ) : (
+                <div className="mt-5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                  Elite access is active for advanced branding, future staff roles, and premium
+                  workspace controls.
+                </div>
+              )}
             </section>
           </div>
         </div>

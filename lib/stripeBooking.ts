@@ -4,7 +4,7 @@ import { hasOperationalAccess } from "@/lib/accessPlan";
 import { requireEnv } from "@/lib/env";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { sendBookingEmail, sendBookingSMS } from "@/lib/notify";
-import { getPlatformFeePercent } from "@/lib/planConfig";
+import { canAccessPlanFeature, getPlatformFeePercent } from "@/lib/planConfig";
 import { stripe } from "@/lib/stripe";
 
 const supabaseAdmin = createAdminClient();
@@ -104,6 +104,10 @@ export async function createBookingCheckoutSession(
 
   if (!hasOperationalAccess(effectivePlan)) {
     throw new Error("Business is not enabled for checkout");
+  }
+
+  if (!canAccessPlanFeature(effectivePlan, "stripe_payments")) {
+    throw new Error("Payments are locked on this business plan");
   }
 
   const feePercent = getPlatformFeePercent(effectivePlan);

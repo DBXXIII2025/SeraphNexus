@@ -186,3 +186,42 @@ export async function resolveAccessPlansForBusinesses<T extends AccessScopedBusi
     };
   });
 }
+
+export async function resolveAccessPlanForOwner(args: {
+  ownerUserId: string;
+  email?: string | null;
+}) {
+  const supabaseAdmin = createAdminClient();
+  const [{ data: businesses }, grants] = await Promise.all([
+    supabaseAdmin
+      .from("businesses")
+      .select("plan")
+      .eq("owner_id", args.ownerUserId),
+    loadAccessGrants({
+      userId: args.ownerUserId,
+      email: args.email,
+    }),
+  ]);
+
+  let bestPlan: AccessPlan = "inactive";
+
+  ((businesses || []) as Array<{ plan?: unknown }>).forEach((business) => {
+    const plan = normalizeAccessPlan(business.plan);
+    if (getAccessPlanOrder(plan) > getAccessPlanOrder(bestPlan)) {
+      bestPlan = plan;
+    }
+  });
+
+  grants.forEach((grant) => {
+    if (grant.business_id) {
+      return;
+    }
+
+    const plan = normalizeAccessPlan(grant.plan);
+    if (getAccessPlanOrder(plan) > getAccessPlanOrder(bestPlan)) {
+      bestPlan = plan;
+    }
+  });
+
+  return bestPlan;
+}
