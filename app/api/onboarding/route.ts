@@ -2,8 +2,9 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { resolveAccessPlanForOwner } from "@/lib/accessGrants";
+import { getUsageLimitResult } from "@/lib/planEnforcement";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
-import { getPlanLimit } from "@/lib/planConfig";
+import { loadOwnerBusinessCount } from "@/lib/planUsageServer";
 import {
   buildBusinessOnboardingPath,
   createBusinessRecord,
@@ -45,32 +46,22 @@ export async function POST(req: Request) {
       ownerUserId: user.id,
       email: user.email || null,
     });
-    const maxBusinesses = getPlanLimit(ownerPlan, "max_businesses");
+    const businessCount = await loadOwnerBusinessCount(user.id);
+    const businessLimit = getUsageLimitResult({
+      plan: ownerPlan,
+      limitKey: "max_businesses",
+      current: businessCount,
+    });
 
-    if (maxBusinesses !== null) {
-      const { count, error: countError } = await supabase
-        .from("businesses")
-        .select("id", { count: "exact", head: true })
-        .eq("owner_id", user.id);
-
-      if (countError) {
-        return NextResponse.json(
-          { error: "Could not validate business limits." },
-          { status: 500 }
-        );
-      }
-
-      if ((count || 0) >= maxBusinesses) {
-        return NextResponse.json(
-          {
-            error:
-              maxBusinesses === 1
-                ? "Your current plan allows 1 business. Upgrade to Pro for 2 businesses or Elite for unlimited businesses."
-                : `Your current plan allows up to ${maxBusinesses} businesses. Upgrade to Elite for unlimited businesses.`,
-          },
-          { status: 403 }
-        );
-      }
+    if (!businessLimit.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            businessLimit.message ||
+            "Your plan does not allow more businesses.",
+        },
+        { status: 403 }
+      );
     }
 
     const business = await createBusinessRecord({

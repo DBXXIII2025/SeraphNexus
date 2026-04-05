@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getFeatureGate } from "@/lib/planEnforcement";
+import { normalizeBusinessPlan } from "@/lib/planConfig";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendBookingSMS } from "@/lib/sms";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
@@ -18,7 +20,7 @@ export async function GET(req: Request) {
   const { data: bookings, error } = await applyVisibleFilter(
     supabase
       .from("bookings")
-      .select("id, date, start_time, phone")
+      .select("id, business_id, date, start_time, phone")
       .eq("status", "confirmed")
       .eq("reminder_sent", false)
       .eq("date", dateStr)
@@ -28,7 +30,25 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  for (const booking of bookings ?? []) {
+  const businessIds = Array.from(
+    new Set((bookings || []).map((booking) => String(booking.business_id || "")).filter(Boolean))
+  );
+  const { data: businessRows } =
+    businessIds.length > 0
+      ? await supabase.from("businesses").select("id, plan").in("id", businessIds)
+      : { data: [] as Array<{ id: string; plan: string | null }> };
+
+  const automationEnabledBusinessIds = new Set(
+    ((businessRows || []) as Array<{ id: string; plan: string | null }>).flatMap((business) =>
+      getFeatureGate(normalizeBusinessPlan(business.plan), "automation").allowed
+        ? [String(business.id)]
+        : []
+    )
+  );
+
+  for (const booking of (bookings || []).filter((booking) =>
+    automationEnabledBusinessIds.has(String(booking.business_id || ""))
+  )) {
     if (booking.phone) {
       await sendBookingSMS(
         booking.phone,
@@ -44,6 +64,8 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     success: true,
-    reminders_sent: bookings?.length ?? 0,
+    reminders_sent: (bookings || []).filter((booking) =>
+      automationEnabledBusinessIds.has(String(booking.business_id || ""))
+    ).length,
   });
 }

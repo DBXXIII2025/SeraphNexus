@@ -13,7 +13,7 @@ import {
   getConversationMessages,
   markConversationReadForBusiness,
 } from "@/lib/messages";
-import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
+import { canAccessPlanFeature, getPlanDefinition, getPlanLimit } from "@/lib/planConfig";
 import AdminMessagesClient from "./AdminMessagesClient";
 
 export const dynamic = "force-dynamic";
@@ -267,6 +267,7 @@ export default async function AdminMessagesPage({
     );
   }
   const scopedBusiness = activeBusiness;
+  const messageThreadLimit = getPlanLimit(scopedBusiness.plan, "max_message_threads");
 
   if (!canAccessPlanFeature(scopedBusiness.plan, "full_messaging")) {
     const plan = getPlanDefinition(scopedBusiness.plan);
@@ -356,26 +357,44 @@ export default async function AdminMessagesPage({
   }
 
   return (
-    <AdminMessagesClient
-      businessId={scopedBusiness.id}
-      activeBusinessId={activeBusiness.id}
-      activeBusinessName={activeBusiness.name || "Business"}
-      activeBusinessType={activeBusiness.business_type || null}
-      scopedBusinessId={scopedBusiness.id}
-      scopedBusinessName={scopedBusiness.name || "Business"}
-      scopedBusinessType={scopedBusiness.business_type || null}
-      canUseAdvancedMessagingTools={canAccessPlanFeature(
-        scopedBusiness.plan,
-        "advanced_messaging"
-      )}
-      initialConversations={conversations}
-      initialSelectedConversationId={effectiveSelectedConversationId}
-      initialMessages={(messages || []).map((message: Record<string, unknown>) =>
-        normalizeAdminMessage(
-          message,
-          scopedBusiness.owner_id ? String(scopedBusiness.owner_id) : null
-        )
-      )}
-    />
+    <div className="space-y-6 text-[var(--text-main)]">
+      {messageThreadLimit !== null ? (
+        <section className="surface-card p-5">
+          <p className="section-kicker">Inbox Limit</p>
+          <h2 className="mt-2 text-lg font-semibold text-[var(--text-strong)]">
+            Trial inbox is capped at {messageThreadLimit} message threads
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
+            Upgrade to Pro for unlimited messaging volume, or Elite for advanced private and
+            moderation tools.
+          </p>
+          <Link href="/admin/upgrade" className="btn-secondary mt-4 inline-flex px-4 py-2 text-sm font-medium">
+            Upgrade messaging
+          </Link>
+        </section>
+      ) : null}
+
+      <AdminMessagesClient
+        businessId={scopedBusiness.id}
+        activeBusinessId={activeBusiness.id}
+        activeBusinessName={activeBusiness.name || "Business"}
+        activeBusinessType={activeBusiness.business_type || null}
+        scopedBusinessId={scopedBusiness.id}
+        scopedBusinessName={scopedBusiness.name || "Business"}
+        scopedBusinessType={scopedBusiness.business_type || null}
+        canUseAdvancedMessagingTools={canAccessPlanFeature(
+          scopedBusiness.plan,
+          "advanced_messaging"
+        )}
+        initialConversations={conversations}
+        initialSelectedConversationId={effectiveSelectedConversationId}
+        initialMessages={(messages || []).map((message: Record<string, unknown>) =>
+          normalizeAdminMessage(
+            message,
+            scopedBusiness.owner_id ? String(scopedBusiness.owner_id) : null
+          )
+        )}
+      />
+    </div>
   );
 }

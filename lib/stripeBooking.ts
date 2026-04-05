@@ -3,8 +3,10 @@ import { getAppUrl } from "@/lib/appUrl";
 import { hasOperationalAccess } from "@/lib/accessPlan";
 import { requireEnv } from "@/lib/env";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
+import { getFeatureGate, getUsageLimitResult } from "@/lib/planEnforcement";
 import { sendBookingEmail, sendBookingSMS } from "@/lib/notify";
-import { canAccessPlanFeature, getPlatformFeePercent } from "@/lib/planConfig";
+import { getPlatformFeePercent } from "@/lib/planConfig";
+import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
 import { stripe } from "@/lib/stripe";
 
 const supabaseAdmin = createAdminClient();
@@ -106,8 +108,22 @@ export async function createBookingCheckoutSession(
     throw new Error("Business is not enabled for checkout");
   }
 
-  if (!canAccessPlanFeature(effectivePlan, "stripe_payments")) {
-    throw new Error("Payments are locked on this business plan");
+  const paymentGate = getFeatureGate(effectivePlan, "stripe_payments");
+  if (!paymentGate.allowed) {
+    throw new Error(paymentGate.message || "Payments are locked on this business plan");
+  }
+
+  const usage = await loadBusinessUsageSnapshot(normalizedInput.business_id);
+  const transactionLimit = getUsageLimitResult({
+    plan: effectivePlan,
+    limitKey: "max_transactions",
+    current: Number(usage.max_transactions || 0),
+    customMessage:
+      "Trial businesses are limited to 10 bookings and orders total. Upgrade to Pro or Elite to continue taking transactions.",
+  });
+
+  if (!transactionLimit.allowed) {
+    throw new Error(transactionLimit.message || "Transaction limit reached");
   }
 
   const feePercent = getPlatformFeePercent(effectivePlan);

@@ -7,6 +7,7 @@ import BusinessLogoManager from "@/app/admin/settings/BusinessLogoManager";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPaymentReadiness } from "@/lib/paymentReadiness";
 import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
+import { getFeatureGate } from "@/lib/planEnforcement";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 
 type SettingsPageProps = {
@@ -75,6 +76,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const canUseAdvancedCustomization = business
     ? canAccessPlanFeature(business.plan, "advanced_customization")
     : false;
+  const publishGate = business
+    ? getFeatureGate(
+        business.plan,
+        "publish_business",
+        "Publishing is available on Pro and Elite."
+      )
+    : null;
   const profileCompletion = business ? getBusinessProfileCompletion(business) : null;
   const readiness =
     business && user?.id
@@ -149,6 +157,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {message === "readiness-incomplete" ? (
         <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
           This business is not publish-ready yet. Review the readiness blockers below and complete the next required step.
+        </div>
+      ) : null}
+      {message === "publish-plan-locked" ? (
+        <div className="rounded-xl border border-[rgba(212,175,55,0.24)] bg-[rgba(212,175,55,0.1)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+          Publishing is locked on the {plan?.label || "current"} plan. Upgrade to Pro or Elite to
+          make this business visible on Explore and public routes.
         </div>
       ) : null}
 
@@ -351,13 +365,22 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   This business cannot be published live until payment setup is ready. Complete Stripe onboarding and enable charges and payouts first.
                 </div>
               ) : null}
+              {publishGate && !publishGate.allowed ? (
+                <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+                  Publishing is locked on {plan?.label || "the current"} plan. Upgrade to Pro or
+                  Elite before making this business visible publicly.
+                </div>
+              ) : null}
 
               <form action="/api/admin/business/publish" method="POST" className="mt-5">
                 <input type="hidden" name="business_id" value={business.id} />
                 <input type="hidden" name="is_published" value={business.is_published ? "false" : "true"} />
                 <button
                   type="submit"
-                  disabled={!business.is_published && !readiness?.canPublishLive}
+                  disabled={
+                    (!business.is_published && !readiness?.canPublishLive) ||
+                    (!business.is_published && publishGate?.allowed === false)
+                  }
                   className={
                     business.is_published
                       ? "rounded-xl border border-red-500/30 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/10"
@@ -367,6 +390,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   {business.is_published ? "Unpublish business" : "Publish business"}
                 </button>
               </form>
+              {!business.is_published && publishGate?.allowed === false ? (
+                <a
+                  href="/admin/upgrade"
+                  className="btn-secondary mt-3 inline-flex px-4 py-2 text-sm font-medium"
+                >
+                  Upgrade for publishing
+                </a>
+              ) : null}
             </section>
 
             <section className="surface-card p-6">

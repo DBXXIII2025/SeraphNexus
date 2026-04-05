@@ -1,5 +1,7 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getBusinessReadinessState } from "@/lib/businessReadiness";
+import { getFeatureGate } from "@/lib/planEnforcement";
 import { createClient } from "@/lib/supabase/server";
 
 type PublishBusinessRow = {
@@ -14,6 +16,7 @@ type PublishBusinessRow = {
   stripe_charges_enabled: boolean | null;
   stripe_payouts_enabled: boolean | null;
   is_published: boolean | null;
+  plan?: string | null;
 };
 
 const PUBLISH_ROUTE_SELECT = [
@@ -28,6 +31,7 @@ const PUBLISH_ROUTE_SELECT = [
   "stripe_charges_enabled",
   "stripe_payouts_enabled",
   "is_published",
+  "plan",
 ].join(", ");
 
 export async function POST(req: Request) {
@@ -80,6 +84,27 @@ export async function POST(req: Request) {
     if (!ownedBusiness?.id) {
       return NextResponse.redirect(
         new URL("/admin/settings?message=forbidden", req.url)
+      );
+    }
+
+    const effectivePlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: ownedBusiness.id,
+        owner_id: ownedBusiness.owner_id,
+        plan: ownedBusiness.plan,
+      },
+      userId: user.id,
+      email: user.email || null,
+    });
+    const publishGate = getFeatureGate(
+      effectivePlan,
+      "publish_business",
+      "Publishing is available on Pro and Elite."
+    );
+
+    if (isPublished && !publishGate.allowed) {
+      return NextResponse.redirect(
+        new URL("/admin/settings?message=publish-plan-locked", req.url)
       );
     }
 

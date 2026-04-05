@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
-import { getPlanLimit } from "@/lib/planConfig";
+import { getUsageLimitResult } from "@/lib/planEnforcement";
 import { createClient } from "@/lib/supabase/server";
 
 function parsePrice(value: unknown) {
@@ -100,27 +100,32 @@ export async function POST(req: Request) {
         .select()
         .single();
     } else {
-      const maxProducts = getPlanLimit(effectivePlan, "max_products");
-      if (maxProducts !== null) {
-        const { count, error: countError } = await productsTable
-          .select("id", { count: "exact", head: true })
-          .eq("business_id", business.id);
+      const { count, error: countError } = await productsTable
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", business.id);
 
-        if (countError) {
-          return NextResponse.json(
-            { error: "Could not validate product limits" },
-            { status: 500 }
-          );
-        }
+      if (countError) {
+        return NextResponse.json(
+          { error: "Could not validate product limits" },
+          { status: 500 }
+        );
+      }
 
-        if ((count || 0) >= maxProducts) {
-          return NextResponse.json(
-            {
-              error: `Your current plan allows up to ${maxProducts} products. Upgrade to Pro or Elite for unlimited catalog items.`,
-            },
-            { status: 403 }
-          );
-        }
+      const productLimit = getUsageLimitResult({
+        plan: effectivePlan,
+        limitKey: "max_products",
+        current: Number(count || 0),
+      });
+
+      if (!productLimit.allowed) {
+        return NextResponse.json(
+          {
+            error:
+              productLimit.message ||
+              "Your plan does not allow more products.",
+          },
+          { status: 403 }
+        );
       }
 
       result = await productsTable

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
-import { getPlanLimit } from "@/lib/planConfig";
+import { getUsageLimitResult } from "@/lib/planEnforcement";
 import { createClient } from "@/lib/supabase/server";
 
 function buildRedirect(req: Request, params: Record<string, string>) {
@@ -54,20 +54,23 @@ export async function POST(req: Request) {
     email: user.email || null,
   });
 
-  const maxServices = getPlanLimit(effectivePlan, "max_services");
-  if (maxServices !== null) {
-    const { count, error: countError } = await supabase
-      .from("services")
-      .select("id", { count: "exact", head: true })
-      .eq("business_id", business.id);
+  const { count, error: countError } = await supabase
+    .from("services")
+    .select("id", { count: "exact", head: true })
+    .eq("business_id", business.id);
 
-    if (countError) {
-      return buildRedirect(req, { error: "service-limit-check-failed" });
-    }
+  if (countError) {
+    return buildRedirect(req, { error: "service-limit-check-failed" });
+  }
 
-    if ((count || 0) >= maxServices) {
-      return buildRedirect(req, { error: "service-limit" });
-    }
+  const serviceLimit = getUsageLimitResult({
+    plan: effectivePlan,
+    limitKey: "max_services",
+    current: Number(count || 0),
+  });
+
+  if (!serviceLimit.allowed) {
+    return buildRedirect(req, { error: "service-limit" });
   }
 
   const { error } = await supabase.from("services").insert({

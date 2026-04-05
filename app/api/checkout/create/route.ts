@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
 import { hasOperationalAccess } from "@/lib/accessPlan";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
+import { getFeatureGate, getUsageLimitResult } from "@/lib/planEnforcement";
+import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
 import { stripe } from "@/lib/stripe";
 import { fetchCatalogItemsByIds } from "@/lib/catalog";
 import {
@@ -14,7 +16,6 @@ import {
 import {
   getNetPayoutCents,
   getPlatformFeePercent,
-  canAccessPlanFeature,
 } from "@/lib/planConfig";
 import {
   getPublicPath,
@@ -358,11 +359,30 @@ export async function POST(req: Request) {
       });
     }
 
-    if (!canAccessPlanFeature(normalizedPlan, "stripe_payments")) {
+    const paymentGate = getFeatureGate(normalizedPlan, "stripe_payments");
+    if (!paymentGate.allowed) {
       return errorResponse({
         status: 403,
-        error: "Payments are locked on this business plan.",
+        error: paymentGate.message || "Payments are locked on this business plan.",
         code: "CHECKOUT_PLAN_PAYMENT_LOCKED",
+        step: "business.plan.validate",
+      });
+    }
+
+    const usage = await loadBusinessUsageSnapshot(business.id);
+    const transactionLimit = getUsageLimitResult({
+      plan: normalizedPlan,
+      limitKey: "max_transactions",
+      current: Number(usage.max_transactions || 0),
+      customMessage:
+        "Trial businesses are limited to 10 bookings and orders total. Upgrade to Pro or Elite to continue taking transactions.",
+    });
+
+    if (!transactionLimit.allowed) {
+      return errorResponse({
+        status: 403,
+        error: transactionLimit.message || "Transaction limit reached.",
+        code: "CHECKOUT_TRANSACTION_LIMIT_REACHED",
         step: "business.plan.validate",
       });
     }

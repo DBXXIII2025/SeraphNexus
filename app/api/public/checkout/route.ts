@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
-import { canAccessPlanFeature } from "@/lib/planConfig";
+import { getFeatureGate } from "@/lib/planEnforcement";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
 
 type BusinessesTable = {
@@ -76,10 +76,13 @@ export async function POST(req: Request) {
       },
     });
 
-    if (!canAccessPlanFeature(normalizedPlan, "stripe_payments")) {
+    const paymentGate = getFeatureGate(normalizedPlan, "stripe_payments");
+    if (!paymentGate.allowed) {
       return errorResponse({
         status: 403,
-        error: "This business is not enabled for payments on the current plan.",
+        error:
+          paymentGate.message ||
+          "This business is not enabled for payments on the current plan.",
         code: "PUBLIC_CHECKOUT_PLAN_RESTRICTED",
         step: "business.plan.validate",
       });

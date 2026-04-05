@@ -8,7 +8,8 @@ import {
   upsertConversationForClientBusiness,
 } from "@/lib/messages";
 import { trackLeadEventServer } from "@/lib/leads.server";
-import { canAccessPlanFeature } from "@/lib/planConfig";
+import { getFeatureGate, getUsageLimitResult } from "@/lib/planEnforcement";
+import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
 
 type JsonPayload = {
   conversationId?: string;
@@ -152,6 +153,8 @@ export async function POST(req: Request) {
         : redirectError(req, redirectTo);
     }
 
+    const supabaseAdmin = createAdminClient();
+
     let access =
       conversationId.length > 0
         ? await getAuthorizedConversationForUser({
@@ -163,6 +166,39 @@ export async function POST(req: Request) {
         : null;
 
     if ((!access?.conversation || !access.business || !access.role) && businessId) {
+      const { data: businessPlanRow } = await supabaseAdmin
+        .from("businesses")
+        .select("id, owner_id, plan")
+        .eq("id", businessId)
+        .maybeSingle();
+
+      if (!businessPlanRow?.id) {
+        return expectsJson
+          ? jsonError("Conversation access denied", 403)
+          : redirectError(req, redirectTo);
+      }
+
+      const effectivePlan = await resolveAccessPlanForBusiness({
+        business: {
+          id: String(businessPlanRow.id),
+          owner_id: businessPlanRow.owner_id ? String(businessPlanRow.owner_id) : null,
+          plan: businessPlanRow.plan,
+        },
+        userId: user?.id || null,
+        email: user?.email || senderEmail || null,
+      });
+      const messagingGate = getFeatureGate(
+        effectivePlan,
+        "full_messaging",
+        "Customer messaging requires a Pro or Elite plan."
+      );
+
+      if (!messagingGate.allowed) {
+        return expectsJson
+          ? jsonError(messagingGate.message || "Customer messaging requires a Pro or Elite plan.", 403)
+          : redirectError(req, redirectTo);
+      }
+
       const metadata = ((user?.user_metadata || {}) as {
         full_name?: string;
         name?: string;
@@ -193,6 +229,23 @@ export async function POST(req: Request) {
         contextId: null,
         source,
       });
+
+      if (!existingConversation) {
+        const usage = await loadBusinessUsageSnapshot(businessId);
+        const threadLimit = getUsageLimitResult({
+          plan: effectivePlan,
+          limitKey: "max_message_threads",
+          current: Number(usage.max_message_threads || 0),
+          customMessage:
+            "Trial businesses are limited to 10 message threads. Upgrade to Pro or Elite to keep the inbox open as demand grows.",
+        });
+
+        if (!threadLimit.allowed) {
+          return expectsJson
+            ? jsonError(threadLimit.message || "Message thread limit reached.", 403)
+            : redirectError(req, redirectTo);
+        }
+      }
 
       const conversation =
         existingConversation ||
@@ -225,7 +278,6 @@ export async function POST(req: Request) {
     }
 
     if (access.role === "business") {
-      const supabaseAdmin = createAdminClient();
       const { data: businessPlanRow } = await supabaseAdmin
         .from("businesses")
         .select("id, owner_id, plan")
@@ -248,15 +300,27 @@ export async function POST(req: Request) {
         email: user?.email || null,
       });
 
-      if (!canAccessPlanFeature(effectivePlan, "full_messaging")) {
+      const messagingGate = getFeatureGate(
+        effectivePlan,
+        "full_messaging",
+        "Customer messaging requires a Pro or Elite plan."
+      );
+
+      if (!messagingGate.allowed) {
         return expectsJson
-          ? jsonError("Customer messaging requires a Pro or Elite plan.", 403)
+          ? jsonError(messagingGate.message || "Customer messaging requires a Pro or Elite plan.", 403)
           : redirectError(req, redirectTo);
       }
 
-      if (isPrivate && !canAccessPlanFeature(effectivePlan, "advanced_messaging")) {
+      const advancedMessagingGate = getFeatureGate(
+        effectivePlan,
+        "advanced_messaging",
+        "Private message tools require the Elite plan."
+      );
+
+      if (isPrivate && !advancedMessagingGate.allowed) {
         return expectsJson
-          ? jsonError("Private message tools require the Elite plan.", 403)
+          ? jsonError(advancedMessagingGate.message || "Private message tools require the Elite plan.", 403)
           : redirectError(req, redirectTo);
       }
     }

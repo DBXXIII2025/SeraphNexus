@@ -6,6 +6,7 @@ export type StoredBusinessPlan = PlanTier | LegacyPlanTier | "free";
 
 export type PlanFeature =
   | "stripe_payments"
+  | "publish_business"
   | "full_messaging"
   | "basic_analytics"
   | "standard_customization"
@@ -22,12 +23,16 @@ export type PlanFeature =
 export type PlanLimitKey =
   | "max_businesses"
   | "max_services"
-  | "max_products";
+  | "max_products"
+  | "max_transactions"
+  | "max_message_threads";
 
 type PlanLimits = {
   max_businesses: number | null;
   max_services: number | null;
   max_products: number | null;
+  max_transactions: number | null;
+  max_message_threads: number | null;
 };
 
 type PlanDefinition = {
@@ -65,6 +70,8 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
       max_businesses: 1,
       max_services: 1,
       max_products: 1,
+      max_transactions: 0,
+      max_message_threads: 0,
     },
   },
   trial: {
@@ -73,16 +80,18 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     monthlyPriceLabel: "$0/month",
     transactionFeeRate: 0.1,
     description: "Private invite-only trial access for the restricted launch tier.",
-    features: [],
+    features: ["full_messaging"],
     highlights: [
       "Invite-only free access",
-      "One business with capped setup",
+      "One business with capped setup and 10 inbox threads",
       "Upgrade to enable payments and the full owner suite",
     ],
     limits: {
       max_businesses: 1,
-      max_services: 5,
-      max_products: 5,
+      max_services: 3,
+      max_products: 3,
+      max_transactions: 10,
+      max_message_threads: 10,
     },
   },
   pro: {
@@ -93,6 +102,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     description: "Lower fees and unlock more operational visibility.",
     features: [
       "stripe_payments",
+      "publish_business",
       "full_messaging",
       "basic_analytics",
       "standard_customization",
@@ -109,6 +119,8 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
       max_businesses: 2,
       max_services: null,
       max_products: null,
+      max_transactions: null,
+      max_message_threads: null,
     },
   },
   elite: {
@@ -119,6 +131,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     description: "Lowest fee tier with full access for scaling businesses.",
     features: [
       "stripe_payments",
+      "publish_business",
       "full_messaging",
       "basic_analytics",
       "standard_customization",
@@ -142,6 +155,8 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
       max_businesses: null,
       max_services: null,
       max_products: null,
+      max_transactions: null,
+      max_message_threads: null,
     },
   },
 };

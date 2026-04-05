@@ -3,6 +3,8 @@ import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { buildDashboardData } from "@/lib/adminDashboard";
 import { getBusinessReadinessFromOnboarding } from "@/lib/businessReadiness";
 import { getBusinessOnboardingState } from "@/lib/onboarding";
+import { getUpgradeTriggers } from "@/lib/planEnforcement";
+import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import PlatformOwnerDashboard from "./PlatformOwnerDashboard";
 import DashboardClient from "./DashboardClient";
@@ -40,6 +42,11 @@ export default async function DashboardPage() {
         isPublished: business.is_published === true,
       })
     : null;
+  const usage = await loadBusinessUsageSnapshot(business.id);
+  const upgradeTriggers = getUpgradeTriggers({
+    plan: business.plan,
+    usage,
+  });
 
   return (
     <DashboardClient
@@ -47,6 +54,7 @@ export default async function DashboardPage() {
       dashboard={dashboard}
       onboarding={onboarding}
       readiness={readiness}
+      upgradeTriggers={upgradeTriggers}
     />
   );
 }

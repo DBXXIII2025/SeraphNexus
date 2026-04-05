@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
-import { canAccessPlanFeature } from "@/lib/planConfig";
+import { getFeatureGate } from "@/lib/planEnforcement";
 import { stripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -130,9 +130,10 @@ export async function POST(req: Request) {
       email: user.email || null,
     });
 
-    if (!canAccessPlanFeature(effectivePlan, "stripe_payments")) {
+    const paymentGate = getFeatureGate(effectivePlan, "stripe_payments");
+    if (!paymentGate.allowed) {
       return NextResponse.json(
-        { error: "Stripe payments require a Pro or Elite plan." },
+        { error: paymentGate.message || "Stripe payments require a Pro or Elite plan." },
         { status: 403 }
       );
     }

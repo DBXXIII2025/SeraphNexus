@@ -5,6 +5,7 @@ import type { DashboardData, DashboardMetricTone } from "@/lib/adminDashboard";
 import { formatAdminStatusLabel, getAdminStatusBadgeClass } from "@/lib/adminStatus";
 import type { BusinessReadinessState } from "@/lib/businessReadiness";
 import type { BusinessOnboardingState } from "@/lib/onboarding";
+import type { UpgradeTrigger } from "@/lib/planEnforcement";
 
 type DashboardClientProps = {
   business: {
@@ -14,6 +15,7 @@ type DashboardClientProps = {
   dashboard: DashboardData;
   onboarding?: BusinessOnboardingState | null;
   readiness?: BusinessReadinessState | null;
+  upgradeTriggers?: UpgradeTrigger[];
 };
 
 function getMetricToneClasses(tone: DashboardMetricTone) {
@@ -75,6 +77,7 @@ export default function DashboardClient({
   dashboard,
   onboarding,
   readiness,
+  upgradeTriggers = [],
 }: DashboardClientProps) {
   return (
     <div className="space-y-6 text-[var(--text-main)]">
@@ -224,6 +227,42 @@ export default function DashboardClient({
                 Open onboarding
               </Link>
             </div>
+          </div>
+        </section>
+      ) : null}
+
+      {upgradeTriggers.length > 0 ? (
+        <section className="surface-card p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="section-kicker">Upgrade Signals</p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+                Limits and locked features
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
+                These prompts appear when growth or locked features indicate the current plan is
+                constraining the workspace.
+              </p>
+            </div>
+            <Link href="/admin/upgrade" className="btn-secondary px-4 py-2 text-sm font-medium">
+              Review plans
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {upgradeTriggers.map((trigger) => (
+              <Link
+                key={trigger.id}
+                href={trigger.href}
+                className="table-row-panel block p-4 transition hover:border-[rgba(212,175,55,0.18)]"
+              >
+                <p className="text-sm font-medium text-[var(--text-strong)]">{trigger.title}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">{trigger.detail}</p>
+                <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-[var(--accent-gold-soft)]">
+                  Upgrade options
+                </p>
+              </Link>
+            ))}
           </div>
         </section>
       ) : null}
