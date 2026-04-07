@@ -20,6 +20,21 @@ type AccessGrantRow = {
   usage_limits?: Record<string, unknown> | null;
 };
 
+type PlanGrantRow = {
+  id: string;
+  user_id: string;
+  business_id: string | null;
+  granted_plan: string | null;
+  grant_type: string | null;
+  starts_at: string | null;
+  expires_at: string | null;
+  is_active: boolean | null;
+  granted_by: string | null;
+  reason: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 type AccessScopedBusiness = {
   id: string;
   owner_id?: string | null;
@@ -30,14 +45,31 @@ function normalizeEmail(value: string | null | undefined) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
-function isGrantCurrentlyActive(grant: AccessGrantRow) {
-  if (grant.is_active === false) {
+function dedupeStrings(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.filter(Boolean) as string[]));
+}
+
+function isWithinWindow(args: {
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  isActive?: boolean | null;
+}) {
+  if (args.isActive === false) {
     return false;
   }
 
-  if (grant.expires_at) {
-    const expiresAt = new Date(grant.expires_at).getTime();
-    if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+  const now = Date.now();
+
+  if (args.startsAt) {
+    const startsAt = new Date(args.startsAt).getTime();
+    if (Number.isFinite(startsAt) && startsAt > now) {
+      return false;
+    }
+  }
+
+  if (args.expiresAt) {
+    const expiresAt = new Date(args.expiresAt).getTime();
+    if (Number.isFinite(expiresAt) && expiresAt <= now) {
       return false;
     }
   }
@@ -45,33 +77,34 @@ function isGrantCurrentlyActive(grant: AccessGrantRow) {
   return true;
 }
 
-function dedupeGrants(grants: AccessGrantRow[]) {
+function dedupeById<T extends { id: string }>(rows: T[]) {
   const seen = new Set<string>();
-  return grants.filter((grant) => {
-    if (!grant.id || seen.has(grant.id)) {
+  return rows.filter((row) => {
+    if (!row.id || seen.has(row.id)) {
       return false;
     }
 
-    seen.add(grant.id);
+    seen.add(row.id);
     return true;
   });
 }
 
 export async function loadAccessGrants(args: {
-  userId?: string | null;
+  userIds?: string[];
   email?: string | null;
   businessIds?: string[];
 }) {
   const supabaseAdmin = createAdminClient();
   const normalizedEmail = normalizeEmail(args.email);
-  const businessIds = (args.businessIds || []).filter(Boolean);
+  const userIds = dedupeStrings(args.userIds || []);
+  const businessIds = dedupeStrings(args.businessIds || []);
 
   const [userGrantRows, emailGrantRows, businessGrantRows] = await Promise.all([
-    args.userId
+    userIds.length > 0
       ? supabaseAdmin
           .from("access_grants")
           .select("*")
-          .eq("user_id", args.userId)
+          .in("user_id", userIds)
           .eq("is_active", true)
       : Promise.resolve({ data: [] as AccessGrantRow[] }),
     normalizedEmail
@@ -90,17 +123,63 @@ export async function loadAccessGrants(args: {
       : Promise.resolve({ data: [] as AccessGrantRow[] }),
   ]);
 
-  return dedupeGrants([
+  return dedupeById([
     ...((userGrantRows.data || []) as AccessGrantRow[]),
     ...((emailGrantRows.data || []) as AccessGrantRow[]),
     ...((businessGrantRows.data || []) as AccessGrantRow[]),
-  ]).filter(isGrantCurrentlyActive);
+  ]).filter((grant) =>
+    isWithinWindow({
+      expiresAt: grant.expires_at,
+      isActive: grant.is_active,
+    })
+  );
 }
 
-function resolveGrantPlanForBusiness(args: {
+export async function loadPlanGrants(args: {
+  userIds?: string[];
+  businessIds?: string[];
+}) {
+  const supabaseAdmin = createAdminClient();
+  const userIds = dedupeStrings(args.userIds || []);
+  const businessIds = dedupeStrings(args.businessIds || []);
+
+  const [userGrantRows, businessGrantRows] = await Promise.all([
+    userIds.length > 0
+      ? supabaseAdmin
+          .from("plan_grants")
+          .select("*")
+          .in("user_id", userIds)
+          .eq("is_active", true)
+      : Promise.resolve({ data: [] as PlanGrantRow[] }),
+    businessIds.length > 0
+      ? supabaseAdmin
+          .from("plan_grants")
+          .select("*")
+          .in("business_id", businessIds)
+          .eq("is_active", true)
+      : Promise.resolve({ data: [] as PlanGrantRow[] }),
+  ]);
+
+  return dedupeById([
+    ...((userGrantRows.data || []) as PlanGrantRow[]),
+    ...((businessGrantRows.data || []) as PlanGrantRow[]),
+  ]).filter((grant) =>
+    isWithinWindow({
+      startsAt: grant.starts_at,
+      expiresAt: grant.expires_at,
+      isActive: grant.is_active,
+    })
+  );
+}
+
+function selectHigherPlan(current: AccessPlan, next: AccessPlan) {
+  return getAccessPlanOrder(next) > getAccessPlanOrder(current) ? next : current;
+}
+
+function resolveTrialLikePlanForBusiness(args: {
   business: AccessScopedBusiness;
   grants: AccessGrantRow[];
-  userId?: string | null;
+  userIds: string[];
   email?: string | null;
 }) {
   const normalizedEmail = normalizeEmail(args.email);
@@ -110,21 +189,95 @@ function resolveGrantPlanForBusiness(args: {
     const matchesBusiness =
       !grant.business_id || grant.business_id === args.business.id;
     const matchesUser =
-      (args.userId && grant.user_id === args.userId) ||
-      (args.business.owner_id && grant.user_id === args.business.owner_id) ||
+      (grant.user_id && args.userIds.includes(grant.user_id)) ||
       (normalizedEmail && normalizeEmail(grant.email) === normalizedEmail);
 
     if (!matchesBusiness || !matchesUser) {
       continue;
     }
 
-    const plan = normalizeAccessPlan(grant.plan);
-    if (getAccessPlanOrder(plan) > getAccessPlanOrder(bestPlan)) {
-      bestPlan = plan;
-    }
+    bestPlan = selectHigherPlan(bestPlan, normalizeAccessPlan(grant.plan));
   }
 
   return bestPlan;
+}
+
+function resolveManualPlanForBusiness(args: {
+  business: AccessScopedBusiness;
+  grants: PlanGrantRow[];
+  userIds: string[];
+}) {
+  let bestPlan: AccessPlan = "inactive";
+
+  for (const grant of args.grants) {
+    const matchesBusiness =
+      !grant.business_id || grant.business_id === args.business.id;
+    const matchesUser = args.userIds.includes(grant.user_id);
+
+    if (!matchesBusiness || !matchesUser) {
+      continue;
+    }
+
+    bestPlan = selectHigherPlan(bestPlan, normalizeAccessPlan(grant.granted_plan));
+  }
+
+  return bestPlan;
+}
+
+function resolveManualOwnerPlan(args: {
+  grants: PlanGrantRow[];
+  ownerUserId: string;
+}) {
+  let bestPlan: AccessPlan = "inactive";
+
+  args.grants.forEach((grant) => {
+    if (grant.user_id !== args.ownerUserId || grant.business_id) {
+      return;
+    }
+
+    bestPlan = selectHigherPlan(bestPlan, normalizeAccessPlan(grant.granted_plan));
+  });
+
+  return bestPlan;
+}
+
+function resolveGlobalTrialPlan(args: {
+  grants: AccessGrantRow[];
+  ownerUserId: string;
+  email?: string | null;
+}) {
+  const normalizedEmail = normalizeEmail(args.email);
+  let bestPlan: AccessPlan = "inactive";
+
+  args.grants.forEach((grant) => {
+    if (grant.business_id) {
+      return;
+    }
+
+    const matchesUser =
+      grant.user_id === args.ownerUserId ||
+      (normalizedEmail && normalizeEmail(grant.email) === normalizedEmail);
+
+    if (!matchesUser) {
+      return;
+    }
+
+    bestPlan = selectHigherPlan(bestPlan, normalizeAccessPlan(grant.plan));
+  });
+
+  return bestPlan;
+}
+
+function resolveEffectivePlan(args: {
+  paidPlan: AccessPlan;
+  trialPlan: AccessPlan;
+  manualPlan: AccessPlan;
+}) {
+  if (args.manualPlan !== "inactive") {
+    return args.manualPlan;
+  }
+
+  return selectHigherPlan(args.paidPlan, args.trialPlan);
 }
 
 export async function resolveAccessPlanForBusiness(args: {
@@ -132,26 +285,34 @@ export async function resolveAccessPlanForBusiness(args: {
   userId?: string | null;
   email?: string | null;
 }) {
-  const storedPlan = normalizeAccessPlan(args.business.plan);
+  const paidPlan = normalizeAccessPlan(args.business.plan);
+  const userIds = dedupeStrings([args.userId, args.business.owner_id]);
+  const [accessGrants, planGrants] = await Promise.all([
+    loadAccessGrants({
+      userIds,
+      email: args.email,
+      businessIds: [args.business.id],
+    }),
+    loadPlanGrants({
+      userIds,
+      businessIds: [args.business.id],
+    }),
+  ]);
 
-  if (storedPlan === "pro" || storedPlan === "elite") {
-    return storedPlan;
-  }
-
-  const grants = await loadAccessGrants({
-    userId: args.userId,
-    email: args.email,
-    businessIds: [args.business.id],
+  return resolveEffectivePlan({
+    paidPlan,
+    trialPlan: resolveTrialLikePlanForBusiness({
+      business: args.business,
+      grants: accessGrants,
+      userIds,
+      email: args.email,
+    }),
+    manualPlan: resolveManualPlanForBusiness({
+      business: args.business,
+      grants: planGrants,
+      userIds,
+    }),
   });
-
-  const grantedPlan = resolveGrantPlanForBusiness({
-    business: args.business,
-    grants,
-    userId: args.userId,
-    email: args.email,
-  });
-
-  return grantedPlan === "inactive" ? storedPlan : grantedPlan;
 }
 
 export async function resolveAccessPlansForBusinesses<T extends AccessScopedBusiness>(args: {
@@ -159,32 +320,40 @@ export async function resolveAccessPlansForBusinesses<T extends AccessScopedBusi
   userId?: string | null;
   email?: string | null;
 }) {
-  const grants = await loadAccessGrants({
-    userId: args.userId,
-    email: args.email,
-    businessIds: args.businesses.map((business) => business.id),
-  });
+  const userIds = dedupeStrings([
+    args.userId,
+    ...args.businesses.map((business) => business.owner_id || null),
+  ]);
+  const businessIds = args.businesses.map((business) => business.id);
+  const [accessGrants, planGrants] = await Promise.all([
+    loadAccessGrants({
+      userIds,
+      email: args.email,
+      businessIds,
+    }),
+    loadPlanGrants({
+      userIds,
+      businessIds,
+    }),
+  ]);
 
-  return args.businesses.map((business) => {
-    const storedPlan = normalizeAccessPlan(business.plan);
-    const effectivePlan =
-      storedPlan === "pro" || storedPlan === "elite"
-        ? storedPlan
-        : (() => {
-            const grantedPlan = resolveGrantPlanForBusiness({
-              business,
-              grants,
-              userId: args.userId,
-              email: args.email,
-            });
-            return grantedPlan === "inactive" ? storedPlan : grantedPlan;
-          })();
-
-    return {
-      ...business,
-      plan: effectivePlan,
-    };
-  });
+  return args.businesses.map((business) => ({
+    ...business,
+    plan: resolveEffectivePlan({
+      paidPlan: normalizeAccessPlan(business.plan),
+      trialPlan: resolveTrialLikePlanForBusiness({
+        business,
+        grants: accessGrants,
+        userIds: dedupeStrings([args.userId, business.owner_id]),
+        email: args.email,
+      }),
+      manualPlan: resolveManualPlanForBusiness({
+        business,
+        grants: planGrants,
+        userIds: dedupeStrings([args.userId, business.owner_id]),
+      }),
+    }),
+  }));
 }
 
 export async function resolveAccessPlanForOwner(args: {
@@ -192,36 +361,36 @@ export async function resolveAccessPlanForOwner(args: {
   email?: string | null;
 }) {
   const supabaseAdmin = createAdminClient();
-  const [{ data: businesses }, grants] = await Promise.all([
+  const [{ data: businesses }, accessGrants, planGrants] = await Promise.all([
     supabaseAdmin
       .from("businesses")
       .select("plan")
       .eq("owner_id", args.ownerUserId),
     loadAccessGrants({
-      userId: args.ownerUserId,
+      userIds: [args.ownerUserId],
       email: args.email,
+    }),
+    loadPlanGrants({
+      userIds: [args.ownerUserId],
     }),
   ]);
 
-  let bestPlan: AccessPlan = "inactive";
+  let paidPlan: AccessPlan = "inactive";
 
   ((businesses || []) as Array<{ plan?: unknown }>).forEach((business) => {
-    const plan = normalizeAccessPlan(business.plan);
-    if (getAccessPlanOrder(plan) > getAccessPlanOrder(bestPlan)) {
-      bestPlan = plan;
-    }
+    paidPlan = selectHigherPlan(paidPlan, normalizeAccessPlan(business.plan));
   });
 
-  grants.forEach((grant) => {
-    if (grant.business_id) {
-      return;
-    }
-
-    const plan = normalizeAccessPlan(grant.plan);
-    if (getAccessPlanOrder(plan) > getAccessPlanOrder(bestPlan)) {
-      bestPlan = plan;
-    }
+  return resolveEffectivePlan({
+    paidPlan,
+    trialPlan: resolveGlobalTrialPlan({
+      grants: accessGrants,
+      ownerUserId: args.ownerUserId,
+      email: args.email,
+    }),
+    manualPlan: resolveManualOwnerPlan({
+      grants: planGrants,
+      ownerUserId: args.ownerUserId,
+    }),
   });
-
-  return bestPlan;
 }

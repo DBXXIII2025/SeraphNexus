@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getConfiguredAppUrl } from "@/lib/appUrl";
 import { getActiveAccessGrantList } from "@/lib/accessGrantAdmin";
+import {
+  getActivePlanGrantList,
+  getPlanGrantHistoryList,
+} from "@/lib/planGrantAdmin";
 import { getPlatformAdminData } from "@/lib/platformAdminData";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { getPlatformSettings } from "@/lib/platformSettings";
@@ -57,6 +61,14 @@ function getStatusCopy(
     if (value === "grant-revoked") {
       return "Access grant revoked.";
     }
+
+    if (value === "plan-grant-created") {
+      return "Manual plan grant created.";
+    }
+
+    if (value === "plan-grant-revoked") {
+      return "Manual plan grant revoked.";
+    }
   }
 
   if (value === "forbidden") {
@@ -69,6 +81,46 @@ function getStatusCopy(
 
   if (value === "grant-user-not-found") {
     return "No existing account matched that email address.";
+  }
+
+  if (value === "plan-grant-email-required") {
+    return "An existing user email is required to grant a manual plan.";
+  }
+
+  if (value === "plan-grant-user-not-found") {
+    return "No existing account matched that email address for the manual grant.";
+  }
+
+  if (value === "granted-plan-required") {
+    return "Select Pro or Elite for the manual grant.";
+  }
+
+  if (value === "grant-type-required") {
+    return "Select whether the grant is temporary or permanent.";
+  }
+
+  if (value === "temporary-expiry-required") {
+    return "Temporary manual grants require a duration preset or a custom expiration date.";
+  }
+
+  if (value === "invalid-custom-expiry") {
+    return "Custom expiration must be a valid future date.";
+  }
+
+  if (value === "plan-grant-failed") {
+    return "Manual plan grant could not be created.";
+  }
+
+  if (value === "plan-grant-id-required") {
+    return "A manual grant id is required to revoke access.";
+  }
+
+  if (value === "plan-grant-revoke-failed") {
+    return "Manual plan grant revocation failed.";
+  }
+
+  if (value === "unknown-plan-grant-action") {
+    return "Unknown manual plan grant action.";
   }
 
   if (value === "grant-failed") {
@@ -198,10 +250,12 @@ export default async function PlatformPage({
     );
   }
 
-  const [platformData, , activeGrants] = await Promise.all([
+  const [platformData, , activeGrants, activePlanGrants, planGrantHistory] = await Promise.all([
     getPlatformAdminData(),
     getPlatformOwnerBusinessAudits(user!.id),
     getActiveAccessGrantList(),
+    getActivePlanGrantList(),
+    getPlanGrantHistoryList(),
   ]);
   const incomeAudit = getPlatformIncomeAudit();
   const grantCreateLinkBase = getConfiguredAppUrl() || "";
@@ -510,6 +564,214 @@ export default async function PlatformPage({
               ))
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+        <div className="surface-card p-6">
+          <p className="section-kicker">Manual Plan Grants</p>
+          <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+            Grant temporary or permanent Pro and Elite access
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
+            Manual plan grants override billing-derived plan access without mutating Stripe
+            subscription records. Temporary grants fall back automatically when they expire.
+          </p>
+
+          <div className="mt-5 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4 text-sm text-[var(--text-soft)]">
+            <p>Preset actions supported in this form:</p>
+            <p className="mt-2">Pro permanent, Pro temporary, Elite permanent, Elite temporary.</p>
+          </div>
+
+          <form
+            action="/api/admin/platform/plan-grants"
+            method="POST"
+            className="mt-5 space-y-4"
+          >
+            <input type="hidden" name="action" value="create_plan_grant" />
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Existing user email</span>
+              <input name="email" type="email" required className="input-field" />
+            </label>
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Business ID</span>
+              <input
+                name="business_id"
+                className="input-field"
+                placeholder="Optional business scope"
+              />
+            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Plan</span>
+                <select name="granted_plan" className="input-field" defaultValue="elite">
+                  <option value="elite">Elite</option>
+                  <option value="pro">Pro</option>
+                </select>
+              </label>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Grant type</span>
+                <select name="grant_type" className="input-field" defaultValue="temporary">
+                  <option value="temporary">Temporary</option>
+                  <option value="permanent">Permanent</option>
+                </select>
+              </label>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Duration preset</span>
+                <select name="duration_preset" className="input-field" defaultValue="14d">
+                  <option value="7d">7 days</option>
+                  <option value="14d">14 days</option>
+                  <option value="30d">30 days</option>
+                  <option value="custom">Custom expiration date</option>
+                </select>
+              </label>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Custom expiration</span>
+                <input
+                  name="custom_expires_at"
+                  type="datetime-local"
+                  className="input-field"
+                />
+              </label>
+            </div>
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Reason</span>
+              <textarea
+                name="reason"
+                className="input-field min-h-[110px]"
+                placeholder="Why is this manual plan override being granted?"
+              />
+            </label>
+            <button
+              type="submit"
+              className="btn-primary px-4 py-2 text-sm font-medium"
+            >
+              Create manual plan grant
+            </button>
+          </form>
+        </div>
+
+        <div className="surface-card p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="section-kicker">Active Manual Grants</p>
+              <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+                Current plan overrides
+              </h2>
+            </div>
+            <span className="text-sm text-[var(--text-soft)]">
+              {activePlanGrants.length} active
+            </span>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {activePlanGrants.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+                No active manual plan grants.
+              </div>
+            ) : (
+              activePlanGrants.map((grant) => (
+                <div key={grant.id} className="table-row-panel p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-[var(--text-strong)]">
+                        {grant.email || grant.userId} | {grant.grantedPlan} | {grant.grantType}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--text-soft)]">
+                        {grant.businessName ||
+                          grant.businessId ||
+                          "All businesses for account"}
+                      </p>
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
+                        Granted by {grant.grantedBy || "unknown"} | Starts{" "}
+                        {formatDateTime(grant.startsAt)}
+                      </p>
+                      {grant.expiresAt ? (
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">
+                          Expires {formatDateTime(grant.expiresAt)}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">
+                          Permanent grant
+                        </p>
+                      )}
+                      {grant.reason ? (
+                        <p className="mt-2 text-xs text-[var(--text-muted)]">
+                          Reason: {grant.reason}
+                        </p>
+                      ) : null}
+                    </div>
+                    <form action="/api/admin/platform/plan-grants" method="POST">
+                      <input type="hidden" name="action" value="revoke_plan_grant" />
+                      <input type="hidden" name="grant_id" value={grant.id} />
+                      <button
+                        type="submit"
+                        className="btn-secondary px-4 py-2 text-sm font-medium"
+                      >
+                        Revoke
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="surface-card p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="section-kicker">Grant History</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+              Manual grant audit trail
+            </h2>
+          </div>
+          <span className="text-sm text-[var(--text-soft)]">
+            {planGrantHistory.length} total
+          </span>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {planGrantHistory.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+              No manual grant history yet.
+            </div>
+          ) : (
+            planGrantHistory.slice(0, 24).map((grant) => (
+              <div key={grant.id} className="table-row-panel p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium text-[var(--text-strong)]">
+                      {grant.email || grant.userId} | {grant.grantedPlan} | {grant.status}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--text-soft)]">
+                      {grant.businessName ||
+                        grant.businessId ||
+                        "All businesses for account"}
+                    </p>
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
+                      {grant.grantType} grant | Created {formatDateTime(grant.createdAt)} | Updated{" "}
+                      {formatDateTime(grant.updatedAt)}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">
+                      Granted by {grant.grantedBy || "unknown"} | Starts{" "}
+                      {formatDateTime(grant.startsAt)}
+                      {grant.expiresAt ? ` | Expires ${formatDateTime(grant.expiresAt)}` : " | No expiry"}
+                    </p>
+                    {grant.reason ? (
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
+                        Reason: {grant.reason}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span className="status-chip">{grant.status}</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
     </div>

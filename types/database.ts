@@ -69,6 +69,51 @@ export interface Database {
         };
       };
 
+      plan_grants: {
+        Row: {
+          id: string;
+          user_id: string;
+          business_id: string | null;
+          granted_plan: "trial" | "pro" | "elite";
+          grant_type: "temporary" | "permanent";
+          starts_at: string;
+          expires_at: string | null;
+          is_active: boolean;
+          granted_by: string;
+          reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          business_id?: string | null;
+          granted_plan: "trial" | "pro" | "elite";
+          grant_type: "temporary" | "permanent";
+          starts_at?: string;
+          expires_at?: string | null;
+          is_active?: boolean;
+          granted_by: string;
+          reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          business_id?: string | null;
+          granted_plan?: "trial" | "pro" | "elite";
+          grant_type?: "temporary" | "permanent";
+          starts_at?: string;
+          expires_at?: string | null;
+          is_active?: boolean;
+          granted_by?: string;
+          reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+
       legal_acceptances: {
         Row: {
           id: string;

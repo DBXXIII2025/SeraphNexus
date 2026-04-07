@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getFeatureGate } from "@/lib/planEnforcement";
-import { normalizeBusinessPlan } from "@/lib/planConfig";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendBookingSMS } from "@/lib/sms";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
@@ -35,15 +35,34 @@ export async function GET(req: Request) {
   );
   const { data: businessRows } =
     businessIds.length > 0
-      ? await supabase.from("businesses").select("id, plan").in("id", businessIds)
-      : { data: [] as Array<{ id: string; plan: string | null }> };
+      ? await supabase
+          .from("businesses")
+          .select("id, owner_id, plan")
+          .in("id", businessIds)
+      : { data: [] as Array<{ id: string; owner_id: string | null; plan: string | null }> };
+
+  const automationEnabledBusinesses = await Promise.all(
+    (((businessRows || []) as Array<{
+      id: string;
+      owner_id: string | null;
+      plan: string | null;
+    }>)).map(async (business) => {
+      const effectivePlan = await resolveAccessPlanForBusiness({
+        business: {
+          id: String(business.id),
+          owner_id: business.owner_id ? String(business.owner_id) : null,
+          plan: business.plan,
+        },
+      });
+
+      return getFeatureGate(effectivePlan, "automation").allowed
+        ? String(business.id)
+        : null;
+    })
+  );
 
   const automationEnabledBusinessIds = new Set(
-    ((businessRows || []) as Array<{ id: string; plan: string | null }>).flatMap((business) =>
-      getFeatureGate(normalizeBusinessPlan(business.plan), "automation").allowed
-        ? [String(business.id)]
-        : []
-    )
+    automationEnabledBusinesses.filter((value): value is string => Boolean(value))
   );
 
   for (const booking of (bookings || []).filter((booking) =>
