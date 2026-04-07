@@ -1,4 +1,11 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { findAuthUserByEmail } from "@/lib/adminAuthUsers";
+import {
+  createStoredPlanGrant,
+  revokeStoredPlanGrantById,
+  revokeStoredPlanGrantsForScope,
+} from "@/lib/manualPlanGrantStorage";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
 
@@ -19,15 +26,33 @@ function buildRedirect(req: Request, params: Record<string, string>) {
   return NextResponse.redirect(url);
 }
 
+function revalidateGrantViews() {
+  revalidatePath("/admin/platform");
+  revalidatePath("/platform-admin");
+  revalidatePath("/platform-admin/businesses");
+  revalidatePath("/platform-admin/revenue");
+  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/upgrade");
+}
+
 function resolveExpiresAt(formData: FormData) {
   const grantType = String(formData.get("grant_type") || "").trim();
-  if (grantType !== "temporary") {
-    return { expiresAt: null, error: null as string | null };
-  }
-
   const preset = String(formData.get("duration_preset") || "").trim();
   const customExpiresAt = normalizeOptionalString(formData.get("custom_expires_at"));
   const now = new Date();
+
+  if (grantType === "permanent") {
+    if (customExpiresAt) {
+      return { expiresAt: null, error: "permanent-expiry-not-allowed" as string | null };
+    }
+
+    return { expiresAt: null, error: null as string | null };
+  }
+
+  if (grantType !== "temporary") {
+    return { expiresAt: null, error: "grant-type-required" as string | null };
+  }
 
   if (preset === "7d" || preset === "14d" || preset === "30d") {
     const days = Number.parseInt(preset.replace("d", ""), 10);
@@ -40,12 +65,12 @@ function resolveExpiresAt(formData: FormData) {
   }
 
   if (!customExpiresAt) {
-    return { expiresAt: null, error: "temporary-expiry-required" };
+    return { expiresAt: null, error: "temporary-expiry-required" as string | null };
   }
 
   const parsed = new Date(customExpiresAt);
   if (Number.isNaN(parsed.getTime()) || parsed.getTime() <= now.getTime()) {
-    return { expiresAt: null, error: "invalid-custom-expiry" };
+    return { expiresAt: null, error: "invalid-custom-expiry" as string | null };
   }
 
   return {
@@ -89,13 +114,9 @@ export async function POST(req: Request) {
         return buildRedirect(req, { error: "grant-type-required" });
       }
 
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("id,email")
-        .eq("email", email)
-        .maybeSingle();
+      const authUser = await findAuthUserByEmail(email);
 
-      if (!profile?.id) {
+      if (!authUser?.id) {
         return buildRedirect(req, { error: "plan-grant-user-not-found" });
       }
 
@@ -104,24 +125,63 @@ export async function POST(req: Request) {
         return buildRedirect(req, { error });
       }
 
+      let validatedBusinessId: string | null = null;
+      if (businessId) {
+        const { data: business } = await supabaseAdmin
+          .from("businesses")
+          .select("id,name,owner_id")
+          .eq("id", businessId)
+          .maybeSingle();
+
+        if (!business?.id) {
+          return buildRedirect(req, { error: "plan-grant-business-not-found" });
+        }
+
+        if (String(business.owner_id || "") !== String(authUser.id)) {
+          return buildRedirect(req, { error: "plan-grant-business-owner-mismatch" });
+        }
+
+        validatedBusinessId = String(business.id);
+      }
+
       const nowIso = new Date().toISOString();
-      const { error: insertError } = await supabaseAdmin.from("plan_grants").insert({
-        user_id: profile.id,
-        business_id: businessId,
-        granted_plan: grantedPlan,
-        grant_type: grantType,
-        starts_at: nowIso,
-        expires_at: expiresAt,
-        is_active: true,
-        granted_by: grantedBy,
+
+      const revokeExistingResult = await revokeStoredPlanGrantsForScope({
+        userId: authUser.id,
+        businessId: validatedBusinessId,
+        revokedAt: nowIso,
+      });
+
+      if (revokeExistingResult.error) {
+        return buildRedirect(req, { error: "plan-grant-failed" });
+      }
+
+      const { error: insertError } = await createStoredPlanGrant({
+        userId: authUser.id,
+        businessId: validatedBusinessId,
+        grantedPlan: grantedPlan as "pro" | "elite",
+        grantType: grantType as "temporary" | "permanent",
+        startsAt: nowIso,
+        expiresAt,
+        grantedBy,
         reason,
-        updated_at: nowIso,
       });
 
       if (insertError) {
         return buildRedirect(req, { error: "plan-grant-failed" });
       }
 
+      console.info("[admin/platform/plan-grants] created", {
+        targetUserId: authUser.id,
+        email,
+        businessId: validatedBusinessId,
+        grantedPlan,
+        grantType,
+        expiresAt,
+        grantedBy,
+      });
+
+      revalidateGrantViews();
       return buildRedirect(req, { success: "plan-grant-created" });
     }
 
@@ -132,18 +192,21 @@ export async function POST(req: Request) {
         return buildRedirect(req, { error: "plan-grant-id-required" });
       }
 
-      const { error } = await supabaseAdmin
-        .from("plan_grants")
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", grantId);
+      const { error } = await revokeStoredPlanGrantById({
+        grantId,
+        revokedAt: new Date().toISOString(),
+      });
 
       if (error) {
         return buildRedirect(req, { error: "plan-grant-revoke-failed" });
       }
 
+      console.info("[admin/platform/plan-grants] revoked", {
+        grantId,
+        revokedBy: grantedBy,
+      });
+
+      revalidateGrantViews();
       return buildRedirect(req, { success: "plan-grant-revoked" });
     }
 

@@ -38,7 +38,11 @@ export default async function PlatformAdminBusinessesPage({
   const data = await getPlatformAdminData();
 
   const rows = data.businessRows.filter((business) => {
-    if (planFilter && business.plan !== planFilter) {
+    if (
+      planFilter &&
+      business.effectivePlan !== planFilter &&
+      business.storedPlan !== planFilter
+    ) {
       return false;
     }
 
@@ -54,7 +58,8 @@ export default async function PlatformAdminBusinessesPage({
       business.name,
       business.ownerEmail,
       business.businessType,
-      business.plan,
+      business.effectivePlan,
+      business.storedPlan,
     ]
       .filter(Boolean)
       .join(" ")
@@ -112,7 +117,12 @@ export default async function PlatformAdminBusinessesPage({
                   </td>
                   <td className="px-4 py-4">
                     <p className="text-[var(--text-strong)]">{business.businessType || "business"}</p>
-                    <p className="mt-1 text-xs text-[var(--text-muted)]">{business.plan}</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">
+                      Effective {business.effectivePlan}
+                      {business.effectivePlan !== business.storedPlan
+                        ? ` | Stored ${business.storedPlan}`
+                        : ""}
+                    </p>
                   </td>
                   <td className="px-4 py-4">
                     <p className={business.stripeReady ? "text-emerald-300" : "text-amber-300"}>

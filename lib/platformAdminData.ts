@@ -1,4 +1,5 @@
 import { PLAN_DEFINITIONS, normalizeBusinessPlan } from "@/lib/planConfig";
+import { resolveAccessPlansForBusinesses } from "@/lib/accessGrants";
 import {
   resolveBookingGrossAmount,
   resolveBookingPlatformFee,
@@ -26,6 +27,8 @@ export type PlatformBusinessRow = {
   ownerEmail: string | null;
   businessType: string | null;
   plan: string;
+  storedPlan: string;
+  effectivePlan: string;
   isPublished: boolean;
   stripeReady: boolean;
   stripeConnected: boolean;
@@ -366,6 +369,17 @@ export async function getPlatformAdminData() {
     }
   });
 
+  const resolvedBusinesses = await resolveAccessPlansForBusinesses({
+    businesses: businesses.map((business) => ({
+      id: String(business.id || ""),
+      owner_id: asString(business.owner_id),
+      plan: business.plan,
+    })),
+  });
+  const resolvedBusinessPlanById = new Map(
+    resolvedBusinesses.map((business) => [business.id, normalizeBusinessPlan(business.plan)])
+  );
+
   const businessRows: PlatformBusinessRow[] = businesses.map((business) => {
     const businessId = String(business.id);
     const ownerId = asString(business.owner_id);
@@ -382,13 +396,18 @@ export async function getPlatformAdminData() {
         ? revenue.lastActivityAt
         : lastLead;
 
+    const storedPlan = normalizeBusinessPlan(business.plan);
+    const effectivePlan = resolvedBusinessPlanById.get(businessId) || storedPlan;
+
     return {
       id: businessId,
       name: asString(business.name) || "Untitled business",
       ownerId,
       ownerEmail: asString(ownerProfile?.email) || null,
       businessType: asString(business.business_type),
-      plan: normalizeBusinessPlan(business.plan),
+      plan: effectivePlan,
+      storedPlan,
+      effectivePlan,
       isPublished: asBoolean(business.is_published),
       stripeReady:
         asBoolean(business.stripe_onboarding_complete) &&
@@ -436,7 +455,7 @@ export async function getPlatformAdminData() {
   });
 
   const totalMRR = businessRows.reduce(
-    (sum, business) => sum + getPlanMonthlyRevenue(business.plan),
+    (sum, business) => sum + getPlanMonthlyRevenue(business.storedPlan),
     0
   );
   const unreadSupportMessages = supportThreads.reduce(
@@ -450,12 +469,12 @@ export async function getPlatformAdminData() {
       toTimestamp(business.lastActivityAt) > 0
   ).length;
   const payingBusinesses = businessRows.filter(
-    (business) => getPlanMonthlyRevenue(business.plan) > 0
+    (business) => getPlanMonthlyRevenue(business.storedPlan) > 0
   ).length;
 
   const planDistribution = Object.keys(PLAN_DEFINITIONS).map((tier) => ({
     label: PLAN_DEFINITIONS[tier as keyof typeof PLAN_DEFINITIONS].label,
-    count: businessRows.filter((business) => business.plan === tier).length,
+    count: businessRows.filter((business) => business.storedPlan === tier).length,
   }));
 
   const recentBusinessSignups = [...businessRows]

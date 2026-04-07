@@ -118,7 +118,10 @@ export default async function PlatformAdminRevenuePage() {
                     Gross {formatCurrency(business.grossRevenue)} - Platform {formatCurrency(business.platformRevenue)}
                   </p>
                   <p className="mt-2 text-xs text-[var(--text-muted)]">
-                    {business.transactions} transactions - {business.plan} plan
+                    {business.transactions} transactions - effective {business.effectivePlan} plan
+                    {business.effectivePlan !== business.storedPlan
+                      ? ` | stored ${business.storedPlan}`
+                      : ""}
                   </p>
                 </div>
               ))}

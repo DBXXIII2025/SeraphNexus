@@ -1,5 +1,11 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { getAuthUserEmailsByIds } from "@/lib/adminAuthUsers";
 import { normalizeAccessPlan, type AccessPlan } from "@/lib/accessPlan";
+import {
+  resolveAccessPlanForBusiness,
+  resolveAccessPlanForOwner,
+} from "@/lib/accessGrants";
+import { loadStoredPlanGrantRows } from "@/lib/manualPlanGrantStorage";
+import { createAdminClient } from "@/lib/supabase/server";
 
 type LooseRow = Record<string, unknown>;
 type PlanGrantStatus = "active" | "scheduled" | "expired" | "revoked";
@@ -13,6 +19,7 @@ export type PlanGrantListItem = {
   grantedPlan: AccessPlan;
   grantType: "temporary" | "permanent";
   startsAt: string | null;
+  grantedAt: string | null;
   expiresAt: string | null;
   isActive: boolean;
   grantedBy: string | null;
@@ -20,6 +27,10 @@ export type PlanGrantListItem = {
   createdAt: string | null;
   updatedAt: string | null;
   status: PlanGrantStatus;
+  effectivePlan: AccessPlan;
+  appliesNow: boolean;
+  storedPlan: AccessPlan;
+  scopeLabel: string;
 };
 
 function asString(value: unknown) {
@@ -57,98 +68,119 @@ function getGrantStatus(row: LooseRow): PlanGrantStatus {
 }
 
 async function loadPlanGrantRows(activeOnly: boolean) {
-  const supabaseAdmin = createAdminClient();
-  let query = supabaseAdmin
-    .from("plan_grants")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (activeOnly) {
-    query = query.eq("is_active", true);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("[plan-grants] load failed", {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code,
-    });
-    return [] as LooseRow[];
-  }
-
-  return (data || []) as LooseRow[];
-}
-
-async function hydratePlanGrantRows(rows: LooseRow[]) {
-  const supabaseAdmin = createAdminClient();
-  const userIds = Array.from(
-    new Set(rows.map((row) => asString(row.user_id)).filter((value): value is string => Boolean(value)))
-  );
-  const businessIds = Array.from(
-    new Set(rows.map((row) => asString(row.business_id)).filter((value): value is string => Boolean(value)))
-  );
-
-  const [profilesResult, businessesResult] = await Promise.all([
-    userIds.length > 0
-      ? supabaseAdmin.from("profiles").select("id,email").in("id", userIds)
-      : Promise.resolve({ data: [] as LooseRow[] }),
-    businessIds.length > 0
-      ? supabaseAdmin.from("businesses").select("id,name").in("id", businessIds)
-      : Promise.resolve({ data: [] as LooseRow[] }),
-  ]);
-
-  const emailByUserId = new Map<string, string>();
-  ((profilesResult.data || []) as LooseRow[]).forEach((profile) => {
-    const id = asString(profile.id);
-    const email = asString(profile.email);
-    if (id && email) {
-      emailByUserId.set(id, email);
-    }
+  const rows = await loadStoredPlanGrantRows({
+    activeOnly,
   });
 
-  const businessNameById = new Map<string, string>();
-  ((businessesResult.data || []) as LooseRow[]).forEach((business) => {
-    const id = asString(business.id);
-    if (id) {
-      businessNameById.set(id, asString(business.name) || "Business");
-    }
-  });
-
-  return rows.map((row) => {
-    const userId = asString(row.user_id) || "";
-    const businessId = asString(row.business_id);
-
-    return {
-      id: String(row.id || ""),
-      userId,
-      email: emailByUserId.get(userId) || null,
-      businessId,
-      businessName: businessId ? businessNameById.get(businessId) || null : null,
-      grantedPlan: normalizeAccessPlan(row.granted_plan),
-      grantType:
-        asString(row.grant_type) === "temporary" ? "temporary" : "permanent",
-      startsAt: asString(row.starts_at),
-      expiresAt: asString(row.expires_at),
-      isActive: asBoolean(row.is_active),
-      grantedBy: asString(row.granted_by),
-      reason: asString(row.reason),
-      createdAt: asString(row.created_at),
-      updatedAt: asString(row.updated_at),
-      status: getGrantStatus(row),
-    } satisfies PlanGrantListItem;
-  });
-}
-
-export async function getActivePlanGrantList() {
-  const rows = await loadPlanGrantRows(true);
-  const hydrated = await hydratePlanGrantRows(rows);
-  return hydrated.filter((grant) => grant.status === "active");
+  return rows as unknown as LooseRow[];
 }
 
 export async function getPlanGrantHistoryList() {
   const rows = await loadPlanGrantRows(false);
-  return hydratePlanGrantRows(rows);
+  const supabaseAdmin = createAdminClient();
+  const userIds = Array.from(
+    new Set(
+      rows
+        .map((row) => asString(row.user_id))
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+  const businessIds = Array.from(
+    new Set(
+      rows
+        .map((row) => asString(row.business_id))
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+
+  const [emailByUserId, businessesResult] = await Promise.all([
+    getAuthUserEmailsByIds(userIds),
+    businessIds.length > 0
+      ? supabaseAdmin
+          .from("businesses")
+          .select("id,name,owner_id,plan")
+          .in("id", businessIds)
+      : Promise.resolve({ data: [] as LooseRow[] }),
+  ]);
+
+  const businessById = new Map<
+    string,
+    { name: string | null; ownerId: string | null; plan: AccessPlan }
+  >();
+  ((businessesResult.data || []) as LooseRow[]).forEach((business) => {
+    const id = asString(business.id);
+    if (id) {
+      businessById.set(id, {
+        name: asString(business.name),
+        ownerId: asString(business.owner_id),
+        plan: normalizeAccessPlan(business.plan),
+      });
+    }
+  });
+
+  const hydrated = await Promise.all(
+    rows.map(async (row) => {
+      const userId = asString(row.user_id) || "";
+      const email = emailByUserId.get(userId) || null;
+      const businessId = asString(row.business_id);
+      const business = businessId ? businessById.get(businessId) || null : null;
+      const status = getGrantStatus(row);
+      const grantedPlan = normalizeAccessPlan(row.granted_plan);
+      const storedPlan = business ? business.plan : "inactive";
+      const effectivePlan = business
+        ? await resolveAccessPlanForBusiness({
+            business: {
+              id: businessId!,
+              owner_id: business.ownerId,
+              plan: business.plan,
+            },
+            userId,
+            email,
+          })
+        : await resolveAccessPlanForOwner({
+            ownerUserId: userId,
+            email,
+          });
+
+      return {
+        id: String(row.id || ""),
+        userId,
+        email,
+        businessId,
+        businessName: business?.name || null,
+        grantedPlan,
+        grantType:
+          asString(row.grant_type) === "temporary" ? "temporary" : "permanent",
+        startsAt: asString(row.starts_at),
+        grantedAt: asString(row.created_at),
+        expiresAt: asString(row.expires_at),
+        isActive: asBoolean(row.is_active),
+        grantedBy: asString(row.granted_by),
+        reason: asString(row.reason),
+        createdAt: asString(row.created_at),
+        updatedAt: asString(row.updated_at),
+        status,
+        effectivePlan,
+        appliesNow: status === "active" && effectivePlan === grantedPlan,
+        storedPlan,
+        scopeLabel: businessId
+          ? `${business?.name || "Business"} (${businessId})`
+          : "Account-wide",
+      } satisfies PlanGrantListItem;
+    })
+  );
+
+  if (process.env.NODE_ENV !== "production") {
+    console.info("[plan-grants] admin load", {
+      count: hydrated.length,
+      active: hydrated.filter((grant) => grant.status === "active").length,
+    });
+  }
+
+  return hydrated;
+}
+
+export async function getActivePlanGrantList() {
+  const history = await getPlanGrantHistoryList();
+  return history.filter((grant) => grant.status === "active");
 }

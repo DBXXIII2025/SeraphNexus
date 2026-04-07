@@ -107,6 +107,18 @@ function getStatusCopy(
     return "Custom expiration must be a valid future date.";
   }
 
+  if (value === "permanent-expiry-not-allowed") {
+    return "Permanent grants cannot include an expiration preset or custom expiry.";
+  }
+
+  if (value === "plan-grant-business-not-found") {
+    return "The selected business id could not be found.";
+  }
+
+  if (value === "plan-grant-business-owner-mismatch") {
+    return "That business is not owned by the selected account, so the grant would never apply.";
+  }
+
   if (value === "plan-grant-failed") {
     return "Manual plan grant could not be created.";
   }
@@ -326,9 +338,13 @@ export default async function PlatformPage({
                       {business.name}
                     </p>
                     <p className="mt-1 text-sm text-[var(--text-soft)]">
-                      {business.businessType || "business"} - {business.plan}{" "}
-                      plan
+                      {business.businessType || "business"} - effective {business.effectivePlan} plan
                     </p>
+                    {business.effectivePlan !== business.storedPlan ? (
+                      <p className="mt-1 text-xs text-[var(--text-muted)]">
+                        Stored billing plan: {business.storedPlan}
+                      </p>
+                    ) : null}
                     <p className="mt-2 text-xs text-[var(--text-muted)]">
                       Owner {business.ownerEmail || "unknown"} - Last activity{" "}
                       {formatDateTime(business.lastActivityAt)}
@@ -680,13 +696,15 @@ export default async function PlatformPage({
                         {grant.email || grant.userId} | {grant.grantedPlan} | {grant.grantType}
                       </p>
                       <p className="mt-1 text-sm text-[var(--text-soft)]">
-                        {grant.businessName ||
-                          grant.businessId ||
-                          "All businesses for account"}
+                        {grant.scopeLabel}
                       </p>
                       <p className="mt-2 text-xs text-[var(--text-muted)]">
                         Granted by {grant.grantedBy || "unknown"} | Starts{" "}
                         {formatDateTime(grant.startsAt)}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--text-muted)]">
+                        Effective now: {grant.effectivePlan} | Stored plan: {grant.storedPlan} |{" "}
+                        {grant.appliesNow ? "grant currently in force" : "another plan currently wins"}
                       </p>
                       {grant.expiresAt ? (
                         <p className="mt-1 text-xs text-[var(--text-muted)]">
@@ -748,9 +766,7 @@ export default async function PlatformPage({
                       {grant.email || grant.userId} | {grant.grantedPlan} | {grant.status}
                     </p>
                     <p className="mt-1 text-sm text-[var(--text-soft)]">
-                      {grant.businessName ||
-                        grant.businessId ||
-                        "All businesses for account"}
+                      {grant.scopeLabel}
                     </p>
                     <p className="mt-2 text-xs text-[var(--text-muted)]">
                       {grant.grantType} grant | Created {formatDateTime(grant.createdAt)} | Updated{" "}
@@ -760,6 +776,9 @@ export default async function PlatformPage({
                       Granted by {grant.grantedBy || "unknown"} | Starts{" "}
                       {formatDateTime(grant.startsAt)}
                       {grant.expiresAt ? ` | Expires ${formatDateTime(grant.expiresAt)}` : " | No expiry"}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">
+                      Effective now: {grant.effectivePlan} | Stored plan: {grant.storedPlan}
                     </p>
                     {grant.reason ? (
                       <p className="mt-2 text-xs text-[var(--text-muted)]">
