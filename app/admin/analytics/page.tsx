@@ -1,11 +1,24 @@
-import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import PerformanceAnalyticsClient from "@/app/admin/analytics/PerformanceAnalyticsClient";
+import type { AnalyticsMetric } from "@/lib/adminAnalytics";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
-import { applyVisibleFilter } from "@/lib/transactionVisibility";
+
+function getDefaultMetric(businessType: string | null | undefined): AnalyticsMetric {
+  if (
+    businessType === "restaurant" ||
+    businessType === "food" ||
+    businessType === "store" ||
+    businessType === "creator" ||
+    businessType === "product"
+  ) {
+    return "orders";
+  }
+
+  return "bookings";
+}
 
 export default async function AdminAnalyticsPage() {
-  const supabase = await createClient();
   const business = await getActiveBusiness();
 
   if (!business) {
@@ -45,41 +58,10 @@ export default async function AdminAnalyticsPage() {
     );
   }
 
-  const { data: bookings, error } = await applyVisibleFilter(
-    supabase
-      .from("bookings")
-      .select("date, start_time, end_time, status")
-  );
-
-  if (error) {
-    return (
-      <div className="surface-card p-6 text-red-300">
-        Failed to load analytics.
-      </div>
-    );
-  }
-
-  const safeBookings = bookings ?? [];
-  const total = safeBookings.length;
-  const confirmed = safeBookings.filter((b) => b.status === "confirmed").length;
-  const cancelled = safeBookings.filter((b) => b.status === "cancelled").length;
-  const completionRate = total > 0 ? Math.round((confirmed / total) * 100) : 0;
-
-  const today = new Date();
-  const upcoming = safeBookings.filter((b) => {
-    if (!b.date) return false;
-    const start = new Date(`${b.date}T${b.start_time || "00:00"}`);
-    return start >= today && b.status === "confirmed";
-  }).length;
   const canUseAdvancedAnalytics = canAccessPlanFeature(
     business.plan,
     "advanced_analytics"
   );
-  const daysWithBookings = new Set(
-    safeBookings
-      .map((booking) => booking.date || "")
-      .filter(Boolean)
-  ).size;
 
   return (
     <main className="space-y-6 text-[var(--text-main)]">
@@ -88,29 +70,20 @@ export default async function AdminAnalyticsPage() {
           <p className="section-kicker">Analytics</p>
           <h1 className="section-title">Performance snapshots for {businessName}</h1>
           <p className="section-description">
-            Use this view to monitor booking volume, confirmed activity, cancellations, and near-term demand without leaving the owner workspace.
+            Use this view to monitor daily performance, transaction flow, completion trend, and
+            cancellation pressure without leaving the owner workspace.
           </p>
         </div>
       </section>
 
-      <section className="grid max-w-5xl gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat title="Total bookings" value={total} />
-        <Stat title="Confirmed" value={confirmed} tone="success" />
-        <Stat title="Cancelled" value={cancelled} tone="alert" />
-        <Stat title="Upcoming" value={upcoming} />
-      </section>
-
-      <section className="surface-card p-6">
-        <p className="section-kicker">Performance</p>
-        <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
-          Core analytics
-        </h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Stat title="Completion rate" value={`${completionRate}%`} />
-          <Stat title="Active booking days" value={daysWithBookings} />
-          <Stat title="Current plan" value={getPlanDefinition(business.plan).label} />
-        </div>
-      </section>
+      <PerformanceAnalyticsClient
+        businessId={business.id}
+        businessName={businessName}
+        planLabel={getPlanDefinition(business.plan).label}
+        supportsAdvancedAnalytics={canUseAdvancedAnalytics}
+        defaultMetric={getDefaultMetric(business.business_type)}
+        defaultRange="30d"
+      />
 
       <section className="surface-card p-6">
         <p className="section-kicker">Advanced Analytics</p>
@@ -120,13 +93,35 @@ export default async function AdminAnalyticsPage() {
 
         {canUseAdvancedAnalytics ? (
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <Stat
-              title="Conversion posture"
-              value={`${completionRate}%`}
-              tone={completionRate >= 60 ? "success" : "default"}
-            />
-            <Stat title="Upcoming demand" value={upcoming} />
-            <Stat title="Cancellation pressure" value={`${cancelled}`} tone="alert" />
+            <div className="metric-card p-5">
+              <p className="section-kicker">Elite ready</p>
+              <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-gold-soft)]">
+                Enabled
+              </p>
+              <p className="mt-2 text-sm text-[var(--text-soft)]">
+                This workspace can take on future breakdowns like source attribution, cohorts, and
+                conversion analysis without revisiting plan gates.
+              </p>
+            </div>
+            <div className="metric-card p-5">
+              <p className="section-kicker">Next expansion</p>
+              <p className="mt-4 text-[1.95rem] font-semibold text-[var(--text-strong)]">
+                Cohorts
+              </p>
+              <p className="mt-2 text-sm text-[var(--text-soft)]">
+                Elite is prepared for deeper retention, customer mix, and trend segmentation later.
+              </p>
+            </div>
+            <div className="metric-card p-5">
+              <p className="section-kicker">Current foundation</p>
+              <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
+                Live
+              </p>
+              <p className="mt-2 text-sm text-[var(--text-soft)]">
+                The core graph is already normalized across bookings, orders, reservations, and
+                revenue.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="mt-5 rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-4 text-sm text-[var(--accent-gold-soft)]">
@@ -139,29 +134,5 @@ export default async function AdminAnalyticsPage() {
         )}
       </section>
     </main>
-  );
-}
-
-function Stat({
-  title,
-  value,
-  tone = "default",
-}: {
-  title: string;
-  value: number;
-  tone?: "default" | "success" | "alert";
-}) {
-  const valueClass =
-    tone === "success"
-      ? "text-[var(--accent-gold-soft)]"
-      : tone === "alert"
-        ? "text-[var(--accent-soft)]"
-        : "text-[var(--text-strong)]";
-
-  return (
-    <div className="metric-card p-5">
-      <p className="section-kicker">{title}</p>
-      <p className={`mt-4 text-[1.95rem] font-semibold leading-none ${valueClass}`}>{value}</p>
-    </div>
   );
 }
