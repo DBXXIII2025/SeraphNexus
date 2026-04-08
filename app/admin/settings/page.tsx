@@ -50,6 +50,35 @@ function StatusRow({
   );
 }
 
+function getStripeConnectionState(input: {
+  stripe_account_id?: string | null;
+  stripe_onboarding_complete?: boolean | null;
+  stripe_charges_enabled?: boolean | null;
+  stripe_payouts_enabled?: boolean | null;
+}) {
+  if (!input.stripe_account_id) {
+    return "Not connected";
+  }
+
+  if (!input.stripe_onboarding_complete) {
+    return "Onboarding incomplete";
+  }
+
+  if (input.stripe_charges_enabled && input.stripe_payouts_enabled) {
+    return "Charges and payouts enabled";
+  }
+
+  if (input.stripe_charges_enabled) {
+    return "Charges enabled";
+  }
+
+  if (input.stripe_payouts_enabled) {
+    return "Payouts enabled";
+  }
+
+  return "Connected but restricted";
+}
+
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const { user, isPlatformAdmin } = await getPlatformAdminSession();
 
@@ -295,6 +324,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </div>
 
               <div className="mt-5 space-y-3">
+                <StatusRow
+                  label="Connection state"
+                  value={getStripeConnectionState(business)}
+                />
                 <StatusRow label="Stripe account ID" value={business.stripe_account_id || "Not connected"} />
                 <StatusRow label="Onboarding complete" value={Boolean(business.stripe_onboarding_complete)} />
                 <StatusRow label="Charges enabled" value={Boolean(business.stripe_charges_enabled)} />
@@ -316,10 +349,30 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               ) : null}
 
               <div className="mt-5 flex flex-wrap gap-3">
-                {canUsePayments && paymentReadiness?.status !== "payment_ready" ? (
+                {canUsePayments && !business.stripe_account_id ? (
                   <ConnectStripeButton
                     businessId={business.id}
-                    label={paymentReadiness?.actionLabel || "Connect Stripe"}
+                    label="Connect Stripe"
+                    loadingLabel="Redirecting to Stripe setup..."
+                    className="w-full sm:w-auto lg:w-auto"
+                  />
+                ) : null}
+                {canUsePayments &&
+                business.stripe_account_id &&
+                paymentReadiness?.status !== "payment_ready" ? (
+                  <ConnectStripeButton
+                    businessId={business.id}
+                    label="Continue Stripe Setup"
+                    loadingLabel="Redirecting to Stripe setup..."
+                    className="w-full sm:w-auto lg:w-auto"
+                  />
+                ) : null}
+                {canUsePayments && business.stripe_account_id ? (
+                  <ConnectStripeButton
+                    businessId={business.id}
+                    endpoint="/api/stripe/manage"
+                    label="Manage Stripe Account"
+                    loadingLabel="Opening Stripe account..."
                     className="w-full sm:w-auto lg:w-auto"
                   />
                 ) : null}

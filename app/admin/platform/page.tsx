@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { getConfiguredAppUrl } from "@/lib/appUrl";
+import {
+  formatMonthlyPriceLabel,
+  getPlatformStripeEnvironmentSummary,
+} from "@/lib/platformBilling";
 import { getActiveAccessGrantList } from "@/lib/accessGrantAdmin";
 import {
   getActivePlanGrantList,
@@ -68,6 +72,10 @@ function getStatusCopy(
 
     if (value === "plan-grant-revoked") {
       return "Manual plan grant revoked.";
+    }
+
+    if (value === "platform-settings-saved") {
+      return "Platform settings and managed billing were saved.";
     }
   }
 
@@ -157,6 +165,18 @@ function getStatusCopy(
 
   if (value === "unknown-action") {
     return "Unknown access-grant action.";
+  }
+
+  if (value === "platform-stripe-not-configured") {
+    return "Platform Stripe is not configured yet. Add the Stripe secret key before opening Stripe management.";
+  }
+
+  if (value === "platform-settings-unavailable") {
+    return "Platform settings storage is unavailable. Apply the platform settings migration first.";
+  }
+
+  if (value === "platform-settings-save-failed") {
+    return "Platform settings could not be saved.";
   }
 
   return "The access-grant action could not be completed.";
@@ -273,6 +293,7 @@ export default async function PlatformPage({
   const grantCreateLinkBase = getConfiguredAppUrl() || "";
   const successMessage = getStatusCopy("success", params?.success);
   const errorMessage = getStatusCopy("error", params?.error);
+  const stripeEnvironment = getPlatformStripeEnvironmentSummary();
 
   return (
     <div className="space-y-6 text-[var(--text-main)]">
@@ -315,6 +336,189 @@ export default async function PlatformPage({
           {errorMessage}
         </div>
       ) : null}
+
+      <section className="grid gap-6 xl:grid-cols-[1.05fr,0.95fr]">
+        <form action="/api/admin/platform" method="POST" className="surface-card space-y-5 p-6">
+          <input type="hidden" name="id" value={settings.id || ""} />
+          <div className="section-header-copy">
+            <p className="section-kicker">Platform Settings</p>
+            <h2 className="section-title">Brand, support, and plan billing</h2>
+            <p className="section-description">
+              Manage public platform copy and the active Pro and Elite Stripe prices used for future subscriptions.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Platform name</span>
+              <input name="platform_name" defaultValue={settings.platform_name} className="input-field" />
+            </label>
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Support email</span>
+              <input name="support_email" defaultValue={settings.support_email} className="input-field" />
+            </label>
+          </div>
+
+          <label className="text-sm text-gray-300">
+            <span className="form-label">Headline</span>
+            <input
+              name="marketing_headline"
+              defaultValue={settings.marketing_headline}
+              className="input-field"
+            />
+          </label>
+
+          <label className="text-sm text-gray-300">
+            <span className="form-label">Subheadline</span>
+            <textarea
+              name="marketing_subheadline"
+              defaultValue={settings.marketing_subheadline}
+              className="input-field min-h-[110px]"
+            />
+          </label>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Support phone</span>
+              <input name="support_phone" defaultValue={settings.support_phone} className="input-field" />
+            </label>
+            <label className="text-sm text-gray-300">
+              <span className="form-label">Pricing note</span>
+              <input name="pricing_note" defaultValue={settings.pricing_note} className="input-field" />
+            </label>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="form-section space-y-4">
+              <div>
+                <p className="form-label">Pro monthly price</p>
+                <input
+                  name="pro_monthly_price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={(settings.pro_monthly_price_cents / 100).toFixed(2)}
+                  className="input-field mt-2"
+                />
+              </div>
+              <label className="flex items-center gap-3 text-sm text-[var(--text-soft)]">
+                <input type="checkbox" name="pro_price_active" defaultChecked={settings.pro_price_active} />
+                <span>Pro billing active</span>
+              </label>
+              <p className="text-xs text-[var(--text-muted)]">
+                Current Stripe price: {settings.pro_stripe_price_id || "Will be created on save"}
+              </p>
+            </div>
+
+            <div className="form-section space-y-4">
+              <div>
+                <p className="form-label">Elite monthly price</p>
+                <input
+                  name="elite_monthly_price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={(settings.elite_monthly_price_cents / 100).toFixed(2)}
+                  className="input-field mt-2"
+                />
+              </div>
+              <label className="flex items-center gap-3 text-sm text-[var(--text-soft)]">
+                <input type="checkbox" name="elite_price_active" defaultChecked={settings.elite_price_active} />
+                <span>Elite billing active</span>
+              </label>
+              <p className="text-xs text-[var(--text-muted)]">
+                Current Stripe price: {settings.elite_stripe_price_id || "Will be created on save"}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4 text-sm text-[var(--text-soft)]">
+            Saving billing creates or reuses Stripe monthly price objects and updates the active price ids future subscription checkouts will use.
+          </div>
+
+          <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+            Save platform settings
+          </button>
+        </form>
+
+        <div className="space-y-6">
+          <section className="premium-card p-6">
+            <div className="section-header-copy">
+              <p className="section-kicker">Platform Stripe</p>
+              <h2 className="section-title">Platform payout and billing account</h2>
+              <p className="section-description">
+                Platform Stripe configuration stays isolated from tenant business Stripe Connect accounts.
+              </p>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <div className="table-row-panel flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-[var(--text-soft)]">Stripe mode</span>
+                <span className="text-sm font-medium text-[var(--text-strong)]">
+                  {stripeEnvironment.configured
+                    ? stripeEnvironment.mode === "live"
+                      ? "Live"
+                      : "Test"
+                    : "Not configured"}
+                </span>
+              </div>
+              <div className="table-row-panel flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-[var(--text-soft)]">Secret key</span>
+                <span className="text-sm font-medium text-[var(--text-strong)]">
+                  {stripeEnvironment.configured ? "Configured" : "Missing"}
+                </span>
+              </div>
+              <div className="table-row-panel flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-[var(--text-soft)]">Publishable key</span>
+                <span className="text-sm font-medium text-[var(--text-strong)]">
+                  {stripeEnvironment.hasPublishableKey ? "Configured" : "Missing"}
+                </span>
+              </div>
+              <div className="table-row-panel flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-[var(--text-soft)]">Webhook secret</span>
+                <span className="text-sm font-medium text-[var(--text-strong)]">
+                  {stripeEnvironment.hasWebhookSecret ? "Configured" : "Missing"}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-4 text-sm text-[var(--accent-gold-soft)]">
+              Business owners only manage payouts for their own business. Platform billing and pricing are locked to platform admin only.
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a
+                href="/api/admin/platform/stripe-dashboard"
+                className="btn-primary px-4 py-2 text-sm font-medium"
+              >
+                {stripeEnvironment.configured ? "Manage Platform Stripe" : "Open Stripe Setup Status"}
+              </a>
+              <span className="btn-secondary inline-flex px-4 py-2 text-sm font-medium text-[var(--text-soft)]">
+                {stripeEnvironment.dashboardUrl.replace("https://", "")}
+              </span>
+            </div>
+          </section>
+
+          <section className="surface-card p-6">
+            <p className="section-kicker">Current Prices</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+              Managed plan billing state
+            </h2>
+            <div className="mt-5 space-y-3">
+              <div className="table-row-panel p-4">
+                <p className="text-sm text-[var(--text-soft)]">
+                  Pro: <span className="text-[var(--text-strong)]">{formatMonthlyPriceLabel(settings.pro_monthly_price_cents)}</span> | {settings.pro_price_active ? "Active" : "Inactive"}
+                </p>
+              </div>
+              <div className="table-row-panel p-4">
+                <p className="text-sm text-[var(--text-soft)]">
+                  Elite: <span className="text-[var(--text-strong)]">{formatMonthlyPriceLabel(settings.elite_monthly_price_cents)}</span> | {settings.elite_price_active ? "Active" : "Inactive"}
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
         <div className="surface-card p-6">

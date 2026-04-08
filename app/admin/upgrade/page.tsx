@@ -1,4 +1,5 @@
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
+import { getManagedPricingSnapshot } from "@/lib/platformBilling";
 import { getPlanDefinition, getPlatformFeeLabel } from "@/lib/planConfig";
 import UpgradeClient from "./UpgradeClient";
 
@@ -19,6 +20,13 @@ export default async function AdminUpgradePage({
   }
 
   const plan = getPlanDefinition(business.plan);
+  const pricing = await getManagedPricingSnapshot();
+  const currentPriceLabel =
+    plan.tier === "pro"
+      ? pricing.pro.monthlyPriceLabel
+      : plan.tier === "elite"
+        ? pricing.elite.monthlyPriceLabel
+        : plan.monthlyPriceLabel;
 
   return (
     <div className="space-y-6 text-white">
@@ -50,6 +58,9 @@ export default async function AdminUpgradePage({
             </p>
             <h2 className="mt-2 text-2xl font-semibold">{plan.label}</h2>
             <p className="mt-2 text-sm text-gray-400">
+              Billing: {currentPriceLabel}
+            </p>
+            <p className="mt-2 text-sm text-gray-400">
               Current platform fee: {getPlatformFeeLabel(business.plan)} per
               successful transaction.
             </p>
@@ -60,7 +71,20 @@ export default async function AdminUpgradePage({
         </div>
       </div>
 
-      <UpgradeClient businessId={business.id} currentPlan={plan.tier} />
+      <UpgradeClient
+        businessId={business.id}
+        currentPlan={plan.tier}
+        pricing={{
+          pro: {
+            label: pricing.pro.monthlyPriceLabel,
+            active: pricing.pro.active,
+          },
+          elite: {
+            label: pricing.elite.monthlyPriceLabel,
+            active: pricing.elite.active,
+          },
+        }}
+      />
     </div>
   );
 }

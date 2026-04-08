@@ -69,6 +69,66 @@ export interface Database {
         };
       };
 
+      platform_settings: {
+        Row: {
+          id: string;
+          platform_name: string;
+          marketing_headline: string;
+          marketing_subheadline: string;
+          support_email: string;
+          support_phone: string;
+          pricing_note: string;
+          pro_monthly_price_cents: number;
+          elite_monthly_price_cents: number;
+          pro_price_active: boolean;
+          elite_price_active: boolean;
+          pro_stripe_price_id: string | null;
+          elite_stripe_price_id: string | null;
+          pro_stripe_product_id: string | null;
+          elite_stripe_product_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          platform_name?: string;
+          marketing_headline?: string;
+          marketing_subheadline?: string;
+          support_email?: string;
+          support_phone?: string;
+          pricing_note?: string;
+          pro_monthly_price_cents?: number;
+          elite_monthly_price_cents?: number;
+          pro_price_active?: boolean;
+          elite_price_active?: boolean;
+          pro_stripe_price_id?: string | null;
+          elite_stripe_price_id?: string | null;
+          pro_stripe_product_id?: string | null;
+          elite_stripe_product_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          platform_name?: string;
+          marketing_headline?: string;
+          marketing_subheadline?: string;
+          support_email?: string;
+          support_phone?: string;
+          pricing_note?: string;
+          pro_monthly_price_cents?: number;
+          elite_monthly_price_cents?: number;
+          pro_price_active?: boolean;
+          elite_price_active?: boolean;
+          pro_stripe_price_id?: string | null;
+          elite_stripe_price_id?: string | null;
+          pro_stripe_product_id?: string | null;
+          elite_stripe_product_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+
       plan_grants: {
         Row: {
           id: string;

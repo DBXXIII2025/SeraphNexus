@@ -6,10 +6,14 @@ export default function ConnectStripeButton({
   businessId,
   label = "Connect Stripe",
   className,
+  endpoint = "/api/stripe/connect",
+  loadingLabel = "Redirecting to Stripe...",
 }: {
   businessId: string;
   label?: string;
   className?: string;
+  endpoint?: string;
+  loadingLabel?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +23,7 @@ export default function ConnectStripeButton({
     setError(null);
 
     try {
-      const res = await fetch("/api/stripe/connect", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,7 +58,7 @@ export default function ConnectStripeButton({
           className || ""
         }`}
       >
-        {loading ? "Redirecting to Stripe..." : label}
+        {loading ? loadingLabel : label}
       </button>
 
       {error && <p className="text-sm text-red-400">{error}</p>}

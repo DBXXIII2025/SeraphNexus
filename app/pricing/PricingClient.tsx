@@ -8,6 +8,10 @@ type PricingClientProps = {
   isLoggedIn: boolean;
   isPlatformAdmin: boolean;
   currentPlan: string;
+  pricing: {
+    pro: { label: string; active: boolean };
+    elite: { label: string; active: boolean };
+  };
 };
 
 const PLANS = [
@@ -51,6 +55,7 @@ export default function PricingClient({
   isLoggedIn,
   isPlatformAdmin,
   currentPlan,
+  pricing,
 }: PricingClientProps) {
   const [billingPlan, setBillingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,19 +136,30 @@ export default function PricingClient({
           {PLANS.map((plan) => {
             const isCurrentPlan = currentPlan === plan.tier;
             const isPaidPlan = plan.tier === "pro" || plan.tier === "elite";
+            const billingActive =
+              plan.tier === "pro"
+                ? pricing.pro.active
+                : plan.tier === "elite"
+                  ? pricing.elite.active
+                  : true;
             const disabled =
               !isPaidPlan ||
               isCurrentPlan ||
               isPlatformAdmin ||
               !isLoggedIn ||
-              !activeBusinessId;
+              !activeBusinessId ||
+              !billingActive;
+            const priceLabel =
+              plan.tier === "pro"
+                ? pricing.pro.label
+                : plan.tier === "elite"
+                  ? pricing.elite.label
+                  : plan.priceLabel;
 
             return (
               <article
                 key={plan.tier}
-                className={`surface-card flex h-full flex-col p-5 ${
-                  plan.tier !== "free" ? "border-[rgba(212,175,55,0.16)]" : ""
-                }`}
+                className="surface-card flex h-full flex-col border-[rgba(212,175,55,0.16)] p-5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -162,8 +178,13 @@ export default function PricingClient({
                 </div>
 
                 <p className="mt-6 text-3xl font-semibold text-[var(--text-strong)]">
-                  {plan.priceLabel}
+                  {priceLabel}
                 </p>
+                {!billingActive && isPaidPlan ? (
+                  <p className="mt-2 text-sm text-amber-300">
+                    Temporarily unavailable for new subscriptions
+                  </p>
+                ) : null}
 
                 <div className="mt-6 space-y-3">
                   {plan.highlights.map((highlight) => (
@@ -202,7 +223,11 @@ export default function PricingClient({
                       disabled={disabled}
                       className="btn-primary inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {billingPlan === plan.tier ? "Starting checkout..." : `Choose ${plan.label}`}
+                      {billingPlan === plan.tier
+                        ? "Starting checkout..."
+                        : !billingActive
+                          ? `${plan.label} unavailable`
+                          : `Choose ${plan.label}`}
                     </button>
                   ) : plan.tier === "trial" ? (
                     <span className="btn-secondary inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium text-[var(--text-soft)]">

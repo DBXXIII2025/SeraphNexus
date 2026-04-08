@@ -26,9 +26,14 @@ const FEATURE_LABELS: Record<PlanFeature, string> = {
 export default function UpgradeClient({
   businessId,
   currentPlan,
+  pricing,
 }: {
   businessId: string;
   currentPlan: PlanTier;
+  pricing: {
+    pro: { label: string; active: boolean };
+    elite: { label: string; active: boolean };
+  };
 }) {
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +79,18 @@ export default function UpgradeClient({
         {(["trial", "pro", "elite"] as PlanTier[]).map((tier) => {
           const plan = PLAN_DEFINITIONS[tier];
           const isCurrent = tier === currentPlan;
+          const priceLabel =
+            tier === "pro"
+              ? pricing.pro.label
+              : tier === "elite"
+                ? pricing.elite.label
+                : plan.monthlyPriceLabel;
+          const billingActive =
+            tier === "pro"
+              ? pricing.pro.active
+              : tier === "elite"
+                ? pricing.elite.active
+                : true;
 
           return (
             <div
@@ -97,10 +114,15 @@ export default function UpgradeClient({
               </div>
 
               <div className="mt-5">
-                <p className="text-3xl font-semibold">{plan.monthlyPriceLabel}</p>
+                <p className="text-3xl font-semibold">{priceLabel}</p>
                 <p className="mt-1 text-sm text-gray-400">
                   Platform fee: {Math.round(plan.transactionFeeRate * 100)}%
                 </p>
+                {!billingActive && tier !== "trial" ? (
+                  <p className="mt-2 text-xs text-amber-300">
+                    Temporarily unavailable for new subscriptions
+                  </p>
+                ) : null}
               </div>
 
               <ul className="mt-5 space-y-2 text-sm text-gray-300">
@@ -139,13 +161,15 @@ export default function UpgradeClient({
               <button
                 type="button"
                 onClick={() => choosePlan(tier)}
-                disabled={isCurrent || loadingPlan !== null}
+                disabled={isCurrent || loadingPlan !== null || (!billingActive && tier !== "trial")}
                 className="mt-6 w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCurrent
                   ? "Current Plan"
                   : loadingPlan === tier
                     ? "Starting checkout..."
+                    : !billingActive && tier !== "trial"
+                      ? `${plan.label} temporarily unavailable`
                     : tier === "trial"
                       ? "Trial managed by platform admin"
                       : `Upgrade to ${plan.label}`}

@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { ensureManagedPlanStripePrice } from "@/lib/platformBilling";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
+
+function parsePriceCents(value: FormDataEntryValue | null, fallback: number) {
+  const raw = String(value || "").trim();
+  const amount = Number(raw);
+
+  if (!Number.isFinite(amount) || amount < 0) {
+    return fallback;
+  }
+
+  return Math.round(amount * 100);
+}
 
 export async function POST(req: Request) {
   try {
@@ -28,24 +40,85 @@ export async function POST(req: Request) {
       pricing_note:
         String(formData.get("pricing_note") || "").trim() ||
         "Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.",
+      pro_monthly_price_cents: parsePriceCents(formData.get("pro_monthly_price"), 1900),
+      elite_monthly_price_cents: parsePriceCents(formData.get("elite_monthly_price"), 4900),
+      pro_price_active: formData.get("pro_price_active") === "on",
+      elite_price_active: formData.get("elite_price_active") === "on",
     };
 
     const supabaseAdmin = createAdminClient();
-    const { data: existing } = await supabaseAdmin
+    const { data: existing, error: existingError } = await supabaseAdmin
       .from("platform_settings")
-      .select("id")
+      .select(
+        "id, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
+      )
       .limit(1)
       .maybeSingle();
 
-    if (existing?.id) {
-      await supabaseAdmin.from("platform_settings").update(payload).eq("id", existing.id);
-    } else {
-      await supabaseAdmin.from("platform_settings").insert(payload);
+    if (existingError) {
+      console.error("[admin/platform] settings lookup failed:", existingError);
+      return NextResponse.redirect(
+        new URL("/admin/platform?error=platform-settings-unavailable", req.url)
+      );
     }
 
-    return NextResponse.redirect(new URL("/admin/platform", req.url));
+    const nextPayload: Record<string, unknown> = {
+      ...payload,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (payload.pro_price_active) {
+      const proPrice = await ensureManagedPlanStripePrice({
+        plan: "pro",
+        amountCents: payload.pro_monthly_price_cents,
+        existingPriceId: existing?.pro_stripe_price_id || null,
+        existingProductId: existing?.pro_stripe_product_id || null,
+      });
+      nextPayload.pro_stripe_price_id = proPrice.stripePriceId;
+      nextPayload.pro_stripe_product_id = proPrice.stripeProductId;
+    }
+
+    if (payload.elite_price_active) {
+      const elitePrice = await ensureManagedPlanStripePrice({
+        plan: "elite",
+        amountCents: payload.elite_monthly_price_cents,
+        existingPriceId: existing?.elite_stripe_price_id || null,
+        existingProductId: existing?.elite_stripe_product_id || null,
+      });
+      nextPayload.elite_stripe_price_id = elitePrice.stripePriceId;
+      nextPayload.elite_stripe_product_id = elitePrice.stripeProductId;
+    }
+
+    let mutationError = null;
+
+    if (existing?.id) {
+      const { error } = await supabaseAdmin
+        .from("platform_settings")
+        .update(nextPayload)
+        .eq("id", existing.id);
+      mutationError = error;
+    } else {
+      const { error } = await supabaseAdmin.from("platform_settings").insert({
+        ...nextPayload,
+        created_at: new Date().toISOString(),
+      });
+      mutationError = error;
+    }
+
+    if (mutationError) {
+      console.error("[admin/platform] settings save failed:", mutationError);
+      return NextResponse.redirect(
+        new URL("/admin/platform?error=platform-settings-save-failed", req.url)
+      );
+    }
+
+    return NextResponse.redirect(
+      new URL("/admin/platform?success=platform-settings-saved", req.url)
+    );
   } catch (err) {
     console.error("[admin/platform] failed:", err);
-    return NextResponse.redirect(new URL("/admin/platform", req.url));
+    return NextResponse.redirect(
+      new URL("/admin/platform?error=platform-settings-save-failed", req.url)
+    );
   }
 }

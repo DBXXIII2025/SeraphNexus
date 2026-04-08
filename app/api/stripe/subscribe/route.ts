@@ -1,26 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
-import { requireEnv } from "@/lib/env";
+import { getManagedPlanPricing, getStripePriceIdForManagedPlan } from "@/lib/platformBilling";
 import { stripe } from "@/lib/stripe";
-import { isPlanTier, type PlanTier } from "@/lib/planConfig";
-
-function getPriceIdForPlan(plan: PlanTier) {
-  if (plan === "pro") {
-    return (
-      process.env.STRIPE_PRO_PRICE_ID ||
-      process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID ||
-      process.env.STRIPE_GROWTH_PRICE_ID ||
-      requireEnv("NEXT_PUBLIC_STRIPE_PRO_PRICE_ID")
-    );
-  }
-
-  return (
-    process.env.STRIPE_ELITE_PRICE_ID ||
-    process.env.NEXT_PUBLIC_STRIPE_ELITE_PRICE_ID ||
-    requireEnv("NEXT_PUBLIC_STRIPE_ELITE_PRICE_ID")
-  );
-}
+import { isPlanTier } from "@/lib/planConfig";
 
 export async function POST(req: Request) {
   try {
@@ -56,6 +39,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
+    const pricing = await getManagedPlanPricing(requestedPlan);
+    if (!pricing.active) {
+      return NextResponse.json(
+        {
+          error: `${requestedPlan === "pro" ? "Pro" : "Elite"} billing is currently unavailable.`,
+        },
+        { status: 403 }
+      );
+    }
+
     let customerId = business.stripe_customer_id;
 
     if (!customerId) {
@@ -75,13 +68,14 @@ export async function POST(req: Request) {
         .eq("id", business.id);
     }
 
+    const priceId = await getStripePriceIdForManagedPlan(requestedPlan);
     const appUrl = getAppUrl(req);
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       line_items: [
         {
-          price: getPriceIdForPlan(requestedPlan),
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -90,10 +84,15 @@ export async function POST(req: Request) {
       metadata: {
         business_id: business.id,
         plan: requestedPlan,
+        stripe_price_id: priceId,
       },
     });
 
-    return NextResponse.json({ url: session.url, plan: requestedPlan });
+    return NextResponse.json({
+      url: session.url,
+      plan: requestedPlan,
+      amountCents: pricing.monthlyPriceCents,
+    });
   } catch (err: unknown) {
     return NextResponse.json(
       {
