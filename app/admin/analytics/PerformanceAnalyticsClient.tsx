@@ -423,6 +423,12 @@ export default function PerformanceAnalyticsClient({
           </p>
         ) : null}
 
+        {state.data?.warnings && state.data.warnings.length > 0 ? (
+          <div className="mt-4 rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+            {state.data.warnings[0]}
+          </div>
+        ) : null}
+
         {state.status === "error" ? (
           <div className="mt-6">
             <button

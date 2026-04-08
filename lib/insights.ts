@@ -1,9 +1,13 @@
 function getBookingAmount(booking: any) {
-  if (typeof booking?.amount === "number") {
-    return booking.amount;
+  if (typeof booking?.amount_total === "number" && booking.amount_total > 0) {
+    return booking.amount_total / 100;
   }
 
-  return Number(booking?.amount_total || 0) / 100;
+  if (typeof booking?.total_amount === "number" && booking.total_amount > 0) {
+    return booking.total_amount > 1000 ? booking.total_amount / 100 : booking.total_amount;
+  }
+
+  return 0;
 }
 
 function getBookingDate(booking: any) {

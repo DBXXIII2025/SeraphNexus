@@ -57,6 +57,7 @@ export type AnalyticsResponse = {
   primaryMetric: Extract<AnalyticsMetric, "bookings" | "orders">;
   summary: AnalyticsSummary;
   buckets: AnalyticsBucket[];
+  warnings?: string[];
 };
 
 type OrderAnalyticsRow = {
@@ -77,7 +78,6 @@ type BookingAnalyticsRow = {
   payment_status: string | null;
   amount_total: number | null;
   total_amount: number | null;
-  amount: number | null;
   created_at: string | null;
   date: string | null;
   hidden_from_ui: boolean | null;
@@ -307,6 +307,66 @@ function summarizeBuckets(buckets: AnalyticsBucket[]): AnalyticsSummary {
   );
 }
 
+function extractMissingColumnName(message: string) {
+  const patterns = [
+    /column ["']([^"']+)["']/i,
+    /Could not find the ['"]([^'"]+)['"] column/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match?.[1]) {
+      return match[1].split(".").pop() || null;
+    }
+  }
+
+  return null;
+}
+
+async function selectBusinessRowsWithFallback<T extends Record<string, unknown>>(args: {
+  supabase: AnalyticsSupabaseClient;
+  table: string;
+  columns: string[];
+  businessId: string;
+  orderBy?: string;
+  warnings: string[];
+  contextLabel: string;
+}) {
+  const selectedColumns = [...args.columns];
+
+  for (let attempt = 0; attempt < args.columns.length; attempt += 1) {
+    const { data, error } = await args.supabase
+      .from(args.table)
+      .select(selectedColumns.join(","))
+      .eq("business_id", args.businessId)
+      .order(args.orderBy || "created_at", { ascending: true });
+
+    if (!error) {
+      return (data || []) as T[];
+    }
+
+    const message = error.message || `Failed to load ${args.contextLabel}.`;
+    const missingColumn = extractMissingColumnName(message);
+
+    if (!missingColumn || !selectedColumns.includes(missingColumn)) {
+      args.warnings.push(`${args.contextLabel} data could not be fully loaded.`);
+      return [] as T[];
+    }
+
+    const nextColumns = selectedColumns.filter((column) => column !== missingColumn);
+    selectedColumns.splice(0, selectedColumns.length, ...nextColumns);
+    args.warnings.push(
+      `${args.contextLabel} is missing column "${missingColumn}" in the current schema; analytics degraded gracefully.`
+    );
+
+    if (selectedColumns.length === 0) {
+      break;
+    }
+  }
+
+  return [] as T[];
+}
+
 function toVisibleFlag(hiddenFromUi: boolean | null | undefined) {
   return hiddenFromUi !== true;
 }
@@ -422,55 +482,80 @@ export async function getBusinessAnalyticsPerformance(args: {
   });
   const bucketMap = createBucketMap(range);
   const isOrderBusiness = isOrderBusinessType(args.business.business_type);
+  const warnings: string[] = [];
   const primaryMetric: Extract<AnalyticsMetric, "bookings" | "orders"> = isOrderBusiness
     ? "orders"
     : "bookings";
 
   if (isOrderBusiness) {
-    const { data, error } = await args.supabase
-      .from("orders")
-      .select(
-        "id,status,payment_status,total_amount,created_at,hidden_from_ui,cancelled_at,completed_at,fulfilled_at"
-      )
-      .eq("business_id", args.business.id)
-      .order("created_at", { ascending: true });
+    const rows = await selectBusinessRowsWithFallback<OrderAnalyticsRow>({
+      supabase: args.supabase,
+      table: "orders",
+      columns: [
+        "id",
+        "status",
+        "payment_status",
+        "total_amount",
+        "created_at",
+        "hidden_from_ui",
+        "cancelled_at",
+        "completed_at",
+        "fulfilled_at",
+      ],
+      businessId: args.business.id,
+      warnings,
+      contextLabel: "Order analytics",
+    });
 
-    if (error) {
-      throw new Error(error.message || "Failed to load order analytics.");
-    }
-
-    processOrderRows(bucketMap, (data || []) as OrderAnalyticsRow[]);
+    processOrderRows(bucketMap, rows);
   } else if (
     args.business.business_type === "rental" ||
     args.business.business_type === "property"
   ) {
-    const { data, error } = await args.supabase
-      .from("rental_reservations")
-      .select(
-        "id,status,payment_status,amount_total,created_at,check_in_date,hidden_from_ui,cancelled_at,completed_at,fulfilled_at"
-      )
-      .eq("business_id", args.business.id)
-      .order("created_at", { ascending: true });
+    const rows = await selectBusinessRowsWithFallback<ReservationAnalyticsRow>({
+      supabase: args.supabase,
+      table: "rental_reservations",
+      columns: [
+        "id",
+        "status",
+        "payment_status",
+        "amount_total",
+        "created_at",
+        "check_in_date",
+        "hidden_from_ui",
+        "cancelled_at",
+        "completed_at",
+        "fulfilled_at",
+      ],
+      businessId: args.business.id,
+      warnings,
+      contextLabel: "Reservation analytics",
+    });
 
-    if (error) {
-      throw new Error(error.message || "Failed to load reservation analytics.");
-    }
-
-    processReservationRows(bucketMap, (data || []) as ReservationAnalyticsRow[]);
+    processReservationRows(bucketMap, rows);
   } else {
-    const { data, error } = await args.supabase
-      .from("bookings")
-      .select(
-        "id,status,payment_status,amount_total,total_amount,amount,created_at,date,hidden_from_ui,cancelled_at,completed_at,fulfilled_at"
-      )
-      .eq("business_id", args.business.id)
-      .order("created_at", { ascending: true });
+    const rows = await selectBusinessRowsWithFallback<BookingAnalyticsRow>({
+      supabase: args.supabase,
+      table: "bookings",
+      columns: [
+        "id",
+        "status",
+        "payment_status",
+        "amount_total",
+        "total_amount",
+        "created_at",
+        "date",
+        "hidden_from_ui",
+        "cancelled_at",
+        "completed_at",
+        "fulfilled_at",
+      ],
+      businessId: args.business.id,
+      warnings,
+      contextLabel: "Booking analytics",
+    });
 
-    if (error) {
-      throw new Error(error.message || "Failed to load booking analytics.");
-    }
-
-    processBookingRows(bucketMap, (data || []) as BookingAnalyticsRow[]);
+    processBookingRows(bucketMap, rows);
   }
 
   const buckets = Array.from(bucketMap.values());
@@ -489,5 +574,6 @@ export async function getBusinessAnalyticsPerformance(args: {
     primaryMetric,
     summary: summarizeBuckets(buckets),
     buckets,
+    warnings,
   } satisfies AnalyticsResponse;
 }

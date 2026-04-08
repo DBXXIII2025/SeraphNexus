@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { resolveBookingGrossAmount } from "@/lib/paymentMath";
 import type { Database } from "@/types/database";
 
 type BookingLike = Database["public"]["Tables"]["bookings"]["Row"] &
@@ -69,7 +70,11 @@ export default function DashboardCharts({ bookings, leads }: Props) {
 
   const revenue = safeBookings.reduce(
     (sum, booking) =>
-      sum + (booking.amount || Number(booking.amount_total || 0) / 100 || 0),
+      sum +
+      resolveBookingGrossAmount({
+        amount_total: booking.amount_total,
+        total_amount: booking.total_amount,
+      }),
     0
   );
   const totalBookings = safeBookings.length;
