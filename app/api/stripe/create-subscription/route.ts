@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         .eq("id", business.id);
     }
 
-    const priceId = body?.priceId || getPriceIdForPlan(requestedPlan);
+    const priceId = getPriceIdForPlan(requestedPlan);
 
     const appUrl = getAppUrl(req);
     const session = await stripe.checkout.sessions.create({

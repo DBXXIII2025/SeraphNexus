@@ -20,6 +20,18 @@ type NormalizedMessage = {
   read_at_client: string | null;
 };
 
+type ThreadConversationResponse = {
+  id: string;
+  subject: string | null;
+  business_id: string;
+  source: string | null;
+};
+
+type ThreadBusinessResponse = {
+  id: string;
+  name: string | null;
+};
+
 function normalizeThreadMessage(
   value: Record<string, unknown>,
   access: NonNullable<Awaited<ReturnType<typeof getAuthorizedConversationForUser>>["conversation"]>
@@ -35,6 +47,29 @@ function normalizeThreadMessage(
     created_at: value.created_at ? String(value.created_at) : null,
     read_at_business: !isBusinessSender && value.read_at ? String(value.read_at) : null,
     read_at_client: isBusinessSender && value.read_at ? String(value.read_at) : null,
+  };
+}
+
+function normalizeThreadConversation(
+  access: NonNullable<Awaited<ReturnType<typeof getAuthorizedConversationForUser>>["conversation"]>
+): ThreadConversationResponse {
+  return {
+    id: access.id,
+    subject: access.subject || null,
+    business_id: access.business_id,
+    source:
+      typeof access.source === "string" && access.source.startsWith("/")
+        ? access.source
+        : null,
+  };
+}
+
+function normalizeThreadBusiness(
+  business: NonNullable<Awaited<ReturnType<typeof getAuthorizedConversationForUser>>["business"]>
+): ThreadBusinessResponse {
+  return {
+    id: business.id,
+    name: business.name || null,
   };
 }
 
@@ -143,8 +178,8 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({
-      conversation: access.conversation,
-      business: access.business,
+      conversation: normalizeThreadConversation(access.conversation),
+      business: normalizeThreadBusiness(access.business),
       role: access.role,
       messages: visibleMessages,
     });

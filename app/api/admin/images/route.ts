@@ -1,66 +1,65 @@
 import { NextResponse } from "next/server";
+import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { createClient } from "@/lib/supabase/server";
+
+function normalizeRequiredId(value: unknown) {
+  const id = typeof value === "string" ? value.trim() : "";
+  return id.length > 0 ? id : null;
+}
+
+function normalizeImageUrl(value: unknown) {
+  const imageUrl = typeof value === "string" ? value.trim() : "";
+  return imageUrl.length > 0 ? imageUrl : null;
+}
 
 export async function POST(req: Request) {
   try {
-    // ✅ FIX: await client
-    const supabase = await createClient();
-
     const body = await req.json();
-    const { image_url } = body;
+    const propertyId = normalizeRequiredId(body?.property_id);
+    const imageUrl = normalizeImageUrl(body?.image_url);
 
-    // 1. Get user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
+    if (!propertyId || !imageUrl) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        { error: "property_id and image_url are required" },
+        { status: 400 }
       );
     }
 
-    // 🔥 FORCE TABLE TYPES
-    const businessesTable = supabase.from("businesses") as any;
-    const imagesTable = supabase.from("property_images") as any;
-
-    // 2. Get business
-    const { data: businessData } = await businessesTable
-      .select("id")
-      .eq("owner_id", user.id)
-      .single();
-
-    const business = businessData as { id: string } | null;
-
+    const business = await getActiveBusiness();
     if (!business) {
-      return NextResponse.json(
-        { error: "Business not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Active business not found" }, { status: 404 });
     }
 
-    // 3. Insert image
-    const { data, error } = await imagesTable
+    const supabase = await createClient();
+    const { data: property, error: propertyError } = await supabase
+      .from("property")
+      .select("id")
+      .eq("id", propertyId)
+      .eq("business_id", business.id)
+      .maybeSingle();
+
+    if (propertyError || !property) {
+      return NextResponse.json({ error: "Property not found" }, { status: 404 });
+    }
+
+    const { data, error } = await supabase
+      .from("property_images")
       .insert({
-        image_url,
+        property_id: propertyId,
         business_id: business.id,
+        image_url: imageUrl,
       })
       .select()
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: "Failed to add image" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to add image" }, { status: 500 });
     }
 
     return NextResponse.json({ image: data });
-  } catch (err: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: err.message },
+      { error: error instanceof Error ? error.message : "Failed to add image" },
       { status: 500 }
     );
   }

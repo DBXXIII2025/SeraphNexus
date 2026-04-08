@@ -65,12 +65,8 @@ export async function POST(req: Request) {
   const isDev = process.env.NODE_ENV !== "production";
 
   try {
-    console.log("[stripe/connect] route start");
-
     const body = (await req.json().catch(() => null)) as ConnectPayload | null;
     const businessId = body?.businessId?.trim();
-
-    console.log("[stripe/connect] received businessId:", businessId || null);
 
     if (!businessId) {
       return NextResponse.json(
@@ -79,17 +75,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const stripeKey = validateStripeSecretKey();
-    console.log("[stripe/connect] stripe key loaded:", Boolean(stripeKey));
-    console.log("[stripe/connect] stripe key prefix:", stripeKey.slice(0, 7));
+    validateStripeSecretKey();
 
     const supabase = await createClient();
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
-
-    console.log("[stripe/connect] authenticated user id:", user?.id || null);
 
     if (userError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -100,8 +92,6 @@ export async function POST(req: Request) {
       .select("*")
       .eq("id", businessId)
       .maybeSingle();
-
-    console.log("[stripe/connect] business found:", Boolean(business));
 
     if (businessError) {
       return NextResponse.json(
@@ -138,21 +128,7 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log(
-      "[stripe/connect] current business.stripe_account_id:",
-      ownedBusiness.stripe_account_id || null
-    );
-    console.log(
-      "[stripe/connect] business.name exists:",
-      isNonEmpty(ownedBusiness.name)
-    );
-    console.log(
-      "[stripe/connect] business.email exists:",
-      isNonEmpty(ownedBusiness.email)
-    );
-
     const baseUrl = getValidatedBaseUrl(req);
-    console.log("[stripe/connect] baseUrl:", baseUrl);
 
     let stripeAccountId = ownedBusiness.stripe_account_id;
 
@@ -182,17 +158,14 @@ export async function POST(req: Request) {
 
       if (isNonEmpty(ownedBusiness.name)) {
         accountPayload.business_profile = {
-          name: ownedBusiness.name.trim(),
+          name: String(ownedBusiness.name).trim(),
         };
       }
 
-      console.log("[stripe/connect] before stripe.accounts.create");
       const account = await stripe.accounts.create(accountPayload);
-      console.log("[stripe/connect] after stripe.accounts.create:", account.id);
 
       stripeAccountId = account.id;
 
-      console.log("[stripe/connect] before DB update");
       const { error: updateError } = await supabase
         .from("businesses")
         .update({
@@ -210,7 +183,6 @@ export async function POST(req: Request) {
           { status: 500 }
         );
       }
-      console.log("[stripe/connect] after DB update");
     }
 
     const refreshUrl = new URL("/admin/settings", baseUrl);
@@ -221,17 +193,12 @@ export async function POST(req: Request) {
     const returnUrl = new URL("/api/stripe/return", baseUrl);
     returnUrl.searchParams.set("businessId", ownedBusiness.id);
 
-    console.log("[stripe/connect] refresh_url:", refreshUrl.toString());
-    console.log("[stripe/connect] return_url:", returnUrl.toString());
-
-    console.log("[stripe/connect] before stripe.accountLinks.create");
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
       refresh_url: refreshUrl.toString(),
       return_url: returnUrl.toString(),
       type: "account_onboarding",
     });
-    console.log("[stripe/connect] after stripe.accountLinks.create: success");
 
     return NextResponse.json({
       url: accountLink.url,
@@ -253,13 +220,14 @@ export async function POST(req: Request) {
           : undefined,
     };
 
-    console.error("[stripe/connect] full error object:", err);
-    console.error("[stripe/connect] error name:", debug.name);
-    console.error("[stripe/connect] error message:", debug.message);
-    console.error("[stripe/connect] error type:", debug.type);
-    console.error("[stripe/connect] error code:", debug.code);
-    console.error("[stripe/connect] error statusCode:", debug.statusCode);
-    console.error("[stripe/connect] error raw.message:", debug.rawMessage);
+    console.error("[stripe/connect] failed", {
+      name: debug.name,
+      message: debug.message,
+      type: debug.type,
+      code: debug.code,
+      statusCode: debug.statusCode,
+      rawMessage: debug.rawMessage,
+    });
 
     return NextResponse.json(
       {

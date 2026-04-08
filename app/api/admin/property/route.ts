@@ -1,50 +1,52 @@
 import { NextResponse } from "next/server";
+import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { createClient } from "@/lib/supabase/server";
+
+function normalizeName(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const name = value.trim();
+  return name.length > 0 ? name.slice(0, 160) : null;
+}
+
+function normalizeDescription(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const description = value.trim();
+  return description.length > 0 ? description.slice(0, 5000) : null;
+}
+
+function normalizePrice(value: unknown) {
+  const price = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : null;
+}
 
 export async function POST(req: Request) {
   try {
-    // ✅ FIX: await client
-    const supabase = await createClient();
-
     const body = await req.json();
-    const { name, price } = body;
+    const name = normalizeName(body?.name);
+    const description = normalizeDescription(body?.description);
+    const price = normalizePrice(body?.price);
 
-    // 1. Get user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    if (!name || price === null) {
+      return NextResponse.json({ error: "Valid name and price are required" }, { status: 400 });
     }
 
-    // 🔥 FORCE TABLE TYPES
-    const businessesTable = supabase.from("businesses") as any;
-    const propertyTable = supabase.from("property") as any;
-
-    // 2. Get business
-    const { data: businessData } = await businessesTable
-      .select("id")
-      .eq("owner_id", user.id)
-      .single();
-
-    const business = businessData as { id: string } | null;
-
+    const business = await getActiveBusiness();
     if (!business) {
-      return NextResponse.json(
-        { error: "Business not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Active business not found" }, { status: 404 });
     }
 
-    // 3. Create property
-    const { data, error } = await propertyTable
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("property")
       .insert({
         name,
+        description: description || null,
         price,
         business_id: business.id,
       })
@@ -52,16 +54,13 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: "Failed to create property" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to create property" }, { status: 500 });
     }
 
     return NextResponse.json({ property: data });
-  } catch (err: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: err.message },
+      { error: error instanceof Error ? error.message : "Failed to create property" },
       { status: 500 }
     );
   }

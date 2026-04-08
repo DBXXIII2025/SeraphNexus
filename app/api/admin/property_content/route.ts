@@ -1,79 +1,71 @@
 import { NextResponse } from "next/server";
+import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { createClient } from "@/lib/supabase/server";
+
+function normalizeRequiredId(value: unknown) {
+  const id = typeof value === "string" ? value.trim() : "";
+  return id.length > 0 ? id : null;
+}
+
+function normalizeText(value: unknown, maxLength = 5000) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const text = value.trim();
+  return text.length > 0 ? text.slice(0, maxLength) : null;
+}
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient(); // ✅ MUST await
-
     const body = await req.json();
-    const { property_id, title, description } = body;
+    const propertyId = normalizeRequiredId(body?.property_id);
+    const title = normalizeText(body?.title, 255);
+    const description = normalizeText(body?.description);
 
-    // 1. Get user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
+    if (!propertyId || !title || !description) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        { error: "property_id, title, and description are required" },
+        { status: 400 }
       );
     }
 
-    // 🔥 FORCE TABLE TYPES
-    const businessesTable = supabase.from("businesses") as any;
-    const propertyTable = supabase.from("property") as any;
-    const contentTable = supabase.from("property_content") as any;
-
-    // 2. Get business
-    const { data: businessData } = await businessesTable
-      .select("id")
-      .eq("owner_id", user.id)
-      .single();
-
-    const business = businessData as { id: string } | null;
-
+    const business = await getActiveBusiness();
     if (!business) {
-      return NextResponse.json(
-        { error: "Business not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Active business not found" }, { status: 404 });
     }
 
-    // 3. Validate property belongs to business
-    const { data: property } = await propertyTable
+    const supabase = await createClient();
+    const { data: property, error: propertyError } = await supabase
+      .from("property")
       .select("id")
-      .eq("id", property_id)
+      .eq("id", propertyId)
       .eq("business_id", business.id)
-      .single();
+      .maybeSingle();
 
-    if (!property) {
-      return NextResponse.json(
-        { error: "Property not found" },
-        { status: 404 }
-      );
+    if (propertyError || !property) {
+      return NextResponse.json({ error: "Property not found" }, { status: 404 });
     }
 
-    // 4. Upsert content
-    const { data, error } = await contentTable.upsert({
-      property_id,
-      business_id: business.id,
-      title,
-      description,
-    });
+    const { data, error } = await supabase
+      .from("property_content")
+      .upsert({
+        property_id: propertyId,
+        business_id: business.id,
+        title,
+        description,
+      })
+      .select()
+      .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: "Failed to save content" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to save content" }, { status: 500 });
     }
 
     return NextResponse.json({ content: data });
-  } catch (err: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: err.message },
+      { error: error instanceof Error ? error.message : "Failed to save content" },
       { status: 500 }
     );
   }

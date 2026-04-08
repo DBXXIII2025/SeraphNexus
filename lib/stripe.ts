@@ -18,9 +18,6 @@ if (
   );
 }
 
-console.log("Stripe key loaded:", true);
-console.log("Stripe key prefix:", stripeSecretKey.slice(0, 7));
-
 export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2026-01-28.clover",
 });

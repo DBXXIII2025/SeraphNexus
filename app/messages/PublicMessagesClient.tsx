@@ -7,7 +7,7 @@ import { getGuestConversationCookieName } from "@/lib/messageThreadCookies";
 
 function getDefaultSourceHref(source: string | null) {
   const value = String(source || "").trim();
-  return value || "/explore";
+  return value.startsWith("/") ? value : "/explore";
 }
 
 export default function PublicMessagesClient({
