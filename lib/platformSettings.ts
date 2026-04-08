@@ -31,15 +31,8 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   elite_monthly_price_cents: 4900,
   pro_price_active: true,
   elite_price_active: true,
-  pro_stripe_price_id:
-    process.env.STRIPE_PRO_PRICE_ID ||
-    process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID ||
-    process.env.STRIPE_GROWTH_PRICE_ID ||
-    null,
-  elite_stripe_price_id:
-    process.env.STRIPE_ELITE_PRICE_ID ||
-    process.env.NEXT_PUBLIC_STRIPE_ELITE_PRICE_ID ||
-    null,
+  pro_stripe_price_id: null,
+  elite_stripe_price_id: null,
   pro_stripe_product_id: null,
   elite_stripe_product_id: null,
 };

@@ -27,23 +27,6 @@ export type ManagedStripePriceDetails = {
   productId: string | null;
 };
 
-function defaultEnvPriceId(plan: ManagedBillingPlan) {
-  if (plan === "pro") {
-    return (
-      process.env.STRIPE_PRO_PRICE_ID ||
-      process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID ||
-      process.env.STRIPE_GROWTH_PRICE_ID ||
-      null
-    );
-  }
-
-  return (
-    process.env.STRIPE_ELITE_PRICE_ID ||
-    process.env.NEXT_PUBLIC_STRIPE_ELITE_PRICE_ID ||
-    null
-  );
-}
-
 export function formatMonthlyPriceLabel(amountCents: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -61,7 +44,7 @@ export function getManagedPlanPricingFromSettings(
       monthlyPriceCents: settings.pro_monthly_price_cents,
       monthlyPriceLabel: formatMonthlyPriceLabel(settings.pro_monthly_price_cents),
       active: settings.pro_price_active,
-      stripePriceId: settings.pro_stripe_price_id || defaultEnvPriceId(plan),
+      stripePriceId: settings.pro_stripe_price_id,
       stripeProductId: settings.pro_stripe_product_id || null,
     };
   }
@@ -71,7 +54,7 @@ export function getManagedPlanPricingFromSettings(
     monthlyPriceCents: settings.elite_monthly_price_cents,
     monthlyPriceLabel: formatMonthlyPriceLabel(settings.elite_monthly_price_cents),
     active: settings.elite_price_active,
-    stripePriceId: settings.elite_stripe_price_id || defaultEnvPriceId(plan),
+    stripePriceId: settings.elite_stripe_price_id,
     stripeProductId: settings.elite_stripe_product_id || null,
   };
 }
