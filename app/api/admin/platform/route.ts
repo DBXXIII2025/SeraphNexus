@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ensureManagedPlanStripePrice } from "@/lib/platformBilling";
@@ -14,6 +15,11 @@ function parsePriceCents(value: FormDataEntryValue | null, fallback: number) {
   return Math.round(amount * 100);
 }
 
+function normalizeOptionalString(value: FormDataEntryValue | null) {
+  const normalized = String(value || "").trim();
+  return normalized || null;
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -26,6 +32,10 @@ export async function POST(req: Request) {
     }
 
     const formData = await req.formData();
+    const selectedProPriceId = normalizeOptionalString(formData.get("pro_stripe_price_id_override"));
+    const selectedElitePriceId = normalizeOptionalString(
+      formData.get("elite_stripe_price_id_override")
+    );
     const payload = {
       platform_name: String(formData.get("platform_name") || "").trim() || "Seraph Nexus",
       marketing_headline:
@@ -73,9 +83,11 @@ export async function POST(req: Request) {
         amountCents: payload.pro_monthly_price_cents,
         existingPriceId: existing?.pro_stripe_price_id || null,
         existingProductId: existing?.pro_stripe_product_id || null,
+        selectedPriceId: selectedProPriceId,
       });
       nextPayload.pro_stripe_price_id = proPrice.stripePriceId;
       nextPayload.pro_stripe_product_id = proPrice.stripeProductId;
+      nextPayload.pro_monthly_price_cents = proPrice.amountCents;
     }
 
     if (payload.elite_price_active) {
@@ -84,9 +96,11 @@ export async function POST(req: Request) {
         amountCents: payload.elite_monthly_price_cents,
         existingPriceId: existing?.elite_stripe_price_id || null,
         existingProductId: existing?.elite_stripe_product_id || null,
+        selectedPriceId: selectedElitePriceId,
       });
       nextPayload.elite_stripe_price_id = elitePrice.stripePriceId;
       nextPayload.elite_stripe_product_id = elitePrice.stripeProductId;
+      nextPayload.elite_monthly_price_cents = elitePrice.amountCents;
     }
 
     let mutationError = null;
@@ -111,6 +125,10 @@ export async function POST(req: Request) {
         new URL("/admin/platform?error=platform-settings-save-failed", req.url)
       );
     }
+
+    revalidatePath("/admin/platform");
+    revalidatePath("/pricing");
+    revalidatePath("/admin/upgrade");
 
     return NextResponse.redirect(
       new URL("/admin/platform?success=platform-settings-saved", req.url)

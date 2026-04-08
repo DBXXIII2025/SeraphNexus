@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getConfiguredAppUrl } from "@/lib/appUrl";
 import {
   formatMonthlyPriceLabel,
+  getManagedPlanPricingState,
   getPlatformStripeEnvironmentSummary,
 } from "@/lib/platformBilling";
 import { getActiveAccessGrantList } from "@/lib/accessGrantAdmin";
@@ -282,12 +283,14 @@ export default async function PlatformPage({
     );
   }
 
-  const [platformData, , activeGrants, activePlanGrants, planGrantHistory] = await Promise.all([
+  const [platformData, , activeGrants, activePlanGrants, planGrantHistory, proPricing, elitePricing] = await Promise.all([
     getPlatformAdminData(),
     getPlatformOwnerBusinessAudits(user!.id),
     getActiveAccessGrantList(),
     getActivePlanGrantList(),
     getPlanGrantHistoryList(),
+    getManagedPlanPricingState("pro"),
+    getManagedPlanPricingState("elite"),
   ]);
   const incomeAudit = getPlatformIncomeAudit();
   const grantCreateLinkBase = getConfiguredAppUrl() || "";
@@ -408,6 +411,14 @@ export default async function PlatformPage({
               <p className="text-xs text-[var(--text-muted)]">
                 Current Stripe price: {settings.pro_stripe_price_id || "Will be created on save"}
               </p>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Use existing active Stripe price ID</span>
+                <input
+                  name="pro_stripe_price_id_override"
+                  placeholder={settings.pro_stripe_price_id || "price_..."}
+                  className="input-field mt-2"
+                />
+              </label>
             </div>
 
             <div className="form-section space-y-4">
@@ -429,6 +440,14 @@ export default async function PlatformPage({
               <p className="text-xs text-[var(--text-muted)]">
                 Current Stripe price: {settings.elite_stripe_price_id || "Will be created on save"}
               </p>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Use existing active Stripe price ID</span>
+                <input
+                  name="elite_stripe_price_id_override"
+                  placeholder={settings.elite_stripe_price_id || "price_..."}
+                  className="input-field mt-2"
+                />
+              </label>
             </div>
           </div>
 
@@ -509,10 +528,28 @@ export default async function PlatformPage({
                 <p className="text-sm text-[var(--text-soft)]">
                   Pro: <span className="text-[var(--text-strong)]">{formatMonthlyPriceLabel(settings.pro_monthly_price_cents)}</span> | {settings.pro_price_active ? "Active" : "Inactive"}
                 </p>
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
+                  Live Stripe price: {proPricing.stripePrice?.id || "Not configured"} |{" "}
+                  {proPricing.stripePrice?.unitAmountLabel || "No Stripe-backed amount"} |{" "}
+                  {proPricing.stripePrice
+                    ? proPricing.stripePrice.livemode
+                      ? "Live mode"
+                      : "Test mode"
+                    : "No Stripe price"}
+                </p>
               </div>
               <div className="table-row-panel p-4">
                 <p className="text-sm text-[var(--text-soft)]">
                   Elite: <span className="text-[var(--text-strong)]">{formatMonthlyPriceLabel(settings.elite_monthly_price_cents)}</span> | {settings.elite_price_active ? "Active" : "Inactive"}
+                </p>
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
+                  Live Stripe price: {elitePricing.stripePrice?.id || "Not configured"} |{" "}
+                  {elitePricing.stripePrice?.unitAmountLabel || "No Stripe-backed amount"} |{" "}
+                  {elitePricing.stripePrice
+                    ? elitePricing.stripePrice.livemode
+                      ? "Live mode"
+                      : "Test mode"
+                    : "No Stripe price"}
                 </p>
               </div>
             </div>

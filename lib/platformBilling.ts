@@ -16,6 +16,17 @@ export type ManagedPlanPricing = {
   stripeProductId: string | null;
 };
 
+export type ManagedStripePriceDetails = {
+  id: string;
+  unitAmountCents: number | null;
+  unitAmountLabel: string;
+  active: boolean;
+  livemode: boolean;
+  currency: string;
+  interval: string | null;
+  productId: string | null;
+};
+
 function defaultEnvPriceId(plan: ManagedBillingPlan) {
   if (plan === "pro") {
     return (
@@ -68,6 +79,40 @@ export function getManagedPlanPricingFromSettings(
 export async function getManagedPlanPricing(plan: ManagedBillingPlan) {
   const settings = await getPlatformSettings();
   return getManagedPlanPricingFromSettings(settings, plan);
+}
+
+async function getStripePriceDetails(priceId: string | null): Promise<ManagedStripePriceDetails | null> {
+  if (!priceId) {
+    return null;
+  }
+
+  try {
+    const price = await stripe.prices.retrieve(priceId);
+    const unitAmountCents = typeof price.unit_amount === "number" ? price.unit_amount : null;
+
+    return {
+      id: price.id,
+      unitAmountCents,
+      unitAmountLabel: formatMonthlyPriceLabel(unitAmountCents || 0),
+      active: price.active,
+      livemode: price.livemode,
+      currency: price.currency,
+      interval: price.recurring?.interval || null,
+      productId: typeof price.product === "string" ? price.product : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getManagedPlanPricingState(plan: ManagedBillingPlan) {
+  const pricing = await getManagedPlanPricing(plan);
+  const stripePrice = await getStripePriceDetails(pricing.stripePriceId);
+
+  return {
+    ...pricing,
+    stripePrice,
+  };
 }
 
 export async function getStripePriceIdForManagedPlan(plan: ManagedBillingPlan) {
@@ -163,7 +208,32 @@ export async function ensureManagedPlanStripePrice(args: {
   amountCents: number;
   existingPriceId: string | null;
   existingProductId: string | null;
+  selectedPriceId?: string | null;
 }) {
+  const selectedPriceId = args.selectedPriceId?.trim() || null;
+  if (selectedPriceId) {
+    const selectedPrice = await stripe.prices.retrieve(selectedPriceId);
+    if (
+      !selectedPrice.active ||
+      selectedPrice.currency !== "usd" ||
+      selectedPrice.recurring?.interval !== "month"
+    ) {
+      throw new Error(
+        `${args.plan === "pro" ? "Pro" : "Elite"} selected Stripe price must be an active USD monthly recurring price.`
+      );
+    }
+
+    return {
+      stripePriceId: selectedPrice.id,
+      stripeProductId:
+        typeof selectedPrice.product === "string" ? selectedPrice.product : null,
+      amountCents:
+        typeof selectedPrice.unit_amount === "number"
+          ? selectedPrice.unit_amount
+          : args.amountCents,
+    };
+  }
+
   const productId = await ensurePlanProduct(args.plan, args.existingProductId);
   const reusablePriceId = await reuseCompatiblePrice(
     args.existingPriceId,
@@ -175,6 +245,7 @@ export async function ensureManagedPlanStripePrice(args: {
     return {
       stripePriceId: reusablePriceId,
       stripeProductId: productId,
+      amountCents: args.amountCents,
     };
   }
 
@@ -192,17 +263,10 @@ export async function ensureManagedPlanStripePrice(args: {
     },
   });
 
-  if (args.existingPriceId && args.existingPriceId !== createdPrice.id) {
-    try {
-      await stripe.prices.update(args.existingPriceId, {
-        active: false,
-      });
-    } catch {}
-  }
-
   return {
     stripePriceId: createdPrice.id,
     stripeProductId: productId,
+    amountCents: args.amountCents,
   };
 }
 

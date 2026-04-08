@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getFeatureGate } from "@/lib/planEnforcement";
+import { ensureBusinessStripeExpressAccount } from "@/lib/stripeConnect";
 import { stripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -78,13 +79,6 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!ownedBusiness.stripe_account_id) {
-      return NextResponse.json(
-        { error: "Connect Stripe before opening Stripe account management." },
-        { status: 400 }
-      );
-    }
-
     const baseUrl = getValidatedBaseUrl(req);
     const refreshUrl = new URL("/admin/settings", baseUrl);
     refreshUrl.searchParams.set("businessId", ownedBusiness.id);
@@ -94,9 +88,16 @@ export async function POST(req: Request) {
     const returnUrl = new URL("/api/stripe/return", baseUrl);
     returnUrl.searchParams.set("businessId", ownedBusiness.id);
 
-    const account = await stripe.accounts.retrieve(ownedBusiness.stripe_account_id);
+    const stripeAccountId = await ensureBusinessStripeExpressAccount({
+      supabase,
+      business: ownedBusiness,
+      ownerUserId: user.id,
+      ownerEmail: user.email || null,
+    });
+
+    const account = await stripe.accounts.retrieve(stripeAccountId);
     if (!("deleted" in account) && account.type === "express" && account.details_submitted) {
-      const loginLink = await stripe.accounts.createLoginLink(ownedBusiness.stripe_account_id, {
+      const loginLink = await stripe.accounts.createLoginLink(stripeAccountId, {
         redirect_url: refreshUrl.toString(),
       });
 
@@ -104,7 +105,7 @@ export async function POST(req: Request) {
     }
 
     const accountLink = await stripe.accountLinks.create({
-      account: ownedBusiness.stripe_account_id,
+      account: stripeAccountId,
       refresh_url: refreshUrl.toString(),
       return_url: returnUrl.toString(),
       type: "account_onboarding",

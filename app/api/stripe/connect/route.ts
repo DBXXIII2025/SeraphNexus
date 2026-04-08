@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getFeatureGate } from "@/lib/planEnforcement";
+import { ensureBusinessStripeExpressAccount } from "@/lib/stripeConnect";
 import { stripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -28,10 +29,6 @@ type StripeLikeError = Error & {
     message?: string;
   } | unknown;
 };
-
-function isNonEmpty(value: string | null | undefined) {
-  return typeof value === "string" && value.trim().length > 0;
-}
 
 function validateStripeSecretKey() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -133,56 +130,12 @@ export async function POST(req: Request) {
     let stripeAccountId = ownedBusiness.stripe_account_id;
 
     if (!stripeAccountId) {
-      const accountPayload: {
-        type: "standard";
-        email?: string;
-        metadata: {
-          business_id: string;
-          owner_user_id: string;
-        };
-        business_profile?: {
-          name?: string;
-        };
-      } = {
-        type: "standard",
-        metadata: {
-          business_id: ownedBusiness.id,
-          owner_user_id: user.id,
-        },
-      };
-
-      const accountEmail = ownedBusiness.email || user.email || undefined;
-      if (accountEmail) {
-        accountPayload.email = accountEmail;
-      }
-
-      if (isNonEmpty(ownedBusiness.name)) {
-        accountPayload.business_profile = {
-          name: String(ownedBusiness.name).trim(),
-        };
-      }
-
-      const account = await stripe.accounts.create(accountPayload);
-
-      stripeAccountId = account.id;
-
-      const { error: updateError } = await supabase
-        .from("businesses")
-        .update({
-          stripe_account_id: stripeAccountId,
-          stripe_onboarding_complete: false,
-          stripe_charges_enabled: false,
-          stripe_payouts_enabled: false,
-        })
-        .eq("id", ownedBusiness.id)
-        .eq("owner_id", user.id);
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: updateError.message },
-          { status: 500 }
-        );
-      }
+      stripeAccountId = await ensureBusinessStripeExpressAccount({
+        supabase,
+        business: ownedBusiness,
+        ownerUserId: user.id,
+        ownerEmail: user.email || null,
+      });
     }
 
     const refreshUrl = new URL("/admin/settings", baseUrl);
