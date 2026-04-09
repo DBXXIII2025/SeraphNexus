@@ -50,6 +50,10 @@ function getPublicCancelUrl(baseUrl: string, businessType: string | null | undef
   return baseUrl;
 }
 
+function normalizeUsdAmountToCents(value: number) {
+  return Math.round(value * 100);
+}
+
 export async function POST(req: Request) {
   let step = "request.parse";
 
@@ -280,16 +284,18 @@ export async function POST(req: Request) {
       slot: bookingSlot,
       demandScore,
       gapDiscount,
-      basePrice: 100,
+      basePrice: 0,
       pricingRules: servicePricingRules,
       dayOfWeek: new Date(`${date}T12:00:00`).getDay(),
     });
 
     const price = pricing.price;
     const priceAdjustment = pricing.priceAdjustment;
+    const currency = "usd";
+    const unitAmount = normalizeUsdAmountToCents(price);
 
     const feePercent = getPlatformFeePercent(effectivePlan);
-    const applicationFee = Math.round(price * 100 * feePercent);
+    const applicationFee = Math.round(unitAmount * feePercent);
     const baseUrl = getBaseUrl(req);
 
     console.log("[stripe/create-checkout-session] pricing rules:", {
@@ -298,6 +304,13 @@ export async function POST(req: Request) {
       appliedAmountAdjustment: pricing.appliedAmountAdjustment,
       appliedPercentageAdjustment: pricing.appliedPercentageAdjustment,
       fallbackPricingUsed: pricing.fallbackUsed,
+    });
+    console.log("[stripe/create-checkout-session] stripe amount audit", {
+      businessId: business_id,
+      rawServicePriceFromDb: null,
+      computedStripeAmount: price,
+      currency,
+      finalUnitAmount: unitAmount,
     });
 
     try {
@@ -328,8 +341,8 @@ export async function POST(req: Request) {
         {
           quantity: 1,
           price_data: {
-            currency: "usd",
-            unit_amount: Math.round(price * 100),
+            currency,
+            unit_amount: unitAmount,
             product_data: {
               name: `${business.name || "Booking"} - ${date}`,
               description: `${start_time} - ${end_time}`,
@@ -364,7 +377,7 @@ export async function POST(req: Request) {
         address_json: JSON.stringify({
           line1: String(client_address || ""),
         }),
-        amount_total: String(Math.round(price * 100)),
+        amount_total: String(unitAmount),
         platform_fee: String(applicationFee),
         demand_score: String(demandScore),
         price_adjustment: String(priceAdjustment),
@@ -388,8 +401,8 @@ export async function POST(req: Request) {
       payment_status: "pending",
       stripe_session_id: session.id,
       amount: price,
-      amount_total: Math.round(price * 100),
-      total_amount: Math.round(price * 100),
+      amount_total: unitAmount,
+      total_amount: unitAmount,
       platform_fee: applicationFee / 100,
       metadata: {
         service_mode,

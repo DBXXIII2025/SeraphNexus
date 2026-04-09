@@ -231,6 +231,10 @@ function toBookingPlatformFeeValue(applicationFeeCents: number) {
   return Math.max(0, Math.round(applicationFeeCents / 100));
 }
 
+function normalizeUsdAmountToCents(value: number) {
+  return Math.round(value * 100);
+}
+
 export async function POST(req: Request) {
   const isDev = process.env.NODE_ENV !== "production";
   let step = "request.parse";
@@ -1336,7 +1340,7 @@ export async function POST(req: Request) {
       basePrice:
         Number.isFinite(Number(selectedService?.price)) && Number(selectedService?.price) > 0
           ? Number(selectedService?.price)
-          : 100,
+          : 0,
       pricingRules: servicePricingRules,
       serviceId: selectedService?.id || null,
       dayOfWeek: new Date(`${slot.date}T12:00:00`).getDay(),
@@ -1344,7 +1348,13 @@ export async function POST(req: Request) {
 
     const price = pricing.price;
     const priceAdjustment = pricing.priceAdjustment;
-    const subtotalCents = Math.round(price * 100);
+    const currency = "usd";
+    const baseServicePrice =
+      Number.isFinite(Number(selectedService?.price)) && Number(selectedService?.price) >= 0
+        ? Number(selectedService?.price)
+        : null;
+    const computedStripeAmount = normalizeUsdAmountToCents(price);
+    const subtotalCents = computedStripeAmount;
     const amountTax = 0;
     const totalCents = subtotalCents + amountTax;
     const applicationFee = Math.round(totalCents * feePercent);
@@ -1379,11 +1389,16 @@ export async function POST(req: Request) {
       selectionType: "service",
       selectedIds: selectedService?.id ? [selectedService.id] : [],
       pricingAdjustmentApplied: priceAdjustment !== 0,
-      baseServicePrice:
-        Number.isFinite(Number(selectedService?.price)) && Number(selectedService?.price) > 0
-          ? Number(selectedService?.price)
-          : null,
+      baseServicePrice,
       finalTotalCents: totalCents,
+    });
+    console.log("[checkout/create] stripe amount audit", {
+      businessId: safeBusinessId,
+      serviceId: selectedService?.id || null,
+      rawServicePriceFromDb: baseServicePrice,
+      computedStripeAmount: price,
+      currency,
+      finalUnitAmount: totalCents,
     });
     console.log("[checkout/create] service fulfillment snapshot:", {
       businessId: safeBusinessId,
@@ -1614,7 +1629,7 @@ export async function POST(req: Request) {
         {
           quantity: 1,
           price_data: {
-            currency: "usd",
+            currency,
             unit_amount: totalCents,
             product_data: {
               name: `${selectedService?.name || business.name || "Booking"} - ${slot.date}`,

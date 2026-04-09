@@ -401,7 +401,7 @@ export async function GET(req: Request) {
         slot,
         demandScore,
         gapDiscount,
-        basePrice: servicePrice > 0 ? servicePrice : 100,
+        basePrice: servicePrice > 0 ? servicePrice : 0,
         pricingRules,
         serviceId,
         dayOfWeek: day,

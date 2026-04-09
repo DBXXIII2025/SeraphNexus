@@ -156,7 +156,7 @@ function calculateDemandAdjustedBasePrice({
   demandScore: number;
   gapDiscount: boolean;
 }) {
-  const safeBasePrice = Number.isFinite(basePrice) && basePrice > 0 ? basePrice : 100;
+  const safeBasePrice = Number.isFinite(basePrice) && basePrice > 0 ? basePrice : 0;
 
   let price = safeBasePrice;
 
@@ -170,7 +170,7 @@ function calculateDemandAdjustedBasePrice({
     price = price * (1 - 0.15);
   }
 
-  return Math.max(10, Math.round(price * 100) / 100);
+  return Math.max(0, Math.round(price * 100) / 100);
 }
 
 function getMatchedPricingRules({
@@ -273,7 +273,7 @@ export function calculateSlotPrice({
     }
   }
 
-  const roundedPrice = Math.max(1, Math.round(price * 100) / 100);
+  const roundedPrice = Math.max(0, Math.round(price * 100) / 100);
 
   return {
     price: roundedPrice,
