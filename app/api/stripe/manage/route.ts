@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getAppUrl } from "@/lib/appUrl";
+import { getStripeConnectAppUrl } from "@/lib/appUrl";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getFeatureGate } from "@/lib/planEnforcement";
 import { ensureBusinessStripeExpressAccount } from "@/lib/stripeConnect";
@@ -21,7 +21,7 @@ type BusinessRow = {
 };
 
 function getValidatedBaseUrl(req: Request) {
-  const appUrl = getAppUrl(req);
+  const appUrl = getStripeConnectAppUrl(req);
   return new URL(appUrl).origin;
 }
 
@@ -97,12 +97,23 @@ export async function POST(req: Request) {
 
     const account = await stripe.accounts.retrieve(stripeAccountId);
     if (!("deleted" in account) && account.type === "express" && account.details_submitted) {
+      console.info("[stripe/manage] computed dashboard redirect URL", {
+        businessId: ownedBusiness.id,
+        refreshUrl: refreshUrl.toString(),
+      });
+
       const loginLink = await stripe.accounts.createLoginLink(stripeAccountId, {
         redirect_url: refreshUrl.toString(),
       });
 
       return NextResponse.json({ url: loginLink.url });
     }
+
+    console.info("[stripe/manage] computed onboarding redirect URLs", {
+      businessId: ownedBusiness.id,
+      refreshUrl: refreshUrl.toString(),
+      returnUrl: returnUrl.toString(),
+    });
 
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,

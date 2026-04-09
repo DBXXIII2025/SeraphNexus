@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
 import { getPaymentReadiness } from "@/lib/paymentReadiness";
-import { getAppUrl, stripe } from "@/lib/stripe";
+import { stripe } from "@/lib/stripe";
+import { getStripeConnectAppUrl } from "@/lib/appUrl";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ function buildSettingsRedirect(
   state: string,
   message?: string
 ) {
-  const url = new URL("/admin/settings", getAppUrl(req));
+  const url = new URL("/admin/settings", getStripeConnectAppUrl(req));
   url.searchParams.set("businessId", businessId);
   url.searchParams.set("setup", "stripe");
   url.searchParams.set("stripe", state);
@@ -39,7 +40,7 @@ export async function GET(req: Request) {
       return NextResponse.redirect(
         new URL(
           "/admin/settings?stripe=error&message=Missing%20businessId",
-          getAppUrl(req)
+          getStripeConnectAppUrl(req)
         )
       );
     }
@@ -57,7 +58,7 @@ export async function GET(req: Request) {
     const isPlatformAdmin = await getIsPlatformAdminForUserId(user.id);
 
     if (isPlatformAdmin) {
-      return NextResponse.redirect(new URL("/admin/platform", getAppUrl(req)));
+      return NextResponse.redirect(new URL("/admin/platform", getStripeConnectAppUrl(req)));
     }
 
     const { data: business, error: businessError } = await supabase
@@ -146,7 +147,7 @@ export async function GET(req: Request) {
               ? err.message
               : "Failed to refresh Stripe account status"
           )}`,
-          getAppUrl(req)
+          getStripeConnectAppUrl(req)
         )
       );
     }

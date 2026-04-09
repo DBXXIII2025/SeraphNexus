@@ -7,15 +7,24 @@ function normalizeAbsoluteUrl(value: string, envName: string) {
   }
 }
 
-export function getConfiguredAppUrl() {
+function getExplicitConfiguredAppUrl() {
   const explicitUrl =
     process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL;
 
+  if (!explicitUrl) {
+    return null;
+  }
+
+  return normalizeAbsoluteUrl(
+    explicitUrl,
+    process.env.NEXT_PUBLIC_APP_URL ? "NEXT_PUBLIC_APP_URL" : "NEXT_PUBLIC_BASE_URL"
+  );
+}
+
+export function getConfiguredAppUrl() {
+  const explicitUrl = getExplicitConfiguredAppUrl();
   if (explicitUrl) {
-    return normalizeAbsoluteUrl(
-      explicitUrl,
-      process.env.NEXT_PUBLIC_APP_URL ? "NEXT_PUBLIC_APP_URL" : "NEXT_PUBLIC_BASE_URL"
-    );
+    return explicitUrl;
   }
 
   const vercelProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
@@ -49,3 +58,37 @@ export function getAppUrl(req?: Request) {
   );
 }
 
+export function isStripeLiveMode() {
+  return (process.env.STRIPE_SECRET_KEY || "").startsWith("sk_live_");
+}
+
+export function getStripeConnectAppUrl(req?: Request) {
+  const vercelProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (isStripeLiveMode() && vercelProductionUrl) {
+    return normalizeAbsoluteUrl(
+      `https://${vercelProductionUrl}`,
+      "VERCEL_PROJECT_PRODUCTION_URL"
+    );
+  }
+
+  const configuredUrl = getExplicitConfiguredAppUrl() || getConfiguredAppUrl();
+
+  if (isStripeLiveMode()) {
+    if (!configuredUrl) {
+      throw new Error(
+        "Stripe live mode requires NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_BASE_URL to be set to the canonical HTTPS site URL."
+      );
+    }
+
+    const parsedConfiguredUrl = new URL(configuredUrl);
+    if (parsedConfiguredUrl.protocol !== "https:") {
+      throw new Error(
+        "Stripe live mode requires NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_BASE_URL to use HTTPS."
+      );
+    }
+
+    return configuredUrl;
+  }
+
+  return getAppUrl(req);
+}

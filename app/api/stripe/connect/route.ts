@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getAppUrl } from "@/lib/appUrl";
+import { getStripeConnectAppUrl } from "@/lib/appUrl";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getFeatureGate } from "@/lib/planEnforcement";
 import { ensureBusinessStripeExpressAccount } from "@/lib/stripeConnect";
@@ -53,7 +53,7 @@ function validateStripeSecretKey() {
 }
 
 function getValidatedBaseUrl(req: Request) {
-  const appUrl = getAppUrl(req);
+  const appUrl = getStripeConnectAppUrl(req);
   const parsed = new URL(appUrl);
   return parsed.origin;
 }
@@ -145,6 +145,12 @@ export async function POST(req: Request) {
 
     const returnUrl = new URL("/api/stripe/return", baseUrl);
     returnUrl.searchParams.set("businessId", ownedBusiness.id);
+
+    console.info("[stripe/connect] computed redirect URLs", {
+      businessId: ownedBusiness.id,
+      refreshUrl: refreshUrl.toString(),
+      returnUrl: returnUrl.toString(),
+    });
 
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
