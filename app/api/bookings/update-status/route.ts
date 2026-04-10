@@ -3,7 +3,6 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { getErrorMessage, logRouteError } from "@/lib/apiErrors";
-import { buildCancelledStatusUpdate } from "@/lib/transactionVisibility";
 import { updateCheckoutIntentSafely } from "@/lib/checkoutIntents";
 
 const ALLOWED_STATUSES = new Set(["confirmed", "cancelled"]);
@@ -70,6 +69,7 @@ export async function POST(req: Request) {
     const checkoutIntentId = asString(metadata.checkout_intent_id);
     const paymentWasRefunded = booking.payment_status === "refunded";
     const paymentWasPaid = booking.payment_status === "paid";
+    const isPendingBooking = booking.status === "pending";
     const nextPaymentStatus =
       paymentWasRefunded
         ? "refunded"
@@ -268,12 +268,136 @@ export async function POST(req: Request) {
       }
     }
 
+    if (status === "cancelled" && isPendingBooking && !paymentWasPaid && !paymentWasRefunded) {
+      step = "booking.delete_pending";
+
+      console.log("[bookings/update-status]", {
+        stage: "pending.delete.start",
+        bookingId: id,
+        businessId: business.id,
+        previousStatus: booking.status || null,
+        previousPaymentStatus: booking.payment_status || null,
+        checkoutIntentId,
+      });
+
+      if (checkoutIntentId) {
+        step = "checkout_intent.cleanup";
+        const checkoutIntentsTable = supabaseAdmin.from("checkout_intents") as any;
+        const { data: checkoutIntent } = await checkoutIntentsTable
+          .select(
+            "id, status, booking_id, stripe_payment_intent_id, stripe_checkout_session_id, metadata, meta_json, paid_at"
+          )
+          .eq("id", checkoutIntentId)
+          .maybeSingle();
+
+        const checkoutIntentStatus = asString(checkoutIntent?.status);
+        const checkoutIntentPaymentIntentId = asString(
+          checkoutIntent?.stripe_payment_intent_id
+        );
+        const checkoutIntentPaidAt = asString(checkoutIntent?.paid_at);
+        const canDeleteCheckoutIntent =
+          !checkoutIntentPaymentIntentId &&
+          !checkoutIntentPaidAt &&
+          (!checkoutIntentStatus ||
+            checkoutIntentStatus === "pending" ||
+            checkoutIntentStatus === "open");
+
+        console.log("[bookings/update-status]", {
+          stage: "pending.delete.checkout_intent",
+          bookingId: id,
+          businessId: business.id,
+          checkoutIntentId,
+          checkoutIntentStatus,
+          canDeleteCheckoutIntent,
+        });
+
+        if (canDeleteCheckoutIntent) {
+          const { error: checkoutIntentDeleteError } = await checkoutIntentsTable
+            .delete()
+            .eq("id", checkoutIntentId)
+            .eq("business_id", business.id);
+
+          if (checkoutIntentDeleteError) {
+            logRouteError("bookings/update-status", {
+              step,
+              code: "BOOKING_PENDING_CANCEL_INTENT_DELETE_FAILED",
+              message: checkoutIntentDeleteError.message,
+              status: 500,
+              error: checkoutIntentDeleteError,
+              extra: {
+                bookingId: id,
+                businessId: business.id,
+                checkoutIntentId,
+              },
+            });
+          } else {
+            console.log("[bookings/update-status]", {
+              stage: "pending.delete.checkout_intent.deleted",
+              bookingId: id,
+              businessId: business.id,
+              checkoutIntentId,
+            });
+          }
+        } else if (checkoutIntentId) {
+          await updateCheckoutIntentSafely({
+            supabaseAdmin,
+            intentId: checkoutIntentId,
+            payload: {
+              status: "cancelled",
+              booking_id: null,
+              metadata: {
+                ...metadata,
+                cancellation_status: "cancelled",
+              },
+            },
+            context: {
+              source: "admin-bookings-update-status-pending-delete",
+              bookingId: id,
+              businessId: business.id,
+              status,
+            },
+          });
+
+          console.log("[bookings/update-status]", {
+            stage: "pending.delete.checkout_intent.updated",
+            bookingId: id,
+            businessId: business.id,
+            checkoutIntentId,
+          });
+        }
+      }
+
+      const { error: bookingDeleteError } = await bookingsTable
+        .delete()
+        .eq("id", id)
+        .eq("business_id", business.id);
+
+      if (bookingDeleteError) {
+        throw new Error(bookingDeleteError.message || "Failed to delete pending booking");
+      }
+
+      console.log("[bookings/update-status]", {
+        stage: "booking.delete.result",
+        bookingId: id,
+        businessId: business.id,
+        previousStatus: booking.status || null,
+        action: "deleted",
+      });
+
+      revalidatePath("/admin");
+      revalidatePath("/admin/bookings");
+      revalidatePath("/dashboard/bookings");
+
+      return NextResponse.redirect(new URL("/admin/bookings", req.url));
+    }
+
     const payload =
       status === "cancelled"
-        ? buildCancelledStatusUpdate("owner", "cancelled", {
+        ? {
+            status: "cancelled",
             payment_status: finalPaymentStatus,
             ...(resolvedPaymentIntentId ? { payment_intent_id: resolvedPaymentIntentId } : {}),
-          })
+          }
         : {
             status,
             payment_status: finalPaymentStatus,

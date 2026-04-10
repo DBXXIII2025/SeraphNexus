@@ -3,7 +3,6 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { sendBookingEmail, sendBookingSMS } from "@/lib/notify";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
-import { buildCancelledStatusUpdate } from "@/lib/transactionVisibility";
 import { updateCheckoutIntentSafely } from "@/lib/checkoutIntents";
 
 type BookingsTable = {
@@ -163,14 +162,15 @@ export async function POST(req: Request) {
     });
 
     step = "booking.update";
-    const refundedPayload = buildCancelledStatusUpdate("owner", "cancelled", {
+    const refundedPayload = {
+      status: "cancelled",
       payment_status: "refunded",
-    });
+    };
 
     await bookingsTable
       .update(refundedPayload)
       .eq("id", bookingId)
-      .eq("business_id", business.id);
+      .eq("business_id", bookingBusinessId);
 
     const metadata = asRecord(booking.metadata);
     const checkoutIntentId =
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
         context: {
           source: "admin-bookings-refund",
           bookingId,
-          businessId: business.id,
+          businessId: bookingBusinessId,
         },
       });
     }

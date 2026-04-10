@@ -141,11 +141,15 @@ function formatPaymentLabel(paymentStatus: string | null | undefined) {
   return formatAdminStatusLabel(paymentStatus, "Pending");
 }
 
+function isActiveServiceQueueRecord(record: ServiceBookingRecord) {
+  return record.status !== "cancelled" && record.paymentStatus !== "refunded";
+}
+
 function isAwaitingServiceAction(record: ServiceBookingRecord) {
   return (
     record.status !== "confirmed" &&
     record.status !== "completed" &&
-    record.status !== "cancelled" &&
+    isActiveServiceQueueRecord(record) &&
     record.paymentStatus !== "refunded"
   );
 }
@@ -348,15 +352,6 @@ function renderServiceCard(record: ServiceBookingRecord) {
             </form>
           ) : null}
 
-          <form action="/api/bookings/refund" method="POST">
-            <input type="hidden" name="id" value={record.id} />
-            <button
-              type="submit"
-              className={getAdminActionButtonClass("neutral")}
-            >
-              Issue refund
-            </button>
-          </form>
         </div>
       ) : null}
     </div>
@@ -615,7 +610,9 @@ export default async function AdminBookingsPage() {
     ])
   );
   const pageTitle = isRental ? "Reservations" : "Bookings";
-  const serviceRecords = normalizedServiceRows.filter((row) => !row.isFallback);
+  const serviceRecords = normalizedServiceRows.filter(
+    (row) => !row.isFallback && isActiveServiceQueueRecord(row)
+  );
   const serviceConfirmedCount = serviceRecords.filter((row) => row.status === "confirmed").length;
   const servicePendingCount = serviceRecords.filter((row) => isAwaitingServiceAction(row)).length;
   const rentalRows = isRental ? ((rows || []) as LooseRow[]) : [];
@@ -764,7 +761,7 @@ export default async function AdminBookingsPage() {
                   </div>
                 );
               })
-            : normalizedServiceRows.map((record) => renderServiceCard(record))}
+            : serviceRecords.map((record) => renderServiceCard(record))}
 
           {isRental
             ? fallbackRows
