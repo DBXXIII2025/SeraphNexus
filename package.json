@@ -6,7 +6,10 @@
     "dev": "set NODE_OPTIONS=--max-old-space-size=8192 && next dev --webpack",
     "build": "set NODE_OPTIONS=--max-old-space-size=8192 && next build",
     "start": "next start",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "verify:reset": "cross-env SERAPH_NON_LIVE_VERIFY=1 STRIPE_SECRET_KEY=sk_test_verify NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_verify STRIPE_WEBHOOK_SECRET=whsec_verify node scripts/verification-harness.mjs reset",
+    "verify:seed": "cross-env SERAPH_NON_LIVE_VERIFY=1 STRIPE_SECRET_KEY=sk_test_verify NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_verify STRIPE_WEBHOOK_SECRET=whsec_verify node scripts/verification-harness.mjs seed",
+    "verify:smoke": "cross-env SERAPH_NON_LIVE_VERIFY=1 SERAPH_VERIFICATION_MODE=1 STRIPE_SECRET_KEY=sk_test_verify NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_verify STRIPE_WEBHOOK_SECRET=whsec_verify node scripts/verification-harness.mjs smoke"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.20",

@@ -50,6 +50,47 @@ function isUuid(value: string | null) {
   );
 }
 
+function isMissingHiddenFromUiColumn(error: { code?: string; message?: string } | null | undefined) {
+  const message = String(error?.message || "").toLowerCase();
+  return error?.code === "42703" && message.includes("hidden_from_ui");
+}
+
+async function loadReservationsWithVisibilityFallback(args: {
+  supabase: ReturnType<typeof createAdminClient>;
+  businessId: string;
+  propertyId: string;
+}) {
+  const filteredResult = await applyVisibleFilter(
+    args.supabase
+      .from("rental_reservations")
+      .select(
+        "id, business_id, property_id, status, payment_status, guest_name, guest_email, guest_phone, check_in_date, check_out_date, stripe_session_id, payment_intent_id, amount_total, platform_fee, metadata"
+      )
+      .eq("business_id", args.businessId)
+      .eq("property_id", args.propertyId)
+      .order("check_in_date", { ascending: true })
+  );
+
+  if (!isMissingHiddenFromUiColumn(filteredResult.error)) {
+    return filteredResult;
+  }
+
+  console.warn("[rent/availability] visibility fallback", {
+    businessId: args.businessId,
+    propertyId: args.propertyId,
+    reason: "hidden_from_ui column missing",
+  });
+
+  return args.supabase
+    .from("rental_reservations")
+    .select(
+      "id, business_id, property_id, status, payment_status, guest_name, guest_email, guest_phone, check_in_date, check_out_date, stripe_session_id, payment_intent_id, amount_total, platform_fee, metadata"
+    )
+    .eq("business_id", args.businessId)
+    .eq("property_id", args.propertyId)
+    .order("check_in_date", { ascending: true });
+}
+
 export async function GET(req: Request) {
   let stage = "init";
 
@@ -76,7 +117,7 @@ export async function GET(req: Request) {
         status: 400,
         error: "Business and property are required to check rental availability.",
         code: "RENTAL_AVAILABILITY_INVALID_REQUEST",
-        step,
+        step: stage,
         extra: {
           available: false,
           reason: "invalid_request",
@@ -109,7 +150,7 @@ export async function GET(req: Request) {
           reason: "load_failed",
           error: "We couldn't load this rental property right now.",
           code: "RENTAL_PROPERTY_SCOPE_FAILED",
-          step,
+          step: stage,
         },
         { status: 500 }
       );
@@ -123,7 +164,7 @@ export async function GET(req: Request) {
           reason: "property_not_found",
           error: "This rental listing is unavailable.",
           code: "RENTAL_PROPERTY_NOT_FOUND",
-          step,
+          step: stage,
         },
         { status: 404 }
       );
@@ -132,16 +173,11 @@ export async function GET(req: Request) {
     stage = "availability-load";
     const [{ data: reservations, error: reservationsError }, { data: blocks, error: blocksError }] =
       await Promise.all([
-        applyVisibleFilter(
-          supabase
-            .from("rental_reservations")
-            .select(
-              "id, business_id, property_id, status, payment_status, guest_name, guest_email, guest_phone, check_in_date, check_out_date, stripe_session_id, payment_intent_id, amount_total, platform_fee, metadata"
-            )
-            .eq("business_id", businessId)
-            .eq("property_id", propertyId)
-            .order("check_in_date", { ascending: true })
-        ),
+        loadReservationsWithVisibilityFallback({
+          supabase,
+          businessId,
+          propertyId,
+        }),
         supabase
           .from("rental_availability_blocks")
           .select("id, property_id, start_date, end_date, reason")
@@ -165,7 +201,7 @@ export async function GET(req: Request) {
           reason: "load_failed",
           error: "We couldn't load rental availability right now.",
           code: "RENTAL_RESERVATIONS_READ_FAILED",
-          step,
+          step: stage,
         },
         { status: 500 }
       );
@@ -186,7 +222,7 @@ export async function GET(req: Request) {
           reason: "load_failed",
           error: "We couldn't load rental availability right now.",
           code: "RENTAL_BLOCKS_READ_FAILED",
-          step,
+          step: stage,
         },
         { status: 500 }
       );
@@ -227,7 +263,7 @@ export async function GET(req: Request) {
           reason: "invalid_request",
           error: "Enter a valid check-in and check-out date.",
           code: "RENTAL_INVALID_STAY_RANGE",
-          step,
+          step: stage,
         },
         { status: 400 }
       );

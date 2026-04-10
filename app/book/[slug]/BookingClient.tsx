@@ -43,10 +43,32 @@ function getTodayLocalDate() {
 
 function formatSlotLabel(slot: Slot) {
   if (slot.start && slot.end) {
-    return `${slot.start} - ${slot.end}`;
+    return `${formatCustomerTime(slot.start)} - ${formatCustomerTime(slot.end)}`;
   }
 
   return "Flexible scheduling";
+}
+
+function formatCustomerTime(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const [hoursText, minutesText] = value.split(":");
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText || "0");
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return value;
+  }
+
+  const parsed = new Date();
+  parsed.setHours(hours, minutes, 0, 0);
+
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(parsed);
 }
 
 function getAvailabilityMessage(reason: string | null, availabilityConfigured: boolean) {

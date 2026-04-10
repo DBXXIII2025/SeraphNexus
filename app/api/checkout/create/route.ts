@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -34,6 +35,7 @@ import {
   insertCheckoutIntentSafely,
   updateCheckoutIntentSafely,
 } from "@/lib/checkoutIntents";
+import { finalizeCheckoutSession } from "@/lib/checkoutFinalization";
 import { loadMissingLegalDocumentKeysSafe } from "@/lib/legalAcceptance";
 import { trackLeadEventServer } from "@/lib/leads.server";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
@@ -96,6 +98,7 @@ type CheckoutPayload = {
     endTime?: string;
   };
   timezone?: string;
+  verificationMode?: "draft" | "paid";
 };
 
 type StripeLikeError = Error & {
@@ -262,6 +265,81 @@ function normalizeUsdAmountToCents(value: number) {
   return Math.round(value * 100);
 }
 
+function isVerificationCheckoutAllowed(args: {
+  payload: CheckoutPayload;
+  businessSlug: string | null | undefined;
+}) {
+  if (
+    process.env.SERAPH_NON_LIVE_VERIFY !== "1" &&
+    process.env.SERAPH_VERIFICATION_MODE !== "1"
+  ) {
+    return false;
+  }
+
+  if (args.payload.verificationMode !== "draft" && args.payload.verificationMode !== "paid") {
+    return false;
+  }
+
+  return String(args.businessSlug || "").startsWith("verify-");
+}
+
+function buildVerificationSession(args: {
+  intentId: string | null;
+  sessionId?: string | null;
+  paymentIntentId?: string | null;
+  businessType: string | null | undefined;
+  metadata: Record<string, string>;
+  totalCents: number;
+  customerEmail: string | null;
+  baseUrl: string;
+  mode: "draft" | "paid";
+}) {
+  const sessionId =
+    args.sessionId || `verify_cs_${randomUUID().replace(/-/g, "").slice(0, 24)}`;
+  const paymentIntentId =
+    args.paymentIntentId || `verify_pi_${randomUUID().replace(/-/g, "").slice(0, 24)}`;
+  const isOrder =
+    args.metadata.intent_type === "order" ||
+    args.metadata.flow_type === "food_order" ||
+    args.metadata.flow_type === "store_order";
+  const successPath = isOrder ? "/order/success" : "/booking-success";
+
+  return {
+    id: sessionId,
+    object: "checkout.session",
+    mode: "payment",
+    status: args.mode === "paid" ? "complete" : "open",
+    payment_status: args.mode === "paid" ? "paid" : "unpaid",
+    amount_total: args.totalCents,
+    customer_email: args.customerEmail || undefined,
+    payment_intent: paymentIntentId,
+    metadata: args.metadata,
+    url:
+      args.mode === "paid"
+        ? `${args.baseUrl}${successPath}?session_id=${encodeURIComponent(sessionId)}`
+        : `${args.baseUrl}${successPath}?session_id=${encodeURIComponent(sessionId)}&verify=1`,
+  } as unknown as Stripe.Checkout.Session;
+}
+
+async function maybeFinalizeVerificationSession(args: {
+  mode: "draft" | "paid";
+  session: Stripe.Checkout.Session;
+}) {
+  if (args.mode !== "paid") {
+    return;
+  }
+
+  await finalizeCheckoutSession({
+    sessionId: args.session.id,
+    source: "order-status",
+    providedSession: args.session,
+    orderRef:
+      typeof args.session.metadata?.checkout_intent_id === "string"
+        ? args.session.metadata.checkout_intent_id
+        : null,
+  });
+}
+
 function normalizeObjectForFingerprint(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map((entry) => normalizeObjectForFingerprint(entry));
@@ -333,6 +411,43 @@ function isReusableOpenStripeSession(session: Stripe.Checkout.Session) {
   );
 }
 
+function isMissingHiddenFromUiColumn(error: { code?: string; message?: string } | null | undefined) {
+  const message = String(error?.message || "").toLowerCase();
+  return error?.code === "42703" && message.includes("hidden_from_ui");
+}
+
+async function loadRentalReservationsWithVisibilityFallback(args: {
+  supabaseAdmin: ReturnType<typeof createAdminClient>;
+  businessId: string;
+  propertyId: string;
+}) {
+  const filteredResult = await applyVisibleFilter(
+    (args.supabaseAdmin
+      .from("rental_reservations")
+      .select("id, status, payment_status, check_in_date, check_out_date")
+      .eq("business_id", args.businessId)
+      .eq("property_id", args.propertyId)
+      .order("check_in_date", { ascending: true })) as any
+  );
+
+  if (!isMissingHiddenFromUiColumn(filteredResult.error)) {
+    return filteredResult;
+  }
+
+  console.warn("[checkout/create] rental visibility fallback", {
+    businessId: args.businessId,
+    propertyId: args.propertyId,
+    reason: "hidden_from_ui column missing",
+  });
+
+  return args.supabaseAdmin
+    .from("rental_reservations")
+    .select("id, status, payment_status, check_in_date, check_out_date")
+    .eq("business_id", args.businessId)
+    .eq("property_id", args.propertyId)
+    .order("check_in_date", { ascending: true });
+}
+
 async function findMatchingPendingCheckoutIntent(args: {
   supabaseAdmin: ReturnType<typeof createAdminClient>;
   businessId: string;
@@ -368,10 +483,20 @@ async function findMatchingPendingCheckoutIntent(args: {
 
 async function maybeReuseOpenCheckoutSession(args: {
   checkoutIntent: CheckoutIntentRow | null;
+  baseUrl: string;
 }) {
   const sessionId = args.checkoutIntent?.stripe_checkout_session_id || null;
   if (!sessionId) {
     return null;
+  }
+
+  if (sessionId.startsWith("verify_cs_")) {
+    const successPath =
+      args.checkoutIntent?.kind === "order" ? "/order/success" : "/booking-success";
+    return {
+      sessionId,
+      url: `${args.baseUrl}${successPath}?session_id=${encodeURIComponent(sessionId)}&verify=1`,
+    };
   }
 
   try {
@@ -623,11 +748,18 @@ export async function POST(req: Request) {
     }
 
     const feePercent = getPlatformFeePercent(normalizedPlan);
+    const verificationMode = isVerificationCheckoutAllowed({
+      payload,
+      businessSlug: business.slug,
+    })
+      ? payload.verificationMode || null
+      : null;
     logCheckoutStage("business_resolved", {
       businessId: safeBusinessId,
       businessType: business.business_type || null,
       plan: normalizedPlan,
       stripeChargesEnabled: business.stripe_charges_enabled,
+      verificationMode,
     });
 
     const baseUrl = getBaseUrl(req);
@@ -896,9 +1028,13 @@ export async function POST(req: Request) {
         requestFingerprint,
         amountTotal: totalCents,
       });
-      const reusableSession = await maybeReuseOpenCheckoutSession({
-        checkoutIntent: existingIntent,
-      });
+      const reusableSession =
+        verificationMode === "paid"
+          ? null
+          : await maybeReuseOpenCheckoutSession({
+              checkoutIntent: existingIntent,
+              baseUrl,
+            });
 
       if (reusableSession) {
         logCheckoutStage("checkout_reused", {
@@ -956,53 +1092,65 @@ export async function POST(req: Request) {
       const orderSuccessUrl = intentId
         ? `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}&order_ref=${intentId}`
         : `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}`;
-      const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        customer_email: customerEmail || undefined,
-        payment_method_types: ["card"],
-        line_items: pricedOrderItems.map((item) => ({
-          quantity: item.quantity,
-          price_data: {
-            currency: "usd",
-            unit_amount: Math.round(item.price * 100),
-            product_data: {
-              name: item.name || "Item",
-            },
-          },
-        })),
-        success_url: orderSuccessUrl,
-        cancel_url: getPublicCancelUrl({
-          baseUrl,
-          businessType: business.business_type,
-          slug: business.slug,
-        }),
-        payment_intent_data: {
-          application_fee_amount: applicationFee,
-          transfer_data: {
-            destination: business.stripe_account_id,
-          },
-        },
-        metadata: {
-          kind: "checkout_intent",
-          intent_type: "order",
-          flow_type: orderFlowType,
-          checkout_intent_id: intentId || "",
-          business_id: safeBusinessId,
-          business_type: business.business_type || "",
-          customer_name: customerName,
-          customer_email: customerEmail || "",
-          customer_phone: customerPhone,
-          fulfillment_type: fulfillmentType,
-          order_items: JSON.stringify(pricedOrderItems),
-          address_json: JSON.stringify(addressInput),
-          notes: payload.notes || "",
-          amount_total: String(totalCents),
-          platform_fee: String(applicationFee),
-          request_fingerprint: requestFingerprint,
-        },
-      }, {
-        idempotencyKey: `checkout:${intentId || requestFingerprint}`,
-      });
+      const orderSessionMetadata = {
+        kind: "checkout_intent",
+        intent_type: "order",
+        flow_type: orderFlowType,
+        checkout_intent_id: intentId || "",
+        business_id: safeBusinessId,
+        business_type: business.business_type || "",
+        customer_name: customerName,
+        customer_email: customerEmail || "",
+        customer_phone: customerPhone,
+        fulfillment_type: fulfillmentType,
+        order_items: JSON.stringify(pricedOrderItems),
+        address_json: JSON.stringify(addressInput),
+        notes: payload.notes || "",
+        amount_total: String(totalCents),
+        platform_fee: String(applicationFee),
+        request_fingerprint: requestFingerprint,
+      };
+      const session =
+        verificationMode
+          ? buildVerificationSession({
+              intentId,
+              businessType: business.business_type,
+              metadata: orderSessionMetadata,
+              totalCents,
+              customerEmail: customerEmail || null,
+              baseUrl,
+              mode: verificationMode,
+            })
+          : await stripe.checkout.sessions.create({
+              mode: "payment",
+              customer_email: customerEmail || undefined,
+              payment_method_types: ["card"],
+              line_items: pricedOrderItems.map((item) => ({
+                quantity: item.quantity,
+                price_data: {
+                  currency: "usd",
+                  unit_amount: Math.round(item.price * 100),
+                  product_data: {
+                    name: item.name || "Item",
+                  },
+                },
+              })),
+              success_url: orderSuccessUrl,
+              cancel_url: getPublicCancelUrl({
+                baseUrl,
+                businessType: business.business_type,
+                slug: business.slug,
+              }),
+              payment_intent_data: {
+                application_fee_amount: applicationFee,
+                transfer_data: {
+                  destination: business.stripe_account_id,
+                },
+              },
+              metadata: orderSessionMetadata,
+            }, {
+              idempotencyKey: `checkout:${intentId || requestFingerprint}`,
+            });
       logCheckoutStage("stripe_session_create_success", {
         branch: orderFlowType,
         businessId: safeBusinessId,
@@ -1013,7 +1161,11 @@ export async function POST(req: Request) {
         const sessionUpdateResult = await updateCheckoutIntentSafely({
           supabaseAdmin,
           intentId,
-          payload: { stripe_checkout_session_id: session.id },
+          payload: {
+            stripe_checkout_session_id: session.id,
+            stripe_payment_intent_id:
+              typeof session.payment_intent === "string" ? session.payment_intent : null,
+          },
           context: {
             businessId: safeBusinessId,
             intentType: "order",
@@ -1033,6 +1185,11 @@ export async function POST(req: Request) {
           });
         }
       }
+
+      await maybeFinalizeVerificationSession({
+        mode: verificationMode || "draft",
+        session,
+      });
 
       logCheckoutStage("checkout_ready", {
         branch: orderFlowType,
@@ -1193,14 +1350,11 @@ export async function POST(req: Request) {
             .eq("id", propertyId)
             .eq("business_id", safeBusinessId)
             .maybeSingle(),
-          applyVisibleFilter(
-            (supabaseAdmin
-              .from("rental_reservations")
-              .select("id, status, payment_status, check_in_date, check_out_date")
-              .eq("business_id", safeBusinessId)
-              .eq("property_id", propertyId)
-              .order("check_in_date", { ascending: true })) as any
-          ),
+          loadRentalReservationsWithVisibilityFallback({
+            supabaseAdmin,
+            businessId: safeBusinessId,
+            propertyId,
+          }),
           supabaseAdmin
             .from("rental_availability_blocks")
             .select("id, start_date, end_date, reason")
@@ -1428,6 +1582,7 @@ export async function POST(req: Request) {
       });
       const reusableSession = await maybeReuseOpenCheckoutSession({
         checkoutIntent: existingIntent,
+        baseUrl,
       });
 
       if (reusableSession) {
@@ -1508,35 +1663,46 @@ export async function POST(req: Request) {
       });
 
       step = "stripe.session.create";
-      const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        customer_email: customerEmail,
-        payment_method_types: ["card"],
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: "usd",
-              unit_amount: totalCents,
-              product_data: {
-                name: `${property.name || business.name} stay`,
-                description: `${startDate} to ${endDate}`,
+      const session =
+        verificationMode
+          ? buildVerificationSession({
+              intentId,
+              businessType: business.business_type,
+              metadata: rentalSessionMetadata,
+              totalCents,
+              customerEmail,
+              baseUrl,
+              mode: verificationMode,
+            })
+          : await stripe.checkout.sessions.create({
+              mode: "payment",
+              customer_email: customerEmail,
+              payment_method_types: ["card"],
+              line_items: [
+                {
+                  quantity: 1,
+                  price_data: {
+                    currency: "usd",
+                    unit_amount: totalCents,
+                    product_data: {
+                      name: `${property.name || business.name} stay`,
+                      description: `${startDate} to ${endDate}`,
+                    },
+                  },
+                },
+              ],
+              success_url: `${baseUrl}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
+              cancel_url: `${baseUrl}/rent/${business.slug || ""}`,
+              payment_intent_data: {
+                application_fee_amount: applicationFee,
+                transfer_data: {
+                  destination: business.stripe_account_id,
+                },
               },
-            },
-          },
-        ],
-        success_url: `${baseUrl}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/rent/${business.slug || ""}`,
-        payment_intent_data: {
-          application_fee_amount: applicationFee,
-          transfer_data: {
-            destination: business.stripe_account_id,
-          },
-        },
-        metadata: rentalSessionMetadata,
-      }, {
-        idempotencyKey: `checkout:${intentId || requestFingerprint}`,
-      });
+              metadata: rentalSessionMetadata,
+            }, {
+              idempotencyKey: `checkout:${intentId || requestFingerprint}`,
+            });
       logCheckoutStage("stripe_session_create_success", {
         branch: "rental_reservation",
         businessId: safeBusinessId,
@@ -1548,7 +1714,11 @@ export async function POST(req: Request) {
         const sessionUpdateResult = await updateCheckoutIntentSafely({
           supabaseAdmin,
           intentId,
-          payload: { stripe_checkout_session_id: session.id },
+          payload: {
+            stripe_checkout_session_id: session.id,
+            stripe_payment_intent_id:
+              typeof session.payment_intent === "string" ? session.payment_intent : null,
+          },
           context: {
             businessId: safeBusinessId,
             intentType: "booking",
@@ -1570,6 +1740,11 @@ export async function POST(req: Request) {
           });
         }
       }
+
+      await maybeFinalizeVerificationSession({
+        mode: verificationMode || "draft",
+        session,
+      });
 
       return NextResponse.json({ url: session.url, sessionId: session.id });
     }
@@ -1851,6 +2026,7 @@ export async function POST(req: Request) {
     });
     const reusableSession = await maybeReuseOpenCheckoutSession({
       checkoutIntent: existingIntent,
+      baseUrl,
     });
 
     if (reusableSession) {
@@ -2050,61 +2226,73 @@ export async function POST(req: Request) {
       amountTotal: totalCents,
     });
     step = "stripe.session.create";
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      customer_email: customerEmail,
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency,
-            unit_amount: totalCents,
-            product_data: {
-              name: `${selectedService?.name || business.name || "Booking"} - ${slot.date}`,
-              description: `${slot.startTime} - ${slot.endTime}`,
+    const bookingSessionMetadata = {
+      kind: "checkout_intent",
+      intent_type: "booking",
+      checkout_intent_id: intentId || "",
+      booking_id: pendingBookingId,
+      flow_type: "service_booking",
+      business_id: safeBusinessId,
+      business_type: business.business_type || "",
+      service_id: selectedService?.id || "",
+      service_name: selectedService?.name || "",
+      date: slot.date || "",
+      start_time: slot.startTime || "",
+      end_time: slot.endTime || "",
+      guest_name: customerName,
+      guest_email: customerEmail,
+      guest_phone: customerPhone,
+      service_mode: serviceMode || "",
+      address_json: JSON.stringify(addressInput),
+      notes: payload.notes || "",
+      amount_total: String(totalCents),
+      platform_fee: String(applicationFee),
+      request_fingerprint: requestFingerprint,
+    };
+    const session =
+      verificationMode
+        ? buildVerificationSession({
+            intentId,
+            businessType: business.business_type,
+            metadata: bookingSessionMetadata,
+            totalCents,
+            customerEmail,
+            baseUrl,
+            mode: verificationMode,
+          })
+        : await stripe.checkout.sessions.create({
+            mode: "payment",
+            customer_email: customerEmail,
+            payment_method_types: ["card"],
+            line_items: [
+              {
+                quantity: 1,
+                price_data: {
+                  currency,
+                  unit_amount: totalCents,
+                  product_data: {
+                    name: `${selectedService?.name || business.name || "Booking"} - ${slot.date}`,
+                    description: `${slot.startTime} - ${slot.endTime}`,
+                  },
+                },
+              },
+            ],
+            success_url: `${baseUrl}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: getPublicCancelUrl({
+              baseUrl,
+              businessType: business.business_type,
+              slug: business.slug,
+            }),
+            payment_intent_data: {
+              application_fee_amount: applicationFee,
+              transfer_data: {
+                destination: business.stripe_account_id,
+              },
             },
-          },
-        },
-      ],
-      success_url: `${baseUrl}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: getPublicCancelUrl({
-        baseUrl,
-        businessType: business.business_type,
-        slug: business.slug,
-      }),
-      payment_intent_data: {
-        application_fee_amount: applicationFee,
-        transfer_data: {
-          destination: business.stripe_account_id,
-        },
-      },
-      metadata: {
-        kind: "checkout_intent",
-        intent_type: "booking",
-        checkout_intent_id: intentId || "",
-        booking_id: pendingBookingId,
-        flow_type: "service_booking",
-        business_id: safeBusinessId,
-        business_type: business.business_type || "",
-        service_id: selectedService?.id || "",
-        service_name: selectedService?.name || "",
-        date: slot.date || "",
-        start_time: slot.startTime || "",
-        end_time: slot.endTime || "",
-        guest_name: customerName,
-        guest_email: customerEmail,
-        guest_phone: customerPhone,
-        service_mode: serviceMode || "",
-        address_json: JSON.stringify(addressInput),
-        notes: payload.notes || "",
-        amount_total: String(totalCents),
-        platform_fee: String(applicationFee),
-        request_fingerprint: requestFingerprint,
-      },
-    }, {
-      idempotencyKey: `checkout:${intentId || requestFingerprint}`,
-    });
+            metadata: bookingSessionMetadata,
+          }, {
+            idempotencyKey: `checkout:${intentId || requestFingerprint}`,
+          });
     logCheckoutStage("stripe_session_create_success", {
       branch: "service_booking",
       businessId: safeBusinessId,
@@ -2174,6 +2362,8 @@ export async function POST(req: Request) {
         intentId,
         payload: {
           stripe_checkout_session_id: session.id,
+          stripe_payment_intent_id:
+            typeof session.payment_intent === "string" ? session.payment_intent : null,
           booking_id: pendingBookingId,
           metadata: {
             ...intentInsertPayload.metadata,
@@ -2225,6 +2415,11 @@ export async function POST(req: Request) {
       serviceId: selectedService?.id || null,
       bookingId: pendingBookingId,
       sessionId: session.id,
+    });
+
+    await maybeFinalizeVerificationSession({
+      mode: verificationMode || "draft",
+      session,
     });
 
     return NextResponse.json({ url: session.url, sessionId: session.id });

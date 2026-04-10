@@ -74,6 +74,56 @@ function logAvailabilityDecision(details: Record<string, unknown>) {
   console.log("[availability/service]", details);
 }
 
+function extractMissingSchemaColumn(message: string) {
+  const match = String(message || "").match(/Could not find the '([^']+)' column of '([^']+)'/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    column: match[1],
+    table: match[2],
+  };
+}
+
+function isUnsupportedUpsertConflictError(error: { code?: string; message?: string } | null) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    error?.code === "42P10" &&
+    message.includes("no unique or exclusion constraint matching the on conflict specification")
+  );
+}
+
+async function upsertSlotPricingSafe(args: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  payload: Record<string, unknown>;
+}) {
+  let nextPayload = { ...args.payload };
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const { error } = await args.supabase.from("slot_pricing").upsert(nextPayload, {
+      onConflict: "business_id,date,start_time,end_time",
+    });
+
+    if (!error) {
+      return null;
+    }
+
+    if (isUnsupportedUpsertConflictError(error)) {
+      return null;
+    }
+
+    const missing = extractMissingSchemaColumn(error.message);
+    if (!missing || missing.table !== "slot_pricing") {
+      return error;
+    }
+
+    delete nextPayload[missing.column];
+  }
+
+  return new Error("slot_pricing upsert exceeded schema-tolerant retries");
+}
+
 function shouldBlockServiceAvailability(booking: BookingRow) {
   const status = String(booking.status || "").toLowerCase();
   return status === "confirmed" || status === "completed";
@@ -349,6 +399,7 @@ export async function GET(req: Request) {
         start: block.start_time as string,
         end: block.end_time as string,
         durationMinutes: slotDurationMinutes,
+        intervalMinutes: 30,
       });
 
       allSlots.push(...slots);
@@ -428,8 +479,9 @@ export async function GET(req: Request) {
       matchedRuleCount = Math.max(matchedRuleCount, pricing.matchedRuleCount);
 
       step = "slot_pricing.upsert";
-      const { error: slotPricingError } = await supabase.from("slot_pricing").upsert(
-        {
+      const slotPricingError = await upsertSlotPricingSafe({
+        supabase,
+        payload: {
           business_id: businessId,
           date,
           start_time: slot.start,
@@ -438,10 +490,7 @@ export async function GET(req: Request) {
           price: pricing.price,
           price_adjustment: pricing.priceAdjustment,
         },
-        {
-          onConflict: "business_id,date,start_time,end_time",
-        }
-      );
+      });
 
       if (slotPricingError) {
         logRouteError("availability", {
