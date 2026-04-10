@@ -17,6 +17,7 @@ import {
   getAdminStatusBadgeClass,
 } from "@/lib/adminStatus";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type ServiceBookingRecord = {
   id: string;
@@ -154,6 +155,12 @@ function isAwaitingServiceAction(record: ServiceBookingRecord) {
   );
 }
 
+function canDeleteBookingRecord(record: ServiceBookingRecord) {
+  const paymentStatus = String(record.paymentStatus || "").toLowerCase();
+  const status = String(record.status || "").toLowerCase();
+  return status === "pending" && paymentStatus !== "paid" && paymentStatus !== "refunded";
+}
+
 function getReservationActions(status: string | null | undefined) {
   if (status === "completed" || status === "cancelled") {
     return [];
@@ -216,6 +223,18 @@ function SummaryCard({
 }
 
 function renderServiceCard(record: ServiceBookingRecord) {
+  const canDeleteBooking = canDeleteBookingRecord(record);
+  const destructiveLabel = canDeleteBooking
+    ? "Delete booking"
+    : record.paymentStatus === "paid"
+      ? "Cancel and refund"
+      : "Cancel booking";
+  const destructiveConfirm = canDeleteBooking
+    ? `Delete ${record.customerName}'s pending unpaid booking? This permanently removes the booking record.`
+    : record.paymentStatus === "paid"
+      ? `Cancel ${record.customerName}'s booking and automatically refund the payment?`
+      : `Cancel ${record.customerName}'s booking and remove it from active views?`;
+
   return (
     <div
       key={record.id}
@@ -321,12 +340,13 @@ function renderServiceCard(record: ServiceBookingRecord) {
             <form action="/api/bookings/update-status" method="POST">
               <input type="hidden" name="id" value={record.id} />
               <input type="hidden" name="status" value="cancelled" />
-              <button
+              <ConfirmSubmitButton
                 type="submit"
+                confirmMessage={destructiveConfirm}
                 className={getAdminActionButtonClass("danger")}
               >
-                Cancel booking
-              </button>
+                {destructiveLabel}
+              </ConfirmSubmitButton>
             </form>
           ) : null}
 
@@ -358,7 +378,15 @@ function renderServiceCard(record: ServiceBookingRecord) {
   );
 }
 
-export default async function AdminBookingsPage() {
+export default async function AdminBookingsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    error?: string;
+    success?: string;
+  }>;
+}) {
+  const params = searchParams ? await searchParams : undefined;
   const supabase = await createClient();
   const business = await getActiveBusiness();
   const isDev = process.env.NODE_ENV !== "production";
@@ -621,6 +649,30 @@ export default async function AdminBookingsPage() {
 
   return (
     <div className="space-y-6 text-white">
+      {params?.success === "deleted" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+          Pending unpaid booking deleted.
+        </div>
+      ) : null}
+
+      {params?.success === "cancelled" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+          Booking cancelled safely. Paid bookings were refunded automatically when eligible.
+        </div>
+      ) : null}
+
+      {params?.success === "confirmed" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+          Booking confirmed.
+        </div>
+      ) : null}
+
+      {params?.error === "status" ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+          Booking action failed.
+        </div>
+      ) : null}
+
       <section className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6">
         <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{pageTitle}</p>
         <h1 className="mt-2 text-2xl font-semibold">{pageTitle} queue</h1>

@@ -151,6 +151,7 @@ type ServiceRow = {
   duration: number | null;
   price: number | null;
   business_id: string;
+  is_active?: boolean | null;
 };
 
 type BookingInsertRow = Database["public"]["Tables"]["bookings"]["Insert"];
@@ -828,12 +829,12 @@ export async function POST(req: Request) {
 
       const { data: service } = await supabaseAdmin
         .from("services")
-        .select("id, name, duration, price, business_id")
+        .select("*")
         .eq("id", serviceId)
         .eq("business_id", safeBusinessId)
         .maybeSingle();
 
-      if (!service?.id) {
+      if (!service?.id || service.is_active === false) {
         console.log("[checkout/create] rejected invalid service selection", {
           businessId: safeBusinessId,
           serviceId,
@@ -912,12 +913,12 @@ export async function POST(req: Request) {
             .eq("business_id", safeBusinessId)
             .maybeSingle(),
           applyVisibleFilter(
-            supabaseAdmin
+            (supabaseAdmin
               .from("rental_reservations")
               .select("id, status, payment_status, check_in_date, check_out_date")
               .eq("business_id", safeBusinessId)
               .eq("property_id", propertyId)
-              .order("check_in_date", { ascending: true })
+              .order("check_in_date", { ascending: true })) as any
           ),
           supabaseAdmin
             .from("rental_availability_blocks")
@@ -1244,13 +1245,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ url: session.url, sessionId: session.id });
     }
 
-    const { data: bookings } = await applyVisibleFilter(
-      supabaseAdmin
+    const bookingsResult = (await applyVisibleFilter(
+      (supabaseAdmin
         .from("bookings")
         .select("start_time, end_time, status")
         .eq("business_id", safeBusinessId)
-        .eq("date", slot.date)
-    );
+        .eq("date", slot.date)) as any
+    )) as { data: SlotBookingRow[] | null };
+    const bookings = bookingsResult.data;
 
     const bookingSlot = {
       date: slot.date,
@@ -1295,14 +1297,15 @@ export async function POST(req: Request) {
     recentStart.setDate(recentStart.getDate() - 30);
     const recentStartStr = recentStart.toISOString().slice(0, 10);
 
-    const { data: recentBookings } = await applyVisibleFilter(
-      supabaseAdmin
+    const recentBookingsResult = (await applyVisibleFilter(
+      (supabaseAdmin
         .from("bookings")
         .select("date, start_time, end_time, created_at, status")
         .eq("business_id", safeBusinessId)
         .gte("date", recentStartStr)
-        .lte("date", slot.date)
-    );
+        .lte("date", slot.date)) as any
+    )) as { data: SlotBookingRow[] | null };
+    const recentBookings = recentBookingsResult.data;
 
     const { data: pricingRules } = await supabaseAdmin
       .from("pricing_rules")
@@ -1694,7 +1697,7 @@ export async function POST(req: Request) {
     });
 
     const pendingBookingMetadata = {
-      ...(pendingBookingPayload.metadata || {}),
+      ...((pendingBookingPayload.metadata || {}) as Record<string, unknown>),
       checkout_intent_id: intentInsert.id || null,
       stripe_session_id: session.id,
       payment_intent_id:

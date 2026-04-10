@@ -20,6 +20,9 @@ type ServiceRow = {
   price: number | null;
   duration: number | null;
   business_id: string;
+  description?: string | null;
+  category?: string | null;
+  is_active?: boolean | null;
   images: ServiceImageRecord[];
 };
 
@@ -87,7 +90,7 @@ export default async function BookPage({
 
   const { data: services } = await supabase
     .from("services")
-    .select("id, name, price, duration, business_id")
+    .select("*")
     .eq("business_id", business.id)
     .order("name", { ascending: true });
 
@@ -111,10 +114,12 @@ export default async function BookPage({
     imagesByServiceId.set(image.service_id, sortServiceImages(current));
   });
 
-  const serviceRows = ((services || []) as Array<Omit<ServiceRow, "images">>).map((service) => ({
-    ...service,
-    images: imagesByServiceId.get(service.id) || [],
-  }));
+  const serviceRows = ((services || []) as Array<Omit<ServiceRow, "images">>)
+    .filter((service) => service.is_active !== false)
+    .map((service) => ({
+      ...service,
+      images: imagesByServiceId.get(service.id) || [],
+    }));
 
   return (
     <>

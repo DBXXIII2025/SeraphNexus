@@ -137,7 +137,7 @@ export async function POST(
       });
     }
 
-    return NextResponse.redirect(new URL("/admin/orders", req.url));
+    return NextResponse.redirect(new URL("/admin/orders?success=refunded", req.url));
   } catch (err: unknown) {
     logRouteError("admin/orders/refund", {
       step,

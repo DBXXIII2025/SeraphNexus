@@ -25,7 +25,8 @@ export default async function ProductsPage() {
   const { data: products } = await supabase
     .from("products")
     .select("*")
-    .eq("business_id", business.id);
+    .eq("business_id", business.id)
+    .order("name", { ascending: true });
 
   if (isDev) {
     console.log("[admin/products] business_type:", business.business_type || null);

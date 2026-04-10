@@ -7,6 +7,7 @@ import {
   getAdminStatusBadgeClass,
 } from "@/lib/adminStatus";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type NormalizedItem = {
   name: string;
@@ -194,6 +195,17 @@ function getVisibleOrderStatus(
   return status || paymentStatus || "pending";
 }
 
+function canDeleteOrderRecord(record: NormalizedFulfillmentRecord) {
+  const status = String(record.visibleStatus || "").toLowerCase();
+  const paymentStatus = String(record.paymentStatus || "").toLowerCase();
+  return (
+    paymentStatus !== "paid" &&
+    paymentStatus !== "refunded" &&
+    paymentStatus !== "disputed" &&
+    (status === "" || status === "pending" || status === "draft" || status === "received")
+  );
+}
+
 function SummaryCard({
   label,
   value,
@@ -226,6 +238,11 @@ function renderOrderCard(
   isStoreBusiness: boolean
 ) {
   const locationLabel = isStoreBusiness ? "Shipping / Delivery" : "Pickup / Delivery";
+  const canDeleteOrder = canDeleteOrderRecord(record);
+  const cancelLabel = canDeleteOrder ? "Delete order" : "Cancel order";
+  const cancelConfirm = canDeleteOrder
+    ? `Delete ${record.customerName}'s unpaid pending order? This permanently removes the order record.`
+    : `Cancel ${record.customerName}'s order and remove it from active operational views?`;
 
   return (
     <div
@@ -375,23 +392,29 @@ function renderOrderCard(
           {record.visibleStatus !== "cancelled" ? (
             <form action={`/api/admin/orders/${record.id}/status`} method="POST">
               <input type="hidden" name="status" value="canceled" />
-              <button
+              <ConfirmSubmitButton
                 type="submit"
+                confirmMessage={cancelConfirm}
                 className={getAdminActionButtonClass("danger")}
               >
-                Cancel order
-              </button>
+                {cancelLabel}
+              </ConfirmSubmitButton>
             </form>
           ) : null}
 
           <form action={`/api/admin/orders/${record.id}/refund`} method="POST">
-            <button
+            <ConfirmSubmitButton
               type="submit"
+              confirmMessage={
+                record.paymentStatus === "refunded"
+                  ? undefined
+                  : `Issue a refund for ${record.customerName}'s order?`
+              }
               disabled={record.paymentStatus === "refunded"}
               className="btn-secondary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
             >
               {record.paymentStatus === "refunded" ? "Refunded" : "Issue refund"}
-            </button>
+            </ConfirmSubmitButton>
           </form>
         </div>
       ) : null}
@@ -399,7 +422,15 @@ function renderOrderCard(
   );
 }
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    error?: string;
+    success?: string;
+  }>;
+}) {
+  const params = searchParams ? await searchParams : undefined;
   const supabase = await createClient();
   const business = await getActiveBusiness();
   const isDev = process.env.NODE_ENV !== "production";
@@ -419,10 +450,12 @@ export default async function AdminOrdersPage() {
 
   const ordersTable = supabase.from("orders") as unknown as OrdersTable;
   const { data: orders } = await applyVisibleFilter(
-    ordersTable
+    (ordersTable
       .select("*")
       .eq("business_id", business.id)
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false }) as unknown as {
+      eq: (column: string, value: boolean) => Promise<{ data: LooseRow[] | null }>;
+    })
   );
 
   const orderIds = (orders || []).map((order: LooseRow) => String(order.id));
@@ -522,8 +555,8 @@ export default async function AdminOrdersPage() {
         asString(intent?.fulfillment_type) ||
         asString(metadata.fulfillment_type),
       visibleStatus: getVisibleOrderStatus(
-        order.status,
-        order.payment_status,
+        asString(order.status),
+        asString(order.payment_status),
         isStoreBusiness
       ),
       paymentStatus: asString(order.payment_status),
@@ -594,8 +627,8 @@ export default async function AdminOrdersPage() {
     const pendingCount = safeOrders.filter((order: LooseRow) => {
       return (
         getVisibleOrderStatus(
-          order.status,
-          order.payment_status,
+          asString(order.status),
+          asString(order.payment_status),
           isStoreBusiness
         ) === "pending"
       );
@@ -603,8 +636,8 @@ export default async function AdminOrdersPage() {
     const paidCount = safeOrders.filter((order: LooseRow) => {
       return (
         getVisibleOrderStatus(
-          order.status,
-          order.payment_status,
+          asString(order.status),
+          asString(order.payment_status),
           isStoreBusiness
         ) === "paid"
       );
@@ -612,8 +645,8 @@ export default async function AdminOrdersPage() {
     const fulfilledCount = safeOrders.filter((order: LooseRow) => {
       return (
         getVisibleOrderStatus(
-          order.status,
-          order.payment_status,
+          asString(order.status),
+          asString(order.payment_status),
           isStoreBusiness
         ) === "fulfilled"
       );
@@ -662,6 +695,24 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="space-y-6 text-[var(--text-main)]">
+      {params?.success === "deleted" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+          Pending unpaid order deleted.
+        </div>
+      ) : null}
+
+      {params?.success === "status" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+          Order updated safely.
+        </div>
+      ) : null}
+
+      {params?.success === "refunded" ? (
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+          Order refunded and removed from active views.
+        </div>
+      ) : null}
+
       <section className="premium-card p-6 lg:p-7">
         <p className="section-kicker">Orders</p>
         <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.2rem]">Order queue</h1>

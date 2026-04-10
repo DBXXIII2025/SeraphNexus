@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -10,6 +10,7 @@ type Product = {
   description?: string | null;
   price: number;
   image_url?: string | null;
+  is_active?: boolean | null;
 };
 
 type FormState = {
@@ -18,6 +19,7 @@ type FormState = {
   description: string;
   price: string;
   image_url: string;
+  is_active: boolean;
 };
 
 function emptyForm(): FormState {
@@ -27,6 +29,7 @@ function emptyForm(): FormState {
     description: "",
     price: "",
     image_url: "",
+    is_active: true,
   };
 }
 
@@ -46,9 +49,7 @@ export default function AdminProductsManager({
   const [error, setError] = useState<string | null>(null);
 
   const pageTitle =
-    businessType === "restaurant" || businessType === "food"
-      ? "Menu Items"
-      : "Products";
+    businessType === "restaurant" || businessType === "food" ? "Menu Items" : "Products";
   const quickstart = getTenantQuickstart(businessType);
 
   async function uploadFile(file: File) {
@@ -79,6 +80,7 @@ export default function AdminProductsManager({
       description: product.description || "",
       price: String(product.price ?? ""),
       image_url: product.image_url || "",
+      is_active: product.is_active !== false,
     });
     setMessage(null);
     setError(null);
@@ -102,18 +104,20 @@ export default function AdminProductsManager({
         throw new Error("Price must be greater than 0");
       }
 
-      const res = await fetch("/api/admin/products/create", {
+      const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          action: "save",
           id: form.id,
           businessId,
           name: form.name.trim(),
           description: form.description.trim(),
           price,
           image_url: form.image_url.trim(),
+          is_active: form.is_active,
         }),
       });
 
@@ -130,9 +134,7 @@ export default function AdminProductsManager({
       setProducts((prev) => {
         const existing = prev.find((item) => item.id === savedProduct.id);
         if (existing) {
-          return prev.map((item) =>
-            item.id === savedProduct.id ? savedProduct : item
-          );
+          return prev.map((item) => (item.id === savedProduct.id ? savedProduct : item));
         }
         return [savedProduct, ...prev];
       });
@@ -146,13 +148,84 @@ export default function AdminProductsManager({
     }
   }
 
+  async function handleLifecycleAction(
+    product: Product,
+    action: "delete" | "archive" | "restore"
+  ) {
+    const confirmed = window.confirm(
+      action === "delete"
+        ? `Delete "${product.name}" if it has no history, or archive it if historical orders depend on it?`
+        : action === "archive"
+          ? `Archive "${product.name}" and remove it from future purchases?`
+          : `Restore "${product.name}" to the live catalog?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action,
+          id: product.id,
+          businessId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Request failed");
+      }
+
+      if (data?.deleted) {
+        setProducts((prev) => prev.filter((item) => item.id !== product.id));
+        setMessage("Item deleted.");
+        if (form.id === product.id) {
+          resetForm();
+        }
+        return;
+      }
+
+      const next = data?.product as Product | undefined;
+      if (!next) {
+        throw new Error("Updated item was not returned");
+      }
+
+      setProducts((prev) => prev.map((item) => (item.id === next.id ? next : item)));
+      setMessage(
+        action === "restore"
+          ? "Item restored."
+          : data?.archived || action === "archive"
+            ? "Item archived."
+            : "Item updated."
+      );
+
+      if (form.id === next.id) {
+        startEdit(next);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Request failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="max-w-5xl space-y-6 text-white">
       <div>
         <h1 className="text-2xl font-semibold">{pageTitle}</h1>
         <p className="text-sm text-gray-400">
-          Edit the live catalog for this business. Prices are stored in dollars
-          and used as the server source of truth for checkout.
+          Edit the live catalog for this business. New prices apply to future purchases only.
+          Historical orders keep the original charged totals.
         </p>
       </div>
 
@@ -208,9 +281,7 @@ export default function AdminProductsManager({
             <textarea
               placeholder="Description"
               value={form.description}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, description: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               className="min-h-[120px] w-full rounded-md border border-white/10 bg-black/40 p-2"
             />
 
@@ -221,6 +292,17 @@ export default function AdminProductsManager({
               onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
               className="w-full rounded-md border border-white/10 bg-black/40 p-2"
             />
+
+            <select
+              value={form.is_active ? "active" : "archived"}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, is_active: e.target.value === "active" }))
+              }
+              className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+            >
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+            </select>
 
             <input
               type="file"
@@ -235,11 +317,7 @@ export default function AdminProductsManager({
             />
 
             {form.image_url && (
-              <img
-                src={form.image_url}
-                alt="Preview"
-                className="h-40 w-full rounded-lg object-cover"
-              />
+              <img src={form.image_url} alt="Preview" className="h-40 w-full rounded-lg object-cover" />
             )}
 
             {error && <p className="text-sm text-red-400">{error}</p>}
@@ -281,26 +359,64 @@ export default function AdminProductsManager({
           ) : (
             <div className="space-y-3">
               {products.map((product) => (
-                <button
+                <div
                   key={product.id}
-                  type="button"
-                  onClick={() => startEdit(product)}
-                  className="block w-full rounded-lg border border-white/10 bg-black/30 p-4 text-left hover:border-white/20"
+                  className="rounded-lg border border-white/10 bg-black/30 p-4 text-left"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-medium text-white">{product.name}</p>
+                      <button type="button" onClick={() => startEdit(product)} className="text-left">
+                        <p className="font-medium text-white">{product.name}</p>
+                      </button>
                       {product.description && (
-                        <p className="mt-1 text-sm text-gray-400">
-                          {product.description}
-                        </p>
+                        <p className="mt-1 text-sm text-gray-400">{product.description}</p>
                       )}
+                      <p className="mt-2 text-xs text-gray-500">
+                        {product.is_active === false ? "Archived" : "Active"}
+                      </p>
                     </div>
                     <p className="text-sm font-semibold text-white">
                       ${Number(product.price).toFixed(2)}
                     </p>
                   </div>
-                </button>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(product)}
+                      className="rounded-md border border-white/10 px-3 py-2 text-sm text-white transition hover:bg-white/5"
+                    >
+                      Edit
+                    </button>
+                    {product.is_active === false ? (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleLifecycleAction(product, "restore")}
+                        className="rounded-md border border-emerald-500/30 px-3 py-2 text-sm text-emerald-300 transition hover:bg-emerald-500/10 disabled:opacity-60"
+                      >
+                        Restore
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleLifecycleAction(product, "archive")}
+                        className="rounded-md border border-amber-500/30 px-3 py-2 text-sm text-amber-300 transition hover:bg-amber-500/10 disabled:opacity-60"
+                      >
+                        Archive
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleLifecycleAction(product, "delete")}
+                      className="rounded-md border border-red-500/30 px-3 py-2 text-sm text-red-300 transition hover:bg-red-500/10 disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -309,4 +425,3 @@ export default function AdminProductsManager({
     </div>
   );
 }
-

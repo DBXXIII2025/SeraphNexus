@@ -19,11 +19,23 @@ type OrdersTable = {
   select: (query: string) => {
     eq: (column: string, value: string) => {
       maybeSingle: () => Promise<{
-        data: { id?: string | null; business_id?: string | null; status?: string | null } | null;
+        data: {
+          id?: string | null;
+          business_id?: string | null;
+          status?: string | null;
+          payment_status?: string | null;
+        } | null;
       }>;
     };
   };
   update: (payload: Record<string, unknown>) => {
+    eq: (column: string, value: string) => {
+      eq: (column2: string, value2: string) => Promise<{
+        error: { message: string } | null;
+      }>;
+    };
+  };
+  delete: () => {
     eq: (column: string, value: string) => {
       eq: (column2: string, value2: string) => Promise<{
         error: { message: string } | null;
@@ -68,7 +80,7 @@ export async function POST(
   const businessesTable = supabase.from("businesses") as unknown as BusinessesTable;
 
   const { data: order } = await ordersTable
-    .select("id, business_id, status")
+    .select("id, business_id, status, payment_status")
     .eq("id", id)
     .maybeSingle();
 
@@ -91,8 +103,51 @@ export async function POST(
       orderId: id,
       businessId: business.id,
       previousStatus: order.status || null,
+      previousPaymentStatus: order.payment_status || null,
       status,
     });
+  }
+
+  const normalizedStatus = String(order.status || "").toLowerCase();
+  const normalizedPaymentStatus = String(order.payment_status || "").toLowerCase();
+  const canHardDelete =
+    status === "canceled" &&
+    normalizedPaymentStatus !== "paid" &&
+    normalizedPaymentStatus !== "refunded" &&
+    normalizedPaymentStatus !== "disputed" &&
+    (normalizedStatus === "" ||
+      normalizedStatus === "pending" ||
+      normalizedStatus === "draft" ||
+      normalizedStatus === "received");
+
+  if (canHardDelete) {
+    const { error: deleteError } = await ordersTable
+      .delete()
+      .eq("id", id)
+      .eq("business_id", business.id);
+
+    if (deleteError) {
+      logRouteError("admin/orders/status", {
+        step: "order.delete",
+        code: "ADMIN_ORDER_DELETE_FAILED",
+        message: deleteError.message,
+        status: 500,
+        error: deleteError,
+        extra: {
+          orderId: id,
+          businessId: business.id,
+          status,
+        },
+      });
+      return errorResponse({
+        status: 500,
+        error: "We couldn't delete this order.",
+        code: "ADMIN_ORDER_DELETE_FAILED",
+        step: "order.delete",
+      });
+    }
+
+    return NextResponse.redirect(new URL("/admin/orders?success=deleted", req.url));
   }
 
   const payload =
@@ -130,5 +185,5 @@ export async function POST(
     });
   }
 
-  return NextResponse.redirect(new URL("/admin/orders", req.url));
+  return NextResponse.redirect(new URL("/admin/orders?success=status", req.url));
 }

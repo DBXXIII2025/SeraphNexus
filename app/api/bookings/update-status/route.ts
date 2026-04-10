@@ -467,7 +467,10 @@ export async function POST(req: Request) {
     revalidatePath("/admin/bookings");
     revalidatePath("/dashboard/bookings");
 
-    return NextResponse.redirect(new URL("/admin/bookings", req.url));
+    const success =
+      status === "confirmed" ? "confirmed" : status === "cancelled" ? "cancelled" : "updated";
+
+    return NextResponse.redirect(new URL(`/admin/bookings?success=${success}`, req.url));
   } catch (error: unknown) {
     logRouteError("bookings/update-status", {
       step,
