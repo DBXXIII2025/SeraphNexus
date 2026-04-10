@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripeConnectAppUrl } from "@/lib/appUrl";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getFeatureGate } from "@/lib/planEnforcement";
+import { loadMissingLegalDocumentKeysSafe } from "@/lib/legalAcceptance";
 import { ensureBusinessStripeExpressAccount } from "@/lib/stripeConnect";
 import { stripe } from "@/lib/stripe";
 
@@ -19,6 +20,7 @@ type BusinessRow = {
   stripe_account_id: string | null;
   plan?: string | null;
   email?: string | null;
+  business_type?: string | null;
 };
 
 type StripeLikeError = Error & {
@@ -56,6 +58,13 @@ function getValidatedBaseUrl(req: Request) {
   const appUrl = getStripeConnectAppUrl(req);
   const parsed = new URL(appUrl);
   return parsed.origin;
+}
+
+function buildLegalAcceptanceUrl(baseUrl: string, businessId: string) {
+  const url = new URL("/legal/acceptance", baseUrl);
+  url.searchParams.set("businessId", businessId);
+  url.searchParams.set("next", `/admin/settings?businessId=${businessId}&setup=stripe`);
+  return url.toString();
 }
 
 export async function POST(req: Request) {
@@ -126,6 +135,22 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = getValidatedBaseUrl(req);
+    const legalState = await loadMissingLegalDocumentKeysSafe({
+      supabase: supabase as never,
+      userId: user.id,
+      businessId: ownedBusiness.id,
+      businessType: ownedBusiness.business_type || null,
+    });
+
+    if (!legalState.unavailable && legalState.missingDocumentKeys.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Accept the required payment-processing disclosures before enabling Stripe.",
+          redirectTo: buildLegalAcceptanceUrl(baseUrl, ownedBusiness.id),
+        },
+        { status: 403 }
+      );
+    }
 
     let stripeAccountId = ownedBusiness.stripe_account_id;
 

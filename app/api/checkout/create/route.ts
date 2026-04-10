@@ -1,3 +1,4 @@
+import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
@@ -33,6 +34,7 @@ import {
   insertCheckoutIntentSafely,
   updateCheckoutIntentSafely,
 } from "@/lib/checkoutIntents";
+import { loadMissingLegalDocumentKeysSafe } from "@/lib/legalAcceptance";
 import { trackLeadEventServer } from "@/lib/leads.server";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
@@ -155,6 +157,30 @@ type ServiceRow = {
 };
 
 type BookingInsertRow = Database["public"]["Tables"]["bookings"]["Insert"];
+type CheckoutIntentRow = {
+  id: string;
+  status?: string | null;
+  business_id?: string | null;
+  kind?: string | null;
+  amount_total?: number | null;
+  customer_email?: string | null;
+  phone?: string | null;
+  service_id?: string | null;
+  property_id?: string | null;
+  rental_id?: string | null;
+  booking_id?: string | null;
+  stripe_checkout_session_id?: string | null;
+  metadata?: Record<string, unknown> | string | null;
+  created_at?: string | null;
+};
+type PendingBookingLookupRow = {
+  id: string;
+  status?: string | null;
+  payment_status?: string | null;
+  stripe_session_id?: string | null;
+  payment_intent_id?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
 
 function getBaseUrl(req: Request) {
   return getAppUrl(req);
@@ -234,6 +260,192 @@ function toBookingPlatformFeeValue(applicationFeeCents: number) {
 
 function normalizeUsdAmountToCents(value: number) {
   return Math.round(value * 100);
+}
+
+function normalizeObjectForFingerprint(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeObjectForFingerprint(entry));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, key) => {
+        const normalized = normalizeObjectForFingerprint(
+          (value as Record<string, unknown>)[key]
+        );
+        if (
+          normalized !== null &&
+          normalized !== "" &&
+          !(Array.isArray(normalized) && normalized.length === 0)
+        ) {
+          acc[key] = normalized;
+        }
+        return acc;
+      }, {});
+  }
+
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  return value ?? null;
+}
+
+function buildCheckoutRequestFingerprint(value: Record<string, unknown>) {
+  return JSON.stringify(normalizeObjectForFingerprint(value));
+}
+
+function getMetadataValue(
+  metadata: Record<string, unknown> | string | null | undefined,
+  key: string
+) {
+  if (!metadata) {
+    return null;
+  }
+
+  const normalized =
+    typeof metadata === "string"
+      ? (() => {
+          try {
+            return JSON.parse(metadata) as Record<string, unknown>;
+          } catch {
+            return {};
+          }
+        })()
+      : metadata;
+
+  const value = normalized?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : value ?? null;
+}
+
+function isBlockingServiceBookingStatus(status: string | null | undefined) {
+  const normalized = String(status || "").toLowerCase();
+  return normalized === "confirmed" || normalized === "completed";
+}
+
+function isReusableOpenStripeSession(session: Stripe.Checkout.Session) {
+  return (
+    session.status === "open" &&
+    session.payment_status !== "paid" &&
+    typeof session.url === "string" &&
+    session.url.length > 0
+  );
+}
+
+async function findMatchingPendingCheckoutIntent(args: {
+  supabaseAdmin: ReturnType<typeof createAdminClient>;
+  businessId: string;
+  kind: "order" | "booking";
+  requestFingerprint: string;
+  amountTotal: number;
+}) {
+  const { data, error } = await args.supabaseAdmin
+    .from("checkout_intents")
+    .select(
+      "id, status, business_id, kind, amount_total, customer_email, phone, service_id, property_id, rental_id, booking_id, stripe_checkout_session_id, metadata, created_at"
+    )
+    .eq("business_id", args.businessId)
+    .eq("kind", args.kind)
+    .order("created_at", { ascending: false })
+    .limit(25);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = ((data || []) as CheckoutIntentRow[]).filter((row) => {
+    const status = String(row.status || "").toLowerCase();
+    return (
+      row.amount_total === args.amountTotal &&
+      (status === "pending" || status === "open" || status === "") &&
+      getMetadataValue(row.metadata, "request_fingerprint") === args.requestFingerprint
+    );
+  });
+
+  return rows[0] || null;
+}
+
+async function maybeReuseOpenCheckoutSession(args: {
+  checkoutIntent: CheckoutIntentRow | null;
+}) {
+  const sessionId = args.checkoutIntent?.stripe_checkout_session_id || null;
+  if (!sessionId) {
+    return null;
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (isReusableOpenStripeSession(session)) {
+      return {
+        sessionId: session.id,
+        url: session.url as string,
+      };
+    }
+  } catch (error) {
+    console.warn("[checkout/create] existing session lookup failed", {
+      checkoutIntentId: args.checkoutIntent?.id || null,
+      sessionId,
+      message: error instanceof Error ? error.message : "Unknown session lookup error",
+    });
+  }
+
+  return null;
+}
+
+async function findExistingPendingServiceBooking(args: {
+  supabaseAdmin: ReturnType<typeof createAdminClient>;
+  businessId: string;
+  bookingId?: string | null;
+  date: string;
+  startTime: string;
+  endTime: string;
+  customerEmail: string;
+  requestFingerprint: string;
+}) {
+  if (args.bookingId) {
+    const { data, error } = await args.supabaseAdmin
+      .from("bookings")
+      .select("id, status, payment_status, stripe_session_id, payment_intent_id, metadata")
+      .eq("id", args.bookingId)
+      .eq("business_id", args.businessId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (data) {
+      return data as PendingBookingLookupRow;
+    }
+  }
+
+  const { data, error } = await args.supabaseAdmin
+    .from("bookings")
+    .select("id, status, payment_status, stripe_session_id, payment_intent_id, metadata")
+    .eq("business_id", args.businessId)
+    .eq("date", args.date)
+    .eq("start_time", args.startTime)
+    .eq("end_time", args.endTime)
+    .eq("guest_email", args.customerEmail)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (
+    ((data || []) as PendingBookingLookupRow[]).find((row) => {
+      const status = String(row.status || "").toLowerCase();
+      const paymentStatus = String(row.payment_status || "").toLowerCase();
+      return (
+        (status === "pending" || paymentStatus === "pending") &&
+        getMetadataValue(row.metadata || null, "request_fingerprint") ===
+          args.requestFingerprint
+      );
+    }) || null
+  );
 }
 
 export async function POST(req: Request) {
@@ -372,6 +584,24 @@ export async function POST(req: Request) {
         code: "CHECKOUT_PLAN_PAYMENT_LOCKED",
         step: "business.plan.validate",
       });
+    }
+
+    if (business.owner_id) {
+      const legalState = await loadMissingLegalDocumentKeysSafe({
+        supabase: supabaseAdmin as never,
+        userId: business.owner_id,
+        businessId: business.id,
+        businessType: business.business_type,
+      });
+
+      if (!legalState.unavailable && legalState.missingDocumentKeys.length > 0) {
+        return errorResponse({
+          status: 403,
+          error: "This business is not ready to accept live payments yet.",
+          code: "CHECKOUT_OWNER_LEGAL_ACCEPTANCE_REQUIRED",
+          step: "business.legal.validate",
+        });
+      }
     }
 
     const usage = await loadBusinessUsageSnapshot(business.id);
@@ -560,6 +790,22 @@ export async function POST(req: Request) {
 
       const applicationFee = Math.round(totalCents * feePercent);
       const netToBusinessCents = getNetPayoutCents(totalCents, applicationFee);
+      const requestFingerprint = buildCheckoutRequestFingerprint({
+        kind: "order",
+        businessId: safeBusinessId,
+        businessType: business.business_type || null,
+        customerName,
+        customerEmail,
+        customerPhone,
+        fulfillmentType,
+        notes: payload.notes || "",
+        address: addressInput,
+        orderItems: pricedOrderItems.map((item) => ({
+          id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
       logCheckoutStage("fee_resolved", {
         branch: orderFlowType,
         businessId: safeBusinessId,
@@ -625,6 +871,7 @@ export async function POST(req: Request) {
           platform_fee_percent: feePercent,
           application_fee_cents: applicationFee,
           net_to_business_cents: netToBusinessCents,
+          request_fingerprint: requestFingerprint,
           notes: payload.notes || "",
         },
         amount_subtotal: subtotalCents,
@@ -641,32 +888,63 @@ export async function POST(req: Request) {
         paid_at: null,
       };
 
-      logCheckoutStage("db_write_start", {
-        branch: orderFlowType,
-        target: "checkout_intents",
-        action: "insert",
+      let intentId: string | null = null;
+      const existingIntent = await findMatchingPendingCheckoutIntent({
+        supabaseAdmin,
         businessId: safeBusinessId,
+        kind: "order",
+        requestFingerprint,
         amountTotal: totalCents,
       });
+      const reusableSession = await maybeReuseOpenCheckoutSession({
+        checkoutIntent: existingIntent,
+      });
 
-      const intentInsert = await insertCheckoutIntentSafely({
-        supabaseAdmin,
-        payload: intentInsertPayload,
-        context: {
+      if (reusableSession) {
+        logCheckoutStage("checkout_reused", {
+          branch: orderFlowType,
           businessId: safeBusinessId,
-          intentType: "order",
-          businessType: business.business_type || null,
-        },
-      });
+          checkoutIntentId: existingIntent?.id || null,
+          sessionId: reusableSession.sessionId,
+        });
+        return NextResponse.json({
+          url: reusableSession.url,
+          sessionId: reusableSession.sessionId,
+          reused: true,
+        });
+      }
 
-      logCheckoutStage("db_write_success", {
-        branch: orderFlowType,
-        target: "checkout_intents",
-        action: "insert",
-        checkoutIntentId: intentInsert.id,
-        degraded: intentInsert.degraded,
-        removedColumns: intentInsert.removedColumns,
-      });
+      if (existingIntent?.id && !existingIntent.stripe_checkout_session_id) {
+        intentId = existingIntent.id;
+      } else {
+        logCheckoutStage("db_write_start", {
+          branch: orderFlowType,
+          target: "checkout_intents",
+          action: "insert",
+          businessId: safeBusinessId,
+          amountTotal: totalCents,
+        });
+
+        const intentInsert = await insertCheckoutIntentSafely({
+          supabaseAdmin,
+          payload: intentInsertPayload,
+          context: {
+            businessId: safeBusinessId,
+            intentType: "order",
+            businessType: business.business_type || null,
+          },
+        });
+
+        intentId = intentInsert.id;
+        logCheckoutStage("db_write_success", {
+          branch: orderFlowType,
+          target: "checkout_intents",
+          action: "insert",
+          checkoutIntentId: intentId,
+          degraded: intentInsert.degraded,
+          removedColumns: intentInsert.removedColumns,
+        });
+      }
 
       logCheckoutStage("stripe_session_create_start", {
         branch: orderFlowType,
@@ -675,8 +953,8 @@ export async function POST(req: Request) {
         lineItemCount: pricedOrderItems.length,
       });
       step = "stripe.session.create";
-      const orderSuccessUrl = intentInsert.id
-        ? `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}&order_ref=${intentInsert.id}`
+      const orderSuccessUrl = intentId
+        ? `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}&order_ref=${intentId}`
         : `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}`;
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
@@ -708,7 +986,7 @@ export async function POST(req: Request) {
           kind: "checkout_intent",
           intent_type: "order",
           flow_type: orderFlowType,
-          checkout_intent_id: intentInsert.id || "",
+          checkout_intent_id: intentId || "",
           business_id: safeBusinessId,
           business_type: business.business_type || "",
           customer_name: customerName,
@@ -720,7 +998,10 @@ export async function POST(req: Request) {
           notes: payload.notes || "",
           amount_total: String(totalCents),
           platform_fee: String(applicationFee),
+          request_fingerprint: requestFingerprint,
         },
+      }, {
+        idempotencyKey: `checkout:${intentId || requestFingerprint}`,
       });
       logCheckoutStage("stripe_session_create_success", {
         branch: orderFlowType,
@@ -728,10 +1009,10 @@ export async function POST(req: Request) {
         sessionId: session.id,
       });
 
-      if (intentInsert.id) {
+      if (intentId) {
         const sessionUpdateResult = await updateCheckoutIntentSafely({
           supabaseAdmin,
-          intentId: intentInsert.id,
+          intentId,
           payload: { stripe_checkout_session_id: session.id },
           context: {
             businessId: safeBusinessId,
@@ -745,7 +1026,7 @@ export async function POST(req: Request) {
           console.warn("[checkout/create] checkout intent session link degraded", {
             businessId: safeBusinessId,
             intentType: "order",
-            checkoutIntentId: intentInsert.id,
+            checkoutIntentId: intentId,
             sessionId: session.id,
             removedColumns: sessionUpdateResult.removedColumns,
             message: sessionUpdateResult.message,
@@ -756,7 +1037,7 @@ export async function POST(req: Request) {
       logCheckoutStage("checkout_ready", {
         branch: orderFlowType,
         businessId: safeBusinessId,
-        checkoutIntentId: intentInsert.id,
+        checkoutIntentId: intentId,
         sessionId: session.id,
         itemCount: pricedOrderItems.length,
         totalCents,
@@ -1024,6 +1305,18 @@ export async function POST(req: Request) {
       const totalCents = subtotalCents + amountTax;
       const applicationFee = Math.round(totalCents * feePercent);
       const netToBusinessCents = getNetPayoutCents(totalCents, applicationFee);
+      const requestFingerprint = buildCheckoutRequestFingerprint({
+        kind: "booking",
+        flowType: "rental_reservation",
+        businessId: safeBusinessId,
+        propertyId,
+        startDate,
+        endDate,
+        customerName,
+        customerEmail,
+        customerPhone,
+        notes: payload.notes || "",
+      });
 
       logCheckoutStage("amounts_resolved", {
         branch: "rental_reservation",
@@ -1108,6 +1401,7 @@ export async function POST(req: Request) {
           platform_fee_percent: feePercent,
           application_fee_cents: applicationFee,
           net_to_business_cents: netToBusinessCents,
+          request_fingerprint: requestFingerprint,
           notes: payload.notes || "",
         },
         amount_subtotal: subtotalCents,
@@ -1124,41 +1418,73 @@ export async function POST(req: Request) {
         paid_at: null,
       };
 
-      logCheckoutStage("db_write_start", {
-        branch: "rental_reservation",
-        target: "checkout_intents",
-        action: "insert",
+      let intentId: string | null = null;
+      const existingIntent = await findMatchingPendingCheckoutIntent({
+        supabaseAdmin,
         businessId: safeBusinessId,
-        propertyId,
+        kind: "booking",
+        requestFingerprint,
         amountTotal: totalCents,
       });
+      const reusableSession = await maybeReuseOpenCheckoutSession({
+        checkoutIntent: existingIntent,
+      });
 
-      const intentInsert = await insertCheckoutIntentSafely({
-        supabaseAdmin,
-        payload: intentInsertPayload,
-        context: {
+      if (reusableSession) {
+        logCheckoutStage("checkout_reused", {
+          branch: "rental_reservation",
           businessId: safeBusinessId,
-          intentType: "booking",
-          flowType: "rental_reservation",
-          businessType: business.business_type || null,
-        },
-      });
+          checkoutIntentId: existingIntent?.id || null,
+          propertyId,
+          sessionId: reusableSession.sessionId,
+        });
+        return NextResponse.json({
+          url: reusableSession.url,
+          sessionId: reusableSession.sessionId,
+          reused: true,
+        });
+      }
 
-      logCheckoutStage("db_write_success", {
-        branch: "rental_reservation",
-        target: "checkout_intents",
-        action: "insert",
-        checkoutIntentId: intentInsert.id,
-        degraded: intentInsert.degraded,
-        removedColumns: intentInsert.removedColumns,
-      });
+      if (existingIntent?.id && !existingIntent.stripe_checkout_session_id) {
+        intentId = existingIntent.id;
+      } else {
+        logCheckoutStage("db_write_start", {
+          branch: "rental_reservation",
+          target: "checkout_intents",
+          action: "insert",
+          businessId: safeBusinessId,
+          propertyId,
+          amountTotal: totalCents,
+        });
+
+        const intentInsert = await insertCheckoutIntentSafely({
+          supabaseAdmin,
+          payload: intentInsertPayload,
+          context: {
+            businessId: safeBusinessId,
+            intentType: "booking",
+            flowType: "rental_reservation",
+            businessType: business.business_type || null,
+          },
+        });
+
+        intentId = intentInsert.id;
+        logCheckoutStage("db_write_success", {
+          branch: "rental_reservation",
+          target: "checkout_intents",
+          action: "insert",
+          checkoutIntentId: intentId,
+          degraded: intentInsert.degraded,
+          removedColumns: intentInsert.removedColumns,
+        });
+      }
 
       const rentalSessionMetadata = {
         kind: "checkout_intent",
         intent_type: "booking",
         reservation_type: "rental",
         flow_type: "rental_reservation",
-        checkout_intent_id: intentInsert.id || "",
+        checkout_intent_id: intentId || "",
         business_id: safeBusinessId,
         business_type: business.business_type || "",
         property_id: propertyId,
@@ -1172,6 +1498,7 @@ export async function POST(req: Request) {
         notes: payload.notes || "",
         amount_total: String(totalCents),
         platform_fee: String(applicationFee),
+        request_fingerprint: requestFingerprint,
       };
       logCheckoutStage("stripe_session_create_start", {
         branch: "rental_reservation",
@@ -1207,6 +1534,8 @@ export async function POST(req: Request) {
           },
         },
         metadata: rentalSessionMetadata,
+      }, {
+        idempotencyKey: `checkout:${intentId || requestFingerprint}`,
       });
       logCheckoutStage("stripe_session_create_success", {
         branch: "rental_reservation",
@@ -1215,10 +1544,10 @@ export async function POST(req: Request) {
         sessionId: session.id,
       });
 
-      if (intentInsert.id) {
+      if (intentId) {
         const sessionUpdateResult = await updateCheckoutIntentSafely({
           supabaseAdmin,
-          intentId: intentInsert.id,
+          intentId,
           payload: { stripe_checkout_session_id: session.id },
           context: {
             businessId: safeBusinessId,
@@ -1234,7 +1563,7 @@ export async function POST(req: Request) {
             businessId: safeBusinessId,
             intentType: "booking",
             flowType: "rental_reservation",
-            checkoutIntentId: intentInsert.id,
+            checkoutIntentId: intentId,
             sessionId: session.id,
             removedColumns: sessionUpdateResult.removedColumns,
             message: sessionUpdateResult.message,
@@ -1252,7 +1581,9 @@ export async function POST(req: Request) {
         .eq("business_id", safeBusinessId)
         .eq("date", slot.date)) as any
     )) as { data: SlotBookingRow[] | null };
-    const bookings = bookingsResult.data;
+    const bookings = (bookingsResult.data || []).filter((booking) =>
+      isBlockingServiceBookingStatus(booking.status)
+    );
 
     const bookingSlot = {
       date: slot.date,
@@ -1264,7 +1595,7 @@ export async function POST(req: Request) {
       end: string;
     };
 
-    const bookingRows = (bookings || []) as SlotBookingRow[];
+    const bookingRows = bookings as SlotBookingRow[];
 
     const bookingsForPricing: SlotBookingRow[] = bookingRows.map((booking) => ({
       ...booking,
@@ -1305,7 +1636,9 @@ export async function POST(req: Request) {
         .gte("date", recentStartStr)
         .lte("date", slot.date)) as any
     )) as { data: SlotBookingRow[] | null };
-    const recentBookings = recentBookingsResult.data;
+    const recentBookings = (recentBookingsResult.data || []).filter((booking) =>
+      isBlockingServiceBookingStatus(booking.status)
+    );
 
     const { data: pricingRules } = await supabaseAdmin
       .from("pricing_rules")
@@ -1362,6 +1695,21 @@ export async function POST(req: Request) {
     const totalCents = subtotalCents + amountTax;
     const applicationFee = Math.round(totalCents * feePercent);
     const netToBusinessCents = getNetPayoutCents(totalCents, applicationFee);
+    const requestFingerprint = buildCheckoutRequestFingerprint({
+      kind: "booking",
+      flowType: "service_booking",
+      businessId: safeBusinessId,
+      serviceId: selectedService?.id || null,
+      date: slot.date || null,
+      startTime: slot.startTime || null,
+      endTime: slot.endTime || null,
+      serviceMode: serviceMode || null,
+      customerName,
+      customerEmail,
+      customerPhone,
+      address: addressInput,
+      notes: payload.notes || "",
+    });
 
     logCheckoutStage("amounts_resolved", {
       branch: "service_booking",
@@ -1469,6 +1817,7 @@ export async function POST(req: Request) {
         platform_fee_percent: feePercent,
         application_fee_cents: applicationFee,
         net_to_business_cents: netToBusinessCents,
+        request_fingerprint: requestFingerprint,
         notes: payload.notes || "",
         date: slot.date,
         start_time: slot.startTime,
@@ -1491,34 +1840,72 @@ export async function POST(req: Request) {
       paid_at: null,
     };
 
-    logCheckoutStage("db_write_start", {
-      branch: "service_booking",
-      target: "checkout_intents",
-      action: "insert",
+    let intentId: string | null = null;
+    let linkedBookingId: string | null = null;
+    const existingIntent = await findMatchingPendingCheckoutIntent({
+      supabaseAdmin,
       businessId: safeBusinessId,
-      serviceId: selectedService?.id || null,
+      kind: "booking",
+      requestFingerprint,
       amountTotal: totalCents,
     });
+    const reusableSession = await maybeReuseOpenCheckoutSession({
+      checkoutIntent: existingIntent,
+    });
 
-    const intentInsert = await insertCheckoutIntentSafely({
-      supabaseAdmin,
-      payload: intentInsertPayload,
-      context: {
+    if (reusableSession) {
+      logCheckoutStage("checkout_reused", {
+        branch: "service_booking",
         businessId: safeBusinessId,
-        intentType: "booking",
-        flowType: "service_booking",
-        businessType: business.business_type || null,
-      },
-    });
+        serviceId: selectedService?.id || null,
+        checkoutIntentId: existingIntent?.id || null,
+        bookingId: existingIntent?.booking_id || null,
+        sessionId: reusableSession.sessionId,
+      });
+      return NextResponse.json({
+        url: reusableSession.url,
+        sessionId: reusableSession.sessionId,
+        reused: true,
+      });
+    }
 
-    logCheckoutStage("db_write_success", {
-      branch: "service_booking",
-      target: "checkout_intents",
-      action: "insert",
-      checkoutIntentId: intentInsert.id,
-      degraded: intentInsert.degraded,
-      removedColumns: intentInsert.removedColumns,
-    });
+    if (existingIntent?.id && !existingIntent.stripe_checkout_session_id) {
+      intentId = existingIntent.id;
+      linkedBookingId =
+        typeof existingIntent.booking_id === "string" && existingIntent.booking_id.trim()
+          ? existingIntent.booking_id.trim()
+          : null;
+    } else {
+      logCheckoutStage("db_write_start", {
+        branch: "service_booking",
+        target: "checkout_intents",
+        action: "insert",
+        businessId: safeBusinessId,
+        serviceId: selectedService?.id || null,
+        amountTotal: totalCents,
+      });
+
+      const intentInsert = await insertCheckoutIntentSafely({
+        supabaseAdmin,
+        payload: intentInsertPayload,
+        context: {
+          businessId: safeBusinessId,
+          intentType: "booking",
+          flowType: "service_booking",
+          businessType: business.business_type || null,
+        },
+      });
+
+      intentId = intentInsert.id;
+      logCheckoutStage("db_write_success", {
+        branch: "service_booking",
+        target: "checkout_intents",
+        action: "insert",
+        checkoutIntentId: intentId,
+        degraded: intentInsert.degraded,
+        removedColumns: intentInsert.removedColumns,
+      });
+    }
 
     const bookingPlatformFee = toBookingPlatformFeeValue(applicationFee);
     step = "booking.insert_pending";
@@ -1569,8 +1956,9 @@ export async function POST(req: Request) {
         service_id: selectedService?.id || null,
         service_name: selectedService?.name || null,
         service_mode: serviceMode || null,
-        checkout_intent_id: intentInsert.id || null,
+        checkout_intent_id: intentId || null,
         application_fee_cents: applicationFee,
+        request_fingerprint: requestFingerprint,
       },
     };
 
@@ -1584,35 +1972,73 @@ export async function POST(req: Request) {
       applicationFeeCents: applicationFee,
       persistedBookingPlatformFee: bookingPlatformFee,
     });
-    const { data: pendingBooking, error: pendingBookingError } = await supabaseAdmin
-      .from("bookings")
-      .insert(pendingBookingPayload)
-      .select("id")
-      .maybeSingle();
+    const reusableBooking = await findExistingPendingServiceBooking({
+      supabaseAdmin,
+      businessId: safeBusinessId,
+      bookingId: linkedBookingId,
+      date: String(slot.date || ""),
+      startTime: String(slot.startTime || ""),
+      endTime: String(slot.endTime || ""),
+      customerEmail,
+      requestFingerprint,
+    });
 
-    if (pendingBookingError || !pendingBooking?.id) {
-      logCheckoutStage("db_write_error", {
-        branch: "service_booking",
-        target: "bookings",
-        action: "insert_pending",
-        businessId: safeBusinessId,
-        serviceId: selectedService?.id || null,
-        message: pendingBookingError?.message || "Failed to create pending booking",
-        applicationFeeCents: applicationFee,
-        persistedBookingPlatformFee: bookingPlatformFee,
-      });
-      throw new Error(
-        pendingBookingError?.message || "Failed to create pending booking"
-      );
+    let pendingBookingId = reusableBooking?.id || null;
+
+    if (pendingBookingId) {
+      const { error: pendingBookingError } = await supabaseAdmin
+        .from("bookings")
+        .update(pendingBookingPayload)
+        .eq("id", pendingBookingId)
+        .eq("business_id", safeBusinessId);
+
+      if (pendingBookingError) {
+        logCheckoutStage("db_write_error", {
+          branch: "service_booking",
+          target: "bookings",
+          action: "update_pending",
+          businessId: safeBusinessId,
+          serviceId: selectedService?.id || null,
+          bookingId: pendingBookingId,
+          message: pendingBookingError.message,
+          applicationFeeCents: applicationFee,
+          persistedBookingPlatformFee: bookingPlatformFee,
+        });
+        throw new Error(pendingBookingError.message);
+      }
+    } else {
+      const { data: pendingBooking, error: pendingBookingError } = await supabaseAdmin
+        .from("bookings")
+        .insert(pendingBookingPayload)
+        .select("id")
+        .maybeSingle();
+
+      if (pendingBookingError || !pendingBooking?.id) {
+        logCheckoutStage("db_write_error", {
+          branch: "service_booking",
+          target: "bookings",
+          action: "insert_pending",
+          businessId: safeBusinessId,
+          serviceId: selectedService?.id || null,
+          message: pendingBookingError?.message || "Failed to create pending booking",
+          applicationFeeCents: applicationFee,
+          persistedBookingPlatformFee: bookingPlatformFee,
+        });
+        throw new Error(
+          pendingBookingError?.message || "Failed to create pending booking"
+        );
+      }
+
+      pendingBookingId = String(pendingBooking.id);
     }
 
     logCheckoutStage("db_write_success", {
       branch: "service_booking",
       target: "bookings",
-      action: "insert_pending",
+      action: reusableBooking?.id ? "update_pending" : "insert_pending",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
-      bookingId: pendingBooking.id,
+      bookingId: pendingBookingId,
       amountTotal: totalCents,
     });
 
@@ -1620,7 +2046,7 @@ export async function POST(req: Request) {
       branch: "service_booking",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
-      bookingId: pendingBooking.id,
+      bookingId: pendingBookingId,
       amountTotal: totalCents,
     });
     step = "stripe.session.create";
@@ -1656,8 +2082,8 @@ export async function POST(req: Request) {
       metadata: {
         kind: "checkout_intent",
         intent_type: "booking",
-        checkout_intent_id: intentInsert.id || "",
-        booking_id: pendingBooking.id,
+        checkout_intent_id: intentId || "",
+        booking_id: pendingBookingId,
         flow_type: "service_booking",
         business_id: safeBusinessId,
         business_type: business.business_type || "",
@@ -1674,13 +2100,16 @@ export async function POST(req: Request) {
         notes: payload.notes || "",
         amount_total: String(totalCents),
         platform_fee: String(applicationFee),
+        request_fingerprint: requestFingerprint,
       },
+    }, {
+      idempotencyKey: `checkout:${intentId || requestFingerprint}`,
     });
     logCheckoutStage("stripe_session_create_success", {
       branch: "service_booking",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
-      bookingId: pendingBooking.id,
+      bookingId: pendingBookingId,
       sessionId: session.id,
     });
 
@@ -1690,7 +2119,7 @@ export async function POST(req: Request) {
       action: "attach_session",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
-      bookingId: pendingBooking.id,
+      bookingId: pendingBookingId,
       sessionId: session.id,
       paymentIntentId:
         typeof session.payment_intent === "string" ? session.payment_intent : null,
@@ -1698,7 +2127,7 @@ export async function POST(req: Request) {
 
     const pendingBookingMetadata = {
       ...((pendingBookingPayload.metadata || {}) as Record<string, unknown>),
-      checkout_intent_id: intentInsert.id || null,
+      checkout_intent_id: intentId || null,
       stripe_session_id: session.id,
       payment_intent_id:
         typeof session.payment_intent === "string" ? session.payment_intent : null,
@@ -1712,7 +2141,7 @@ export async function POST(req: Request) {
           typeof session.payment_intent === "string" ? session.payment_intent : null,
         metadata: pendingBookingMetadata,
       })
-      .eq("id", pendingBooking.id)
+      .eq("id", pendingBookingId)
       .eq("business_id", safeBusinessId);
 
     if (pendingBookingSessionError) {
@@ -1722,7 +2151,7 @@ export async function POST(req: Request) {
         action: "attach_session",
         businessId: safeBusinessId,
         serviceId: selectedService?.id || null,
-        bookingId: pendingBooking.id,
+        bookingId: pendingBookingId,
         sessionId: session.id,
         message: pendingBookingSessionError.message,
       });
@@ -1735,20 +2164,20 @@ export async function POST(req: Request) {
       action: "attach_session",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
-      bookingId: pendingBooking.id,
+      bookingId: pendingBookingId,
       sessionId: session.id,
     });
 
-    if (intentInsert.id) {
+    if (intentId) {
       const sessionUpdateResult = await updateCheckoutIntentSafely({
         supabaseAdmin,
-        intentId: intentInsert.id,
+        intentId,
         payload: {
           stripe_checkout_session_id: session.id,
-          booking_id: pendingBooking.id,
+          booking_id: pendingBookingId,
           metadata: {
             ...intentInsertPayload.metadata,
-            booking_id: pendingBooking.id,
+            booking_id: pendingBookingId,
           },
         },
         context: {
@@ -1756,7 +2185,7 @@ export async function POST(req: Request) {
           intentType: "booking",
           flowType: "service_booking",
           businessType: business.business_type || null,
-          bookingId: pendingBooking.id,
+          bookingId: pendingBookingId,
           sessionId: session.id,
         },
       });
@@ -1766,8 +2195,8 @@ export async function POST(req: Request) {
           businessId: safeBusinessId,
           intentType: "booking",
           flowType: "service_booking",
-          checkoutIntentId: intentInsert.id,
-          bookingId: pendingBooking.id,
+          checkoutIntentId: intentId,
+          bookingId: pendingBookingId,
           sessionId: session.id,
           removedColumns: sessionUpdateResult.removedColumns,
           message: sessionUpdateResult.message,
@@ -1780,7 +2209,7 @@ export async function POST(req: Request) {
       .update({
         stripe_session_id: session.id,
       })
-      .eq("id", pendingBooking.id);
+      .eq("id", pendingBookingId);
 
     if (bookingSessionUpdateError) {
       step = "booking.update_session";
@@ -1794,7 +2223,7 @@ export async function POST(req: Request) {
       branch: "service_booking",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
-      bookingId: pendingBooking.id,
+      bookingId: pendingBookingId,
       sessionId: session.id,
     });
 

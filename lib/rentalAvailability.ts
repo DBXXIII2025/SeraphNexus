@@ -311,7 +311,6 @@ export function isActiveRentalBooking(record: DateRangeRecord) {
   }
 
   if (
-    status === "pending" ||
     status === "confirmed" ||
     status === "paid" ||
     paymentStatus === "paid"

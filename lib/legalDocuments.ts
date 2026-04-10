@@ -1,4 +1,5 @@
 import { isRentalBusinessType, type BusinessType } from "@/lib/businessModules";
+import { PLAN_DEFINITIONS } from "@/lib/planConfig";
 
 export type LegalDocumentKey =
   | "terms_of_service"
@@ -6,6 +7,7 @@ export type LegalDocumentKey =
   | "business_owner_platform_agreement"
   | "advertising_listing_responsibility_agreement"
   | "refund_chargeback_responsibility_agreement"
+  | "payment_processing_fee_disclosure_agreement"
   | "rental_property_late_fee_disclosure_agreement"
   | "messaging_communication_disclaimer";
 
@@ -25,6 +27,11 @@ export type LegalDocument = {
 };
 
 const LAST_UPDATED = "2026-03-15";
+const PLAN_FEE_DISCLOSURE = [
+  `${PLAN_DEFINITIONS.trial.label}: ${Math.round(PLAN_DEFINITIONS.trial.transactionFeeRate * 100)}%`,
+  `${PLAN_DEFINITIONS.pro.label}: ${Math.round(PLAN_DEFINITIONS.pro.transactionFeeRate * 100)}%`,
+  `${PLAN_DEFINITIONS.elite.label}: ${Math.round(PLAN_DEFINITIONS.elite.transactionFeeRate * 100)}%`,
+].join(", ");
 
 export const LEGAL_DOCUMENTS: Record<LegalDocumentKey, LegalDocument> = {
   terms_of_service: {
@@ -283,6 +290,45 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentKey, LegalDocument> = {
       },
     ],
   },
+  payment_processing_fee_disclosure_agreement: {
+    documentKey: "payment_processing_fee_disclosure_agreement",
+    documentVersion: "2026-04-09.1",
+    lastUpdated: "2026-04-09",
+    title: "Payment Processing & Platform Fee Disclosure",
+    acceptanceLabel:
+      "I acknowledge that Seraph Nexus deducts the disclosed platform fee from customer payments processed for my business.",
+    requiredFor: "all",
+    sections: [
+      {
+        heading: "1. Scope and Payment Flow",
+        paragraphs: [
+          "This disclosure applies whenever your business uses Seraph Nexus payment-processing features, including bookings, reservations, orders, or other customer transactions processed through the platform with Stripe Connect.",
+          "Customers are charged one total amount for the applicable booking or order. Seraph Nexus does not add a separate second client charge for the platform fee described in this disclosure.",
+        ],
+      },
+      {
+        heading: "2. Automatic Platform Fee Deduction",
+        paragraphs: [
+          "By enabling payment processing, you authorize Seraph Nexus to deduct the platform transaction fee that applies to your business's effective plan directly from customer payments processed through the platform before the net payout is transferred to your connected Stripe account.",
+          `Current configured fee percentages by plan are: ${PLAN_FEE_DISCLOSURE}. If your effective plan changes, the platform fee percentage applied to future transactions will follow the then-current configured rate for that effective plan.`,
+        ],
+      },
+      {
+        heading: "3. Transaction Accounting and Records",
+        paragraphs: [
+          "For each successful payment, Seraph Nexus may store transaction metadata sufficient for accounting and audit purposes, including the booking or order reference, business identifier, plan used for the fee calculation, gross amount, deducted platform fee amount, net amount routed to your connected account, and related Stripe object identifiers.",
+          "Historical transaction records preserve the fee and pricing amounts that applied at the time of the original transaction and are not retroactively rewritten solely because you later change your pricing or plan.",
+        ],
+      },
+      {
+        heading: "4. Owner Responsibility and Acknowledgment",
+        paragraphs: [
+          "You are responsible for reviewing this disclosure, your plan terms, and your own payout reporting. You remain solely responsible for your taxes, customer disclosures, pricing decisions, refunds, and legal compliance relating to your business.",
+          "If you do not accept this disclosure, you must not use Seraph Nexus payment-processing features for real customer transactions.",
+        ],
+      },
+    ],
+  },
   rental_property_late_fee_disclosure_agreement: {
     documentKey: "rental_property_late_fee_disclosure_agreement",
     documentVersion: "2026-03-15.1",
@@ -379,6 +425,7 @@ export const BUSINESS_OWNER_REQUIRED_DOCUMENT_KEYS: LegalDocumentKey[] = [
   "business_owner_platform_agreement",
   "advertising_listing_responsibility_agreement",
   "refund_chargeback_responsibility_agreement",
+  "payment_processing_fee_disclosure_agreement",
   "rental_property_late_fee_disclosure_agreement",
   "messaging_communication_disclaimer",
 ];

@@ -91,6 +91,7 @@ export default function BookingClient({
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  const [selectedSlotKey, setSelectedSlotKey] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -107,6 +108,7 @@ export default function BookingClient({
     "strict_slot" | "flexible_date"
   >("strict_slot");
   const [availabilityReason, setAvailabilityReason] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const todayDate = useMemo(() => getTodayLocalDate(), []);
@@ -117,6 +119,14 @@ export default function BookingClient({
     ? selectedService.images.filter((image) => image.id !== selectedServiceImage?.id).slice(0, 3)
     : [];
   const businessInitials = getInitials(business.name);
+  const selectedSlot = useMemo(() => {
+    return (
+      slots.find(
+        (slot) => `${slot.start || "flex"}__${slot.end || "date"}` === selectedSlotKey
+      ) || null
+    );
+  }, [selectedSlotKey, slots]);
+  const selectedSlotPrice = Number(selectedSlot?.price || selectedService?.price || 0);
 
   const fetchSlots = useCallback(
     async (date: string) => {
@@ -164,6 +174,7 @@ export default function BookingClient({
             : false,
         });
         setSlots(data.slots || []);
+        setSelectedSlotKey("");
         setAvailabilityConfigured(data.availabilityConfigured !== false);
         setSchedulingModel(data.schedulingModel || "strict_slot");
         setAvailabilityReason(data.reason || null);
@@ -177,8 +188,12 @@ export default function BookingClient({
     [business.id, selectedServiceId, services.length, timezone]
   );
 
-  const handleBooking = async (slot: Slot) => {
+  const handleBooking = async () => {
     setError(null);
+
+    if (isSubmitting) {
+      return;
+    }
 
     if (!selectedServiceId) {
       setError("Please select a service before booking.");
@@ -187,6 +202,11 @@ export default function BookingClient({
 
     if (!selectedDate) {
       setError("Please choose a date before continuing.");
+      return;
+    }
+
+    if (!selectedSlot) {
+      setError("Please choose a time before continuing.");
       return;
     }
 
@@ -217,6 +237,8 @@ export default function BookingClient({
       }
     }
 
+    setIsSubmitting(true);
+
     try {
       const res = await fetch("/api/checkout/create", {
         method: "POST",
@@ -243,9 +265,9 @@ export default function BookingClient({
           },
           slot: {
             date: selectedDate,
-            startTime: slot.start,
-            endTime: slot.end,
-            schedulingModel: slot.scheduling_model || schedulingModel,
+            startTime: selectedSlot.start,
+            endTime: selectedSlot.end,
+            schedulingModel: selectedSlot.scheduling_model || schedulingModel,
           },
         }),
       });
@@ -256,8 +278,8 @@ export default function BookingClient({
         console.log("[book/client] checkout rejected", {
           businessId: business.id,
           serviceId: selectedServiceId,
-          slotStart: slot.start,
-          slotEnd: slot.end,
+          slotStart: selectedSlot.start,
+          slotEnd: selectedSlot.end,
           errorCode: data?.code || null,
           errorStep: data?.step || null,
         });
@@ -276,6 +298,8 @@ export default function BookingClient({
           ? err.message
           : "Unexpected error while starting checkout."
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -399,7 +423,10 @@ export default function BookingClient({
                 <button
                   key={service.id}
                   type="button"
-                  onClick={() => setSelectedServiceId(service.id)}
+                  onClick={() => {
+                    setSelectedServiceId(service.id);
+                    setSelectedSlotKey("");
+                  }}
                   className={`rounded-2xl border p-3 text-left transition ${
                     isSelected
                       ? "border-blue-400 bg-blue-600/20 shadow-[0_10px_30px_rgba(59,130,246,0.14)]"
@@ -560,7 +587,10 @@ export default function BookingClient({
           className="p-2 text-black"
           value={selectedDate}
           min={todayDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
+          onChange={(e) => {
+            setSelectedDate(e.target.value);
+            setSelectedSlotKey("");
+          }}
           disabled={services.length === 0}
         />
         {showEmptyState && (
@@ -586,51 +616,68 @@ export default function BookingClient({
 
       {isLoading && <p>Loading availability...</p>}
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-        {slots.map((slot, index) => {
-          const basePrice = Number(
-            selectedService?.price ?? slot.base_price ?? slot.price
-          );
-          const finalPrice = Number(slot.price || 0);
-          const priceAdjustment = Number(slot.price_adjustment || 0);
-          const hasAdjustment =
-            slot.pricing_adjustment_applied || Math.abs(priceAdjustment) > 0.009;
+      <div className="mt-6 space-y-4">
+        <div>
+          <label className="mb-1 block text-sm text-gray-300">Time</label>
+          <select
+            value={selectedSlotKey}
+            onChange={(event) => setSelectedSlotKey(event.target.value)}
+            disabled={!selectedDate || isLoading || slots.length === 0}
+            className="w-full rounded border border-white/20 bg-black/30 p-3 text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option value="">
+              {isLoading
+                ? "Loading times..."
+                : selectedDate
+                  ? "Select a time"
+                  : "Choose a date first"}
+            </option>
+            {slots.map((slot, index) => {
+              const slotKey = `${slot.start || "flex"}__${slot.end || "date"}`;
+              return (
+                <option
+                  key={`${slotKey}-${index}`}
+                  value={slotKey}
+                >
+                  {formatSlotLabel(slot)}
+                </option>
+              );
+            })}
+          </select>
+          <p className="mt-2 text-xs text-gray-400">
+            Select a date and time, review your booking, then use Pay to continue to secure checkout.
+          </p>
+        </div>
 
-          return (
-            <button
-              key={`${slot.start || "flex"}-${slot.end || "date"}-${index}`}
-              onClick={() => handleBooking(slot)}
-              className="rounded bg-blue-600 p-3 text-left hover:bg-blue-700"
-            >
-              <div className="font-semibold">{formatSlotLabel(slot)}</div>
-              {selectedService ? (
-                <div className="text-sm text-gray-100">
-                  {selectedService.name || "Selected service"}
-                </div>
-              ) : null}
-              <div className="text-sm">
-                Base service price: ${basePrice.toFixed(2)}
+        <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Review</p>
+          <div className="mt-3 space-y-2 text-sm text-gray-200">
+            <div>Service: {selectedService?.name || "Select a service"}</div>
+            <div>Date: {selectedDate || "Select a date"}</div>
+            <div>Time: {selectedSlot ? formatSlotLabel(selectedSlot) : "Select a time"}</div>
+            <div>Total: ${selectedSlotPrice.toFixed(2)}</div>
+            {selectedSlot?.is_flexible ? (
+              <div className="text-xs text-blue-100">
+                Exact scheduling can be confirmed after booking.
               </div>
-              <div className="text-sm font-medium">
-                Final total: ${finalPrice.toFixed(2)}
-              </div>
-              {slot.is_flexible ? (
-                <div className="mt-1 text-xs text-blue-100">
-                  Exact scheduling can be confirmed after booking.
-                </div>
-              ) : hasAdjustment ? (
-                <div className="mt-1 text-xs text-gray-200">
-                  Pricing adjustment: {priceAdjustment >= 0 ? "+" : "-"}$
-                  {Math.abs(priceAdjustment).toFixed(2)}
-                </div>
-              ) : (
-                <div className="mt-1 text-xs text-gray-200">
-                  No pricing adjustment applied
-                </div>
-              )}
-            </button>
-          );
-        })}
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void handleBooking()}
+            disabled={
+              isSubmitting ||
+              isLoading ||
+              !selectedDate ||
+              !selectedSlot ||
+              !selectedServiceId
+            }
+            className="mt-4 w-full rounded bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? "Starting secure checkout..." : "Pay"}
+          </button>
+        </div>
       </div>
     </div>
   );

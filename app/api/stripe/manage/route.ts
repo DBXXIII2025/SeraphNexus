@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripeConnectAppUrl } from "@/lib/appUrl";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getFeatureGate } from "@/lib/planEnforcement";
+import { loadMissingLegalDocumentKeysSafe } from "@/lib/legalAcceptance";
 import { ensureBusinessStripeExpressAccount } from "@/lib/stripeConnect";
 import { stripe } from "@/lib/stripe";
 
@@ -18,11 +19,19 @@ type BusinessRow = {
   owner_id: string;
   stripe_account_id: string | null;
   plan?: string | null;
+  business_type?: string | null;
 };
 
 function getValidatedBaseUrl(req: Request) {
   const appUrl = getStripeConnectAppUrl(req);
   return new URL(appUrl).origin;
+}
+
+function buildLegalAcceptanceUrl(baseUrl: string, businessId: string) {
+  const url = new URL("/legal/acceptance", baseUrl);
+  url.searchParams.set("businessId", businessId);
+  url.searchParams.set("next", `/admin/settings?businessId=${businessId}&setup=stripe`);
+  return url.toString();
 }
 
 export async function POST(req: Request) {
@@ -46,7 +55,7 @@ export async function POST(req: Request) {
 
     const { data: business, error: businessError } = await supabase
       .from("businesses")
-      .select("id, name, owner_id, stripe_account_id, plan")
+      .select("id, name, owner_id, stripe_account_id, plan, business_type")
       .eq("id", businessId)
       .eq("owner_id", user.id)
       .maybeSingle();
@@ -80,6 +89,23 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = getValidatedBaseUrl(req);
+    const legalState = await loadMissingLegalDocumentKeysSafe({
+      supabase: supabase as never,
+      userId: user.id,
+      businessId: ownedBusiness.id,
+      businessType: ownedBusiness.business_type || null,
+    });
+
+    if (!legalState.unavailable && legalState.missingDocumentKeys.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Accept the required payment-processing disclosures before managing Stripe.",
+          redirectTo: buildLegalAcceptanceUrl(baseUrl, ownedBusiness.id),
+        },
+        { status: 403 }
+      );
+    }
+
     const refreshUrl = new URL("/admin/settings", baseUrl);
     refreshUrl.searchParams.set("businessId", ownedBusiness.id);
     refreshUrl.searchParams.set("setup", "stripe");
@@ -102,9 +128,7 @@ export async function POST(req: Request) {
         refreshUrl: refreshUrl.toString(),
       });
 
-      const loginLink = await stripe.accounts.createLoginLink(stripeAccountId, {
-        redirect_url: refreshUrl.toString(),
-      });
+      const loginLink = await stripe.accounts.createLoginLink(stripeAccountId);
 
       return NextResponse.json({ url: loginLink.url });
     }

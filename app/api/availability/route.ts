@@ -74,6 +74,11 @@ function logAvailabilityDecision(details: Record<string, unknown>) {
   console.log("[availability/service]", details);
 }
 
+function shouldBlockServiceAvailability(booking: BookingRow) {
+  const status = String(booking.status || "").toLowerCase();
+  return status === "confirmed" || status === "completed";
+}
+
 export async function GET(req: Request) {
   let step = "request.parse";
 
@@ -152,12 +157,12 @@ export async function GET(req: Request) {
         .eq("business_id", businessId)
         .eq("day_of_week", day),
       applyVisibleFilter(
-        supabase
+        (supabase
           .from("bookings")
           .select("start_time, end_time, status, created_at")
           .eq("business_id", businessId)
-          .eq("date", date)
-      ),
+          .eq("date", date)) as any
+      ) as Promise<{ data: BookingRow[] | null; error: { message: string } | null }>,
       supabase
         .from("pricing_rules")
         .select(
@@ -349,8 +354,14 @@ export async function GET(req: Request) {
       allSlots.push(...slots);
     }
 
-    const bookingRows = (bookings || []) as BookingRow[];
-    const filtered = allSlots.filter((slot) => {
+    const bookingRows = ((bookings || []) as BookingRow[]).filter(
+      shouldBlockServiceAvailability
+    );
+    const pricingBookings = bookingRows.map((booking) => ({
+      ...booking,
+      date,
+    }));
+    const availableSlots = allSlots.filter((slot) => {
       const conflict = bookingRows.some((booking) => {
         if (!booking.start_time || !booking.end_time) {
           return false;
@@ -371,30 +382,33 @@ export async function GET(req: Request) {
 
       return !conflict;
     });
-
-    const recentBookings = bookingRows.filter((booking) => {
-      if (!booking.created_at) return false;
-      const created = new Date(booking.created_at);
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 7);
-      return created >= cutoff;
-    });
+    const datedFilteredSlots = availableSlots.map((slot) => ({
+      date,
+      start: slot.start,
+      end: slot.end,
+    }));
 
     const slotsWithPricing: SlotRow[] = [];
     let appliedAmountAdjustment = false;
     let appliedPercentageAdjustment = false;
     let matchedRuleCount = 0;
 
-    for (const slot of filtered) {
+    for (const slot of datedFilteredSlots) {
       const demandScore = calculateDemandScore({
-        slot: { date, start: slot.start, end: slot.end },
-        allBookings: bookingRows,
-        recentBookings,
+        slot,
+        allBookings: pricingBookings,
+        recentBookings: pricingBookings.filter((booking) => {
+          if (!booking.created_at) return false;
+          const created = new Date(booking.created_at);
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - 7);
+          return created >= cutoff;
+        }),
       });
 
       const gapDiscount = shouldApplyGapDiscount({
         slot,
-        bookingsForDate: bookingRows,
+        bookingsForDate: pricingBookings,
       });
 
       const pricing = calculateSlotPrice({
@@ -469,9 +483,9 @@ export async function GET(req: Request) {
       appliedPercentageAdjustment,
       fallbackPricingUsed: matchedRuleCount === 0,
       slotsGenerated: allSlots.length,
-      existingBookingsBlockedAllSlots: allSlots.length > 0 && filtered.length === 0,
+      existingBookingsBlockedAllSlots: allSlots.length > 0 && availableSlots.length === 0,
       finalReason:
-        filtered.length > 0
+        availableSlots.length > 0
           ? "slots_available"
           : allSlots.length === 0
             ? "no_slots_generated"
