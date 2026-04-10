@@ -1681,6 +1681,61 @@ export async function POST(req: Request) {
       sessionId: session.id,
     });
 
+    logCheckoutStage("db_write_start", {
+      branch: "service_booking",
+      target: "bookings",
+      action: "attach_session",
+      businessId: safeBusinessId,
+      serviceId: selectedService?.id || null,
+      bookingId: pendingBooking.id,
+      sessionId: session.id,
+      paymentIntentId:
+        typeof session.payment_intent === "string" ? session.payment_intent : null,
+    });
+
+    const pendingBookingMetadata = {
+      ...(pendingBookingPayload.metadata || {}),
+      checkout_intent_id: intentInsert.id || null,
+      stripe_session_id: session.id,
+      payment_intent_id:
+        typeof session.payment_intent === "string" ? session.payment_intent : null,
+    };
+
+    const { error: pendingBookingSessionError } = await supabaseAdmin
+      .from("bookings")
+      .update({
+        stripe_session_id: session.id,
+        payment_intent_id:
+          typeof session.payment_intent === "string" ? session.payment_intent : null,
+        metadata: pendingBookingMetadata,
+      })
+      .eq("id", pendingBooking.id)
+      .eq("business_id", safeBusinessId);
+
+    if (pendingBookingSessionError) {
+      logCheckoutStage("db_write_error", {
+        branch: "service_booking",
+        target: "bookings",
+        action: "attach_session",
+        businessId: safeBusinessId,
+        serviceId: selectedService?.id || null,
+        bookingId: pendingBooking.id,
+        sessionId: session.id,
+        message: pendingBookingSessionError.message,
+      });
+      throw new Error(pendingBookingSessionError.message);
+    }
+
+    logCheckoutStage("db_write_success", {
+      branch: "service_booking",
+      target: "bookings",
+      action: "attach_session",
+      businessId: safeBusinessId,
+      serviceId: selectedService?.id || null,
+      bookingId: pendingBooking.id,
+      sessionId: session.id,
+    });
+
     if (intentInsert.id) {
       const sessionUpdateResult = await updateCheckoutIntentSafely({
         supabaseAdmin,

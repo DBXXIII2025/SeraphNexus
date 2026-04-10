@@ -585,8 +585,8 @@ function mergeIntentWithSessionMetadata(
 ): NormalizedCheckoutIntent {
   const sessionMetadata = getSessionMetadata(session);
   const metadata = {
-    ...sessionMetadata,
     ...intent.metadata,
+    ...sessionMetadata,
   };
   const businessType = intent.businessType || asString(sessionMetadata.business_type);
   const flowType = inferFlowType({
@@ -1220,6 +1220,22 @@ async function findExistingServiceBooking(
   if (linkedBookingId) {
     const { data } = await bookingsTable.select("id").eq("id", linkedBookingId).maybeSingle();
     if (data?.id) {
+      logFinalization(
+        "service_booking_existing_match",
+        {
+          source: "stripe/webhook",
+          sessionId,
+          paymentIntentId,
+          checkoutIntentId: intent.id,
+          flowType: intent.flowType,
+          businessType: intent.businessType,
+          sourceTable: intent.sourceTable,
+        },
+        {
+          matchStrategy: "linked_booking_id",
+          bookingId: data.id,
+        }
+      );
       return String(data.id);
     }
   }
@@ -1229,6 +1245,22 @@ async function findExistingServiceBooking(
     .eq("stripe_session_id", sessionId)
     .maybeSingle();
   if (bySession?.id) {
+    logFinalization(
+      "service_booking_existing_match",
+      {
+        source: "stripe/webhook",
+        sessionId,
+        paymentIntentId,
+        checkoutIntentId: intent.id,
+        flowType: intent.flowType,
+        businessType: intent.businessType,
+        sourceTable: intent.sourceTable,
+      },
+      {
+        matchStrategy: "stripe_session_id",
+        bookingId: bySession.id,
+      }
+    );
     return String(bySession.id);
   }
 
@@ -1238,6 +1270,22 @@ async function findExistingServiceBooking(
       .eq("payment_intent_id", paymentIntentId)
       .maybeSingle();
     if (byPaymentIntent?.id) {
+      logFinalization(
+        "service_booking_existing_match",
+        {
+          source: "stripe/webhook",
+          sessionId,
+          paymentIntentId,
+          checkoutIntentId: intent.id,
+          flowType: intent.flowType,
+          businessType: intent.businessType,
+          sourceTable: intent.sourceTable,
+        },
+        {
+          matchStrategy: "payment_intent_id",
+          bookingId: byPaymentIntent.id,
+        }
+      );
       return String(byPaymentIntent.id);
     }
   }
@@ -1256,9 +1304,49 @@ async function findExistingServiceBooking(
       .maybeSingle();
 
     if (bySlot?.id) {
+      logFinalization(
+        "service_booking_existing_match",
+        {
+          source: "stripe/webhook",
+          sessionId,
+          paymentIntentId,
+          checkoutIntentId: intent.id,
+          flowType: intent.flowType,
+          businessType: intent.businessType,
+          sourceTable: intent.sourceTable,
+        },
+        {
+          matchStrategy: "slot_match",
+          bookingId: bySlot.id,
+          businessId: intent.businessId,
+          date,
+          startTime,
+          endTime,
+        }
+      );
       return String(bySlot.id);
     }
   }
+
+  logFinalization(
+    "service_booking_existing_match_missing",
+    {
+      source: "stripe/webhook",
+      sessionId,
+      paymentIntentId,
+      checkoutIntentId: intent.id,
+      flowType: intent.flowType,
+      businessType: intent.businessType,
+      sourceTable: intent.sourceTable,
+    },
+    {
+      linkedBookingId,
+      businessId: intent.businessId,
+      date,
+      startTime,
+      endTime,
+    }
+  );
 
   return null;
 }
@@ -1581,11 +1669,11 @@ async function upsertServiceBookingFromIntent(
       throw new ReconciliationError(getErrorDebug("bookings.update", error));
     }
 
-      logFinalization("service_booking_update_success", context, {
-        businessId: intent.businessId,
-        serviceId: asString(intent.metadata.service_id),
-        bookingId: existingBookingId,
-        amountTotal: payload.amount_total,
+    logFinalization("service_booking_update_success", context, {
+      businessId: intent.businessId,
+      serviceId: asString(intent.metadata.service_id),
+      bookingId: existingBookingId,
+      amountTotal: payload.amount_total,
       finalBookingStatus: payload.status,
       payloadKeys: Object.keys(payload),
     });

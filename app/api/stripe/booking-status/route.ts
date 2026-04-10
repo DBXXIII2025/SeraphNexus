@@ -116,6 +116,63 @@ function buildNeedsAttentionConfirmation({
   };
 }
 
+async function recoverConfirmedServiceBooking(args: {
+  sessionId: string;
+}) {
+  const { data: checkoutIntent } = await supabaseAdmin
+    .from("checkout_intents")
+    .select("id, business_id, metadata, meta_json, stripe_payment_intent_id")
+    .eq("stripe_checkout_session_id", args.sessionId)
+    .maybeSingle();
+
+  const metadata = asRecord(checkoutIntent?.metadata ?? checkoutIntent?.meta_json);
+  const bookingId = asString(metadata.booking_id);
+  const paymentIntentId =
+    asString(checkoutIntent?.stripe_payment_intent_id) ||
+    asString(metadata.payment_intent_id);
+
+  let bookingLookup = await applyVisibleFilter(
+    supabaseAdmin
+      .from("bookings")
+      .select(
+        "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
+      )
+      .eq("stripe_session_id", args.sessionId)
+  ).maybeSingle();
+
+  if (!bookingLookup.data && paymentIntentId) {
+    bookingLookup = await applyVisibleFilter(
+      supabaseAdmin
+        .from("bookings")
+        .select(
+          "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
+        )
+        .eq("payment_intent_id", paymentIntentId)
+    ).maybeSingle();
+  }
+
+  if (!bookingLookup.data && bookingId) {
+    bookingLookup = await applyVisibleFilter(
+      supabaseAdmin
+        .from("bookings")
+        .select(
+          "id, business_id, guest_name, guest_email, phone, status, reminder_sent, metadata, duration_minutes, booking_time, customer_name, customer_email, payment_status, stripe_session_id, client_address, payment_intent_id, amount_total, total_amount, platform_fee, date, start_time, end_time, guest_phone"
+        )
+        .eq("id", bookingId)
+    ).maybeSingle();
+  }
+
+  if (bookingLookup.error) {
+    throw new Error(bookingLookup.error.message);
+  }
+
+  return {
+    booking: bookingLookup.data,
+    checkoutIntent,
+    metadata,
+  };
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get("session_id");
@@ -541,6 +598,144 @@ export async function GET(req: Request) {
       confirmation,
     });
   } catch (err: unknown) {
+    try {
+      const recovered = await recoverConfirmedServiceBooking({ sessionId });
+      const booking = recovered.booking;
+      const confirmed =
+        booking?.payment_status === "paid" || booking?.status === "confirmed";
+
+      if (booking && confirmed) {
+        const businessId =
+          asString(recovered.checkoutIntent?.business_id) ||
+          asString(recovered.metadata.business_id) ||
+          booking.business_id ||
+          null;
+        const { data: business } = businessId
+          ? await supabaseAdmin
+              .from("businesses")
+              .select("id, name, slug, business_type")
+              .eq("id", businessId)
+              .maybeSingle()
+          : { data: null };
+        const serviceId = asString(recovered.metadata.service_id);
+        const { data: service } = serviceId
+          ? await supabaseAdmin
+              .from("services")
+              .select("id, name")
+              .eq("id", serviceId)
+              .maybeSingle()
+          : { data: null };
+        const customerSummary = compactCustomerSummary({
+          name:
+            booking.guest_name ||
+            booking.customer_name ||
+            asString(recovered.metadata.guest_name) ||
+            asString(recovered.metadata.customer_name),
+          email:
+            booking.guest_email ||
+            booking.customer_email ||
+            asString(recovered.metadata.guest_email) ||
+            asString(recovered.metadata.customer_email),
+          phone:
+            booking.guest_phone ||
+            booking.phone ||
+            asString(recovered.metadata.guest_phone) ||
+            asString(recovered.metadata.customer_phone),
+        });
+        const timeWindow = [formatTimeLabel(booking.start_time), formatTimeLabel(booking.end_time)]
+          .filter(Boolean)
+          .join(" - ");
+        const serviceLocation =
+          booking.client_address ||
+          (asString(recovered.metadata.service_mode) === "remote"
+            ? "Remote service"
+            : null);
+
+        console.log("[stripe/booking-status]", {
+          stage: "service_booking_recovered_after_error",
+          sessionId,
+          bookingId: booking.id || null,
+          finalBookingStatus: booking.status || null,
+          paymentStatus: booking.payment_status || null,
+        });
+
+        return NextResponse.json({
+          booking,
+          status: booking.status || null,
+          payment_status: booking.payment_status || null,
+          finalized: true,
+          bookingId: booking.id || null,
+          fallbackReason: null,
+          conversation: null,
+          confirmation: {
+            state: "confirmed",
+            transactionType: "service_booking",
+            headline: "Booking confirmed",
+            message: "Your service booking is confirmed and saved.",
+            nextStep:
+              asString(recovered.metadata.service_mode) === "remote"
+                ? "The business can now follow up with remote session details if needed."
+                : "The business can now prepare for your scheduled service and contact you if anything else is needed.",
+            reference: booking.id || recovered.checkoutIntent?.id || sessionId,
+            paymentSummary: titleCaseStatus(booking.payment_status) || "Paid",
+            businessName: business?.name || null,
+            businessSlug: business?.slug || null,
+            businessType: business?.business_type || null,
+            sections: [
+              {
+                title: "Booking",
+                items: [
+                  { label: "Service", value: service?.name || "Scheduled service" },
+                  {
+                    label: "Date",
+                    value: formatDateLabel(booking.date) || booking.date || "Scheduled",
+                  },
+                  ...(timeWindow ? [{ label: "Time", value: timeWindow }] : []),
+                  ...(serviceLocation ? [{ label: "Location", value: serviceLocation }] : []),
+                ],
+              },
+              {
+                title: "Customer",
+                items: customerSummary ? [{ label: "Identity", value: customerSummary }] : [],
+              },
+              {
+                title: "Payment",
+                items: [
+                  ...(booking.amount_total ?? booking.total_amount
+                    ? [
+                        {
+                          label: "Total paid",
+                          value:
+                            formatCurrency(
+                              resolveBookingGrossAmount({
+                                amount_total: booking.amount_total,
+                                total_amount: booking.total_amount,
+                              })
+                            ) || "Paid",
+                        },
+                      ]
+                    : []),
+                  {
+                    label: "Payment status",
+                    value: titleCaseStatus(booking.payment_status) || "Paid",
+                  },
+                ],
+              },
+            ].filter((section) => section.items.length > 0),
+          },
+        });
+      }
+    } catch (recoveryError) {
+      console.error("[stripe/booking-status]", {
+        stage: "recovery_failed",
+        sessionId,
+        message:
+          recoveryError instanceof Error
+            ? recoveryError.message
+            : "Unknown recovery error",
+      });
+    }
+
     logRouteError("stripe/booking-status", {
       step: "finalization.load",
       code: "BOOKING_STATUS_LOOKUP_FAILED",
@@ -551,22 +746,41 @@ export async function GET(req: Request) {
       },
     });
 
+    const { data: checkoutIntent } = await supabaseAdmin
+      .from("checkout_intents")
+      .select("business_id, metadata, meta_json")
+      .eq("stripe_checkout_session_id", sessionId)
+      .maybeSingle();
+
+    const recoveryMetadata = asRecord(
+      checkoutIntent?.metadata ?? checkoutIntent?.meta_json
+    );
+    const recoveryBusinessId =
+      asString(checkoutIntent?.business_id) ||
+      asString(recoveryMetadata.business_id);
+    const { data: recoveryBusiness } = recoveryBusinessId
+      ? await supabaseAdmin
+          .from("businesses")
+          .select("name, slug, business_type")
+          .eq("id", recoveryBusinessId)
+          .maybeSingle()
+      : { data: null };
+
     return NextResponse.json({
-      ok: false,
-      error: "We couldn't confirm this booking yet.",
-      code: "BOOKING_STATUS_LOOKUP_FAILED",
-      step: "finalization.load",
       booking: null,
-      status: "error",
+      status: "finalizing",
       payment_status: null,
       finalized: false,
       bookingId: null,
-      fallbackReason: "finalization_failed",
+      fallbackReason: "finalization_retry",
       conversation: null,
-      confirmation: buildNeedsAttentionConfirmation({
+      confirmation: buildFinalizingConfirmation({
         sessionId,
+        businessName: recoveryBusiness?.name || null,
+        businessSlug: recoveryBusiness?.slug || null,
+        businessType: recoveryBusiness?.business_type || null,
         transactionType: "service_booking",
       }),
-    }, { status: 500 });
+    });
   }
 }

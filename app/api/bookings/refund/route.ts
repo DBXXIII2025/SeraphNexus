@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { sendBookingEmail, sendBookingSMS } from "@/lib/notify";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
 import { buildCancelledStatusUpdate } from "@/lib/transactionVisibility";
+import { updateCheckoutIntentSafely } from "@/lib/checkoutIntents";
 
 type BookingsTable = {
   select: (query: string) => {
@@ -28,11 +29,22 @@ type BusinessesTable = {
   };
 };
 
+function asString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function asRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 export async function POST(req: Request) {
   let step = "request.validate";
 
   try {
     const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
     const formData = await req.formData();
     const id = String(formData.get("id") || "");
 
@@ -57,12 +69,12 @@ export async function POST(req: Request) {
     const bookingsTable = supabase.from("bookings") as unknown as BookingsTable;
     const businessesTable = supabase.from("businesses") as unknown as BusinessesTable;
 
-    const { data: booking } = await bookingsTable
+    const { data: bookingRow } = await bookingsTable
       .select("*")
       .eq("id", id)
       .maybeSingle();
 
-    if (!booking) {
+    if (!bookingRow) {
       return errorResponse({
         status: 404,
         error: "This booking could not be found.",
@@ -71,9 +83,28 @@ export async function POST(req: Request) {
       });
     }
 
+    const booking = bookingRow as Record<string, unknown>;
+    const bookingId = asString(booking.id);
+    const bookingBusinessId = asString(booking.business_id);
+    const bookingStatus = asString(booking.status);
+    const bookingPaymentStatus = asString(booking.payment_status);
+    const bookingSessionId = asString(booking.stripe_session_id);
+    const bookingCustomerEmail =
+      asString(booking.customer_email) || asString(booking.guest_email);
+    const bookingPhone = asString(booking.phone) || asString(booking.guest_phone);
+
+    if (!bookingId || !bookingBusinessId) {
+      return errorResponse({
+        status: 400,
+        error: "This booking is missing required identifiers.",
+        code: "BOOKING_REFUND_INVALID_RECORD",
+        step: "booking.read",
+      });
+    }
+
     const { data: business } = await businessesTable
       .select("id")
-      .eq("id", booking.business_id)
+      .eq("id", bookingBusinessId)
       .eq("owner_id", user.id)
       .maybeSingle();
 
@@ -86,7 +117,7 @@ export async function POST(req: Request) {
       });
     }
 
-    if (booking.payment_status === "refunded") {
+    if (bookingPaymentStatus === "refunded") {
       return errorResponse({
         status: 409,
         error: "This booking has already been refunded.",
@@ -95,19 +126,26 @@ export async function POST(req: Request) {
       });
     }
 
-    let paymentIntentId = booking.payment_intent_id;
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[bookings/refund] start:", {
+        bookingId,
+        businessId: business.id,
+        previousStatus: bookingStatus,
+        previousPaymentStatus: bookingPaymentStatus,
+      });
+    }
 
-    if (!paymentIntentId && booking.stripe_session_id) {
+    let paymentIntentId = asString(booking.payment_intent_id);
+
+    if (!paymentIntentId && bookingSessionId) {
       step = "stripe.session.lookup";
-      const session = await stripe.checkout.sessions.retrieve(
-        booking.stripe_session_id
-      );
+      const session = await stripe.checkout.sessions.retrieve(bookingSessionId);
 
       paymentIntentId = session.payment_intent as string;
 
       await bookingsTable
         .update({ payment_intent_id: paymentIntentId })
-        .eq("id", booking.id);
+        .eq("id", bookingId);
     }
 
     if (!paymentIntentId) {
@@ -125,20 +163,63 @@ export async function POST(req: Request) {
     });
 
     step = "booking.update";
-    await bookingsTable
-      .update(buildCancelledStatusUpdate("owner", "cancelled", { payment_status: "refunded" }))
-      .eq("id", booking.id)
-      .eq("business_id", business.id);
-
-    await sendBookingEmail({
-      to: booking.customer_email,
-      subject: "Your booking was refunded",
-      message: "Your booking has been cancelled and refunded.",
+    const refundedPayload = buildCancelledStatusUpdate("owner", "cancelled", {
+      payment_status: "refunded",
     });
 
-    if (booking.phone) {
+    await bookingsTable
+      .update(refundedPayload)
+      .eq("id", bookingId)
+      .eq("business_id", business.id);
+
+    const metadata = asRecord(booking.metadata);
+    const checkoutIntentId =
+      typeof metadata.checkout_intent_id === "string" && metadata.checkout_intent_id.trim()
+        ? metadata.checkout_intent_id.trim()
+        : null;
+
+    if (checkoutIntentId) {
+      await updateCheckoutIntentSafely({
+        supabaseAdmin,
+        intentId: checkoutIntentId,
+        payload: {
+          status: "refunded",
+          booking_id: bookingId,
+          stripe_payment_intent_id: paymentIntentId,
+          stripe_checkout_session_id: bookingSessionId,
+          metadata: {
+            ...metadata,
+            booking_id: bookingId,
+            refund_status: "refunded",
+          },
+        },
+        context: {
+          source: "admin-bookings-refund",
+          bookingId,
+          businessId: business.id,
+        },
+      });
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[bookings/refund] success:", {
+        bookingId,
+        businessId: business.id,
+        paymentIntentId,
+      });
+    }
+
+    if (bookingCustomerEmail) {
+      await sendBookingEmail({
+        to: bookingCustomerEmail,
+        subject: "Your booking was refunded",
+        message: "Your booking has been cancelled and refunded.",
+      });
+    }
+
+    if (bookingPhone) {
       await sendBookingSMS({
-        to: booking.phone,
+        to: bookingPhone,
         message: "Your booking has been refunded.",
       });
     }

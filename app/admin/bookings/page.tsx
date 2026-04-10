@@ -141,6 +141,15 @@ function formatPaymentLabel(paymentStatus: string | null | undefined) {
   return formatAdminStatusLabel(paymentStatus, "Pending");
 }
 
+function isAwaitingServiceAction(record: ServiceBookingRecord) {
+  return (
+    record.status !== "confirmed" &&
+    record.status !== "completed" &&
+    record.status !== "cancelled" &&
+    record.paymentStatus !== "refunded"
+  );
+}
+
 function getReservationActions(status: string | null | undefined) {
   if (status === "completed" || status === "cancelled") {
     return [];
@@ -426,70 +435,69 @@ export default async function AdminBookingsPage() {
     (conversations || []).map((row: LooseRow) => [String(row.booking_id || ""), String(row.id)])
   );
 
-  const fallbackRows: BookingFallbackRow[] = paidIntents
-    .filter((intent: LooseRow) => {
-      const kind = String(intent.kind || intent.intent_type || "");
-      return kind === "booking";
-    })
-    .filter((intent: LooseRow) => {
-      const metadata = asRecord(intent.metadata ?? intent.meta_json);
-      const isRentalIntent =
-        asString(metadata.reservation_type) === "rental" ||
-        asString(metadata.flow_type) === "rental_reservation";
-      if (isRental !== isRentalIntent) {
-        return false;
-      }
+  const fallbackRows: BookingFallbackRow[] = isRental
+    ? paidIntents
+        .filter((intent: LooseRow) => {
+          const kind = String(intent.kind || intent.intent_type || "");
+          return kind === "booking";
+        })
+        .filter((intent: LooseRow) => {
+          const metadata = asRecord(intent.metadata ?? intent.meta_json);
+          const isRentalIntent =
+            asString(metadata.reservation_type) === "rental" ||
+            asString(metadata.flow_type) === "rental_reservation";
+          if (!isRentalIntent) {
+            return false;
+          }
 
-      const sessionId = String(intent.stripe_checkout_session_id || "");
-      return !(rows || []).some(
-        (row: LooseRow) => String(row.stripe_session_id || "") === sessionId
-      );
-    })
-    .map((intent: LooseRow) => {
-      const metadata = asRecord(intent.metadata ?? intent.meta_json);
-      const isRentalIntent =
-        asString(metadata.reservation_type) === "rental" ||
-        asString(metadata.flow_type) === "rental_reservation";
+          const sessionId = String(intent.stripe_checkout_session_id || "");
+          return !(rows || []).some(
+            (row: LooseRow) => String(row.stripe_session_id || "") === sessionId
+          );
+        })
+        .map((intent: LooseRow) => {
+          const metadata = asRecord(intent.metadata ?? intent.meta_json);
 
-      return {
-        id: String(intent.id),
-        customerName: String(
-          intent.customer_name ||
-            asString(metadata.guest_name) ||
-            intent.customer_email ||
-            asString(metadata.guest_email) ||
-            "Customer"
-        ),
-        customerEmail:
-          asString(intent.customer_email) ||
-          asString(metadata.guest_email) ||
-          null,
-        customerPhone:
-          asString(intent.phone) ||
-          asString(metadata.guest_phone) ||
-          asString(metadata.phone) ||
-          null,
-        amount: asNumber(intent.amount_total ?? intent.total_cents) / 100,
-        paid: String(intent.status || "paid"),
-        createdAt: asString(intent.created_at),
-        date:
-          asString(metadata.check_in_date) ||
-          asString(metadata.start_date) ||
-          asString(metadata.date) ||
-          "Date pending",
-        endDate: asString(metadata.check_out_date) || asString(metadata.end_date),
-        startTime: asString(metadata.start_time) || "--:--",
-        endTime: asString(metadata.end_time) || "--:--",
-        propertyId: asString(metadata.property_id),
-        reservationType: isRentalIntent ? "rental" : "service",
-        serviceName: asString(metadata.service_name),
-        serviceDetails: collectServiceDetails(metadata),
-        serviceMode:
-          asString(metadata.service_mode) || asString(metadata.fulfillment_type),
-        address: formatAddress(intent.address_json ?? metadata.address),
-        notes: asString(metadata.notes),
-      };
-    });
+          return {
+            id: String(intent.id),
+            customerName: String(
+              intent.customer_name ||
+                asString(metadata.guest_name) ||
+                intent.customer_email ||
+                asString(metadata.guest_email) ||
+                "Customer"
+            ),
+            customerEmail:
+              asString(intent.customer_email) ||
+              asString(metadata.guest_email) ||
+              null,
+            customerPhone:
+              asString(intent.phone) ||
+              asString(metadata.guest_phone) ||
+              asString(metadata.phone) ||
+              null,
+            amount: asNumber(intent.amount_total ?? intent.total_cents) / 100,
+            paid: String(intent.status || "paid"),
+            createdAt: asString(intent.created_at),
+            date:
+              asString(metadata.check_in_date) ||
+              asString(metadata.start_date) ||
+              asString(metadata.date) ||
+              "Date pending",
+            endDate: asString(metadata.check_out_date) || asString(metadata.end_date),
+            startTime: asString(metadata.start_time) || "--:--",
+            endTime: asString(metadata.end_time) || "--:--",
+            propertyId: asString(metadata.property_id),
+            reservationType: "rental",
+            serviceName: asString(metadata.service_name),
+            serviceDetails: collectServiceDetails(metadata),
+            serviceMode:
+              asString(metadata.service_mode) || asString(metadata.fulfillment_type),
+            address: formatAddress(intent.address_json ?? metadata.address),
+            notes: asString(metadata.notes),
+          };
+        })
+    : [];
 
   const normalizedServiceRows: ServiceBookingRecord[] = isRental
     ? []
@@ -584,16 +592,13 @@ export default async function AdminBookingsPage() {
       const confirmedBookingCount = serviceRows.filter(
         (row) => row.status === "confirmed"
       ).length;
-      const pendingBookingCount = serviceRows.filter(
-        (row) => row.status === "pending"
-      ).length;
 
       console.log("[admin/bookings] service fulfillment load counts:", {
         businessId: business.id,
         businessType: business.business_type || null,
         bookingCount: serviceRows.length,
         confirmedBookingCount,
-        pendingBookingCount,
+        pendingBookingCount: normalizedServiceRows.filter((row) => isAwaitingServiceAction(row)).length,
         withAddressCount: normalizedServiceRows.filter((row) => Boolean(row.address)).length,
         withNotesCount: normalizedServiceRows.filter((row) => Boolean(row.notes)).length,
         withServiceDetailsCount: normalizedServiceRows.filter((row) => Boolean(row.serviceName)).length,
@@ -604,12 +609,15 @@ export default async function AdminBookingsPage() {
 
   const businessModule = getBusinessModule(business.business_type);
   const propertyNameById = new Map(
-    (properties || []).map((property: LooseRow) => [String(property.id), property.name || "Listing"])
+    (properties || []).map((property: LooseRow) => [
+      String(property.id),
+      asString(property.name) || "Listing",
+    ])
   );
   const pageTitle = isRental ? "Reservations" : "Bookings";
   const serviceRecords = normalizedServiceRows.filter((row) => !row.isFallback);
   const serviceConfirmedCount = serviceRecords.filter((row) => row.status === "confirmed").length;
-  const servicePendingCount = serviceRecords.filter((row) => row.status === "pending").length;
+  const servicePendingCount = serviceRecords.filter((row) => isAwaitingServiceAction(row)).length;
   const rentalRows = isRental ? ((rows || []) as LooseRow[]) : [];
   const rentalConfirmedCount = rentalRows.filter((row) => row.status === "confirmed").length;
   const rentalPendingCount = rentalRows.filter((row) => row.status === "pending").length;
