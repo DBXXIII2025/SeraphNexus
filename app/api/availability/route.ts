@@ -36,7 +36,6 @@ type AvailabilityRow = {
 
 type ServiceRow = {
   id: string;
-  duration: number | null;
   price: number | null;
 };
 
@@ -98,7 +97,7 @@ async function upsertSlotPricingSafe(args: {
   supabase: Awaited<ReturnType<typeof createClient>>;
   payload: Record<string, unknown>;
 }) {
-  let nextPayload = { ...args.payload };
+  const nextPayload = { ...args.payload };
 
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const { error } = await args.supabase.from("slot_pricing").upsert(nextPayload, {
@@ -225,7 +224,7 @@ export async function GET(req: Request) {
       serviceId
         ? supabase
             .from("services")
-            .select("id, duration, price")
+            .select("id, price")
             .eq("id", serviceId)
             .eq("business_id", businessId)
             .maybeSingle()
@@ -339,7 +338,6 @@ export async function GET(req: Request) {
       });
     }
 
-    const serviceDuration = Number(service?.duration || 0);
     const servicePrice = Number(service?.price || 0);
     console.log("[availability/service]", {
       stage: "selection_source_records",
@@ -349,14 +347,14 @@ export async function GET(req: Request) {
       sourceRecordCount: service?.id ? 1 : 0,
       serviceId: service?.id || serviceId || null,
       baseServicePrice: servicePrice > 0 ? servicePrice : null,
-      serviceDurationFound: serviceDuration > 0,
+      serviceDurationFound: true,
     });
     const validAvailabilityBlocks = ((availability || []) as AvailabilityRow[]).filter(
       (block) => isValidTimeRange(block.start_time, block.end_time)
     );
     const hasBusinessHours = validAvailabilityBlocks.length > 0;
 
-    const slotDurationMinutes = serviceDuration > 0 ? serviceDuration : 60;
+    const slotDurationMinutes = 30;
     const fallbackBlocks =
       (business?.business_type || "").toLowerCase() === "service" && !hasBusinessHours
         ? [{ start_time: "09:00", end_time: "17:00" }]
@@ -372,7 +370,7 @@ export async function GET(req: Request) {
         dateRequested: date,
         timezone: timeZone,
         businessHoursFound: false,
-        serviceDurationFound: serviceDuration > 0,
+        serviceDurationFound: true,
         pricingRulesQueried: true,
         pricingRulesMatched: pricingRules.length,
         appliedAmountAdjustment: false,
@@ -525,7 +523,7 @@ export async function GET(req: Request) {
       dateRequested: date,
       timezone: timeZone,
       businessHoursFound: hasBusinessHours,
-      serviceDurationFound: serviceDuration > 0,
+      serviceDurationFound: true,
       pricingRulesQueried: true,
       pricingRulesMatched: matchedRuleCount,
       appliedAmountAdjustment,

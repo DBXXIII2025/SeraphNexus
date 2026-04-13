@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
 import type { ServiceImageRecord } from "@/lib/serviceImages";
+import { translate } from "@/lib/i18n";
 
 type Slot = {
   start: string | null;
@@ -31,6 +32,9 @@ type BookingBusiness = {
   description?: string | null;
   business_type?: string | null;
   logo_url?: string | null;
+  language?: "en" | "es" | null;
+  onsite_enabled?: boolean | null;
+  remote_enabled?: boolean | null;
 };
 
 function getTodayLocalDate() {
@@ -111,7 +115,7 @@ export default function BookingClient({
   isOwner: boolean;
 }) {
   const [slots, setSlots] = useState<Slot[]>([]);
-  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlotKey, setSelectedSlotKey] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -133,9 +137,13 @@ export default function BookingClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const t = (key: Parameters<typeof translate>[1]) => translate(business.language, key);
   const todayDate = useMemo(() => getTodayLocalDate(), []);
-  const selectedService =
-    services.find((service) => service.id === selectedServiceId) || null;
+  const selectedServices = useMemo(
+    () => services.filter((service) => selectedServiceIds.includes(service.id)),
+    [selectedServiceIds, services]
+  );
+  const selectedService = selectedServices[0] || null;
   const selectedServiceImage = selectedService ? getPrimaryImage(selectedService) : null;
   const selectedGallery = selectedService
     ? selectedService.images.filter((image) => image.id !== selectedServiceImage?.id).slice(0, 3)
@@ -148,11 +156,20 @@ export default function BookingClient({
       ) || null
     );
   }, [selectedSlotKey, slots]);
-  const selectedSlotPrice = Number(selectedSlot?.price || selectedService?.price || 0);
+  const selectedServicesTotal = selectedServices.reduce(
+    (sum, service) => sum + Number(service.price || 0),
+    0
+  );
+  const selectedSlotPrice = selectedServicesTotal;
+  const serviceModes = {
+    onsite: business.onsite_enabled !== false,
+    remote: business.remote_enabled !== false,
+  };
 
   const fetchSlots = useCallback(
     async (date: string) => {
-      if (!selectedServiceId) {
+      const primaryServiceId = selectedServiceIds[0];
+      if (!primaryServiceId) {
         setSlots([]);
         return;
       }
@@ -163,7 +180,7 @@ export default function BookingClient({
       try {
         const res = await fetch(
           `/api/availability?businessId=${business.id}&serviceId=${encodeURIComponent(
-            selectedServiceId
+            primaryServiceId
           )}&date=${date}&tz=${encodeURIComponent(timezone)}`,
           { cache: "no-store" }
         );
@@ -172,7 +189,7 @@ export default function BookingClient({
         if (!res.ok) {
           console.log("[book/client] availability rejected", {
             businessId: business.id,
-            serviceId: selectedServiceId,
+            serviceId: primaryServiceId,
             date,
             errorCode: data?.code || null,
             errorStep: data?.step || null,
@@ -184,7 +201,7 @@ export default function BookingClient({
 
         console.log("[book/client] availability loaded", {
           businessId: business.id,
-          serviceId: selectedServiceId,
+          serviceId: primaryServiceId,
           date,
           slotCount: Array.isArray(data.slots) ? data.slots.length : 0,
           sourceRecordType: "services",
@@ -207,7 +224,7 @@ export default function BookingClient({
         setIsLoading(false);
       }
     },
-    [business.id, selectedServiceId, services.length, timezone]
+    [business.id, selectedServiceIds, services.length, timezone]
   );
 
   const handleBooking = async () => {
@@ -217,8 +234,8 @@ export default function BookingClient({
       return;
     }
 
-    if (!selectedServiceId) {
-      setError("Please select a service before booking.");
+    if (selectedServiceIds.length === 0) {
+      setError("Please select at least one service before booking.");
       return;
     }
 
@@ -259,6 +276,16 @@ export default function BookingClient({
       }
     }
 
+    if (serviceMode === "onsite" && !serviceModes.onsite) {
+      setError("On-site service is not available for this business.");
+      return;
+    }
+
+    if (serviceMode === "remote" && !serviceModes.remote) {
+      setError("Remote service is not available for this business.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -271,7 +298,8 @@ export default function BookingClient({
           intentType: "booking",
           businessId: business.id,
           businessType: business.business_type || "service",
-          serviceId: selectedServiceId,
+          serviceId: selectedServiceIds[0],
+          serviceIds: selectedServiceIds,
           customer: {
             name: customerName,
             email,
@@ -299,7 +327,7 @@ export default function BookingClient({
       if (!res.ok) {
         console.log("[book/client] checkout rejected", {
           businessId: business.id,
-          serviceId: selectedServiceId,
+          serviceIds: selectedServiceIds,
           slotStart: selectedSlot.start,
           slotEnd: selectedSlot.end,
           errorCode: data?.code || null,
@@ -326,15 +354,24 @@ export default function BookingClient({
   };
 
   useEffect(() => {
-    if (!selectedServiceId && services.length > 0) {
-      setSelectedServiceId(String(services[0].id));
+    if (selectedServiceIds.length === 0 && services.length > 0) {
+      setSelectedServiceIds([String(services[0].id)]);
     }
-  }, [selectedServiceId, services]);
+  }, [selectedServiceIds.length, services]);
 
   useEffect(() => {
-    if (!selectedDate || !selectedServiceId) return;
+    if (!selectedDate || selectedServiceIds.length === 0) return;
     void fetchSlots(selectedDate);
-  }, [fetchSlots, selectedDate, selectedServiceId]);
+  }, [fetchSlots, selectedDate, selectedServiceIds.length]);
+
+  useEffect(() => {
+    if (serviceMode === "remote" && !serviceModes.remote && serviceModes.onsite) {
+      setServiceMode("onsite");
+    }
+    if (serviceMode === "onsite" && !serviceModes.onsite && serviceModes.remote) {
+      setServiceMode("remote");
+    }
+  }, [serviceMode, serviceModes.onsite, serviceModes.remote]);
 
   const showEmptyState = selectedDate && !isLoading && slots.length === 0;
   const availabilityMessage = getAvailabilityMessage(
@@ -397,9 +434,6 @@ export default function BookingClient({
                 <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-gray-200">
                   ${Number(selectedService.price || 0).toFixed(2)}
                 </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-gray-200">
-                  {selectedService.duration || 60} min
-                </span>
                 <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">
                   {selectedService.images.length > 0
                     ? `${selectedService.images.length} visual${selectedService.images.length === 1 ? "" : "s"}`
@@ -430,7 +464,7 @@ export default function BookingClient({
       ) : null}
 
       <div className="mb-6">
-        <label className="mb-2 block text-sm text-gray-300">Service</label>
+        <label className="mb-2 block text-sm text-gray-300">{t("services")}</label>
         {services.length === 0 ? (
           <div className="rounded-md border border-white/10 bg-black/30 p-3 text-sm text-gray-300">
             No services are published for this business yet.
@@ -438,7 +472,7 @@ export default function BookingClient({
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {services.map((service) => {
-              const isSelected = selectedServiceId === service.id;
+              const isSelected = selectedServiceIds.includes(service.id);
               const primaryImage = getPrimaryImage(service);
 
               return (
@@ -446,7 +480,11 @@ export default function BookingClient({
                   key={service.id}
                   type="button"
                   onClick={() => {
-                    setSelectedServiceId(service.id);
+                    setSelectedServiceIds((current) =>
+                      current.includes(service.id)
+                        ? current.filter((id) => id !== service.id)
+                        : [...current, service.id]
+                    );
                     setSelectedSlotKey("");
                   }}
                   className={`rounded-2xl border p-3 text-left transition ${
@@ -475,8 +513,6 @@ export default function BookingClient({
                       </div>
                       <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-300">
                         <span>${Number(service.price || 0).toFixed(2)}</span>
-                        <span className="text-gray-500">•</span>
-                        <span>{service.duration || 60} min</span>
                       </div>
                       <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-gray-500">
                         {service.images.length > 0
@@ -493,7 +529,7 @@ export default function BookingClient({
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">Name</label>
+        <label className="mb-1 block text-sm text-gray-300">{t("name")}</label>
         <input
           type="text"
           className="w-full p-2 text-black"
@@ -505,7 +541,7 @@ export default function BookingClient({
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">Phone</label>
+        <label className="mb-1 block text-sm text-gray-300">{t("phone")}</label>
         <input
           type="tel"
           className="w-full p-2 text-black"
@@ -517,7 +553,7 @@ export default function BookingClient({
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">Email</label>
+        <label className="mb-1 block text-sm text-gray-300">{t("emailAddress")}</label>
         <input
           type="email"
           className="w-full p-2 text-black"
@@ -529,30 +565,34 @@ export default function BookingClient({
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">Service Mode</label>
+        <label className="mb-1 block text-sm text-gray-300">{t("serviceMode")}</label>
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => setServiceMode("remote")}
-            className={`flex-1 rounded border py-2 ${
-              serviceMode === "remote"
-                ? "border-blue-400 bg-blue-600/20"
-                : "border-white/20 bg-black/20"
-            }`}
-          >
-            Remote
-          </button>
-          <button
-            type="button"
-            onClick={() => setServiceMode("onsite")}
-            className={`flex-1 rounded border py-2 ${
-              serviceMode === "onsite"
-                ? "border-blue-400 bg-blue-600/20"
-                : "border-white/20 bg-black/20"
-            }`}
-          >
-            Onsite
-          </button>
+          {serviceModes.remote ? (
+            <button
+              type="button"
+              onClick={() => setServiceMode("remote")}
+              className={`flex-1 rounded border py-2 ${
+                serviceMode === "remote"
+                  ? "border-blue-400 bg-blue-600/20"
+                  : "border-white/20 bg-black/20"
+              }`}
+            >
+              {t("remote")}
+            </button>
+          ) : null}
+          {serviceModes.onsite ? (
+            <button
+              type="button"
+              onClick={() => setServiceMode("onsite")}
+              className={`flex-1 rounded border py-2 ${
+                serviceMode === "onsite"
+                  ? "border-blue-400 bg-blue-600/20"
+                  : "border-white/20 bg-black/20"
+              }`}
+            >
+              {t("onsite")}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -563,7 +603,7 @@ export default function BookingClient({
             className="w-full p-2 text-black"
             value={addressLine1}
             onChange={(e) => setAddressLine1(e.target.value)}
-            placeholder="Street address"
+            placeholder={t("streetAddress")}
             required
           />
           <input
@@ -571,14 +611,14 @@ export default function BookingClient({
             className="w-full p-2 text-black"
             value={addressLine2}
             onChange={(e) => setAddressLine2(e.target.value)}
-            placeholder="Apt / Suite (optional)"
+            placeholder={t("aptSuiteOptional")}
           />
           <input
             type="text"
             className="w-full p-2 text-black"
             value={addressCity}
             onChange={(e) => setAddressCity(e.target.value)}
-            placeholder="City"
+            placeholder={t("city")}
             required
           />
           <div className="flex gap-3">
@@ -587,7 +627,7 @@ export default function BookingClient({
               className="w-full p-2 text-black"
               value={addressState}
               onChange={(e) => setAddressState(e.target.value)}
-              placeholder="State"
+              placeholder={t("state")}
               required
             />
             <input
@@ -595,7 +635,7 @@ export default function BookingClient({
               className="w-full p-2 text-black"
               value={addressPostal}
               onChange={(e) => setAddressPostal(e.target.value)}
-              placeholder="ZIP"
+              placeholder={t("zip")}
               required
             />
           </div>
@@ -603,7 +643,7 @@ export default function BookingClient({
       )}
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">Date</label>
+        <label className="mb-1 block text-sm text-gray-300">{t("date")}</label>
         <input
           type="date"
           className="p-2 text-black"
@@ -636,11 +676,11 @@ export default function BookingClient({
 
       {error && <p className="mb-4 text-red-400">{error}</p>}
 
-      {isLoading && <p>Loading availability...</p>}
+      {isLoading && <p>{t("loadingAvailability")}</p>}
 
       <div className="mt-6 space-y-4">
         <div>
-          <label className="mb-1 block text-sm text-gray-300">Time</label>
+          <label className="mb-1 block text-sm text-gray-300">{t("time")}</label>
           <select
             value={selectedSlotKey}
             onChange={(event) => setSelectedSlotKey(event.target.value)}
@@ -649,10 +689,10 @@ export default function BookingClient({
           >
             <option value="">
               {isLoading
-                ? "Loading times..."
+                ? t("loadingTimes")
                 : selectedDate
-                  ? "Select a time"
-                  : "Choose a date first"}
+                  ? t("selectTime")
+                  : t("chooseDateFirst")}
             </option>
             {slots.map((slot, index) => {
               const slotKey = `${slot.start || "flex"}__${slot.end || "date"}`;
@@ -672,12 +712,17 @@ export default function BookingClient({
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Review</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{t("review")}</p>
           <div className="mt-3 space-y-2 text-sm text-gray-200">
-            <div>Service: {selectedService?.name || "Select a service"}</div>
-            <div>Date: {selectedDate || "Select a date"}</div>
-            <div>Time: {selectedSlot ? formatSlotLabel(selectedSlot) : "Select a time"}</div>
-            <div>Total: ${selectedSlotPrice.toFixed(2)}</div>
+            <div>
+              {t("services")}:{" "}
+              {selectedServices.length > 0
+                ? selectedServices.map((service) => service.name || "Service").join(", ")
+                : t("selectService")}
+            </div>
+            <div>{t("date")}: {selectedDate || t("selectDate")}</div>
+            <div>{t("time")}: {selectedSlot ? formatSlotLabel(selectedSlot) : t("selectTime")}</div>
+            <div>{t("total")}: ${selectedSlotPrice.toFixed(2)}</div>
             {selectedSlot?.is_flexible ? (
               <div className="text-xs text-blue-100">
                 Exact scheduling can be confirmed after booking.
@@ -693,11 +738,11 @@ export default function BookingClient({
               isLoading ||
               !selectedDate ||
               !selectedSlot ||
-              !selectedServiceId
+              selectedServiceIds.length === 0
             }
             className="mt-4 w-full rounded bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Starting secure checkout..." : "Pay"}
+            {isSubmitting ? "Starting secure checkout..." : t("pay")}
           </button>
         </div>
       </div>

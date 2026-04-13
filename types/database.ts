@@ -28,6 +28,11 @@ export interface Database {
           plan?: "basic" | "free" | "inactive" | "trial" | "pro" | "elite" | "growth" | null;
           refund_policy?: string | null;
           late_fee_disclosure?: string | null;
+          language?: "en" | "es";
+          pickup_enabled?: boolean;
+          delivery_enabled?: boolean;
+          onsite_enabled?: boolean;
+          remote_enabled?: boolean;
         };
         Insert: {
           id?: string;
@@ -47,6 +52,11 @@ export interface Database {
           plan?: "basic" | "free" | "inactive" | "trial" | "pro" | "elite" | "growth" | null;
           refund_policy?: string | null;
           late_fee_disclosure?: string | null;
+          language?: "en" | "es";
+          pickup_enabled?: boolean;
+          delivery_enabled?: boolean;
+          onsite_enabled?: boolean;
+          remote_enabled?: boolean;
         };
         Update: {
           id?: string;
@@ -66,6 +76,11 @@ export interface Database {
           plan?: "basic" | "free" | "inactive" | "trial" | "pro" | "elite" | "growth" | null;
           refund_policy?: string | null;
           late_fee_disclosure?: string | null;
+          language?: "en" | "es";
+          pickup_enabled?: boolean;
+          delivery_enabled?: boolean;
+          onsite_enabled?: boolean;
+          remote_enabled?: boolean;
         };
       };
 

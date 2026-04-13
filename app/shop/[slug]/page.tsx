@@ -8,6 +8,7 @@ import {
 import { notFound, redirect } from "next/navigation";
 import LeadEventTracker from "@/components/LeadEventTracker";
 import ShopClient from "./ShopClient";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
 
 type Params = {
   slug: string;
@@ -47,6 +48,7 @@ export default async function ShopPage({
     businessId: business.id,
     businessType,
   });
+  const businessPreferences = await loadBusinessPreferences(supabase, business.id);
 
   if (isDev) {
     console.log("[shop/page] business_type:", businessType);
@@ -65,6 +67,9 @@ export default async function ShopPage({
         businessName={business.name || "Store"}
         businessDescription={business.description || ""}
         businessType={business.business_type || "store"}
+        language={businessPreferences.language}
+        pickupEnabled={businessPreferences.pickup_enabled}
+        deliveryEnabled={businessPreferences.delivery_enabled}
         items={catalog.items.map((item) => ({
           id: item.id,
           name: item.name,

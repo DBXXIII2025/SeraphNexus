@@ -1,0 +1,95 @@
+export type LanguageCode = "en" | "es";
+
+export const DEFAULT_LANGUAGE: LanguageCode = "en";
+
+const dictionaries = {
+  en: {
+    addToCart: "Add to cart",
+    address: "Address",
+    aptSuiteOptional: "Apt / Suite (optional)",
+    bookingReview: "Review",
+    cartEmpty: "Cart is empty.",
+    checkoutStarting: "Starting checkout...",
+    chooseDateFirst: "Choose a date first",
+    city: "City",
+    date: "Date",
+    delivery: "Delivery",
+    deliveryAddressRequired: "Please complete your delivery address",
+    emailAddress: "Email address",
+    fulfillment: "Fulfillment",
+    loadingAvailability: "Loading availability...",
+    loadingTimes: "Loading times...",
+    name: "Name",
+    noSlots: "No available slots for this date.",
+    onsite: "On-site",
+    orderReviewRequired: "Review your cart before checkout.",
+    pay: "Pay",
+    phone: "Phone",
+    pickup: "Pickup",
+    proceedToPayment: "Proceed to Payment",
+    remote: "Remote",
+    review: "Review",
+    selectDate: "Select a date",
+    selectService: "Select services",
+    selectTime: "Select a time",
+    serviceMode: "Service mode",
+    services: "Services",
+    state: "State",
+    streetAddress: "Street address",
+    time: "Time",
+    total: "Total",
+    yourCart: "Your Cart",
+    yourOrder: "Your Order",
+    zip: "ZIP",
+  },
+  es: {
+    addToCart: "Agregar al carrito",
+    address: "Direccion",
+    aptSuiteOptional: "Apto / Suite (opcional)",
+    bookingReview: "Revision",
+    cartEmpty: "El carrito esta vacio.",
+    checkoutStarting: "Iniciando pago...",
+    chooseDateFirst: "Elige una fecha primero",
+    city: "Ciudad",
+    date: "Fecha",
+    delivery: "Entrega",
+    deliveryAddressRequired: "Completa tu direccion de entrega",
+    emailAddress: "Correo electronico",
+    fulfillment: "Metodo",
+    loadingAvailability: "Cargando disponibilidad...",
+    loadingTimes: "Cargando horarios...",
+    name: "Nombre",
+    noSlots: "No hay horarios disponibles para esta fecha.",
+    onsite: "En sitio",
+    orderReviewRequired: "Revisa tu carrito antes de pagar.",
+    pay: "Pagar",
+    phone: "Telefono",
+    pickup: "Recoger",
+    proceedToPayment: "Continuar al pago",
+    remote: "Remoto",
+    review: "Revision",
+    selectDate: "Selecciona una fecha",
+    selectService: "Selecciona servicios",
+    selectTime: "Selecciona una hora",
+    serviceMode: "Modo de servicio",
+    services: "Servicios",
+    state: "Estado",
+    streetAddress: "Direccion",
+    time: "Hora",
+    total: "Total",
+    yourCart: "Tu carrito",
+    yourOrder: "Tu orden",
+    zip: "Codigo postal",
+  },
+} satisfies Record<LanguageCode, Record<string, string>>;
+
+export type TranslationKey = keyof typeof dictionaries.en;
+
+export function normalizeLanguage(value: unknown): LanguageCode {
+  return value === "es" ? "es" : DEFAULT_LANGUAGE;
+}
+
+export function translate(language: unknown, key: TranslationKey) {
+  const normalized = normalizeLanguage(language);
+  return dictionaries[normalized][key] || dictionaries.en[key] || key;
+}

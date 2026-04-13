@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
+import { translate, type LanguageCode } from "@/lib/i18n";
 
 type CatalogItem = {
   id: string;
@@ -26,12 +27,18 @@ export default function ShopClient({
   businessDescription,
   businessType,
   items,
+  language,
+  pickupEnabled,
+  deliveryEnabled,
 }: {
   businessId: string;
   businessName: string;
   businessDescription: string;
   businessType: string;
   items: CatalogItem[];
+  language: LanguageCode;
+  pickupEnabled: boolean;
+  deliveryEnabled: boolean;
 }) {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -39,7 +46,7 @@ export default function ShopClient({
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">(
-    "pickup"
+    pickupEnabled ? "pickup" : "delivery"
   );
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
@@ -54,6 +61,7 @@ export default function ShopClient({
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart]
   );
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
 
   function addToCart(item: CatalogItem) {
     setCart((prev) => {
@@ -112,6 +120,16 @@ export default function ShopClient({
       return;
     }
 
+    if (fulfillmentType === "pickup" && !pickupEnabled) {
+      setError("Pickup is not available for this business.");
+      return;
+    }
+
+    if (fulfillmentType === "delivery" && !deliveryEnabled) {
+      setError("Delivery is not available for this business.");
+      return;
+    }
+
     if (fulfillmentType === "delivery") {
       if (
         !addressLine1.trim() ||
@@ -119,7 +137,7 @@ export default function ShopClient({
         !addressState.trim() ||
         !addressPostal.trim()
       ) {
-        setError("Please complete your delivery address");
+        setError(t("deliveryAddressRequired"));
         return;
       }
     }
@@ -240,7 +258,7 @@ export default function ShopClient({
                       onClick={() => addToCart(item)}
                       className="rounded-md bg-green-600 px-3 py-2 text-sm font-medium hover:bg-green-500"
                     >
-                      Add to cart
+                      {t("addToCart")}
                     </button>
                   </div>
                 </div>
@@ -249,10 +267,10 @@ export default function ShopClient({
           </div>
 
           <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-5">
-            <h2 className="text-lg font-semibold">Your Cart</h2>
+            <h2 className="text-lg font-semibold">{t("yourCart")}</h2>
             <div className="mt-4 space-y-3 text-sm">
               {cart.length === 0 ? (
-                <p className="text-gray-400">No items added yet.</p>
+                <p className="text-gray-400">{t("cartEmpty")}</p>
               ) : (
                 cart.map((item) => (
                   <div key={item.id} className="flex justify-between gap-4">
@@ -287,84 +305,88 @@ export default function ShopClient({
 
             <div className="mt-4 border-t border-white/10 pt-4">
               <div className="flex justify-between text-sm font-semibold">
-                <span>Total</span>
+                <span>{t("total")}</span>
                 <span>${total.toFixed(2)}</span>
               </div>
             </div>
 
             <div className="mt-5 space-y-3">
               <input
-                placeholder="Your name"
+                placeholder={t("name")}
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="w-full rounded-md border border-white/10 bg-black/40 p-2"
               />
               <input
-                placeholder="Email address"
+                placeholder={t("emailAddress")}
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 className="w-full rounded-md border border-white/10 bg-black/40 p-2"
               />
               <input
-                placeholder="Phone number"
+                placeholder={t("phone")}
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 className="w-full rounded-md border border-white/10 bg-black/40 p-2"
               />
               <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFulfillmentType("pickup")}
-                  className={`flex-1 rounded border py-2 ${
-                    fulfillmentType === "pickup"
-                      ? "border-green-500 bg-green-600/20"
-                      : "border-white/10 bg-black/30"
-                  }`}
-                >
-                  Pickup
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFulfillmentType("delivery")}
-                  className={`flex-1 rounded border py-2 ${
-                    fulfillmentType === "delivery"
-                      ? "border-green-500 bg-green-600/20"
-                      : "border-white/10 bg-black/30"
-                  }`}
-                >
-                  Delivery
-                </button>
+                {pickupEnabled ? (
+                  <button
+                    type="button"
+                    onClick={() => setFulfillmentType("pickup")}
+                    className={`flex-1 rounded border py-2 ${
+                      fulfillmentType === "pickup"
+                        ? "border-green-500 bg-green-600/20"
+                        : "border-white/10 bg-black/30"
+                    }`}
+                  >
+                    {t("pickup")}
+                  </button>
+                ) : null}
+                {deliveryEnabled ? (
+                  <button
+                    type="button"
+                    onClick={() => setFulfillmentType("delivery")}
+                    className={`flex-1 rounded border py-2 ${
+                      fulfillmentType === "delivery"
+                        ? "border-green-500 bg-green-600/20"
+                        : "border-white/10 bg-black/30"
+                    }`}
+                  >
+                    {t("delivery")}
+                  </button>
+                ) : null}
               </div>
 
               {fulfillmentType === "delivery" && (
                 <div className="space-y-2">
                   <input
-                    placeholder="Street address"
+                    placeholder={t("streetAddress")}
                     value={addressLine1}
                     onChange={(e) => setAddressLine1(e.target.value)}
                     className="w-full rounded-md border border-white/10 bg-black/40 p-2"
                   />
                   <input
-                    placeholder="Apt / Suite"
+                    placeholder={t("aptSuiteOptional")}
                     value={addressLine2}
                     onChange={(e) => setAddressLine2(e.target.value)}
                     className="w-full rounded-md border border-white/10 bg-black/40 p-2"
                   />
                   <input
-                    placeholder="City"
+                    placeholder={t("city")}
                     value={addressCity}
                     onChange={(e) => setAddressCity(e.target.value)}
                     className="w-full rounded-md border border-white/10 bg-black/40 p-2"
                   />
                   <div className="flex gap-2">
                     <input
-                      placeholder="State"
+                      placeholder={t("state")}
                       value={addressState}
                       onChange={(e) => setAddressState(e.target.value)}
                       className="w-full rounded-md border border-white/10 bg-black/40 p-2"
                     />
                     <input
-                      placeholder="ZIP"
+                      placeholder={t("zip")}
                       value={addressPostal}
                       onChange={(e) => setAddressPostal(e.target.value)}
                       className="w-full rounded-md border border-white/10 bg-black/40 p-2"
@@ -388,7 +410,7 @@ export default function ShopClient({
                 disabled={loading || cart.length === 0}
                 className="w-full rounded-md bg-green-600 px-4 py-2 font-medium hover:bg-green-500 disabled:opacity-60"
               >
-                {loading ? "Starting checkout..." : "Proceed to Payment"}
+                {loading ? t("checkoutStarting") : t("proceedToPayment")}
               </button>
             </div>
           </div>

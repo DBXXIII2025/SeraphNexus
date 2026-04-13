@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
+import { translate, type LanguageCode } from "@/lib/i18n";
 
 type MenuCategory = {
   id: string;
@@ -68,11 +69,17 @@ export default function OrderClient({
   businessName,
   businessDescription,
   businessType,
+  language,
+  pickupEnabled,
+  deliveryEnabled,
 }: {
   businessId: string;
   businessName: string;
   businessDescription: string;
   businessType: string;
+  language: LanguageCode;
+  pickupEnabled: boolean;
+  deliveryEnabled: boolean;
 }) {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -80,7 +87,7 @@ export default function OrderClient({
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">(
-    "pickup"
+    pickupEnabled ? "pickup" : "delivery"
   );
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
@@ -99,6 +106,7 @@ export default function OrderClient({
   });
   const [menuLoading, setMenuLoading] = useState(true);
   const [menuError, setMenuError] = useState<string | null>(null);
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
@@ -251,9 +259,17 @@ export default function OrderClient({
         !addressState.trim() ||
         !addressPostal.trim()
       ) {
-        setError("Please complete your delivery address");
+        setError(t("deliveryAddressRequired"));
         return;
       }
+    }
+    if (fulfillmentType === "pickup" && !pickupEnabled) {
+      setError("Pickup is not available for this business.");
+      return;
+    }
+    if (fulfillmentType === "delivery" && !deliveryEnabled) {
+      setError("Delivery is not available for this business.");
+      return;
     }
     if (cart.length === 0) {
       setError("Add items to your cart to continue");
@@ -359,7 +375,7 @@ export default function OrderClient({
                 onClick={() => addToCart(item)}
                 className="mt-3 bg-purple-600 px-3 py-1 rounded text-sm hover:bg-purple-500"
               >
-                Add to cart
+                {t("addToCart")}
               </button>
             </div>
           );
@@ -449,7 +465,7 @@ export default function OrderClient({
                             onClick={() => addToCart(item)}
                             className="mt-3 bg-purple-600 px-3 py-1 rounded text-sm hover:bg-purple-500"
                           >
-                            Add to cart
+                {t("addToCart")}
                           </button>
                         </div>
                       );
@@ -497,7 +513,7 @@ export default function OrderClient({
                             onClick={() => addToCart(item)}
                             className="mt-3 bg-purple-600 px-3 py-1 rounded text-sm hover:bg-purple-500"
                           >
-                            Add to cart
+                            {t("addToCart")}
                           </button>
                         </div>
                       );
@@ -509,9 +525,9 @@ export default function OrderClient({
           </div>
 
           <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-4">
-            <h2 className="text-lg font-semibold">Your Order</h2>
+            <h2 className="text-lg font-semibold">{t("yourOrder")}</h2>
             {cart.length === 0 ? (
-              <p className="text-sm text-gray-400">Cart is empty.</p>
+              <p className="text-sm text-gray-400">{t("cartEmpty")}</p>
             ) : (
               <div className="space-y-3 text-sm">
                 {cart.map((item) => (
@@ -541,7 +557,7 @@ export default function OrderClient({
                   </div>
                 ))}
                 <div className="border-t border-white/10 pt-2 flex justify-between font-semibold">
-                  <span>Total</span>
+                  <span>{t("total")}</span>
                   <span>${total.toFixed(2)}</span>
                 </div>
               </div>
@@ -549,46 +565,50 @@ export default function OrderClient({
 
             <div className="space-y-2">
               <div className="space-y-1">
-                <label className="text-xs text-gray-400">Fulfillment</label>
+                <label className="text-xs text-gray-400">{t("fulfillment")}</label>
                 <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFulfillmentType("pickup")}
-                    className={`flex-1 py-2 rounded border ${
-                      fulfillmentType === "pickup"
-                        ? "border-green-500 bg-green-600/20"
-                        : "border-white/10 bg-black/30"
-                    }`}
-                  >
-                    Pickup
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFulfillmentType("delivery")}
-                    className={`flex-1 py-2 rounded border ${
-                      fulfillmentType === "delivery"
-                        ? "border-green-500 bg-green-600/20"
-                        : "border-white/10 bg-black/30"
-                    }`}
-                  >
-                    Delivery
-                  </button>
+                  {pickupEnabled ? (
+                    <button
+                      type="button"
+                      onClick={() => setFulfillmentType("pickup")}
+                      className={`flex-1 py-2 rounded border ${
+                        fulfillmentType === "pickup"
+                          ? "border-green-500 bg-green-600/20"
+                          : "border-white/10 bg-black/30"
+                      }`}
+                    >
+                      {t("pickup")}
+                    </button>
+                  ) : null}
+                  {deliveryEnabled ? (
+                    <button
+                      type="button"
+                      onClick={() => setFulfillmentType("delivery")}
+                      className={`flex-1 py-2 rounded border ${
+                        fulfillmentType === "delivery"
+                          ? "border-green-500 bg-green-600/20"
+                          : "border-white/10 bg-black/30"
+                      }`}
+                    >
+                      {t("delivery")}
+                    </button>
+                  ) : null}
                 </div>
               </div>
               <input
-                placeholder="Your name"
+                placeholder={t("name")}
                 className="w-full p-2 rounded bg-black/40 border border-white/10"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
               />
               <input
-                placeholder="Email address"
+                placeholder={t("emailAddress")}
                 className="w-full p-2 rounded bg-black/40 border border-white/10"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
               />
               <input
-                placeholder="Phone number"
+                placeholder={t("phone")}
                 className="w-full p-2 rounded bg-black/40 border border-white/10"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
@@ -596,32 +616,32 @@ export default function OrderClient({
               {fulfillmentType === "delivery" && (
                 <div className="space-y-2">
                   <input
-                    placeholder="Street address"
+                    placeholder={t("streetAddress")}
                     className="w-full p-2 rounded bg-black/40 border border-white/10"
                     value={addressLine1}
                     onChange={(e) => setAddressLine1(e.target.value)}
                   />
                   <input
-                    placeholder="Apt/Suite (optional)"
+                    placeholder={t("aptSuiteOptional")}
                     className="w-full p-2 rounded bg-black/40 border border-white/10"
                     value={addressLine2}
                     onChange={(e) => setAddressLine2(e.target.value)}
                   />
                   <input
-                    placeholder="City"
+                    placeholder={t("city")}
                     className="w-full p-2 rounded bg-black/40 border border-white/10"
                     value={addressCity}
                     onChange={(e) => setAddressCity(e.target.value)}
                   />
                   <div className="flex gap-3">
                     <input
-                      placeholder="State"
+                      placeholder={t("state")}
                       className="w-full p-2 rounded bg-black/40 border border-white/10"
                       value={addressState}
                       onChange={(e) => setAddressState(e.target.value)}
                     />
                     <input
-                      placeholder="ZIP"
+                      placeholder={t("zip")}
                       className="w-full p-2 rounded bg-black/40 border border-white/10"
                       value={addressPostal}
                       onChange={(e) => setAddressPostal(e.target.value)}
@@ -641,7 +661,7 @@ export default function OrderClient({
                 disabled={placing || cart.length === 0}
                 className="w-full bg-green-600 py-2 rounded hover:bg-green-500 disabled:opacity-50"
               >
-                {placing ? "Starting checkout..." : "Proceed to Payment"}
+                {placing ? t("checkoutStarting") : t("proceedToPayment")}
               </button>
             </div>
           </div>

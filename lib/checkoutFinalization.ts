@@ -270,29 +270,6 @@ function buildBookingTime(date: string | null, startTime: string | null) {
   return `${date}T${normalizedTime}:00`;
 }
 
-function calculateDurationMinutes(
-  startTime: string | null,
-  endTime: string | null,
-  metadata: JsonRecord
-) {
-  const explicitDuration = asNumber(metadata.duration_minutes ?? metadata.service_duration);
-  if (explicitDuration > 0) {
-    return explicitDuration;
-  }
-
-  if (!startTime || !endTime) {
-    return null;
-  }
-
-  const [startHour, startMinute] = startTime.split(":").map((value) => Number(value));
-  const [endHour, endMinute] = endTime.split(":").map((value) => Number(value));
-  const startTotal = startHour * 60 + (startMinute || 0);
-  const endTotal = endHour * 60 + (endMinute || 0);
-  const duration = endTotal - startTotal;
-
-  return duration > 0 ? duration : null;
-}
-
 function hasAddress(address: JsonRecord) {
   return Boolean(formatAddress(address));
 }
@@ -1598,11 +1575,6 @@ async function upsertServiceBookingFromIntent(
   );
   const bookingTime =
     asString(intent.metadata.booking_time) || buildBookingTime(date, startTime);
-  const durationMinutes = calculateDurationMinutes(
-    startTime,
-    endTime,
-    intent.metadata
-  );
   const payloadMetadata = getSafeMetadataObject({
     ...intent.metadata,
     checkout_intent_id: intent.id,
@@ -1632,7 +1604,7 @@ async function upsertServiceBookingFromIntent(
     customer_email: guestEmail,
     phone: resolvedPhone,
     client_address: formatAddress(intent.address),
-    duration_minutes: durationMinutes,
+    duration_minutes: null,
     booking_time: bookingTime,
     metadata: payloadMetadata,
   };

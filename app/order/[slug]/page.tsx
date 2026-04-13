@@ -7,6 +7,7 @@ import {
 import { notFound, redirect } from "next/navigation";
 import LeadEventTracker from "@/components/LeadEventTracker";
 import OrderClient from "./OrderClient";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
 
 type Params = {
   slug: string;
@@ -70,6 +71,7 @@ export default async function OrderPage({
   if (!isOrderPublicBusinessType(businessType)) {
     redirect(getCanonicalPublicBusinessRoute(business.business_type, slug).href);
   }
+  const businessPreferences = await loadBusinessPreferences(supabase, business.id);
 
   return (
     <>
@@ -83,6 +85,9 @@ export default async function OrderPage({
         businessName={business.name || "Restaurant"}
         businessDescription={business.description || ""}
         businessType={business.business_type || "restaurant"}
+        language={businessPreferences.language}
+        pickupEnabled={businessPreferences.pickup_enabled}
+        deliveryEnabled={businessPreferences.delivery_enabled}
       />
     </>
   );

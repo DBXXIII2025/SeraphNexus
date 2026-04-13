@@ -19,6 +19,11 @@ type ActiveBusinessRow = {
   stripe_onboarding_complete: boolean | null;
   stripe_charges_enabled: boolean | null;
   stripe_payouts_enabled: boolean | null;
+  language?: "en" | "es" | null;
+  pickup_enabled?: boolean | null;
+  delivery_enabled?: boolean | null;
+  onsite_enabled?: boolean | null;
+  remote_enabled?: boolean | null;
   plan: unknown;
 };
 

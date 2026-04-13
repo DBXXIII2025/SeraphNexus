@@ -40,6 +40,7 @@ import { loadMissingLegalDocumentKeysSafe } from "@/lib/legalAcceptance";
 import { trackLeadEventServer } from "@/lib/leads.server";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import type { Database } from "@/types/database";
 
 export const runtime = "nodejs";
@@ -79,6 +80,7 @@ type CheckoutPayload = {
   businessType?: string;
   propertyId?: string;
   serviceId?: string;
+  serviceIds?: string[];
   orderItems?: OrderItemInput[];
   cart?: OrderItemInput[];
   customer?: {
@@ -153,7 +155,6 @@ type RentalReservationRow = Pick<
 type ServiceRow = {
   id: string;
   name: string | null;
-  duration: number | null;
   price: number | null;
   business_id: string;
   is_active?: boolean | null;
@@ -666,6 +667,11 @@ export async function POST(req: Request) {
       });
     }
 
+    const businessPreferences = await loadBusinessPreferences(
+      supabaseAdmin,
+      safeBusinessId
+    );
+
     if (!business.stripe_account_id) {
       return errorResponse({
         status: 400,
@@ -801,6 +807,24 @@ export async function POST(req: Request) {
           status: 400,
           error: "Select pickup or delivery before continuing.",
           code: "CHECKOUT_FULFILLMENT_INVALID",
+          step: "order.validate",
+        });
+      }
+
+      if (fulfillmentType === "pickup" && businessPreferences.pickup_enabled === false) {
+        return errorResponse({
+          status: 400,
+          error: "Pickup is not available for this business.",
+          code: "CHECKOUT_PICKUP_DISABLED",
+          step: "order.validate",
+        });
+      }
+
+      if (fulfillmentType === "delivery" && businessPreferences.delivery_enabled === false) {
+        return errorResponse({
+          status: 400,
+          error: "Delivery is not available for this business.",
+          code: "CHECKOUT_DELIVERY_DISABLED",
           step: "order.validate",
         });
       }
@@ -1205,13 +1229,24 @@ export async function POST(req: Request) {
 
     const serviceMode = payload.serviceMode;
     const isRentalBusiness = isRentalBusinessType(business.business_type);
-    const serviceId = payload.serviceId?.trim() || "";
+    const requestedServiceIds = Array.from(
+      new Set(
+        [
+          ...(Array.isArray(payload.serviceIds) ? payload.serviceIds : []),
+          payload.serviceId,
+        ]
+          .map((id) => String(id || "").trim())
+          .filter(Boolean)
+      )
+    );
+    const serviceId = requestedServiceIds[0] || "";
     logCheckoutStage("branch_selected", {
       branch: isRentalBusiness ? "rental_reservation" : "service_booking",
       businessId: safeBusinessId,
       businessType: business.business_type || null,
       propertyId: payload.propertyId || null,
       serviceId: serviceId || null,
+      serviceIds: requestedServiceIds,
     });
 
     if (!isRentalBusiness && isOrderBusinessType(business.business_type)) {
@@ -1228,6 +1263,24 @@ export async function POST(req: Request) {
         status: 400,
         error: "Select a valid service mode before continuing.",
         code: "CHECKOUT_SERVICE_MODE_INVALID",
+        step: "booking.validate",
+      });
+    }
+
+    if (!isRentalBusiness && serviceMode === "onsite" && businessPreferences.onsite_enabled === false) {
+      return errorResponse({
+        status: 400,
+        error: "On-site service is not available for this business.",
+        code: "CHECKOUT_ONSITE_DISABLED",
+        step: "booking.validate",
+      });
+    }
+
+    if (!isRentalBusiness && serviceMode === "remote" && businessPreferences.remote_enabled === false) {
+      return errorResponse({
+        status: 400,
+        error: "Remote service is not available for this business.",
+        code: "CHECKOUT_REMOTE_DISABLED",
         step: "booking.validate",
       });
     }
@@ -1255,27 +1308,35 @@ export async function POST(req: Request) {
     }
 
     let selectedService: ServiceRow | null = null;
+    let selectedServices: ServiceRow[] = [];
     if (!isRentalBusiness) {
-      if (!serviceId) {
+      if (requestedServiceIds.length === 0) {
         return errorResponse({
           status: 400,
-          error: "Select a service before booking.",
+          error: "Select at least one service before booking.",
           code: "CHECKOUT_SERVICE_REQUIRED",
           step: "service.validate",
         });
       }
 
-      const { data: service } = await supabaseAdmin
+      const { data: services } = await supabaseAdmin
         .from("services")
         .select("*")
-        .eq("id", serviceId)
         .eq("business_id", safeBusinessId)
-        .maybeSingle();
+        .in("id", requestedServiceIds);
 
-      if (!service?.id || service.is_active === false) {
+      selectedServices = ((services || []) as ServiceRow[]).filter(
+        (service) => service.is_active !== false
+      );
+      const selectedIds = new Set(selectedServices.map((service) => service.id));
+
+      if (
+        selectedServices.length !== requestedServiceIds.length ||
+        requestedServiceIds.some((id) => !selectedIds.has(id))
+      ) {
         console.log("[checkout/create] rejected invalid service selection", {
           businessId: safeBusinessId,
-          serviceId,
+          serviceIds: requestedServiceIds,
           selectionSource: "services",
           rejectedSelection: true,
           rejectionReason: "invalid_service_id",
@@ -1288,14 +1349,19 @@ export async function POST(req: Request) {
         });
       }
 
-      selectedService = service as ServiceRow;
+      selectedService = selectedServices[0] || null;
       console.log("[checkout/create] service selection source", {
         businessId: safeBusinessId,
         selectionSource: "services",
-        serviceId: selectedService.id,
-        serviceName: selectedService.name || null,
-        serviceBasePrice: selectedService.price || null,
-        serviceDuration: selectedService.duration || null,
+        serviceId: selectedService?.id || null,
+        serviceIds: selectedServices.map((service) => service.id),
+        serviceName: selectedService?.name || null,
+        serviceNames: selectedServices.map((service) => service.name || "Service"),
+        serviceBasePrice: selectedService?.price || null,
+        serviceTotalPrice: selectedServices.reduce(
+          (sum, service) => sum + Number(service.price || 0),
+          0
+        ),
         requestedDate: slot.date || null,
         requestedStartTime: slot.startTime || null,
         requestedEndTime: slot.endTime || null,
@@ -1857,13 +1923,14 @@ export async function POST(req: Request) {
       dayOfWeek: new Date(`${slot.date}T12:00:00`).getDay(),
     });
 
-    const price = pricing.price;
-    const priceAdjustment = pricing.priceAdjustment;
+    const selectedServiceTotal = selectedServices.reduce(
+      (sum, service) => sum + Number(service.price || 0),
+      0
+    );
+    const price = selectedServiceTotal;
+    const priceAdjustment = 0;
     const currency = "usd";
-    const baseServicePrice =
-      Number.isFinite(Number(selectedService?.price)) && Number(selectedService?.price) >= 0
-        ? Number(selectedService?.price)
-        : null;
+    const baseServicePrice = selectedServiceTotal;
     const computedStripeAmount = normalizeUsdAmountToCents(price);
     const subtotalCents = computedStripeAmount;
     const amountTax = 0;
@@ -1874,7 +1941,7 @@ export async function POST(req: Request) {
       kind: "booking",
       flowType: "service_booking",
       businessId: safeBusinessId,
-      serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       date: slot.date || null,
       startTime: slot.startTime || null,
       endTime: slot.endTime || null,
@@ -1890,6 +1957,7 @@ export async function POST(req: Request) {
       branch: "service_booking",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       subtotal: subtotalCents,
       tax: amountTax,
       total: totalCents,
@@ -1898,6 +1966,7 @@ export async function POST(req: Request) {
       branch: "service_booking",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       feePercent,
       applicationFeeCents: applicationFee,
       netToBusinessCents,
@@ -1913,7 +1982,7 @@ export async function POST(req: Request) {
     console.log("[checkout/create] checkout payload selection", {
       businessId: safeBusinessId,
       selectionType: "service",
-      selectedIds: selectedService?.id ? [selectedService.id] : [],
+      selectedIds: selectedServices.map((service) => service.id),
       pricingAdjustmentApplied: priceAdjustment !== 0,
       baseServicePrice,
       finalTotalCents: totalCents,
@@ -1921,6 +1990,7 @@ export async function POST(req: Request) {
     console.log("[checkout/create] stripe amount audit", {
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       rawServicePriceFromDb: baseServicePrice,
       computedStripeAmount: price,
       currency,
@@ -1929,7 +1999,9 @@ export async function POST(req: Request) {
     console.log("[checkout/create] service fulfillment snapshot:", {
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       serviceName: selectedService?.name || null,
+      serviceNames: selectedServices.map((service) => service.name || "Service"),
       date: slot.date || null,
       startTime: slot.startTime || null,
       endTime: slot.endTime || null,
@@ -1949,7 +2021,9 @@ export async function POST(req: Request) {
         metadata: {
           intentType,
           serviceId: selectedService?.id || null,
+          serviceIds: selectedServices.map((service) => service.id),
           serviceName: selectedService?.name || null,
+          serviceNames: selectedServices.map((service) => service.name || "Service"),
           serviceMode,
           date: slot.date,
           startTime: slot.startTime,
@@ -1978,12 +2052,14 @@ export async function POST(req: Request) {
         customer_email: customerEmail,
         customer_phone: customerPhone,
         service_id: selectedService?.id || null,
+        service_ids: selectedServices.map((service) => service.id),
         service_name: selectedService?.name || null,
-        service_duration: selectedService?.duration || null,
+        service_names: selectedServices.map((service) => service.name || "Service"),
         service_price: selectedService?.price || null,
+        service_total_price: selectedServiceTotal,
         phone: customerPhone,
         fulfillment_type: serviceMode,
-        item_count: 1,
+        item_count: selectedServices.length,
         has_service_address: hasServiceAddress,
         amount_subtotal: subtotalCents,
         amount_tax: amountTax,
@@ -2095,19 +2171,7 @@ export async function POST(req: Request) {
       start_time: slot.startTime || null,
       end_time: slot.endTime || null,
       booking_time: `${slot.date || ""}T${slot.startTime || "00:00"}:00`,
-      duration_minutes:
-        selectedService?.duration ||
-        (() => {
-          const [startHour, startMinute] = String(slot.startTime || "00:00")
-            .split(":")
-            .map((value) => Number(value));
-          const [endHour, endMinute] = String(slot.endTime || "00:00")
-            .split(":")
-            .map((value) => Number(value));
-          const minutes =
-            endHour * 60 + (endMinute || 0) - (startHour * 60 + (startMinute || 0));
-          return minutes > 0 ? minutes : null;
-        })(),
+      duration_minutes: null,
       status: "pending",
       payment_status: "pending",
       customer_email: customerEmail,
@@ -2130,7 +2194,9 @@ export async function POST(req: Request) {
       platform_fee: bookingPlatformFee,
       metadata: {
         service_id: selectedService?.id || null,
+        service_ids: selectedServices.map((service) => service.id),
         service_name: selectedService?.name || null,
+        service_names: selectedServices.map((service) => service.name || "Service"),
         service_mode: serviceMode || null,
         checkout_intent_id: intentId || null,
         application_fee_cents: applicationFee,
@@ -2144,6 +2210,7 @@ export async function POST(req: Request) {
       action: "insert_pending",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       amountTotal: totalCents,
       applicationFeeCents: applicationFee,
       persistedBookingPlatformFee: bookingPlatformFee,
@@ -2175,6 +2242,7 @@ export async function POST(req: Request) {
           action: "update_pending",
           businessId: safeBusinessId,
           serviceId: selectedService?.id || null,
+          serviceIds: selectedServices.map((service) => service.id),
           bookingId: pendingBookingId,
           message: pendingBookingError.message,
           applicationFeeCents: applicationFee,
@@ -2214,6 +2282,7 @@ export async function POST(req: Request) {
       action: reusableBooking?.id ? "update_pending" : "insert_pending",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       bookingId: pendingBookingId,
       amountTotal: totalCents,
     });
@@ -2235,7 +2304,9 @@ export async function POST(req: Request) {
       business_id: safeBusinessId,
       business_type: business.business_type || "",
       service_id: selectedService?.id || "",
+      service_ids: JSON.stringify(selectedServices.map((service) => service.id)),
       service_name: selectedService?.name || "",
+      service_names: JSON.stringify(selectedServices.map((service) => service.name || "Service")),
       date: slot.date || "",
       start_time: slot.startTime || "",
       end_time: slot.endTime || "",
@@ -2271,7 +2342,7 @@ export async function POST(req: Request) {
                   currency,
                   unit_amount: totalCents,
                   product_data: {
-                    name: `${selectedService?.name || business.name || "Booking"} - ${slot.date}`,
+                    name: `${selectedServices.map((service) => service.name || "Service").join(", ") || business.name || "Booking"} - ${slot.date}`,
                     description: `${slot.startTime} - ${slot.endTime}`,
                   },
                 },
@@ -2297,6 +2368,7 @@ export async function POST(req: Request) {
       branch: "service_booking",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       bookingId: pendingBookingId,
       sessionId: session.id,
     });
@@ -2307,6 +2379,7 @@ export async function POST(req: Request) {
       action: "attach_session",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       bookingId: pendingBookingId,
       sessionId: session.id,
       paymentIntentId:
@@ -2352,6 +2425,7 @@ export async function POST(req: Request) {
       action: "attach_session",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
+      serviceIds: selectedServices.map((service) => service.id),
       bookingId: pendingBookingId,
       sessionId: session.id,
     });

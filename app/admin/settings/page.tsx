@@ -4,11 +4,15 @@ import { getBusinessReadinessState } from "@/lib/businessReadiness";
 import { loadBusinessLogoById } from "@/lib/businessLogos";
 import ConnectStripeButton from "@/components/ConnectStripeButton";
 import BusinessLogoManager from "@/app/admin/settings/BusinessLogoManager";
+import BusinessPreferencesForm from "@/app/admin/settings/BusinessPreferencesForm";
+import PublicBusinessLink from "@/app/admin/settings/PublicBusinessLink";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPaymentReadiness } from "@/lib/paymentReadiness";
 import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
 import { getFeatureGate } from "@/lib/planEnforcement";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
+import { createClient } from "@/lib/supabase/server";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
 
 type SettingsPageProps = {
   searchParams?: Promise<{
@@ -31,6 +35,11 @@ type SettingsBusiness = {
   stripe_onboarding_complete?: boolean | null;
   stripe_charges_enabled?: boolean | null;
   stripe_payouts_enabled?: boolean | null;
+  language?: "en" | "es" | null;
+  pickup_enabled?: boolean | null;
+  delivery_enabled?: boolean | null;
+  onsite_enabled?: boolean | null;
+  remote_enabled?: boolean | null;
 };
 
 function StatusRow({
@@ -90,6 +99,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const businessId = params?.businessId?.trim();
   const business = (await getActiveBusiness(businessId)) as SettingsBusiness | null;
   const logoState = business ? await loadBusinessLogoById(business.id) : null;
+  const supabase = await createClient();
+  const businessPreferences = business
+    ? await loadBusinessPreferences(supabase, business.id)
+    : null;
 
   const setup = params?.setup;
   const stripeState = params?.stripe;
@@ -228,6 +241,18 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 This logo stays compact by design. It reinforces trust and business identity without turning settings or public pages into image-led layouts.
               </div>
             </section>
+
+            <PublicBusinessLink
+              slug={business.slug}
+              isPublished={business.is_published}
+            />
+
+            <BusinessPreferencesForm
+              business={{
+                ...business,
+                ...(businessPreferences || {}),
+              }}
+            />
 
             <section className="surface-card p-6">
               <div className="section-header">
