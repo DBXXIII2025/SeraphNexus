@@ -16,18 +16,6 @@ export const DEFAULT_BUSINESS_PREFERENCES: BusinessPreferences = {
   remote_enabled: true,
 };
 
-function isMissingPreferenceColumn(error: { code?: string; message?: string } | null | undefined) {
-  const message = String(error?.message || "").toLowerCase();
-  return (
-    error?.code === "42703" &&
-    (message.includes("language") ||
-      message.includes("pickup_enabled") ||
-      message.includes("delivery_enabled") ||
-      message.includes("onsite_enabled") ||
-      message.includes("remote_enabled"))
-  );
-}
-
 export async function loadBusinessPreferences(
   supabase: any,
   businessId: string
@@ -39,10 +27,11 @@ export async function loadBusinessPreferences(
     .maybeSingle();
 
   if (error) {
-    if (isMissingPreferenceColumn(error)) {
-      return DEFAULT_BUSINESS_PREFERENCES;
-    }
     throw error;
+  }
+
+  if (!data) {
+    throw new Error(`Business preferences not found for business ${businessId}`);
   }
 
   return {
