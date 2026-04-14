@@ -161,7 +161,7 @@ export default function RentalCatalogClient({
             email,
             phone,
           },
-          serviceMode: "remote",
+          serviceMode: "onsite",
           propertyId: selectedPropertyId,
           slot: {
             date: startDate,

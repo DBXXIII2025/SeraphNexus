@@ -107,6 +107,7 @@ export default function OrderClient({
   const [menuLoading, setMenuLoading] = useState(true);
   const [menuError, setMenuError] = useState<string | null>(null);
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  const hasEnabledFulfillmentMode = pickupEnabled || deliveryEnabled;
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
@@ -157,6 +158,15 @@ export default function OrderClient({
       active = false;
     };
   }, [businessId]);
+
+  useEffect(() => {
+    if (fulfillmentType === "pickup" && !pickupEnabled && deliveryEnabled) {
+      setFulfillmentType("delivery");
+    }
+    if (fulfillmentType === "delivery" && !deliveryEnabled && pickupEnabled) {
+      setFulfillmentType("pickup");
+    }
+  }, [deliveryEnabled, fulfillmentType, pickupEnabled]);
 
   const activeItems = useMemo(
     () => menu.items.filter((item) => item.is_active !== false),
@@ -252,6 +262,18 @@ export default function OrderClient({
       setError("Please enter your email");
       return;
     }
+    if (!hasEnabledFulfillmentMode) {
+      setError("Ordering is not available for this business right now.");
+      return;
+    }
+    if (fulfillmentType === "pickup" && !pickupEnabled) {
+      setError("Pickup is not available for this business.");
+      return;
+    }
+    if (fulfillmentType === "delivery" && !deliveryEnabled) {
+      setError("Delivery is not available for this business.");
+      return;
+    }
     if (fulfillmentType === "delivery") {
       if (
         !addressLine1.trim() ||
@@ -262,14 +284,6 @@ export default function OrderClient({
         setError(t("deliveryAddressRequired"));
         return;
       }
-    }
-    if (fulfillmentType === "pickup" && !pickupEnabled) {
-      setError("Pickup is not available for this business.");
-      return;
-    }
-    if (fulfillmentType === "delivery" && !deliveryEnabled) {
-      setError("Delivery is not available for this business.");
-      return;
     }
     if (cart.length === 0) {
       setError("Add items to your cart to continue");
@@ -594,6 +608,11 @@ export default function OrderClient({
                     </button>
                   ) : null}
                 </div>
+                {!hasEnabledFulfillmentMode ? (
+                  <p className="text-xs text-red-300">
+                    Ordering is not available for this business right now.
+                  </p>
+                ) : null}
               </div>
               <input
                 placeholder={t("name")}
@@ -613,7 +632,7 @@ export default function OrderClient({
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
               />
-              {fulfillmentType === "delivery" && (
+              {fulfillmentType === "delivery" && deliveryEnabled && (
                 <div className="space-y-2">
                   <input
                     placeholder={t("streetAddress")}
@@ -658,7 +677,7 @@ export default function OrderClient({
               {error && <p className="text-sm text-red-400">{error}</p>}
               <button
                 onClick={placeOrder}
-                disabled={placing || cart.length === 0}
+                disabled={placing || cart.length === 0 || !hasEnabledFulfillmentMode}
                 className="w-full bg-green-600 py-2 rounded hover:bg-green-500 disabled:opacity-50"
               >
                 {placing ? t("checkoutStarting") : t("proceedToPayment")}

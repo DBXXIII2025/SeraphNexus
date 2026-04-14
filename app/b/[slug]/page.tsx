@@ -11,6 +11,8 @@ type Params = {
   slug: string;
 };
 
+export const dynamic = "force-dynamic";
+
 function getInitials(name: string | null | undefined) {
   const parts = String(name || "Business")
     .split(/\s+/)

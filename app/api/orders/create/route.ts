@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { errorResponse } from "@/lib/apiErrors";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
+import { createAdminClient } from "@/lib/supabase/server";
 
 type OrderItemInput = {
   id?: string;
@@ -97,6 +99,39 @@ export async function POST(req: Request) {
       error: "Customer phone is required.",
       code: "ORDER_CREATE_PHONE_REQUIRED",
       step: "request.validate",
+    });
+  }
+
+  if (payload.fulfillmentType !== "pickup" && payload.fulfillmentType !== "delivery") {
+    return errorResponse({
+      status: 400,
+      error: "Select pickup or delivery before continuing.",
+      code: "ORDER_CREATE_FULFILLMENT_INVALID",
+      step: "fulfillment.validate",
+    });
+  }
+
+  const supabase = createAdminClient();
+  const businessPreferences = await loadBusinessPreferences(
+    supabase,
+    String(payload.businessId).trim()
+  );
+
+  if (payload.fulfillmentType === "pickup" && businessPreferences.pickup_enabled === false) {
+    return errorResponse({
+      status: 400,
+      error: "Pickup is not available for this business.",
+      code: "ORDER_CREATE_PICKUP_DISABLED",
+      step: "fulfillment.validate",
+    });
+  }
+
+  if (payload.fulfillmentType === "delivery" && businessPreferences.delivery_enabled === false) {
+    return errorResponse({
+      status: 400,
+      error: "Delivery is not available for this business.",
+      code: "ORDER_CREATE_DELIVERY_DISABLED",
+      step: "fulfillment.validate",
     });
   }
 

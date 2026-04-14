@@ -17,6 +17,7 @@ import {
 import { trackLeadEventServer } from "@/lib/leads.server";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
 
 type BookingWindowRow = {
   date?: string | null;
@@ -139,6 +140,27 @@ export async function POST(req: Request) {
         error: "This business is unavailable for checkout.",
         code: "LEGACY_CHECKOUT_BUSINESS_NOT_FOUND",
         step,
+      });
+    }
+
+    const adminClient = createAdminClient();
+    const businessPreferences = await loadBusinessPreferences(adminClient, business.id);
+
+    if (service_mode === "onsite" && businessPreferences.onsite_enabled === false) {
+      return errorResponse({
+        status: 400,
+        error: "On-site service is not available for this business.",
+        code: "LEGACY_CHECKOUT_ONSITE_DISABLED",
+        step: "request.validate",
+      });
+    }
+
+    if (service_mode === "remote" && businessPreferences.remote_enabled === false) {
+      return errorResponse({
+        status: 400,
+        error: "Remote service is not available for this business.",
+        code: "LEGACY_CHECKOUT_REMOTE_DISABLED",
+        step: "request.validate",
       });
     }
 
@@ -384,7 +406,6 @@ export async function POST(req: Request) {
       },
     });
 
-    const adminClient = createAdminClient();
     await adminClient.from("bookings").insert({
       business_id,
       date,

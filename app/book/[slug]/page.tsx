@@ -15,6 +15,8 @@ type Params = {
   slug: string;
 };
 
+export const dynamic = "force-dynamic";
+
 type ServiceRow = {
   id: string;
   name: string | null;

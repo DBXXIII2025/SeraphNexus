@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
@@ -62,6 +62,16 @@ export default function ShopClient({
     [cart]
   );
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  const hasEnabledFulfillmentMode = pickupEnabled || deliveryEnabled;
+
+  useEffect(() => {
+    if (fulfillmentType === "pickup" && !pickupEnabled && deliveryEnabled) {
+      setFulfillmentType("delivery");
+    }
+    if (fulfillmentType === "delivery" && !deliveryEnabled && pickupEnabled) {
+      setFulfillmentType("pickup");
+    }
+  }, [deliveryEnabled, fulfillmentType, pickupEnabled]);
 
   function addToCart(item: CatalogItem) {
     setCart((prev) => {
@@ -127,6 +137,10 @@ export default function ShopClient({
 
     if (fulfillmentType === "delivery" && !deliveryEnabled) {
       setError("Delivery is not available for this business.");
+      return;
+    }
+    if (!hasEnabledFulfillmentMode) {
+      setError("Ordering is not available for this business right now.");
       return;
     }
 
@@ -357,8 +371,13 @@ export default function ShopClient({
                   </button>
                 ) : null}
               </div>
+              {!hasEnabledFulfillmentMode ? (
+                <p className="text-xs text-red-300">
+                  Ordering is not available for this business right now.
+                </p>
+              ) : null}
 
-              {fulfillmentType === "delivery" && (
+              {fulfillmentType === "delivery" && deliveryEnabled && (
                 <div className="space-y-2">
                   <input
                     placeholder={t("streetAddress")}
@@ -407,7 +426,7 @@ export default function ShopClient({
               <button
                 type="button"
                 onClick={handleCheckout}
-                disabled={loading || cart.length === 0}
+                disabled={loading || cart.length === 0 || !hasEnabledFulfillmentMode}
                 className="w-full rounded-md bg-green-600 px-4 py-2 font-medium hover:bg-green-500 disabled:opacity-60"
               >
                 {loading ? t("checkoutStarting") : t("proceedToPayment")}

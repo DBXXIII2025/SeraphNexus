@@ -121,7 +121,9 @@ export default function BookingClient({
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [serviceMode, setServiceMode] = useState<"onsite" | "remote">("remote");
+  const [serviceMode, setServiceMode] = useState<"onsite" | "remote">(
+    business.remote_enabled !== false ? "remote" : "onsite"
+  );
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [addressCity, setAddressCity] = useState("");
@@ -165,6 +167,7 @@ export default function BookingClient({
     onsite: business.onsite_enabled !== false,
     remote: business.remote_enabled !== false,
   };
+  const hasEnabledServiceMode = serviceModes.onsite || serviceModes.remote;
 
   const fetchSlots = useCallback(
     async (date: string) => {
@@ -283,6 +286,10 @@ export default function BookingClient({
 
     if (serviceMode === "remote" && !serviceModes.remote) {
       setError("Remote service is not available for this business.");
+      return;
+    }
+    if (!hasEnabledServiceMode) {
+      setError("Booking is not available for this business right now.");
       return;
     }
 
@@ -594,9 +601,14 @@ export default function BookingClient({
             </button>
           ) : null}
         </div>
+        {!hasEnabledServiceMode ? (
+          <p className="mt-2 text-xs text-red-300">
+            Booking is not available for this business right now.
+          </p>
+        ) : null}
       </div>
 
-      {serviceMode === "onsite" && (
+      {serviceMode === "onsite" && serviceModes.onsite && (
         <div className="mb-4 space-y-2">
           <input
             type="text"
@@ -722,6 +734,14 @@ export default function BookingClient({
             </div>
             <div>{t("date")}: {selectedDate || t("selectDate")}</div>
             <div>{t("time")}: {selectedSlot ? formatSlotLabel(selectedSlot) : t("selectTime")}</div>
+            <div>
+              {t("serviceMode")}:{" "}
+              {hasEnabledServiceMode
+                ? serviceMode === "remote"
+                  ? t("remote")
+                  : t("onsite")
+                : "Unavailable"}
+            </div>
             <div>{t("total")}: ${selectedSlotPrice.toFixed(2)}</div>
             {selectedSlot?.is_flexible ? (
               <div className="text-xs text-blue-100">
@@ -738,7 +758,8 @@ export default function BookingClient({
               isLoading ||
               !selectedDate ||
               !selectedSlot ||
-              selectedServiceIds.length === 0
+              selectedServiceIds.length === 0 ||
+              !hasEnabledServiceMode
             }
             className="mt-4 w-full rounded bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >

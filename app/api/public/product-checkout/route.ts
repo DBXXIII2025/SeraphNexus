@@ -1,6 +1,7 @@
 import { POST as createCheckoutPost } from "@/app/api/checkout/create/route";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
 
 type ProductsTable = {
   select: (query: string) => {
@@ -87,12 +88,44 @@ export async function POST(req: Request) {
         ? Number(body.quantity)
         : 1;
     const businessId = String(body.businessId || product.business_id).trim();
+    const preferences = await loadBusinessPreferences(createAdminClient(), businessId);
+    const fulfillmentType =
+      body.fulfillmentType ||
+      (preferences.pickup_enabled ? "pickup" : preferences.delivery_enabled ? "delivery" : null);
+
+    if (fulfillmentType !== "pickup" && fulfillmentType !== "delivery") {
+      return errorResponse({
+        status: 400,
+        error: "Ordering is not available for this business right now.",
+        code: "PRODUCT_CHECKOUT_FULFILLMENT_UNAVAILABLE",
+        step: "fulfillment.validate",
+      });
+    }
+
+    if (fulfillmentType === "pickup" && preferences.pickup_enabled === false) {
+      return errorResponse({
+        status: 400,
+        error: "Pickup is not available for this business.",
+        code: "PRODUCT_CHECKOUT_PICKUP_DISABLED",
+        step: "fulfillment.validate",
+      });
+    }
+
+    if (fulfillmentType === "delivery" && preferences.delivery_enabled === false) {
+      return errorResponse({
+        status: 400,
+        error: "Delivery is not available for this business.",
+        code: "PRODUCT_CHECKOUT_DELIVERY_DISABLED",
+        step: "fulfillment.validate",
+      });
+    }
 
     if (process.env.NODE_ENV !== "production") {
       console.log("[public/product-checkout] forwarding to shared checkout route:", {
         businessId,
         productId,
         quantity,
+        fulfillmentType,
       });
     }
 
@@ -108,7 +141,7 @@ export async function POST(req: Request) {
             email: body.customerEmail,
             phone: body.customerPhone,
           },
-          fulfillmentType: body.fulfillmentType || "pickup",
+          fulfillmentType,
           address: body.address,
           notes: body.notes,
           orderItems: [{ id: productId, quantity }],
