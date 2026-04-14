@@ -4,6 +4,7 @@ import { getUserBusinesses } from "@/lib/getBusinesses";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getAdminNav, getBusinessModule, getPublicPath } from "@/lib/businessModules";
 import { getPlanDefinition, getPlatformFeeLabel } from "@/lib/planConfig";
+import { getConfiguredPlatformFee } from "@/lib/platformFees";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { getTenantRecoveryState } from "@/lib/tenantRouting";
 import { createAdminTranslator, translateAdminLabel } from "@/lib/adminI18n";
@@ -76,6 +77,9 @@ export default async function AdminLayout({
   const businessModule = getBusinessModule(activeBusiness?.business_type);
   const t = createAdminTranslator(activeBusiness?.language);
   const plan = getPlanDefinition(activeBusiness?.plan);
+  const activePlatformFee = activeBusiness
+    ? await getConfiguredPlatformFee(activeBusiness.plan)
+    : null;
   const adminNav = getAdminNav(activeBusiness?.business_type, activeBusiness?.plan);
   const recovery =
     !isPlatformAdmin && activeBusiness && user?.id
@@ -237,7 +241,7 @@ export default async function AdminLayout({
                       {plan.label} plan
                     </span>
                     <span className="inline-flex rounded-full border border-[rgba(212,175,55,0.2)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-xs font-medium text-[var(--accent-gold-soft)]">
-                      {getPlatformFeeLabel(activeBusiness.plan)} platform fee
+                      {activePlatformFee?.label || getPlatformFeeLabel(activeBusiness.plan)} platform fee
                     </span>
                   </div>
 

@@ -14,6 +14,7 @@ import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createClient } from "@/lib/supabase/server";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { createAdminTranslator } from "@/lib/adminI18n";
+import { loadBusinessStaffMembers } from "@/lib/businessStaff";
 
 type SettingsPageProps = {
   searchParams?: Promise<{
@@ -135,6 +136,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           userId: user.id,
         })
       : null;
+  const staffState = business ? await loadBusinessStaffMembers(business.id) : null;
 
   return (
     <div className="space-y-6 text-[var(--text-main)]">
@@ -511,6 +513,74 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   Elite access is active for advanced branding, future staff roles, and premium
                   workspace controls.
                 </div>
+              )}
+            </section>
+
+            <section className="surface-card p-6">
+              <div className="section-header-copy">
+                <p className="section-kicker">Team Roles</p>
+                <h2 className="section-title">Staff access roster</h2>
+                <p className="section-description">
+                  Elite businesses can maintain a business-scoped staff roster with role intent for
+                  operational access and audit review.
+                </p>
+              </div>
+
+              {!canUseAdvancedCustomization ? (
+                <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+                  Team and staff roles require Elite.
+                </div>
+              ) : staffState?.error ? (
+                <div className="mt-5 rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+                  {staffState.error}
+                </div>
+              ) : (
+                <>
+                  <form action="/api/admin/team" method="POST" className="mt-5 grid gap-3 md:grid-cols-[1fr,160px,auto]">
+                    <input type="hidden" name="action" value="add" />
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="staff@example.com"
+                      className="input-field"
+                    />
+                    <select name="role" defaultValue="staff" className="input-field">
+                      <option value="staff">Staff</option>
+                      <option value="manager">Manager</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+                      Add staff
+                    </button>
+                  </form>
+
+                  <div className="mt-5 space-y-3">
+                    {(staffState?.members || []).length === 0 ? (
+                      <div className="empty-state">No staff members added yet.</div>
+                    ) : (
+                      staffState?.members.map((member) => (
+                        <div key={member.id} className="table-row-panel flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                          <div>
+                            <p className="font-medium text-[var(--text-strong)]">{member.email}</p>
+                            <p className="text-sm capitalize text-[var(--text-soft)]">
+                              {member.role} | {member.status}
+                            </p>
+                          </div>
+                          {member.status === "active" ? (
+                            <form action="/api/admin/team" method="POST">
+                              <input type="hidden" name="action" value="deactivate" />
+                              <input type="hidden" name="staff_id" value={member.id} />
+                              <button type="submit" className="btn-secondary px-3 py-2 text-sm">
+                                Deactivate
+                              </button>
+                            </form>
+                          ) : null}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
               )}
             </section>
           </div>

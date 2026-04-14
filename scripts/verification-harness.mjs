@@ -1227,6 +1227,14 @@ function auditBookingClientSource() {
     path.join(process.cwd(), "lib/businessFields.ts"),
     "utf8"
   );
+  const platformFeesSource = fs.readFileSync(
+    path.join(process.cwd(), "lib/platformFees.ts"),
+    "utf8"
+  );
+  const platformSettingsSource = fs.readFileSync(
+    path.join(process.cwd(), "lib/platformSettings.ts"),
+    "utf8"
+  );
   assert(
     preferencesFormSource.includes("businessId: business.id"),
     "Settings preferences form no longer submits an explicit business id."
@@ -1250,6 +1258,24 @@ function auditBookingClientSource() {
     "utf8"
   );
   assert(hasThirtyMinuteIntervals(slotSource), "30-minute interval generation is missing.");
+  assert(
+    checkoutSource.includes("getConfiguredPlatformFee") &&
+      checkoutSource.includes("calculatePlatformFeeCents") &&
+      checkoutSource.includes("application_fee_amount: applicationFee") &&
+      checkoutSource.includes("platform_fee_bps"),
+    "Shared checkout no longer uses platform-settings transaction fee percentages."
+  );
+  assert(
+    platformFeesSource.includes("getPlatformSettings") &&
+      platformFeesSource.includes("basisPoints") &&
+      platformFeesSource.includes("calculatePlatformFeeCents"),
+    "Platform fee helper no longer resolves fee basis points from platform settings."
+  );
+  assert(
+    platformSettingsSource.includes("pro_transaction_fee_bps") &&
+      platformSettingsSource.includes("elite_transaction_fee_bps"),
+    "Platform settings no longer reads managed transaction fee percentages."
+  );
 
   return {
     dropdownSourceAudit: true,
@@ -1259,6 +1285,7 @@ function auditBookingClientSource() {
     modeRenderSourceAudit: true,
     modeBackendSourceAudit: true,
     languageSaveSourceAudit: true,
+    platformFeeSourceAudit: true,
   };
 }
 

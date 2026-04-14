@@ -5,7 +5,10 @@ import { requireEnv } from "@/lib/env";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getFeatureGate, getUsageLimitResult } from "@/lib/planEnforcement";
 import { sendBookingEmail, sendBookingSMS } from "@/lib/notify";
-import { getPlatformFeePercent } from "@/lib/planConfig";
+import {
+  calculatePlatformFeeCents,
+  getConfiguredPlatformFee,
+} from "@/lib/platformFees";
 import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
 import { stripe } from "@/lib/stripe";
 
@@ -126,9 +129,11 @@ export async function createBookingCheckoutSession(
     throw new Error(transactionLimit.message || "Transaction limit reached");
   }
 
-  const feePercent = getPlatformFeePercent(effectivePlan);
-
-  const applicationFee = Math.round(totalAmountCents * feePercent);
+  const platformFee = await getConfiguredPlatformFee(effectivePlan);
+  const applicationFee = calculatePlatformFeeCents(
+    totalAmountCents,
+    platformFee.basisPoints
+  );
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -166,6 +171,12 @@ export async function createBookingCheckoutSession(
       duration_minutes: String(totalDuration),
       service_ids: serviceIds.join(","),
       client_address: normalizedInput.client_address,
+      amount_total: String(totalAmountCents),
+      platform_fee: String(applicationFee),
+      platform_fee_percent: String(platformFee.rate),
+      platform_fee_bps: String(platformFee.basisPoints),
+      platform_fee_source: platformFee.source,
+      net_to_business_cents: String(Math.max(0, totalAmountCents - applicationFee)),
     },
   });
 
@@ -193,6 +204,10 @@ export async function createBookingCheckoutSession(
     metadata: {
       service_ids: serviceIds,
       application_fee_cents: applicationFee,
+      platform_fee_percent: platformFee.rate,
+      platform_fee_bps: platformFee.basisPoints,
+      platform_fee_source: platformFee.source,
+      net_to_business_cents: Math.max(0, totalAmountCents - applicationFee),
     },
   });
 

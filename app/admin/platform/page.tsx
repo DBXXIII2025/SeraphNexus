@@ -13,6 +13,8 @@ import {
 import { getPlatformAdminData } from "@/lib/platformAdminData";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { getPlatformSettings } from "@/lib/platformSettings";
+import { formatPlatformFeeBpsLabel } from "@/lib/platformFees";
+import { PLAN_DEFINITIONS, type PlanFeature } from "@/lib/planConfig";
 import {
   getPlatformIncomeAudit,
   getPlatformOwnerBusinessAudits,
@@ -183,6 +185,63 @@ function getStatusCopy(
   return "The access-grant action could not be completed.";
 }
 
+const ELITE_FEATURE_STATUS: Array<{
+  feature: PlanFeature;
+  label: string;
+  enforcement: string;
+}> = [
+  {
+    feature: "standard_customization",
+    label: "Standard customization",
+    enforcement: "Logo and profile customization routes are plan-gated server-side.",
+  },
+  {
+    feature: "advanced_analytics",
+    label: "Advanced analytics",
+    enforcement: "Analytics page and performance API require the analytics plan gates.",
+  },
+  {
+    feature: "automation",
+    label: "Automation and reminders",
+    enforcement: "Reminder cron sends only for businesses with the automation feature.",
+  },
+  {
+    feature: "priority_listing",
+    label: "Priority explore boost",
+    enforcement: "Explore ranking adds deterministic boost for Elite effective plans.",
+  },
+  {
+    feature: "team_roles",
+    label: "Team and staff roles",
+    enforcement: "Staff roster writes are Elite-gated and owner-scoped.",
+  },
+  {
+    feature: "advanced_customization",
+    label: "Advanced customization",
+    enforcement: "Advanced customization controls are Elite-gated.",
+  },
+  {
+    feature: "advanced_messaging",
+    label: "Advanced messaging tools",
+    enforcement: "Admin inbox receives advanced tool flag only for Elite.",
+  },
+  {
+    feature: "advanced_payments",
+    label: "Advanced payment features",
+    enforcement: "Payment audit metadata and dynamic fee routing are server-side.",
+  },
+  {
+    feature: "lead_capture",
+    label: "Lead capture",
+    enforcement: "Lead dashboard and ingestion are plan-gated.",
+  },
+  {
+    feature: "branding_customization",
+    label: "Brand customization",
+    enforcement: "Branding controls are tied to customization plan gates.",
+  },
+];
+
 export default async function PlatformPage({
   searchParams,
 }: PlatformPageProps) {
@@ -349,6 +408,67 @@ export default async function PlatformPage({
             <p className="section-description">
               Manage public platform copy and the active Pro and Elite Stripe prices used for future subscriptions.
             </p>
+          </div>
+
+          <div className="form-section space-y-4">
+            <div className="section-header-copy">
+              <p className="section-kicker">Live Transaction Fees</p>
+              <h3 className="text-lg font-semibold text-[var(--text-strong)]">
+                Platform fee percentages by effective plan
+              </h3>
+              <p className="section-description">
+                These percentages are the canonical source used by future Stripe Checkout payments.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Trial / inactive fee %</span>
+                <input
+                  name="trial_transaction_fee_percent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  defaultValue={(settings.trial_transaction_fee_bps / 100).toFixed(2)}
+                  className="input-field mt-2"
+                />
+              </label>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Pro fee %</span>
+                <input
+                  name="pro_transaction_fee_percent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  defaultValue={(settings.pro_transaction_fee_bps / 100).toFixed(2)}
+                  className="input-field mt-2"
+                />
+              </label>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Elite fee %</span>
+                <input
+                  name="elite_transaction_fee_percent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  defaultValue={(settings.elite_transaction_fee_bps / 100).toFixed(2)}
+                  className="input-field mt-2"
+                />
+              </label>
+            </div>
+            <div className="grid gap-3 text-sm md:grid-cols-3">
+              <div className="table-row-panel p-3">
+                Trial live fee: {formatPlatformFeeBpsLabel(settings.trial_transaction_fee_bps)}
+              </div>
+              <div className="table-row-panel p-3">
+                Pro live fee: {formatPlatformFeeBpsLabel(settings.pro_transaction_fee_bps)}
+              </div>
+              <div className="table-row-panel p-3">
+                Elite live fee: {formatPlatformFeeBpsLabel(settings.elite_transaction_fee_bps)}
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -526,7 +646,7 @@ export default async function PlatformPage({
             <div className="mt-5 space-y-3">
               <div className="table-row-panel p-4">
                 <p className="text-sm text-[var(--text-soft)]">
-                  Pro: <span className="text-[var(--text-strong)]">{formatMonthlyPriceLabel(settings.pro_monthly_price_cents)}</span> | {settings.pro_price_active ? "Active" : "Inactive"}
+                  Pro: <span className="text-[var(--text-strong)]">{formatMonthlyPriceLabel(settings.pro_monthly_price_cents)}</span> | {settings.pro_price_active ? "Active" : "Inactive"} | Fee {formatPlatformFeeBpsLabel(settings.pro_transaction_fee_bps)}
                 </p>
                 <p className="mt-2 text-xs text-[var(--text-muted)]">
                   Live Stripe price: {proPricing.stripePrice?.id || "Not configured"} |{" "}
@@ -540,7 +660,7 @@ export default async function PlatformPage({
               </div>
               <div className="table-row-panel p-4">
                 <p className="text-sm text-[var(--text-soft)]">
-                  Elite: <span className="text-[var(--text-strong)]">{formatMonthlyPriceLabel(settings.elite_monthly_price_cents)}</span> | {settings.elite_price_active ? "Active" : "Inactive"}
+                  Elite: <span className="text-[var(--text-strong)]">{formatMonthlyPriceLabel(settings.elite_monthly_price_cents)}</span> | {settings.elite_price_active ? "Active" : "Inactive"} | Fee {formatPlatformFeeBpsLabel(settings.elite_transaction_fee_bps)}
                 </p>
                 <p className="mt-2 text-xs text-[var(--text-muted)]">
                   Live Stripe price: {elitePricing.stripePrice?.id || "Not configured"} |{" "}
@@ -552,6 +672,31 @@ export default async function PlatformPage({
                     : "No Stripe price"}
                 </p>
               </div>
+            </div>
+          </section>
+
+          <section className="surface-card p-6">
+            <p className="section-kicker">Elite Enforcement</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+              Included feature status
+            </h2>
+            <div className="mt-5 space-y-3">
+              {ELITE_FEATURE_STATUS.map((item) => {
+                const included = PLAN_DEFINITIONS.elite.features.includes(item.feature);
+                return (
+                  <div key={item.feature} className="table-row-panel p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-[var(--text-strong)]">{item.label}</p>
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">{item.enforcement}</p>
+                      </div>
+                      <span className={included ? "status-chip" : "text-sm text-red-300"}>
+                        {included ? "Elite active" : "Not included"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         </div>

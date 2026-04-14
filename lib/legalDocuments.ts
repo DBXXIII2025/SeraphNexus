@@ -1,5 +1,4 @@
 import { isRentalBusinessType, type BusinessType } from "@/lib/businessModules";
-import { PLAN_DEFINITIONS } from "@/lib/planConfig";
 
 export type LegalDocumentKey =
   | "terms_of_service"
@@ -27,11 +26,6 @@ export type LegalDocument = {
 };
 
 const LAST_UPDATED = "2026-03-15";
-const PLAN_FEE_DISCLOSURE = [
-  `${PLAN_DEFINITIONS.trial.label}: ${Math.round(PLAN_DEFINITIONS.trial.transactionFeeRate * 100)}%`,
-  `${PLAN_DEFINITIONS.pro.label}: ${Math.round(PLAN_DEFINITIONS.pro.transactionFeeRate * 100)}%`,
-  `${PLAN_DEFINITIONS.elite.label}: ${Math.round(PLAN_DEFINITIONS.elite.transactionFeeRate * 100)}%`,
-].join(", ");
 
 export const LEGAL_DOCUMENTS: Record<LegalDocumentKey, LegalDocument> = {
   terms_of_service: {
@@ -310,7 +304,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentKey, LegalDocument> = {
         heading: "2. Automatic Platform Fee Deduction",
         paragraphs: [
           "By enabling payment processing, you authorize Seraph Nexus to deduct the platform transaction fee that applies to your business's effective plan directly from customer payments processed through the platform before the net payout is transferred to your connected Stripe account.",
-          `Current configured fee percentages by plan are: ${PLAN_FEE_DISCLOSURE}. If your effective plan changes, the platform fee percentage applied to future transactions will follow the then-current configured rate for that effective plan.`,
+          "Current configured fee percentages by plan are controlled by the platform settings source of truth and shown in the platform owner and plan screens. If your effective plan changes, the platform fee percentage applied to future transactions will follow the then-current configured rate for that effective plan.",
         ],
       },
       {

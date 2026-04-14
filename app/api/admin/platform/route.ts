@@ -20,6 +20,17 @@ function normalizeOptionalString(value: FormDataEntryValue | null) {
   return normalized || null;
 }
 
+function parseFeeBasisPoints(value: FormDataEntryValue | null, fallback: number) {
+  const raw = String(value || "").trim();
+  const percent = Number(raw);
+
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+    return fallback;
+  }
+
+  return Math.round(percent * 100);
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -52,6 +63,18 @@ export async function POST(req: Request) {
         "Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.",
       pro_monthly_price_cents: parsePriceCents(formData.get("pro_monthly_price"), 1900),
       elite_monthly_price_cents: parsePriceCents(formData.get("elite_monthly_price"), 4900),
+      trial_transaction_fee_bps: parseFeeBasisPoints(
+        formData.get("trial_transaction_fee_percent"),
+        1000
+      ),
+      pro_transaction_fee_bps: parseFeeBasisPoints(
+        formData.get("pro_transaction_fee_percent"),
+        500
+      ),
+      elite_transaction_fee_bps: parseFeeBasisPoints(
+        formData.get("elite_transaction_fee_percent"),
+        200
+      ),
       pro_price_active: formData.get("pro_price_active") === "on",
       elite_price_active: formData.get("elite_price_active") === "on",
     };

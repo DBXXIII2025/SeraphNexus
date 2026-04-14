@@ -4,6 +4,7 @@ import {
   getPlanDefinition,
   getPlatformFeeLabel,
 } from "@/lib/planConfig";
+import { getConfiguredPlatformFee } from "@/lib/platformFees";
 
 export default async function PricingAdminPage() {
   const supabase = await createClient();
@@ -27,6 +28,14 @@ export default async function PricingAdminPage() {
   }
 
   const plan = getPlanDefinition(businessData.plan);
+  const currentFee = await getConfiguredPlatformFee(plan.tier);
+  const planFees = await Promise.all(
+    Object.values(PLAN_DEFINITIONS).map(async (definition) => ({
+      tier: definition.tier,
+      label: (await getConfiguredPlatformFee(definition.tier)).label,
+    }))
+  );
+  const feeLabelByTier = new Map(planFees.map((fee) => [fee.tier, fee.label]));
 
   return (
     <div>
@@ -40,7 +49,7 @@ export default async function PricingAdminPage() {
           <strong>Current Plan:</strong> {plan.label}
         </p>
         <p>
-          <strong>Current Platform Fee:</strong> {getPlatformFeeLabel(plan.tier)}
+          <strong>Current Platform Fee:</strong> {currentFee.label}
         </p>
       </div>
 
@@ -51,7 +60,7 @@ export default async function PricingAdminPage() {
           {Object.values(PLAN_DEFINITIONS).map((definition) => (
             <li key={definition.tier} className="border p-2">
               <strong>{definition.label}</strong> - {definition.monthlyPriceLabel} -{" "}
-              {getPlatformFeeLabel(definition.tier)} platform fee
+              {feeLabelByTier.get(definition.tier) || getPlatformFeeLabel(definition.tier)} platform fee
             </li>
           ))}
         </ul>

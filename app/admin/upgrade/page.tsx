@@ -2,6 +2,7 @@ import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getManagedPricingSnapshot } from "@/lib/platformBilling";
 import { getPlanDefinition, getPlatformFeeLabel } from "@/lib/planConfig";
 import { createAdminTranslator } from "@/lib/adminI18n";
+import { getConfiguredPlatformFee } from "@/lib/platformFees";
 import UpgradeClient from "./UpgradeClient";
 
 type UpgradePageProps = {
@@ -22,6 +23,7 @@ export default async function AdminUpgradePage({
 
   const t = createAdminTranslator(business.language);
   const plan = getPlanDefinition(business.plan);
+  const platformFee = await getConfiguredPlatformFee(business.plan);
   const pricing = await getManagedPricingSnapshot();
   const currentPriceLabel =
     plan.tier === "pro"
@@ -63,7 +65,7 @@ export default async function AdminUpgradePage({
               Billing: {currentPriceLabel}
             </p>
             <p className="mt-2 text-sm text-gray-400">
-              Current platform fee: {getPlatformFeeLabel(business.plan)} per
+              Current platform fee: {platformFee.label || getPlatformFeeLabel(business.plan)} per
               successful transaction.
             </p>
           </div>
@@ -77,13 +79,18 @@ export default async function AdminUpgradePage({
         businessId={business.id}
         currentPlan={plan.tier}
         pricing={{
+          trial: {
+            feeLabel: (await getConfiguredPlatformFee("trial")).label,
+          },
           pro: {
             label: pricing.pro.monthlyPriceLabel,
             active: pricing.pro.active,
+            feeLabel: (await getConfiguredPlatformFee("pro")).label,
           },
           elite: {
             label: pricing.elite.monthlyPriceLabel,
             active: pricing.elite.active,
+            feeLabel: (await getConfiguredPlatformFee("elite")).label,
           },
         }}
       />

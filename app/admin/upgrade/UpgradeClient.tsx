@@ -31,8 +31,9 @@ export default function UpgradeClient({
   businessId: string;
   currentPlan: PlanTier;
   pricing: {
-    pro: { label: string; active: boolean };
-    elite: { label: string; active: boolean };
+    trial: { feeLabel: string };
+    pro: { label: string; active: boolean; feeLabel: string };
+    elite: { label: string; active: boolean; feeLabel: string };
   };
 }) {
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
@@ -91,6 +92,12 @@ export default function UpgradeClient({
               : tier === "elite"
                 ? pricing.elite.active
                 : true;
+          const feeLabel =
+            tier === "pro"
+              ? pricing.pro.feeLabel
+              : tier === "elite"
+                ? pricing.elite.feeLabel
+                : pricing.trial.feeLabel;
 
           return (
             <div
@@ -116,7 +123,7 @@ export default function UpgradeClient({
               <div className="mt-5">
                 <p className="text-3xl font-semibold">{priceLabel}</p>
                 <p className="mt-1 text-sm text-gray-400">
-                  Platform fee: {Math.round(plan.transactionFeeRate * 100)}%
+                  Platform fee: {feeLabel}
                 </p>
                 {!billingActive && tier !== "trial" ? (
                   <p className="mt-2 text-xs text-amber-300">

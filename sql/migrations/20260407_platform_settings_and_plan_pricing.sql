@@ -8,6 +8,9 @@ create table if not exists public.platform_settings (
   pricing_note text not null default 'Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.',
   pro_monthly_price_cents integer not null default 1900,
   elite_monthly_price_cents integer not null default 4900,
+  trial_transaction_fee_bps integer not null default 1000,
+  pro_transaction_fee_bps integer not null default 500,
+  elite_transaction_fee_bps integer not null default 200,
   pro_price_active boolean not null default true,
   elite_price_active boolean not null default true,
   pro_stripe_price_id text null,
@@ -17,7 +20,10 @@ create table if not exists public.platform_settings (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
   constraint platform_settings_pro_price_positive check (pro_monthly_price_cents >= 0),
-  constraint platform_settings_elite_price_positive check (elite_monthly_price_cents >= 0)
+  constraint platform_settings_elite_price_positive check (elite_monthly_price_cents >= 0),
+  constraint platform_settings_trial_fee_valid check (trial_transaction_fee_bps between 0 and 10000),
+  constraint platform_settings_pro_fee_valid check (pro_transaction_fee_bps between 0 and 10000),
+  constraint platform_settings_elite_fee_valid check (elite_transaction_fee_bps between 0 and 10000)
 );
 
 alter table public.platform_settings
@@ -29,6 +35,9 @@ alter table public.platform_settings
   add column if not exists pricing_note text not null default 'Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.',
   add column if not exists pro_monthly_price_cents integer not null default 1900,
   add column if not exists elite_monthly_price_cents integer not null default 4900,
+  add column if not exists trial_transaction_fee_bps integer not null default 1000,
+  add column if not exists pro_transaction_fee_bps integer not null default 500,
+  add column if not exists elite_transaction_fee_bps integer not null default 200,
   add column if not exists pro_price_active boolean not null default true,
   add column if not exists elite_price_active boolean not null default true,
   add column if not exists pro_stripe_price_id text null,
@@ -47,6 +56,9 @@ insert into public.platform_settings (
   pricing_note,
   pro_monthly_price_cents,
   elite_monthly_price_cents,
+  trial_transaction_fee_bps,
+  pro_transaction_fee_bps,
+  elite_transaction_fee_bps,
   pro_price_active,
   elite_price_active
 )
@@ -59,6 +71,9 @@ select
   'Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.',
   1900,
   4900,
+  1000,
+  500,
+  200,
   true,
   true
 where not exists (

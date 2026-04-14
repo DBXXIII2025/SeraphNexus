@@ -7,7 +7,10 @@ import { getFeatureGate, getUsageLimitResult } from "@/lib/planEnforcement";
 import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
 import { stripe } from "@/lib/stripe";
 import { getPublicPath } from "@/lib/businessModules";
-import { getPlatformFeePercent } from "@/lib/planConfig";
+import {
+  calculatePlatformFeeCents,
+  getConfiguredPlatformFee,
+} from "@/lib/platformFees";
 import {
   calculateDemandScore,
   calculateSlotPrice,
@@ -316,8 +319,11 @@ export async function POST(req: Request) {
     const currency = "usd";
     const unitAmount = normalizeUsdAmountToCents(price);
 
-    const feePercent = getPlatformFeePercent(effectivePlan);
-    const applicationFee = Math.round(unitAmount * feePercent);
+    const platformFee = await getConfiguredPlatformFee(effectivePlan);
+    const applicationFee = calculatePlatformFeeCents(
+      unitAmount,
+      platformFee.basisPoints
+    );
     const baseUrl = getBaseUrl(req);
 
     console.log("[stripe/create-checkout-session] pricing rules:", {
@@ -401,6 +407,10 @@ export async function POST(req: Request) {
         }),
         amount_total: String(unitAmount),
         platform_fee: String(applicationFee),
+        platform_fee_percent: String(platformFee.rate),
+        platform_fee_bps: String(platformFee.basisPoints),
+        platform_fee_source: platformFee.source,
+        net_to_business_cents: String(Math.max(0, unitAmount - applicationFee)),
         demand_score: String(demandScore),
         price_adjustment: String(priceAdjustment),
       },
@@ -427,6 +437,11 @@ export async function POST(req: Request) {
       platform_fee: applicationFee / 100,
       metadata: {
         service_mode,
+        platform_fee_percent: platformFee.rate,
+        platform_fee_bps: platformFee.basisPoints,
+        platform_fee_source: platformFee.source,
+        application_fee_cents: applicationFee,
+        net_to_business_cents: Math.max(0, unitAmount - applicationFee),
       },
       demand_score: demandScore,
       price_adjustment: priceAdjustment,

@@ -15,10 +15,11 @@ import {
   shouldApplyGapDiscount,
   type PricingRule,
 } from "@/lib/pricing/engine";
+import { getNetPayoutCents } from "@/lib/planConfig";
 import {
-  getNetPayoutCents,
-  getPlatformFeePercent,
-} from "@/lib/planConfig";
+  calculatePlatformFeeCents,
+  getConfiguredPlatformFee,
+} from "@/lib/platformFees";
 import {
   getPublicPath,
   isOrderBusinessType,
@@ -753,7 +754,9 @@ export async function POST(req: Request) {
       });
     }
 
-    const feePercent = getPlatformFeePercent(normalizedPlan);
+    const platformFee = await getConfiguredPlatformFee(normalizedPlan);
+    const feePercent = platformFee.rate;
+    const feeBasisPoints = platformFee.basisPoints;
     const verificationMode = isVerificationCheckoutAllowed({
       payload,
       businessSlug: business.slug,
@@ -944,7 +947,7 @@ export async function POST(req: Request) {
         }
       }
 
-      const applicationFee = Math.round(totalCents * feePercent);
+      const applicationFee = calculatePlatformFeeCents(totalCents, feeBasisPoints);
       const netToBusinessCents = getNetPayoutCents(totalCents, applicationFee);
       const requestFingerprint = buildCheckoutRequestFingerprint({
         kind: "order",
@@ -1025,6 +1028,8 @@ export async function POST(req: Request) {
           amount_total: totalCents,
           plan: normalizedPlan,
           platform_fee_percent: feePercent,
+          platform_fee_bps: feeBasisPoints,
+          platform_fee_source: platformFee.source,
           application_fee_cents: applicationFee,
           net_to_business_cents: netToBusinessCents,
           request_fingerprint: requestFingerprint,
@@ -1132,6 +1137,10 @@ export async function POST(req: Request) {
         notes: payload.notes || "",
         amount_total: String(totalCents),
         platform_fee: String(applicationFee),
+        platform_fee_percent: String(feePercent),
+        platform_fee_bps: String(feeBasisPoints),
+        platform_fee_source: platformFee.source,
+        net_to_business_cents: String(netToBusinessCents),
         request_fingerprint: requestFingerprint,
       };
       const session =
@@ -1523,7 +1532,7 @@ export async function POST(req: Request) {
       const subtotalCents = Math.round(Number(property.price) * nights * 100);
       const amountTax = 0;
       const totalCents = subtotalCents + amountTax;
-      const applicationFee = Math.round(totalCents * feePercent);
+      const applicationFee = calculatePlatformFeeCents(totalCents, feeBasisPoints);
       const netToBusinessCents = getNetPayoutCents(totalCents, applicationFee);
       const requestFingerprint = buildCheckoutRequestFingerprint({
         kind: "booking",
@@ -1619,6 +1628,8 @@ export async function POST(req: Request) {
           amount_total: totalCents,
           plan: normalizedPlan,
           platform_fee_percent: feePercent,
+          platform_fee_bps: feeBasisPoints,
+          platform_fee_source: platformFee.source,
           application_fee_cents: applicationFee,
           net_to_business_cents: netToBusinessCents,
           request_fingerprint: requestFingerprint,
@@ -1719,6 +1730,10 @@ export async function POST(req: Request) {
         notes: payload.notes || "",
         amount_total: String(totalCents),
         platform_fee: String(applicationFee),
+        platform_fee_percent: String(feePercent),
+        platform_fee_bps: String(feeBasisPoints),
+        platform_fee_source: platformFee.source,
+        net_to_business_cents: String(netToBusinessCents),
         request_fingerprint: requestFingerprint,
       };
       logCheckoutStage("stripe_session_create_start", {
@@ -1935,7 +1950,7 @@ export async function POST(req: Request) {
     const subtotalCents = computedStripeAmount;
     const amountTax = 0;
     const totalCents = subtotalCents + amountTax;
-    const applicationFee = Math.round(totalCents * feePercent);
+    const applicationFee = calculatePlatformFeeCents(totalCents, feeBasisPoints);
     const netToBusinessCents = getNetPayoutCents(totalCents, applicationFee);
     const requestFingerprint = buildCheckoutRequestFingerprint({
       kind: "booking",
@@ -2066,6 +2081,8 @@ export async function POST(req: Request) {
         amount_total: totalCents,
         plan: normalizedPlan,
         platform_fee_percent: feePercent,
+        platform_fee_bps: feeBasisPoints,
+        platform_fee_source: platformFee.source,
         application_fee_cents: applicationFee,
         net_to_business_cents: netToBusinessCents,
         request_fingerprint: requestFingerprint,
@@ -2200,6 +2217,10 @@ export async function POST(req: Request) {
         service_mode: serviceMode || null,
         checkout_intent_id: intentId || null,
         application_fee_cents: applicationFee,
+        platform_fee_percent: feePercent,
+        platform_fee_bps: feeBasisPoints,
+        platform_fee_source: platformFee.source,
+        net_to_business_cents: netToBusinessCents,
         request_fingerprint: requestFingerprint,
       },
     };
@@ -2318,6 +2339,10 @@ export async function POST(req: Request) {
       notes: payload.notes || "",
       amount_total: String(totalCents),
       platform_fee: String(applicationFee),
+      platform_fee_percent: String(feePercent),
+      platform_fee_bps: String(feeBasisPoints),
+      platform_fee_source: platformFee.source,
+      net_to_business_cents: String(netToBusinessCents),
       request_fingerprint: requestFingerprint,
     };
     const session =

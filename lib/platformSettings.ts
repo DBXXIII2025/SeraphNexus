@@ -10,6 +10,9 @@ export type PlatformSettings = {
   pricing_note: string;
   pro_monthly_price_cents: number;
   elite_monthly_price_cents: number;
+  trial_transaction_fee_bps: number;
+  pro_transaction_fee_bps: number;
+  elite_transaction_fee_bps: number;
   pro_price_active: boolean;
   elite_price_active: boolean;
   pro_stripe_price_id: string | null;
@@ -29,6 +32,9 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
     "Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.",
   pro_monthly_price_cents: 1900,
   elite_monthly_price_cents: 4900,
+  trial_transaction_fee_bps: 1000,
+  pro_transaction_fee_bps: 500,
+  elite_transaction_fee_bps: 200,
   pro_price_active: true,
   elite_price_active: true,
   pro_stripe_price_id: null,
@@ -43,7 +49,7 @@ export async function getPlatformSettings() {
     const { data, error } = await supabase
       .from("platform_settings")
       .select(
-        "id, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
+        "id, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
       )
       .limit(1)
       .maybeSingle();
@@ -71,6 +77,18 @@ export async function getPlatformSettings() {
         typeof data.elite_monthly_price_cents === "number"
           ? data.elite_monthly_price_cents
           : DEFAULT_PLATFORM_SETTINGS.elite_monthly_price_cents,
+      trial_transaction_fee_bps:
+        typeof data.trial_transaction_fee_bps === "number"
+          ? data.trial_transaction_fee_bps
+          : DEFAULT_PLATFORM_SETTINGS.trial_transaction_fee_bps,
+      pro_transaction_fee_bps:
+        typeof data.pro_transaction_fee_bps === "number"
+          ? data.pro_transaction_fee_bps
+          : DEFAULT_PLATFORM_SETTINGS.pro_transaction_fee_bps,
+      elite_transaction_fee_bps:
+        typeof data.elite_transaction_fee_bps === "number"
+          ? data.elite_transaction_fee_bps
+          : DEFAULT_PLATFORM_SETTINGS.elite_transaction_fee_bps,
       pro_price_active:
         typeof data.pro_price_active === "boolean"
           ? data.pro_price_active
