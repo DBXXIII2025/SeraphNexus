@@ -145,6 +145,19 @@ function createSupabaseAdmin() {
   );
 }
 
+async function assertBusinessModeSchemaReady(supabase) {
+  const { error } = await supabase
+    .from("businesses")
+    .select("id,language,pickup_enabled,delivery_enabled,onsite_enabled,remote_enabled")
+    .limit(1);
+
+  if (error) {
+    throw new Error(
+      `Verification database is missing business mode columns. Apply sql/migrations/20260413_business_language_and_modes.sql to the non-live database before running toggle verification. Supabase error: ${error.message}`
+    );
+  }
+}
+
 function formatDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -211,7 +224,7 @@ function stripColumn(payload, column) {
 async function runSchemaTolerantMutation(table, payload, runMutation) {
   let nextPayload = payload;
 
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  for (let attempt = 0; attempt < 16; attempt += 1) {
     const { data, error } = await runMutation(nextPayload);
     if (!error) {
       return { data, payload: nextPayload };
@@ -406,6 +419,11 @@ async function seedBusinessBase(supabase, fixture, ownerUser) {
     stripe_charges_enabled: true,
     stripe_payouts_enabled: true,
     plan: "pro",
+    language: "en",
+    pickup_enabled: true,
+    delivery_enabled: true,
+    onsite_enabled: true,
+    remote_enabled: true,
     refund_policy: "Verification refund policy",
     late_fee_disclosure:
       fixture.businessType === "rental" || fixture.businessType === "property"
@@ -941,6 +959,7 @@ async function resetData(supabase) {
 }
 
 async function seedAll(supabase) {
+  await assertBusinessModeSchemaReady(supabase);
   await resetData(supabase);
   const seeded = {};
 
@@ -1050,6 +1069,32 @@ async function postJson(url, body, session) {
   return data;
 }
 
+async function expectPostJsonRejected(url, body, expectedCode, label, session = null) {
+  const response = await fetchWithSession(
+    `${BASE_URL}${url}`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+    session
+  );
+  const text = await response.text();
+  const data = parseJsonSafe(text);
+
+  assert(
+    response.status >= 400,
+    `${label} unexpectedly succeeded with status ${response.status}.`
+  );
+  assert(
+    data?.code === expectedCode,
+    `${label} returned ${data?.code || "no code"} instead of ${expectedCode}: ${text.slice(0, 200)}`
+  );
+  return data;
+}
+
 async function waitForServer(serverProcess) {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     if (serverProcess.exitCode !== null) {
@@ -1138,6 +1183,18 @@ function auditBookingClientSource() {
     path.join(process.cwd(), "app/book/[slug]/BookingClient.tsx"),
     "utf8"
   );
+  const orderSource = fs.readFileSync(
+    path.join(process.cwd(), "app/order/[slug]/OrderClient.tsx"),
+    "utf8"
+  );
+  const shopSource = fs.readFileSync(
+    path.join(process.cwd(), "app/shop/[slug]/ShopClient.tsx"),
+    "utf8"
+  );
+  const checkoutSource = fs.readFileSync(
+    path.join(process.cwd(), "app/api/checkout/create/route.ts"),
+    "utf8"
+  );
 
   assert(source.includes("<select"), "BookingClient no longer renders a time dropdown.");
   assert(source.includes('setSelectedSlotKey(event.target.value)'), "Time dropdown handler changed unexpectedly.");
@@ -1145,6 +1202,19 @@ function auditBookingClientSource() {
   assert(source.includes('window.location.href = data.url;'), "Checkout redirect path is missing.");
   assert(source.includes("onClick={() => void handleBooking()}"), "Pay button no longer owns checkout.");
   assert(extractTimes(source), "12-hour booking time formatter is missing.");
+  assert(source.includes("serviceModes.remote ?"), "BookingClient no longer gates remote mode rendering.");
+  assert(source.includes("serviceModes.onsite ?"), "BookingClient no longer gates onsite mode rendering.");
+  assert(orderSource.includes("pickupEnabled ?"), "OrderClient no longer gates pickup rendering.");
+  assert(orderSource.includes("deliveryEnabled ?"), "OrderClient no longer gates delivery rendering.");
+  assert(shopSource.includes("pickupEnabled ?"), "ShopClient no longer gates pickup rendering.");
+  assert(shopSource.includes("deliveryEnabled ?"), "ShopClient no longer gates delivery rendering.");
+  assert(
+    checkoutSource.includes("CHECKOUT_PICKUP_DISABLED") &&
+      checkoutSource.includes("CHECKOUT_DELIVERY_DISABLED") &&
+      checkoutSource.includes("CHECKOUT_ONSITE_DISABLED") &&
+      checkoutSource.includes("CHECKOUT_REMOTE_DISABLED"),
+    "Shared checkout route no longer rejects disabled public modes."
+  );
 
   const slotSource = fs.readFileSync(
     path.join(process.cwd(), "lib/availability/getSlots.ts"),
@@ -1157,6 +1227,8 @@ function auditBookingClientSource() {
     payButtonSourceAudit: true,
     timeFormatSourceAudit: true,
     intervalSourceAudit: true,
+    modeRenderSourceAudit: true,
+    modeBackendSourceAudit: true,
   };
 }
 
@@ -1229,6 +1301,144 @@ function getOrderPayload(seed) {
   };
 }
 
+async function setBusinessModePreferences(supabase, businessId, preferences) {
+  const { error, payload } = await runSchemaTolerantMutation(
+    "businesses",
+    preferences,
+    (nextPayload) =>
+      supabase
+        .from("businesses")
+        .update(nextPayload)
+        .eq("id", businessId)
+        .select("id,pickup_enabled,delivery_enabled,onsite_enabled,remote_enabled")
+        .maybeSingle()
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  const strippedKeys = Object.keys(preferences).filter((key) => !(key in payload));
+  assert(
+    strippedKeys.length === 0,
+    `Mode preference columns missing from verification schema: ${strippedKeys.join(", ")}`
+  );
+}
+
+function assertModeLabelVisible(html, label, message) {
+  assert(html.includes(label), message);
+}
+
+function assertModeLabelHidden(html, label, message) {
+  assert(!html.includes(label), message);
+}
+
+async function verifyServiceModeToggles(supabase, seed, results) {
+  await setBusinessModePreferences(supabase, seed.business.id, {
+    onsite_enabled: true,
+    remote_enabled: false,
+  });
+  let publicHtml = await expectOk(seed.fixture.publicPath, null, "service-public-remote-disabled");
+  assertModeLabelVisible(publicHtml, "On-site", "On-site mode was hidden when enabled.");
+  assertModeLabelHidden(publicHtml, "Remote", "Remote mode rendered while disabled.");
+  await expectPostJsonRejected(
+    "/api/checkout/create",
+    {
+      ...getServicePayload(seed, {
+        date: formatDate(addDays(new Date(), 7)),
+        start: "09:00",
+        end: "09:30",
+      }),
+      serviceMode: "remote",
+      verificationMode: "draft",
+    },
+    "CHECKOUT_REMOTE_DISABLED",
+    "disabled remote checkout"
+  );
+
+  await setBusinessModePreferences(supabase, seed.business.id, {
+    onsite_enabled: false,
+    remote_enabled: true,
+  });
+  publicHtml = await expectOk(seed.fixture.publicPath, null, "service-public-onsite-disabled");
+  assertModeLabelVisible(publicHtml, "Remote", "Remote mode was hidden when enabled.");
+  assertModeLabelHidden(publicHtml, "On-site", "On-site mode rendered while disabled.");
+  await expectPostJsonRejected(
+    "/api/checkout/create",
+    {
+      ...getServicePayload(seed, {
+        date: formatDate(addDays(new Date(), 8)),
+        start: "09:00",
+        end: "09:30",
+      }),
+      serviceMode: "onsite",
+      verificationMode: "draft",
+    },
+    "CHECKOUT_ONSITE_DISABLED",
+    "disabled onsite checkout"
+  );
+
+  await setBusinessModePreferences(supabase, seed.business.id, {
+    onsite_enabled: true,
+    remote_enabled: true,
+  });
+  results.exercised.push("service public mode toggle rendering");
+  results.exercised.push("service disabled mode backend rejection");
+}
+
+async function verifyOrderModeToggles(supabase, seed, results) {
+  await setBusinessModePreferences(supabase, seed.business.id, {
+    pickup_enabled: true,
+    delivery_enabled: false,
+  });
+  let publicHtml = await expectOk(seed.fixture.publicPath, null, `${seed.fixture.key}-public-delivery-disabled`);
+  assertModeLabelVisible(publicHtml, "Pickup", `${seed.fixture.key} pickup mode was hidden when enabled.`);
+  assertModeLabelHidden(publicHtml, "Delivery", `${seed.fixture.key} delivery mode rendered while disabled.`);
+  await expectPostJsonRejected(
+    "/api/checkout/create",
+    {
+      ...getOrderPayload(seed),
+      fulfillmentType: "delivery",
+      verificationMode: "draft",
+    },
+    "CHECKOUT_DELIVERY_DISABLED",
+    `${seed.fixture.key} disabled delivery checkout`
+  );
+
+  await setBusinessModePreferences(supabase, seed.business.id, {
+    pickup_enabled: false,
+    delivery_enabled: true,
+  });
+  publicHtml = await expectOk(seed.fixture.publicPath, null, `${seed.fixture.key}-public-pickup-disabled`);
+  assertModeLabelVisible(publicHtml, "Delivery", `${seed.fixture.key} delivery mode was hidden when enabled.`);
+  assertModeLabelHidden(publicHtml, "Pickup", `${seed.fixture.key} pickup mode rendered while disabled.`);
+  await expectPostJsonRejected(
+    "/api/checkout/create",
+    {
+      ...getOrderPayload(seed),
+      fulfillmentType: "pickup",
+      verificationMode: "draft",
+    },
+    "CHECKOUT_PICKUP_DISABLED",
+    `${seed.fixture.key} disabled pickup checkout`
+  );
+
+  await setBusinessModePreferences(supabase, seed.business.id, {
+    pickup_enabled: true,
+    delivery_enabled: true,
+  });
+  results.exercised.push(`${seed.fixture.key} public mode toggle rendering`);
+  results.exercised.push(`${seed.fixture.key} disabled mode backend rejection`);
+}
+
+async function verifyRentalModeRendering(seed, results) {
+  const publicHtml = await expectOk(seed.fixture.publicPath, null, `${seed.fixture.key}-public-mode-rendering`);
+  assertModeLabelHidden(publicHtml, "Remote", `${seed.fixture.key} rendered irrelevant remote mode.`);
+  assertModeLabelHidden(publicHtml, "Pickup", `${seed.fixture.key} rendered irrelevant pickup mode.`);
+  assertModeLabelHidden(publicHtml, "Delivery", `${seed.fixture.key} rendered irrelevant delivery mode.`);
+  results.exercised.push(`${seed.fixture.key} onsite-only public mode rendering`);
+}
+
 async function loginAndActivate(seed) {
   const session = new CookieSession();
   await postJson(
@@ -1241,6 +1451,8 @@ async function loginAndActivate(seed) {
 }
 
 async function exerciseServiceFlow(supabase, seed, session, results) {
+  await verifyServiceModeToggles(supabase, seed, results);
+
   const publicHtml = await expectOk(seed.fixture.publicPath, null, "service-public-page");
   assert(publicHtml.includes(seed.business.name), "Service public page did not render business name.");
 
@@ -1302,6 +1514,8 @@ async function exerciseServiceFlow(supabase, seed, session, results) {
 }
 
 async function exerciseRentalFlow(supabase, seed, session, results) {
+  await verifyRentalModeRendering(seed, results);
+
   await expectOk(seed.fixture.publicPath, null, `${seed.fixture.key}-public-page`);
   for (const adminPath of seed.fixture.adminPaths) {
     await expectOk(adminPath, session, `${seed.fixture.key}-admin:${adminPath}`);
@@ -1357,6 +1571,8 @@ async function exerciseRentalFlow(supabase, seed, session, results) {
 }
 
 async function exerciseOrderFlow(supabase, seed, session, results) {
+  await verifyOrderModeToggles(supabase, seed, results);
+
   await expectOk(seed.fixture.publicPath, null, `${seed.fixture.key}-public-page`);
   for (const adminPath of seed.fixture.adminPaths) {
     await expectOk(adminPath, session, `${seed.fixture.key}-admin:${adminPath}`);
@@ -1431,10 +1647,12 @@ async function runSmoke(supabase) {
     await exerciseOrderFlow(supabase, seeded.food, foodSession, results);
     await exerciseOrderFlow(supabase, seeded.store, storeSession, results);
 
+    await verifyOrderModeToggles(supabase, seeded.creator, results);
     await expectOk(seeded.creator.fixture.publicPath, null, "creator-public-page");
     for (const adminPath of seeded.creator.fixture.adminPaths) {
       await expectOk(adminPath, creatorSession, `creator-admin:${adminPath}`);
     }
+    await verifyOrderModeToggles(supabase, seeded.product, results);
     await expectOk(seeded.product.fixture.publicPath, null, "product-public-page");
     for (const adminPath of seeded.product.fixture.adminPaths) {
       await expectOk(adminPath, productSession, `product-admin:${adminPath}`);

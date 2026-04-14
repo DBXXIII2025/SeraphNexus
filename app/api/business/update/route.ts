@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { normalizeBusinessSlug } from "@/lib/businessProfileCompletion";
 import { createClient } from "@/lib/supabase/server";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
 
 const VALID_LANGUAGES = new Set(["en", "es"]);
 
@@ -37,10 +38,12 @@ async function updateBusinessSafely(args: {
   businessesTable: any;
   payload: Record<string, unknown>;
   businessId: string;
+  requiredColumns?: string[];
 }) {
   const candidate = Object.fromEntries(
     Object.entries(args.payload).filter(([, value]) => value !== undefined)
   );
+  const requiredColumns = new Set(args.requiredColumns || []);
 
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const { error } = await args.businessesTable
@@ -54,6 +57,9 @@ async function updateBusinessSafely(args: {
     const missingColumn = extractMissingColumnName(error.message || "");
     if (!missingColumn || !(missingColumn in candidate)) {
       return error;
+    }
+    if (requiredColumns.has(missingColumn)) {
+      return new Error(`Required business setting column is missing: ${missingColumn}`);
     }
 
     delete candidate[missingColumn];
@@ -135,6 +141,11 @@ export async function POST(req: Request) {
     business.business_type === "rental" || business.business_type === "property";
   const isFoodBusiness =
     business.business_type === "food" || business.business_type === "restaurant";
+  const isOrderModeBusiness =
+    isFoodBusiness ||
+    business.business_type === "store" ||
+    business.business_type === "product" ||
+    business.business_type === "creator";
   const isServiceBusiness = business.business_type === "service";
 
   if (!VALID_LANGUAGES.has(language)) {
@@ -144,28 +155,36 @@ export async function POST(req: Request) {
     );
   }
 
+  const currentPreferences = await loadBusinessPreferences(supabase, business.id);
   const pickupEnabled = optionalBoolean(
     bodyRecord,
     "pickup_enabled",
-    business.pickup_enabled !== false
+    currentPreferences.pickup_enabled
   );
   const deliveryEnabled = optionalBoolean(
     bodyRecord,
     "delivery_enabled",
-    business.delivery_enabled !== false
+    currentPreferences.delivery_enabled
   );
   const onsiteEnabled = optionalBoolean(
     bodyRecord,
     "onsite_enabled",
-    business.onsite_enabled !== false
+    currentPreferences.onsite_enabled
   );
   const remoteEnabled = optionalBoolean(
     bodyRecord,
     "remote_enabled",
-    business.remote_enabled !== false
+    currentPreferences.remote_enabled
   );
+  const requiredPreferenceColumns = [
+    hasLanguageUpdate ? "language" : null,
+    isOrderModeBusiness && hasOwn(bodyRecord, "pickup_enabled") ? "pickup_enabled" : null,
+    isOrderModeBusiness && hasOwn(bodyRecord, "delivery_enabled") ? "delivery_enabled" : null,
+    isServiceBusiness && hasOwn(bodyRecord, "onsite_enabled") ? "onsite_enabled" : null,
+    isServiceBusiness && hasOwn(bodyRecord, "remote_enabled") ? "remote_enabled" : null,
+  ].filter((column): column is string => Boolean(column));
 
-  if (isFoodBusiness && !pickupEnabled && !deliveryEnabled) {
+  if (isOrderModeBusiness && !pickupEnabled && !deliveryEnabled) {
     return NextResponse.json(
       { error: "Pickup or delivery must remain enabled." },
       { status: 400 }
@@ -182,6 +201,7 @@ export async function POST(req: Request) {
   const error = await updateBusinessSafely({
     businessesTable,
     businessId: business.id,
+    requiredColumns: requiredPreferenceColumns,
     payload: {
       name,
       slug: nextSlug,
@@ -191,9 +211,9 @@ export async function POST(req: Request) {
       late_fee_disclosure: isRentalBusiness ? lateFeeDisclosure || null : null,
       language: hasLanguageUpdate ? language : undefined,
       pickup_enabled:
-        isFoodBusiness && hasOwn(bodyRecord, "pickup_enabled") ? pickupEnabled : undefined,
+        isOrderModeBusiness && hasOwn(bodyRecord, "pickup_enabled") ? pickupEnabled : undefined,
       delivery_enabled:
-        isFoodBusiness && hasOwn(bodyRecord, "delivery_enabled") ? deliveryEnabled : undefined,
+        isOrderModeBusiness && hasOwn(bodyRecord, "delivery_enabled") ? deliveryEnabled : undefined,
       onsite_enabled:
         isServiceBusiness && hasOwn(bodyRecord, "onsite_enabled") ? onsiteEnabled : undefined,
       remote_enabled:

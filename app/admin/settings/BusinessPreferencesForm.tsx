@@ -16,6 +16,16 @@ function isFoodBusiness(type?: string | null) {
   return type === "food" || type === "restaurant";
 }
 
+function isOrderModeBusiness(type?: string | null) {
+  return (
+    type === "food" ||
+    type === "restaurant" ||
+    type === "store" ||
+    type === "product" ||
+    type === "creator"
+  );
+}
+
 function isServiceBusiness(type?: string | null) {
   return type === "service";
 }
@@ -44,7 +54,7 @@ export default function BusinessPreferencesForm({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const showFoodModes = isFoodBusiness(business.business_type);
+  const showOrderModes = isOrderModeBusiness(business.business_type);
   const showServiceModes = isServiceBusiness(business.business_type);
 
   async function savePreferences() {
@@ -117,9 +127,11 @@ export default function BusinessPreferencesForm({
           </select>
         </label>
 
-        {showFoodModes ? (
+        {showOrderModes ? (
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-            <p className="text-sm font-medium text-[var(--text-strong)]">Food fulfillment</p>
+            <p className="text-sm font-medium text-[var(--text-strong)]">
+              {isFoodBusiness(business.business_type) ? "Food fulfillment" : "Order fulfillment"}
+            </p>
             <div className="mt-3 flex flex-wrap gap-4 text-sm text-[var(--text-soft)]">
               <label className="inline-flex items-center gap-2">
                 <input
@@ -165,7 +177,7 @@ export default function BusinessPreferencesForm({
           </div>
         ) : null}
 
-        {!showFoodModes && !showServiceModes ? (
+        {!showOrderModes && !showServiceModes ? (
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-[var(--text-soft)]">
             Property and rental businesses are always on-site. No remote, pickup, or delivery
             toggles are shown.
