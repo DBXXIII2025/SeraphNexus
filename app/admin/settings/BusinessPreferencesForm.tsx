@@ -66,6 +66,7 @@ export default function BusinessPreferencesForm({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        businessId: business.id,
         language,
         pickup_enabled: pickupEnabled,
         delivery_enabled: deliveryEnabled,

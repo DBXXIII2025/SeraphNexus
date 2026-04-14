@@ -70,14 +70,17 @@ async function updateBusinessSafely(args: {
 
 export async function POST(req: Request) {
   const supabase = await createClient();
-  const business = await getActiveBusiness();
+  const body = await req.json();
+  const bodyRecord = (body || {}) as Record<string, unknown>;
+  const requestedBusinessId = hasOwn(bodyRecord, "businessId")
+    ? String(bodyRecord.businessId || "").trim()
+    : null;
+  const business = await getActiveBusiness(requestedBusinessId);
 
   if (!business) {
     return NextResponse.json({ error: "No active business." }, { status: 400 });
   }
 
-  const body = await req.json();
-  const bodyRecord = (body || {}) as Record<string, unknown>;
   const name = hasOwn(bodyRecord, "name")
     ? String(bodyRecord.name || "").trim()
     : String(business.name || "").trim();

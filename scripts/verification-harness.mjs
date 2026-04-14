@@ -1215,6 +1215,23 @@ function auditBookingClientSource() {
       checkoutSource.includes("CHECKOUT_REMOTE_DISABLED"),
     "Shared checkout route no longer rejects disabled public modes."
   );
+  const preferencesFormSource = fs.readFileSync(
+    path.join(process.cwd(), "app/admin/settings/BusinessPreferencesForm.tsx"),
+    "utf8"
+  );
+  const businessUpdateSource = fs.readFileSync(
+    path.join(process.cwd(), "app/api/business/update/route.ts"),
+    "utf8"
+  );
+  assert(
+    preferencesFormSource.includes("businessId: business.id"),
+    "Settings preferences form no longer submits an explicit business id."
+  );
+  assert(
+    businessUpdateSource.includes("getActiveBusiness(requestedBusinessId)") &&
+      businessUpdateSource.includes("language: hasLanguageUpdate ? language : undefined"),
+    "Business update route no longer writes language for the requested owner-scoped business."
+  );
 
   const slotSource = fs.readFileSync(
     path.join(process.cwd(), "lib/availability/getSlots.ts"),
@@ -1229,6 +1246,7 @@ function auditBookingClientSource() {
     intervalSourceAudit: true,
     modeRenderSourceAudit: true,
     modeBackendSourceAudit: true,
+    languageSaveSourceAudit: true,
   };
 }
 
@@ -1331,6 +1349,99 @@ function assertModeLabelVisible(html, label, message) {
 
 function assertModeLabelHidden(html, label, message) {
   assert(!html.includes(label), message);
+}
+
+async function getBusinessLanguage(supabase, businessId) {
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("language")
+    .eq("id", businessId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+  return data?.language || null;
+}
+
+function getLanguageRenderLabels(seed) {
+  const type = seed.business.business_type;
+  if (type === "service") {
+    return {
+      spanish: ["Nombre", "Modo de servicio"],
+      english: ["Name", "Service mode"],
+    };
+  }
+  if (type === "rental" || type === "property") {
+    return {
+      spanish: ["Reserva fechas"],
+      english: ["Reserve selected dates"],
+    };
+  }
+  if (type === "restaurant" || type === "food") {
+    return {
+      spanish: ["Tu orden", "Recoger"],
+      english: ["Your Order", "Pickup"],
+    };
+  }
+  return {
+    spanish: ["Tu carrito", "Recoger"],
+    english: ["Your Cart", "Pickup"],
+  };
+}
+
+function assertHtmlIncludesAll(html, labels, messagePrefix) {
+  for (const label of labels) {
+    assert(html.includes(label), `${messagePrefix}: missing ${label}`);
+  }
+}
+
+async function saveLanguageThroughSettings(seed, session, language) {
+  await postJson(
+    "/api/business/update",
+    {
+      businessId: seed.business.id,
+      language,
+      pickup_enabled: true,
+      delivery_enabled: true,
+      onsite_enabled: true,
+      remote_enabled: true,
+    },
+    session
+  );
+}
+
+async function verifyLanguagePersistenceAndRendering(supabase, seed, session, results) {
+  await saveLanguageThroughSettings(seed, session, "es");
+  const savedSpanish = await getBusinessLanguage(supabase, seed.business.id);
+  assert(savedSpanish === "es", `${seed.fixture.key} language did not persist as es.`);
+  const spanishHtml = await expectOk(
+    `${seed.fixture.publicPath}?verifyLanguage=es`,
+    null,
+    `${seed.fixture.key}-public-language-es`
+  );
+  assertHtmlIncludesAll(
+    spanishHtml,
+    getLanguageRenderLabels(seed).spanish,
+    `${seed.fixture.key} Spanish public rendering failed`
+  );
+
+  await saveLanguageThroughSettings(seed, session, "en");
+  const savedEnglish = await getBusinessLanguage(supabase, seed.business.id);
+  assert(savedEnglish === "en", `${seed.fixture.key} language did not persist back to en.`);
+  const englishHtml = await expectOk(
+    `${seed.fixture.publicPath}?verifyLanguage=en`,
+    null,
+    `${seed.fixture.key}-public-language-en`
+  );
+  assertHtmlIncludesAll(
+    englishHtml,
+    getLanguageRenderLabels(seed).english,
+    `${seed.fixture.key} English public rendering after refresh failed`
+  );
+
+  results.exercised.push(`${seed.fixture.key} language settings persistence`);
+  results.exercised.push(`${seed.fixture.key} language public rendering`);
 }
 
 async function verifyServiceModeToggles(supabase, seed, results) {
@@ -1639,6 +1750,15 @@ async function runSmoke(supabase) {
     const storeSession = await loginAndActivate(seeded.store);
     const creatorSession = await loginAndActivate(seeded.creator);
     const productSession = await loginAndActivate(seeded.product);
+
+    await verifyLanguagePersistenceAndRendering(supabase, seeded.service, serviceSession, results);
+    await verifyLanguagePersistenceAndRendering(supabase, seeded.rental, rentalSession, results);
+    await verifyLanguagePersistenceAndRendering(supabase, seeded.property, propertySession, results);
+    await verifyLanguagePersistenceAndRendering(supabase, seeded.restaurant, restaurantSession, results);
+    await verifyLanguagePersistenceAndRendering(supabase, seeded.food, foodSession, results);
+    await verifyLanguagePersistenceAndRendering(supabase, seeded.store, storeSession, results);
+    await verifyLanguagePersistenceAndRendering(supabase, seeded.creator, creatorSession, results);
+    await verifyLanguagePersistenceAndRendering(supabase, seeded.product, productSession, results);
 
     await exerciseServiceFlow(supabase, seeded.service, serviceSession, results);
     await exerciseRentalFlow(supabase, seeded.rental, rentalSession, results);

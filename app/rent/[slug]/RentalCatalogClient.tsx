@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
+import { translate, type LanguageCode } from "@/lib/i18n";
 
 type PropertyItem = {
   id: string;
@@ -35,6 +36,7 @@ export default function RentalCatalogClient({
     name: string;
     description: string;
     business_type: string;
+    language: LanguageCode;
   };
   properties: PropertyItem[];
   isOwner: boolean;
@@ -56,6 +58,7 @@ export default function RentalCatalogClient({
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
     []
   );
+  const t = (key: Parameters<typeof translate>[1]) => translate(business.language, key);
   const selectedProperty = useMemo(
     () => properties.find((item) => item.id === selectedPropertyId) || null,
     [properties, selectedPropertyId]
@@ -196,8 +199,8 @@ export default function RentalCatalogClient({
             <div>
               <p className="section-kicker">
                 {business.business_type === "property"
-                  ? "Property stays"
-                  : "Rental inventory"}
+                  ? t("propertyStays")
+                  : t("rentalInventory")}
               </p>
               <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)]">
                 {business.name}
@@ -258,7 +261,7 @@ export default function RentalCatalogClient({
 
           <div className="surface-card p-6">
             <h2 className="text-xl font-semibold text-[var(--text-strong)]">
-              Reserve selected dates
+              {t("reserveDates")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
               Future dates remain bookable unless they are manually blocked or already reserved.
@@ -268,20 +271,20 @@ export default function RentalCatalogClient({
               <input
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="Full name"
+                placeholder={t("name")}
                 className="input-field"
               />
               <input
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="Email"
+                placeholder={t("emailAddress")}
                 type="email"
                 className="input-field"
               />
               <input
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
-                placeholder="Phone"
+                placeholder={t("phone")}
                 className="input-field"
               />
               <div className="grid gap-3 md:grid-cols-2">

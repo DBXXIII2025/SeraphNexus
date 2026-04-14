@@ -8,6 +8,7 @@ import { notFound, redirect } from "next/navigation";
 import LeadEventTracker from "@/components/LeadEventTracker";
 import RentalCatalogClient from "./RentalCatalogClient";
 import type { Database } from "@/types/database";
+import { loadBusinessPreferences } from "@/lib/businessPreferences";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -21,6 +22,8 @@ type RentalPropertyView = PropertyRow & {
 type Params = {
   slug: string;
 };
+
+export const dynamic = "force-dynamic";
 
 export default async function RentPage({
   params,
@@ -98,6 +101,7 @@ export default async function RentPage({
   if (isDev) {
     console.log("[rent/page] item count:", mergedProperties.length);
   }
+  const businessPreferences = await loadBusinessPreferences(supabase, business.id);
 
   return (
     <>
@@ -112,6 +116,7 @@ export default async function RentPage({
           name: business.name || "Rental business",
           description: business.description || "",
           business_type: business.business_type || "rental",
+          language: businessPreferences.language,
         }}
         isOwner={false}
         properties={mergedProperties}
