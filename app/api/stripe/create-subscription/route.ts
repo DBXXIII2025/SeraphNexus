@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
-import { getManagedPlanPricing, getStripePriceIdForManagedPlan } from "@/lib/platformBilling";
+import { getManagedPlanPricing } from "@/lib/platformBilling";
 import { stripe } from "@/lib/stripe";
 import { isPlanTier } from "@/lib/planConfig";
 
@@ -50,6 +50,14 @@ export async function POST(req: Request) {
         { status: 403 }
       );
     }
+    if (!pricing.stripePriceId) {
+      return NextResponse.json(
+        {
+          error: `${requestedPlan === "pro" ? "Pro" : "Elite"} billing is not configured.`,
+        },
+        { status: 503 }
+      );
+    }
 
     let customerId = business.stripe_customer_id as string | null;
 
@@ -70,7 +78,7 @@ export async function POST(req: Request) {
         .eq("id", business.id);
     }
 
-    const priceId = await getStripePriceIdForManagedPlan(requestedPlan);
+    const priceId = pricing.stripePriceId;
 
     const appUrl = getAppUrl(req);
     const session = await stripe.checkout.sessions.create({

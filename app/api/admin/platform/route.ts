@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ensureManagedPlanStripePrice } from "@/lib/platformBilling";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
+import { encodePricingNoteWithFeeSettings } from "@/lib/platformSettings";
 
 function parsePriceCents(value: FormDataEntryValue | null, fallback: number) {
   const raw = String(value || "").trim();
@@ -31,6 +32,19 @@ function parseFeeBasisPoints(value: FormDataEntryValue | null, fallback: number)
   return Math.round(percent * 100);
 }
 
+function isMissingFeeColumnError(error: { code?: string; message?: string } | null) {
+  const message = String(error?.message || "").toLowerCase();
+  return error?.code === "42703" && message.includes("transaction_fee_bps");
+}
+
+function omitFeeColumns(payload: Record<string, unknown>) {
+  const nextPayload = { ...payload };
+  delete nextPayload.trial_transaction_fee_bps;
+  delete nextPayload.pro_transaction_fee_bps;
+  delete nextPayload.elite_transaction_fee_bps;
+  return nextPayload;
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -47,6 +61,12 @@ export async function POST(req: Request) {
     const selectedElitePriceId = normalizeOptionalString(
       formData.get("elite_stripe_price_id_override")
     );
+    const trialFeeBps = parseFeeBasisPoints(formData.get("trial_transaction_fee_percent"), 1000);
+    const proFeeBps = parseFeeBasisPoints(formData.get("pro_transaction_fee_percent"), 500);
+    const eliteFeeBps = parseFeeBasisPoints(formData.get("elite_transaction_fee_percent"), 200);
+    const visiblePricingNote =
+      String(formData.get("pricing_note") || "").trim() ||
+      "Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.";
     const payload = {
       platform_name: String(formData.get("platform_name") || "").trim() || "Seraph Nexus",
       marketing_headline:
@@ -58,23 +78,16 @@ export async function POST(req: Request) {
       support_email:
         String(formData.get("support_email") || "").trim() || "support@seraphnexus.com",
       support_phone: String(formData.get("support_phone") || "").trim() || "(800) 555-0100",
-      pricing_note:
-        String(formData.get("pricing_note") || "").trim() ||
-        "Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.",
+      pricing_note: encodePricingNoteWithFeeSettings(visiblePricingNote, {
+        trial: trialFeeBps,
+        pro: proFeeBps,
+        elite: eliteFeeBps,
+      }),
       pro_monthly_price_cents: parsePriceCents(formData.get("pro_monthly_price"), 1900),
       elite_monthly_price_cents: parsePriceCents(formData.get("elite_monthly_price"), 4900),
-      trial_transaction_fee_bps: parseFeeBasisPoints(
-        formData.get("trial_transaction_fee_percent"),
-        1000
-      ),
-      pro_transaction_fee_bps: parseFeeBasisPoints(
-        formData.get("pro_transaction_fee_percent"),
-        500
-      ),
-      elite_transaction_fee_bps: parseFeeBasisPoints(
-        formData.get("elite_transaction_fee_percent"),
-        200
-      ),
+      trial_transaction_fee_bps: trialFeeBps,
+      pro_transaction_fee_bps: proFeeBps,
+      elite_transaction_fee_bps: eliteFeeBps,
       pro_price_active: formData.get("pro_price_active") === "on",
       elite_price_active: formData.get("elite_price_active") === "on",
     };
@@ -134,12 +147,34 @@ export async function POST(req: Request) {
         .update(nextPayload)
         .eq("id", existing.id);
       mutationError = error;
+
+      if (isMissingFeeColumnError(mutationError)) {
+        console.warn(
+          "[admin/platform] transaction fee columns missing; saving fees in pricing_note compatibility marker"
+        );
+        const { error: retryError } = await supabaseAdmin
+          .from("platform_settings")
+          .update(omitFeeColumns(nextPayload))
+          .eq("id", existing.id);
+        mutationError = retryError;
+      }
     } else {
       const { error } = await supabaseAdmin.from("platform_settings").insert({
         ...nextPayload,
         created_at: new Date().toISOString(),
       });
       mutationError = error;
+
+      if (isMissingFeeColumnError(mutationError)) {
+        console.warn(
+          "[admin/platform] transaction fee columns missing; inserting fees in pricing_note compatibility marker"
+        );
+        const { error: retryError } = await supabaseAdmin.from("platform_settings").insert({
+          ...omitFeeColumns(nextPayload),
+          created_at: new Date().toISOString(),
+        });
+        mutationError = retryError;
+      }
     }
 
     if (mutationError) {

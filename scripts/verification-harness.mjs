@@ -1276,6 +1276,23 @@ function auditBookingClientSource() {
       platformSettingsSource.includes("elite_transaction_fee_bps"),
     "Platform settings no longer reads managed transaction fee percentages."
   );
+  assert(
+    platformSettingsSource.includes("encodePricingNoteWithFeeSettings") &&
+      platformSettingsSource.includes("seraph_fee_bps") &&
+      platformSettingsSource.includes("legacyData"),
+    "Platform settings no longer supports persisted fee percentages on the current live settings schema."
+  );
+
+  const platformAdminRouteSource = fs.readFileSync(
+    path.join(process.cwd(), "app/api/admin/platform/route.ts"),
+    "utf8"
+  );
+  assert(
+    platformAdminRouteSource.includes("encodePricingNoteWithFeeSettings") &&
+      platformAdminRouteSource.includes("isMissingFeeColumnError") &&
+      platformAdminRouteSource.includes("omitFeeColumns"),
+    "Platform admin save route no longer persists transaction fee percentages with live-schema compatibility."
+  );
 
   return {
     dropdownSourceAudit: true,
