@@ -11,6 +11,7 @@ import {
 } from "@/lib/paymentMath";
 import { formatReservationRange } from "@/lib/rentalAvailability";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import { createAdminTranslator } from "@/lib/adminI18n";
 
 type OrderRow = {
   id: string;
@@ -106,8 +107,10 @@ export default async function AdminPaymentsPage() {
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="p-6 text-white">No active business</div>;
+    return <div className="p-6 text-white">{createAdminTranslator(null)("noActiveBusiness")}</div>;
   }
+
+  const t = createAdminTranslator(business.language);
 
   const isRental = isRentalBusinessType(business.business_type);
   const [
@@ -314,9 +317,9 @@ export default async function AdminPaymentsPage() {
       <section className="premium-card p-6 lg:p-7">
         <div className="grid gap-6 xl:grid-cols-[1.5fr,0.95fr]">
           <div>
-            <p className="section-kicker">Payments</p>
+            <p className="section-kicker">{t("payments")}</p>
             <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.35rem]">
-              Payment operations
+              {t("payments")} operations
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
               {isRental

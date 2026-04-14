@@ -6,6 +6,7 @@ import {
   getPlatformSupportMessages,
   markPlatformSupportRead,
 } from "@/lib/platformSupport";
+import { createAdminTranslator } from "@/lib/adminI18n";
 
 export const dynamic = "force-dynamic";
 
@@ -67,13 +68,14 @@ export default async function AdminSupportPage({
   }
 
   const business = await getActiveBusiness();
+  const t = createAdminTranslator(business?.language);
 
   if (!business) {
     return (
       <div className="space-y-4 text-[var(--text-main)]">
         <section className="surface-card p-6">
-          <p className="section-kicker">Support</p>
-          <h1 className="section-title">Platform support</h1>
+          <p className="section-kicker">{t("support")}</p>
+          <h1 className="section-title">{t("support")}</h1>
           <div className="mt-4 empty-state">
             Select or create an active business before contacting platform support. Support requests
             must be tied to a real business context.
@@ -109,8 +111,8 @@ export default async function AdminSupportPage({
     <div className="space-y-6 text-[var(--text-main)]">
       <section className="premium-card p-6">
         <div className="section-header-copy">
-          <p className="section-kicker">Support</p>
-          <h1 className="section-title">Platform support</h1>
+          <p className="section-kicker">{t("support")}</p>
+          <h1 className="section-title">{t("support")}</h1>
           <p className="section-description">
             Contact Seraph Nexus support for issues tied to {business.name}.
           </p>
@@ -132,7 +134,7 @@ export default async function AdminSupportPage({
         <section className="surface-card p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="section-kicker">Threads</p>
+              <p className="section-kicker">{t("messages")}</p>
               <h2 className="mt-2 text-lg font-semibold text-[var(--text-strong)]">Business support inbox</h2>
             </div>
             <span className="status-chip">

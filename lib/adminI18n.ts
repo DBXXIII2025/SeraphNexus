@@ -1,0 +1,132 @@
+import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+
+const adminDictionaries = {
+  en: {
+    activeBusiness: "Active Business",
+    addService: "Add service",
+    adminPanel: "Admin Panel",
+    analytics: "Analytics",
+    approveBooking: "Approve booking",
+    bookings: "Bookings",
+    businessDashboard: "Business dashboard",
+    commandFocus: "Command Focus",
+    configuration: "Configuration",
+    continueSetup: "Continue setup",
+    dashboard: "Dashboard",
+    editBusinessProfile: "Edit business profile",
+    inventory: "Inventory",
+    inventoryCalendar: "Inventory & Calendar",
+    launchControl: "Launch control",
+    leads: "Leads",
+    listings: "Listings",
+    listingsCalendar: "Listings & Calendar",
+    menu: "Menu",
+    messages: "Messages",
+    noActiveBusiness: "No active business",
+    noActiveBusinessFound: "No active business found.",
+    open: "Open",
+    openPublicPage: "View public page",
+    operations: "Operations",
+    operationsConsole: "Operations Console",
+    orders: "Orders",
+    ownerWorkspace: "Owner Workspace",
+    payments: "Payments",
+    platform: "Platform",
+    preferences: "Preferences",
+    primaryModule: "Primary module",
+    products: "Products",
+    publishAndPayoutSettings: "Publish and payout settings",
+    reservations: "Reservations",
+    savePreferences: "Save preferences",
+    saving: "Saving...",
+    services: "Services",
+    settings: "Settings",
+    support: "Support",
+    upgrade: "Upgrade",
+    workspace: "Workspace",
+    workspaceScope: "Workspace Scope",
+  },
+  es: {
+    activeBusiness: "Negocio activo",
+    addService: "Agregar servicio",
+    adminPanel: "Panel admin",
+    analytics: "Analitica",
+    approveBooking: "Aprobar reserva",
+    bookings: "Reservas",
+    businessDashboard: "Panel del negocio",
+    commandFocus: "Enfoque operativo",
+    configuration: "Configuracion",
+    continueSetup: "Continuar configuracion",
+    dashboard: "Panel",
+    editBusinessProfile: "Editar perfil del negocio",
+    inventory: "Inventario",
+    inventoryCalendar: "Inventario y calendario",
+    launchControl: "Control de lanzamiento",
+    leads: "Leads",
+    listings: "Alojamientos",
+    listingsCalendar: "Alojamientos y calendario",
+    menu: "Menu",
+    messages: "Mensajes",
+    noActiveBusiness: "No hay negocio activo",
+    noActiveBusinessFound: "No se encontro negocio activo.",
+    open: "Abrir",
+    openPublicPage: "Ver pagina publica",
+    operations: "Operaciones",
+    operationsConsole: "Consola de operaciones",
+    orders: "Pedidos",
+    ownerWorkspace: "Espacio del propietario",
+    payments: "Pagos",
+    platform: "Plataforma",
+    preferences: "Preferencias",
+    primaryModule: "Modulo principal",
+    products: "Productos",
+    publishAndPayoutSettings: "Publicacion y pagos",
+    reservations: "Reservaciones",
+    savePreferences: "Guardar preferencias",
+    saving: "Guardando...",
+    services: "Servicios",
+    settings: "Configuracion",
+    support: "Soporte",
+    upgrade: "Mejorar plan",
+    workspace: "Espacio",
+    workspaceScope: "Alcance del espacio",
+  },
+} satisfies Record<LanguageCode, Record<string, string>>;
+
+export type AdminTranslationKey = keyof typeof adminDictionaries.en;
+
+export function translateAdmin(language: unknown, key: AdminTranslationKey) {
+  const normalized = normalizeLanguage(language);
+  return adminDictionaries[normalized][key] || adminDictionaries.en[key] || key;
+}
+
+export function createAdminTranslator(language: unknown) {
+  return (key: AdminTranslationKey) => translateAdmin(language, key);
+}
+
+export function translateAdminLabel(language: unknown, label: string) {
+  const labelToKey: Record<string, AdminTranslationKey> = {
+    Analytics: "analytics",
+    Bookings: "bookings",
+    Configuration: "configuration",
+    "Inventory & Calendar": "inventoryCalendar",
+    Leads: "leads",
+    "Listings & Calendar": "listingsCalendar",
+    Menu: "menu",
+    Messages: "messages",
+    Orders: "orders",
+    Payments: "payments",
+    Platform: "platform",
+    Products: "products",
+    Operations: "operations",
+    Reservations: "reservations",
+    Services: "services",
+    Settings: "settings",
+    Support: "support",
+    Upgrade: "upgrade",
+    Workspace: "workspace",
+  };
+
+  const key = labelToKey[label];
+  return key ? translateAdmin(language, key) : label;
+}

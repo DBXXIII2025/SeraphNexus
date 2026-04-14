@@ -4,6 +4,7 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPlanLimit } from "@/lib/planConfig";
 import { getTenantQuickstart } from "@/lib/tenantQuickstart";
+import { createAdminTranslator } from "@/lib/adminI18n";
 import ServiceImagesManager from "./ServiceImagesManager";
 import { sortServiceImages, type ServiceImageRecord } from "@/lib/serviceImages";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
@@ -51,13 +52,15 @@ export default async function AdminServicesPage({
   const maxServices = business ? getPlanLimit(business.plan, "max_services") : null;
 
   if (!business) {
-    return <div className="empty-state">No active business.</div>;
+    return <div className="empty-state">{createAdminTranslator(null)("noActiveBusinessFound")}</div>;
   }
+
+  const t = createAdminTranslator(business.language);
 
   if (business.business_type !== "service") {
     return (
       <div className="surface-card p-6 text-[var(--text-main)]">
-        Services are only available for service businesses.
+        {t("services")} are only available for service businesses.
       </div>
     );
   }
@@ -145,9 +148,9 @@ export default async function AdminServicesPage({
       <section className="premium-card p-6 lg:p-7">
         <div className="grid gap-6 xl:grid-cols-[1.35fr,0.95fr]">
           <div>
-            <p className="section-kicker">Services</p>
+            <p className="section-kicker">{t("services")}</p>
             <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.2rem]">
-              Service catalog
+              {t("services")} catalog
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
               Manage bookable services, pricing, and compact premium cover visuals for {business.name}.
@@ -155,16 +158,16 @@ export default async function AdminServicesPage({
           </div>
 
           <div className="surface-panel p-5">
-            <p className="section-kicker">Action Priority</p>
+            <p className="section-kicker">{t("operations")}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <a href="#create-service" className="btn-primary px-4 py-2 text-sm font-medium">
-                {hasNoServices ? quickstart.primaryLabel : "Add service"}
+                {hasNoServices ? quickstart.primaryLabel : t("addService")}
               </a>
               <Link href="/admin/bookings" className="btn-secondary px-4 py-2 text-sm font-medium">
-                View bookings
+                {t("bookings")}
               </Link>
               <Link href="/admin/messages" className="btn-secondary px-4 py-2 text-sm font-medium">
-                View messages
+                {t("messages")}
               </Link>
               <Link
                 href={quickstart.secondaryHref}
@@ -187,7 +190,7 @@ export default async function AdminServicesPage({
 
       {hasNoServices ? (
         <section className="surface-card p-6">
-          <p className="section-kicker">Quickstart</p>
+          <p className="section-kicker">{t("continueSetup")}</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
             {quickstart.title}
           </h2>
@@ -208,8 +211,8 @@ export default async function AdminServicesPage({
       <section id="create-service" className="surface-card p-6">
         <div className="section-header">
           <div className="section-header-copy">
-            <p className="section-kicker">Create</p>
-            <h2 className="section-title">Add service</h2>
+            <p className="section-kicker">{t("operations")}</p>
+            <h2 className="section-title">{t("addService")}</h2>
             <p className="section-description">
               Add a new bookable offer and keep the list operationally tight.
             </p>

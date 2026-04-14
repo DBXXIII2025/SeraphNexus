@@ -6,11 +6,13 @@ import { formatAdminStatusLabel, getAdminStatusBadgeClass } from "@/lib/adminSta
 import type { BusinessReadinessState } from "@/lib/businessReadiness";
 import type { BusinessOnboardingState } from "@/lib/onboarding";
 import type { UpgradeTrigger } from "@/lib/planEnforcement";
+import { createAdminTranslator } from "@/lib/adminI18n";
 
 type DashboardClientProps = {
   business: {
     id?: string | null;
     name?: string | null;
+    language?: "en" | "es" | null;
   } | null;
   dashboard: DashboardData;
   onboarding?: BusinessOnboardingState | null;
@@ -79,14 +81,16 @@ export default function DashboardClient({
   readiness,
   upgradeTriggers = [],
 }: DashboardClientProps) {
+  const t = createAdminTranslator(business?.language);
+
   return (
     <div className="space-y-6 text-[var(--text-main)]">
       <section className="shell-panel p-6 lg:p-7">
         <div className="grid gap-5 xl:grid-cols-[1.3fr,1fr]">
           <div>
-            <p className="section-kicker">{dashboard.businessLabel} Overview</p>
+            <p className="section-kicker">{dashboard.businessLabel} {t("dashboard")}</p>
             <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.35rem]">
-              {business?.name || "Business"} dashboard
+              {business?.name || "Business"} {t("dashboard").toLowerCase()}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
               {dashboard.heroDescription}
@@ -94,7 +98,7 @@ export default function DashboardClient({
           </div>
 
           <div className="surface-panel p-5">
-            <p className="section-kicker">Priority Actions</p>
+            <p className="section-kicker">{t("operations")}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {dashboard.quickActions.slice(0, 5).map((action, index) => (
                 <Link
@@ -110,7 +114,7 @@ export default function DashboardClient({
                 </Link>
               ))}
               <div className="table-row-panel p-4 sm:col-span-2">
-                <p className="text-xs font-medium text-[var(--text-muted)]">Operational posture</p>
+                <p className="text-xs font-medium text-[var(--text-muted)]">{t("operationsConsole")}</p>
                 <p className="mt-2 text-lg font-semibold text-[var(--accent-gold-soft)]">
                   {dashboard.heroTitle}
                 </p>
@@ -127,7 +131,7 @@ export default function DashboardClient({
         <section className="surface-card p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="section-kicker">Launch Readiness</p>
+              <p className="section-kicker">{t("launchControl")}</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
                 {readiness.label}
               </h2>
@@ -155,7 +159,7 @@ export default function DashboardClient({
 
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4 lg:min-w-[240px]">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                Next Action
+                {t("continueSetup")}
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
                 {readiness.isLive
@@ -197,7 +201,7 @@ export default function DashboardClient({
         <section className="premium-card p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="section-kicker">Continue Setup</p>
+              <p className="section-kicker">{t("continueSetup")}</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
                 Finish onboarding for {business?.name || onboarding.businessName}
               </h2>

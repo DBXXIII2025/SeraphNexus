@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { getTenantQuickstart } from "@/lib/tenantQuickstart";
+import { createAdminTranslator } from "@/lib/adminI18n";
 
 type Product = {
   id: string;
@@ -37,11 +38,14 @@ export default function AdminProductsManager({
   businessId,
   businessType,
   initialProducts,
+  language,
 }: {
   businessId: string;
   businessType: string | null | undefined;
+  language?: "en" | "es" | null;
   initialProducts: Product[];
 }) {
+  const t = createAdminTranslator(language);
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [loading, setLoading] = useState(false);
@@ -49,7 +53,7 @@ export default function AdminProductsManager({
   const [error, setError] = useState<string | null>(null);
 
   const pageTitle =
-    businessType === "restaurant" || businessType === "food" ? "Menu Items" : "Products";
+    businessType === "restaurant" || businessType === "food" ? t("menu") : t("products");
   const quickstart = getTenantQuickstart(businessType);
 
   async function uploadFile(file: File) {

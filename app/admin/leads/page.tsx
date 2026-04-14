@@ -12,6 +12,7 @@ import {
 } from "@/lib/leads";
 import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminTranslator } from "@/lib/adminI18n";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,10 @@ export default async function AdminLeadsPage() {
   const business = await getActiveBusiness();
 
   if (!business) {
+    const t = createAdminTranslator(null);
     return (
       <div className="surface-card p-6 text-[var(--text-main)]">
-        <h1 className="text-2xl font-semibold text-[var(--text-strong)]">Leads</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-strong)]">{t("leads")}</h1>
         <p className="mt-3 text-sm text-[var(--text-soft)]">
           Select or create a business to view lead activity and visitor analytics.
         </p>
@@ -38,12 +40,14 @@ export default async function AdminLeadsPage() {
     );
   }
 
+  const t = createAdminTranslator(business.language);
+
   if (!canAccessPlanFeature(business.plan, "lead_capture")) {
     const plan = getPlanDefinition(business.plan);
 
     return (
       <div className="premium-card p-6 text-[var(--text-main)]">
-        <h1 className="text-2xl font-semibold text-[var(--text-strong)]">Leads</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-strong)]">{t("leads")}</h1>
         <p className="mt-3 text-sm text-[var(--text-soft)]">
           Lead capture is available on Pro and Elite plans. Your current plan is {plan.label}.
         </p>
@@ -51,7 +55,7 @@ export default async function AdminLeadsPage() {
           href="/admin/upgrade"
           className="btn-primary mt-5 inline-flex px-4 py-2 text-sm font-medium"
         >
-          Upgrade Plan
+          {t("upgrade")}
         </Link>
       </div>
     );
@@ -70,7 +74,7 @@ export default async function AdminLeadsPage() {
       <section className="premium-card overflow-hidden p-6 lg:p-7">
         <div className="relative grid gap-6 xl:grid-cols-[1.5fr,0.9fr]">
           <div>
-            <p className="section-kicker">Lead Command</p>
+            <p className="section-kicker">{t("leads")}</p>
             <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.35rem]">
               Lead intelligence console
             </h1>
@@ -128,13 +132,13 @@ export default async function AdminLeadsPage() {
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/admin/messages" className="btn-secondary px-4 py-2 text-sm font-medium">
-              Open Messages
+              {t("messages")}
             </Link>
             <Link
               href={businessModule.primaryAdminHref}
               className="btn-primary px-4 py-2 text-sm font-medium"
             >
-              Open {businessModule.primaryAdminLabel}
+              {t("open")} {businessModule.primaryAdminLabel}
             </Link>
           </div>
         </div>

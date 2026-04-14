@@ -13,6 +13,7 @@ import { getFeatureGate } from "@/lib/planEnforcement";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createClient } from "@/lib/supabase/server";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
+import { createAdminTranslator } from "@/lib/adminI18n";
 
 type SettingsPageProps = {
   searchParams?: Promise<{
@@ -98,6 +99,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const params = searchParams ? await searchParams : undefined;
   const businessId = params?.businessId?.trim();
   const business = (await getActiveBusiness(businessId)) as SettingsBusiness | null;
+  const t = createAdminTranslator(business?.language);
   const logoState = business ? await loadBusinessLogoById(business.id) : null;
   const supabase = await createClient();
   const businessPreferences = business
@@ -138,7 +140,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     <div className="space-y-6 text-[var(--text-main)]">
       <section className="premium-card p-6 lg:p-7">
         <div className="section-header-copy">
-          <p className="section-kicker">Settings</p>
+          <p className="section-kicker">{t("settings")}</p>
           <h1 className="section-title">Business identity, payouts, and launch control</h1>
           <p className="section-description">
             Manage identity, payout posture, and publish readiness for the active business.
@@ -209,13 +211,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       ) : null}
 
       {!business ? (
-        <div className="empty-state">No active business found.</div>
+        <div className="empty-state">{t("noActiveBusinessFound")}</div>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[1.08fr,0.92fr]">
           <div className="space-y-6">
             <section className="surface-card p-6">
               <div className="section-header-copy">
-                <p className="section-kicker">Identity</p>
+                  <p className="section-kicker">{t("settings")}</p>
                 <h2 className="section-title">Business identity</h2>
                 <p className="section-description">
                   Upload a compact logo for admin identity blocks and public-facing headers.
@@ -267,7 +269,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   href={`/admin/customize?businessId=${encodeURIComponent(business.id)}`}
                   className="btn-secondary px-4 py-2 text-sm font-medium"
                 >
-                  Edit business profile
+                  {t("editBusinessProfile")}
                 </a>
               </div>
 
@@ -294,7 +296,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             {readiness ? (
               <section className="premium-card p-6">
                 <div className="section-header-copy">
-                  <p className="section-kicker">Launch</p>
+                  <p className="section-kicker">{t("launchControl")}</p>
                   <h2 className="section-title">Launch readiness</h2>
                   <p className="section-description">
                     Combined status across profile, legal, payments, and offerings.
@@ -341,7 +343,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
             <section className="surface-card p-6">
               <div className="section-header-copy">
-                <p className="section-kicker">Payments</p>
+                <p className="section-kicker">{t("payments")}</p>
                 <h2 className="section-title">Stripe Connect</h2>
                 <p className="section-description">
                   Stripe Connect status and payout posture for {business.name || "this business"}.

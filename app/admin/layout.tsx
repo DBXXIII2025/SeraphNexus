@@ -6,6 +6,7 @@ import { getAdminNav, getBusinessModule, getPublicPath } from "@/lib/businessMod
 import { getPlanDefinition, getPlatformFeeLabel } from "@/lib/planConfig";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { getTenantRecoveryState } from "@/lib/tenantRouting";
+import { createAdminTranslator, translateAdminLabel } from "@/lib/adminI18n";
 import BusinessSwitcher from "@/components/BusinessSwitcher";
 import LogoutButton from "@/app/admin/LogoutButton";
 
@@ -73,6 +74,7 @@ export default async function AdminLayout({
   const businesses = await getUserBusinesses();
   const activeBusiness = await getActiveBusiness();
   const businessModule = getBusinessModule(activeBusiness?.business_type);
+  const t = createAdminTranslator(activeBusiness?.language);
   const plan = getPlanDefinition(activeBusiness?.plan);
   const adminNav = getAdminNav(activeBusiness?.business_type, activeBusiness?.plan);
   const recovery =
@@ -214,14 +216,14 @@ export default async function AdminLayout({
           <div className="relative flex h-full flex-col gap-4">
             <div className="rounded-2xl border border-[rgba(193,18,31,0.16)] bg-[linear-gradient(180deg,rgba(193,18,31,0.14),rgba(143,12,21,0.06))] p-4">
               <div className="inline-flex rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-gold-soft)]">
-                Owner Workspace
+                {t("ownerWorkspace")}
               </div>
               <div className="mt-4 space-y-2">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                  Active Business
+                  {t("activeBusiness")}
                 </p>
                 <h1 className="text-[1.65rem] font-semibold text-[var(--text-strong)]">
-                  {activeBusiness?.name || "No active business"}
+                  {activeBusiness?.name || t("noActiveBusiness")}
                 </h1>
                 <p className="text-sm leading-6 text-[var(--text-soft)]">
                   {businessModule.label} operations with live controls for bookings, payments,
@@ -244,21 +246,21 @@ export default async function AdminLayout({
                       href={businessModule.primaryAdminHref}
                       className="btn-secondary px-4 py-2 text-sm font-medium"
                     >
-                      Open {businessModule.primaryAdminLabel}
+                      {t("open")} {translateAdminLabel(activeBusiness.language, businessModule.primaryAdminLabel)}
                     </Link>
                     {activeBusiness.slug ? (
                       <Link
                         href={getPublicPath(activeBusiness.business_type, activeBusiness.slug)}
                         className="btn-secondary px-4 py-2 text-sm font-medium"
                       >
-                        View public page
+                        {t("openPublicPage")}
                       </Link>
                     ) : (
                       <Link
                         href="/admin/settings"
                         className="btn-secondary px-4 py-2 text-sm font-medium"
                       >
-                        Open publish settings
+                        {t("publishAndPayoutSettings")}
                       </Link>
                     )}
                   </div>
@@ -268,7 +270,7 @@ export default async function AdminLayout({
 
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] p-4">
               <p className="mb-3 text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                Workspace Scope
+                {t("workspaceScope")}
               </p>
               <BusinessSwitcher
                 businesses={businesses}
@@ -280,7 +282,7 @@ export default async function AdminLayout({
               {groupOwnerNav(adminNav).map((group) => (
                 <nav key={group.label} className="mb-6 space-y-2">
                   <div className="mb-2 px-1 text-[11px] font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
-                    {group.label}
+                    {translateAdminLabel(activeBusiness?.language, group.label)}
                   </div>
                   {group.items.map((item) => (
                     <Link
@@ -289,9 +291,9 @@ export default async function AdminLayout({
                       className="nav-item text-sm font-medium"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span>{item.label}</span>
+                        <span>{translateAdminLabel(activeBusiness?.language, item.label)}</span>
                         <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                          Open
+                        {t("open")}
                         </span>
                       </div>
                     </Link>
@@ -307,11 +309,11 @@ export default async function AdminLayout({
             ) : (
               <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                  Command Focus
+                {t("commandFocus")}
                 </p>
                 <div className="mt-3 space-y-2 text-sm text-[var(--text-soft)]">
                   <p>Publish readiness, revenue, conversations, and inventory remain scoped to this business.</p>
-                  <p>Use Overview for priorities first, then move into operations or settings.</p>
+                <p>Use {t("dashboard")} for priorities first, then move into {t("operations").toLowerCase()} or {t("settings").toLowerCase()}.</p>
                 </div>
               </div>
             )}
@@ -326,7 +328,7 @@ export default async function AdminLayout({
           <section className="premium-card p-6 lg:p-7">
             <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-4xl">
-                <p className="section-kicker">Operations Console</p>
+                <p className="section-kicker">{t("operationsConsole")}</p>
                 <h2 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.15rem]">
                   Run the business from a tighter operational command center
                 </h2>
@@ -342,10 +344,10 @@ export default async function AdminLayout({
                   className="table-row-panel p-4 transition hover:border-[rgba(212,175,55,0.16)]"
                 >
                   <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                    Primary module
+                    {t("primaryModule")}
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[var(--text-strong)]">
-                    {businessModule.primaryAdminLabel}
+                    {translateAdminLabel(activeBusiness?.language, businessModule.primaryAdminLabel)}
                   </p>
                   <p className="mt-1 text-sm text-[var(--text-soft)]">
                     Open the core operational surface for {activeBusiness?.name || "this workspace"}.
@@ -356,10 +358,10 @@ export default async function AdminLayout({
                   className="rounded-2xl border border-[rgba(212,175,55,0.14)] bg-[rgba(212,175,55,0.06)] p-4 transition hover:border-[rgba(212,175,55,0.22)]"
                 >
                   <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                    Launch control
+                    {t("launchControl")}
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[var(--accent-gold-soft)]">
-                    Publish and payout settings
+                    {t("publishAndPayoutSettings")}
                   </p>
                   <p className="mt-1 text-sm text-[var(--text-soft)]">
                     Manage readiness, Stripe posture, and public visibility.
@@ -373,7 +375,7 @@ export default async function AdminLayout({
             <section className="surface-card p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <p className="section-kicker">Continue Setup</p>
+                  <p className="section-kicker">{t("continueSetup")}</p>
                   <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
                     {recovery.readiness.label}
                   </h2>
@@ -398,7 +400,7 @@ export default async function AdminLayout({
                     href={recovery.href}
                     className="btn-secondary mt-4 inline-flex w-full justify-center px-4 py-2 text-sm font-medium"
                   >
-                    Continue setup
+                    {t("continueSetup")}
                   </Link>
                 </div>
               </div>

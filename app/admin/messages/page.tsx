@@ -14,6 +14,7 @@ import {
   markConversationReadForBusiness,
 } from "@/lib/messages";
 import { canAccessPlanFeature, getPlanDefinition, getPlanLimit } from "@/lib/planConfig";
+import { createAdminTranslator } from "@/lib/adminI18n";
 import AdminMessagesClient from "./AdminMessagesClient";
 
 export const dynamic = "force-dynamic";
@@ -255,11 +256,12 @@ export default async function AdminMessagesPage({
   }
 
   const activeBusiness = await getActiveBusiness(requestedBusinessId || undefined);
+  const t = createAdminTranslator(activeBusiness?.language);
 
   if (!activeBusiness) {
     return (
       <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] p-6 text-[var(--text-main)]">
-        <h1 className="text-xl font-semibold text-[var(--text-strong)]">Messages</h1>
+        <h1 className="text-xl font-semibold text-[var(--text-strong)]">{t("messages")}</h1>
         <p className="mt-2 text-sm text-[var(--text-soft)]">
           No active business is available for this account.
         </p>
@@ -275,7 +277,7 @@ export default async function AdminMessagesPage({
     return (
       <div className="space-y-6 text-[var(--text-main)]">
         <section className="premium-card p-6">
-          <p className="section-kicker">Messages</p>
+          <p className="section-kicker">{t("messages")}</p>
           <h1 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">
             Customer inbox
           </h1>
@@ -287,7 +289,7 @@ export default async function AdminMessagesPage({
             href="/admin/upgrade"
             className="btn-primary mt-5 inline-flex px-4 py-2 text-sm font-medium"
           >
-            Upgrade for messaging
+            {t("upgrade")}
           </Link>
         </section>
       </div>
@@ -360,7 +362,7 @@ export default async function AdminMessagesPage({
     <div className="space-y-6 text-[var(--text-main)]">
       {messageThreadLimit !== null ? (
         <section className="surface-card p-5">
-          <p className="section-kicker">Inbox Limit</p>
+          <p className="section-kicker">{t("messages")}</p>
           <h2 className="mt-2 text-lg font-semibold text-[var(--text-strong)]">
             Trial inbox is capped at {messageThreadLimit} message threads
           </h2>
@@ -369,7 +371,7 @@ export default async function AdminMessagesPage({
             moderation tools.
           </p>
           <Link href="/admin/upgrade" className="btn-secondary mt-4 inline-flex px-4 py-2 text-sm font-medium">
-            Upgrade messaging
+            {t("upgrade")}
           </Link>
         </section>
       ) : null}

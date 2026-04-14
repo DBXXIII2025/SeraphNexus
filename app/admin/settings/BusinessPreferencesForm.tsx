@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { createAdminTranslator } from "@/lib/adminI18n";
+import { translate } from "@/lib/i18n";
 
 type BusinessPreferences = {
   id: string;
@@ -54,6 +56,8 @@ export default function BusinessPreferencesForm({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const t = createAdminTranslator(language);
+  const label = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const showOrderModes = isOrderModeBusiness(business.business_type);
   const showServiceModes = isServiceBusiness(business.business_type);
 
@@ -108,8 +112,8 @@ export default function BusinessPreferencesForm({
   return (
     <section className="surface-card p-6">
       <div className="section-header-copy">
-        <p className="section-kicker">Preferences</p>
-        <h2 className="section-title">Language and operating modes</h2>
+        <p className="section-kicker">{t("preferences")}</p>
+        <h2 className="section-title">{label("language")} and operating modes</h2>
         <p className="section-description">
           Control customer-facing labels and allowed fulfillment modes.
         </p>
@@ -117,7 +121,7 @@ export default function BusinessPreferencesForm({
 
       <div className="mt-5 space-y-5">
         <label className="block">
-          <span className="mb-2 block text-sm text-[var(--text-soft)]">Language</span>
+          <span className="mb-2 block text-sm text-[var(--text-soft)]">{label("language")}</span>
           <select
             value={language}
             onChange={(event) => setLanguage(event.target.value === "es" ? "es" : "en")}
@@ -140,7 +144,7 @@ export default function BusinessPreferencesForm({
                   checked={pickupEnabled}
                   onChange={(event) => updateFoodMode("pickup", event.target.checked)}
                 />
-                Pickup
+                {label("pickup")}
               </label>
               <label className="inline-flex items-center gap-2">
                 <input
@@ -148,7 +152,7 @@ export default function BusinessPreferencesForm({
                   checked={deliveryEnabled}
                   onChange={(event) => updateFoodMode("delivery", event.target.checked)}
                 />
-                Delivery
+                {label("delivery")}
               </label>
             </div>
           </div>
@@ -156,7 +160,7 @@ export default function BusinessPreferencesForm({
 
         {showServiceModes ? (
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-            <p className="text-sm font-medium text-[var(--text-strong)]">Service modes</p>
+            <p className="text-sm font-medium text-[var(--text-strong)]">{label("serviceMode")}</p>
             <div className="mt-3 flex flex-wrap gap-4 text-sm text-[var(--text-soft)]">
               <label className="inline-flex items-center gap-2">
                 <input
@@ -164,7 +168,7 @@ export default function BusinessPreferencesForm({
                   checked={onsiteEnabled}
                   onChange={(event) => updateServiceMode("onsite", event.target.checked)}
                 />
-                On-site
+                {label("onsite")}
               </label>
               <label className="inline-flex items-center gap-2">
                 <input
@@ -172,7 +176,7 @@ export default function BusinessPreferencesForm({
                   checked={remoteEnabled}
                   onChange={(event) => updateServiceMode("remote", event.target.checked)}
                 />
-                Remote
+                {label("remote")}
               </label>
             </div>
           </div>
@@ -194,7 +198,7 @@ export default function BusinessPreferencesForm({
           onClick={() => void savePreferences()}
           className="btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {saving ? "Saving..." : "Save preferences"}
+          {saving ? t("saving") : t("savePreferences")}
         </button>
       </div>
     </section>

@@ -12,5 +12,10 @@ export const BUSINESS_RUNTIME_SELECT = [
   "stripe_onboarding_complete",
   "stripe_charges_enabled",
   "stripe_payouts_enabled",
+  "language",
+  "pickup_enabled",
+  "delivery_enabled",
+  "onsite_enabled",
+  "remote_enabled",
   "plan",
 ].join(", ");

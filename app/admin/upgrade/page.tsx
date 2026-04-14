@@ -1,6 +1,7 @@
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getManagedPricingSnapshot } from "@/lib/platformBilling";
 import { getPlanDefinition, getPlatformFeeLabel } from "@/lib/planConfig";
+import { createAdminTranslator } from "@/lib/adminI18n";
 import UpgradeClient from "./UpgradeClient";
 
 type UpgradePageProps = {
@@ -16,9 +17,10 @@ export default async function AdminUpgradePage({
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="text-white">No active business</div>;
+    return <div className="text-white">{createAdminTranslator(null)("noActiveBusiness")}</div>;
   }
 
+  const t = createAdminTranslator(business.language);
   const plan = getPlanDefinition(business.plan);
   const pricing = await getManagedPricingSnapshot();
   const currentPriceLabel =
@@ -31,7 +33,7 @@ export default async function AdminUpgradePage({
   return (
     <div className="space-y-6 text-white">
       <div>
-        <h1 className="text-2xl font-semibold">Upgrade</h1>
+        <h1 className="text-2xl font-semibold">{t("upgrade")}</h1>
         <p className="text-sm text-gray-400">
           Manage plan access and transaction fees for {business.name}.
         </p>

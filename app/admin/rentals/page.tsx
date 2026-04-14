@@ -17,6 +17,7 @@ import {
 } from "@/lib/adminStatus";
 import type { Database } from "@/types/database";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import { createAdminTranslator } from "@/lib/adminI18n";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -108,13 +109,15 @@ export default async function AdminRentalsPage({
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="text-[var(--text-main)]">No active business</div>;
+    return <div className="text-[var(--text-main)]">{createAdminTranslator(null)("noActiveBusiness")}</div>;
   }
+
+  const t = createAdminTranslator(business.language);
 
   if (!isRentalBusinessType(business.business_type)) {
     return (
       <div className="surface-card p-6 text-[var(--text-main)]">
-        Rental inventory and reservation calendars are only available for rental
+        {t("inventory")} and {t("reservations").toLowerCase()} calendars are only available for rental
         and property businesses.
       </div>
     );
@@ -249,9 +252,9 @@ export default async function AdminRentalsPage({
       <section className="premium-card p-6 lg:p-7">
         <div className="grid gap-6 xl:grid-cols-[1.5fr,0.95fr]">
           <div>
-            <p className="section-kicker">Rental Command</p>
+            <p className="section-kicker">{t("operationsConsole")}</p>
             <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.35rem]">
-              {business.business_type === "property" ? "Listings & calendar" : "Inventory & calendar"}
+              {business.business_type === "property" ? t("listingsCalendar") : t("inventoryCalendar")}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
               Manage listings, blocked date ranges, and reservation flow for {business.name}. The
@@ -332,7 +335,7 @@ export default async function AdminRentalsPage({
         <div className="surface-card p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="section-kicker">Listing Scope</p>
+              <p className="section-kicker">{t("listings")}</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
                 Listing selector
               </h2>
@@ -404,7 +407,7 @@ export default async function AdminRentalsPage({
 
       <section className="grid gap-6 xl:grid-cols-2">
         <div id="create-listing" className="premium-card p-6">
-          <h2 className="text-lg font-semibold text-[var(--text-strong)]">Add listing</h2>
+          <h2 className="text-lg font-semibold text-[var(--text-strong)]">{t("listings")}</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
             Save rental inventory with structured pricing and optional descriptive copy.
           </p>
@@ -487,8 +490,8 @@ export default async function AdminRentalsPage({
       <section className="surface-card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="section-kicker">Inventory</p>
-            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">Listings</h2>
+            <p className="section-kicker">{t("inventory")}</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">{t("listings")}</h2>
           </div>
           <span className="text-sm text-[var(--text-soft)]">{propertyList.length} saved</span>
         </div>
@@ -578,9 +581,9 @@ export default async function AdminRentalsPage({
         <div className="surface-card p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="section-kicker">Reservations</p>
+              <p className="section-kicker">{t("reservations")}</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
-                Active reservations
+                Active {t("reservations").toLowerCase()}
               </h2>
             </div>
             <span className="text-sm text-[var(--text-soft)]">

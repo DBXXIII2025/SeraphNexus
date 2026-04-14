@@ -3,6 +3,7 @@ import PerformanceAnalyticsClient from "@/app/admin/analytics/PerformanceAnalyti
 import type { AnalyticsMetric } from "@/lib/adminAnalytics";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
+import { createAdminTranslator } from "@/lib/adminI18n";
 
 function getDefaultMetric(businessType: string | null | undefined): AnalyticsMetric {
   if (
@@ -22,9 +23,10 @@ export default async function AdminAnalyticsPage() {
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="empty-state">No active business.</div>;
+    return <div className="empty-state">{createAdminTranslator(null)("noActiveBusinessFound")}</div>;
   }
 
+  const t = createAdminTranslator(business.language);
   const businessName = (business as { name?: string | null }).name || "your business";
 
   if (!canAccessPlanFeature(business.plan, "basic_analytics")) {
@@ -34,7 +36,7 @@ export default async function AdminAnalyticsPage() {
       <div className="space-y-6 text-[var(--text-main)]">
         <section className="surface-card p-6">
           <div className="section-header-copy">
-            <p className="section-kicker">Analytics</p>
+            <p className="section-kicker">{t("analytics")}</p>
             <h1 className="section-title">Performance snapshots</h1>
             <p className="section-description">
               Performance insights for {businessName}.
@@ -51,7 +53,7 @@ export default async function AdminAnalyticsPage() {
             Analytics are available on Pro and Elite plans. Your current plan is {plan.label}.
           </p>
           <Link href="/admin/upgrade" className="btn-primary mt-5 px-4 py-2 text-sm font-medium">
-            Upgrade plan
+            {t("upgrade")}
           </Link>
         </section>
       </div>
@@ -67,7 +69,7 @@ export default async function AdminAnalyticsPage() {
     <main className="space-y-6 text-[var(--text-main)]">
       <section className="premium-card p-6 lg:p-7">
         <div className="section-header-copy">
-          <p className="section-kicker">Analytics</p>
+          <p className="section-kicker">{t("analytics")}</p>
           <h1 className="section-title">Performance snapshots for {businessName}</h1>
           <p className="section-description">
             Use this view to monitor daily performance, transaction flow, completion trend, and
@@ -86,7 +88,7 @@ export default async function AdminAnalyticsPage() {
       />
 
       <section className="surface-card p-6">
-        <p className="section-kicker">Advanced Analytics</p>
+        <p className="section-kicker">{t("analytics")}</p>
         <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
           Customer insights and trend views
         </h2>
@@ -128,7 +130,7 @@ export default async function AdminAnalyticsPage() {
             Elite adds advanced analytics, customer insight views, trend reporting, and richer
             conversion monitoring.
             <Link href="/admin/upgrade" className="btn-secondary ml-4 inline-flex px-4 py-2 text-sm font-medium">
-              Upgrade to Elite
+              {t("upgrade")}
             </Link>
           </div>
         )}

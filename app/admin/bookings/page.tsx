@@ -17,6 +17,7 @@ import {
   getAdminStatusBadgeClass,
 } from "@/lib/adminStatus";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import { createAdminTranslator } from "@/lib/adminI18n";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type ServiceBookingRecord = {
@@ -392,13 +393,15 @@ export default async function AdminBookingsPage({
   const isDev = process.env.NODE_ENV !== "production";
 
   if (!business) {
-    return <div className="text-white">No active business</div>;
+    return <div className="text-white">{createAdminTranslator(null)("noActiveBusiness")}</div>;
   }
+
+  const t = createAdminTranslator(business.language);
 
   if (!isBookingBusinessType(business.business_type)) {
     return (
       <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-6 text-white">
-        Bookings are only available for service, rental, and property businesses.
+        {t("bookings")} are only available for service, rental, and property businesses.
       </div>
     );
   }
@@ -637,7 +640,7 @@ export default async function AdminBookingsPage({
       asString(property.name) || "Listing",
     ])
   );
-  const pageTitle = isRental ? "Reservations" : "Bookings";
+  const pageTitle = isRental ? t("reservations") : t("bookings");
   const serviceRecords = normalizedServiceRows.filter(
     (row) => !row.isFallback && isActiveServiceQueueRecord(row)
   );

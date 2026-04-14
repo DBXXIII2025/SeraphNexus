@@ -1223,6 +1223,10 @@ function auditBookingClientSource() {
     path.join(process.cwd(), "app/api/business/update/route.ts"),
     "utf8"
   );
+  const businessFieldsSource = fs.readFileSync(
+    path.join(process.cwd(), "lib/businessFields.ts"),
+    "utf8"
+  );
   assert(
     preferencesFormSource.includes("businessId: business.id"),
     "Settings preferences form no longer submits an explicit business id."
@@ -1231,6 +1235,14 @@ function auditBookingClientSource() {
     businessUpdateSource.includes("getActiveBusiness(requestedBusinessId)") &&
       businessUpdateSource.includes("language: hasLanguageUpdate ? language : undefined"),
     "Business update route no longer writes language for the requested owner-scoped business."
+  );
+  assert(
+    businessFieldsSource.includes('"language"') &&
+      businessFieldsSource.includes('"pickup_enabled"') &&
+      businessFieldsSource.includes('"delivery_enabled"') &&
+      businessFieldsSource.includes('"onsite_enabled"') &&
+      businessFieldsSource.includes('"remote_enabled"'),
+    "Active business runtime select no longer reads saved language and mode settings."
   );
 
   const slotSource = fs.readFileSync(
@@ -1390,6 +1402,67 @@ function getLanguageRenderLabels(seed) {
   };
 }
 
+function getAdminLanguageRenderLabels(seed, adminPath) {
+  const type = seed.business.business_type;
+  const sharedSpanish = ["Espacio del propietario", "Negocio activo"];
+  const sharedEnglish = ["Owner Workspace", "Active Business"];
+
+  if (adminPath === "/admin/settings") {
+    return {
+      spanish: [...sharedSpanish, "Configuracion", "Preferencias", "Idioma"],
+      english: [...sharedEnglish, "Settings", "Preferences", "Language"],
+    };
+  }
+
+  if (adminPath === "/admin/services") {
+    return {
+      spanish: [...sharedSpanish, "Servicios"],
+      english: [...sharedEnglish, "Services"],
+    };
+  }
+
+  if (adminPath === "/admin/products") {
+    const spanishLabel = type === "restaurant" || type === "food" ? "Menu" : "Productos";
+    const englishLabel = type === "restaurant" || type === "food" ? "Menu" : "Products";
+    return {
+      spanish: [...sharedSpanish, spanishLabel],
+      english: [...sharedEnglish, englishLabel],
+    };
+  }
+
+  if (adminPath === "/admin/orders") {
+    return {
+      spanish: [...sharedSpanish, "Pedidos"],
+      english: [...sharedEnglish, "Orders"],
+    };
+  }
+
+  if (adminPath === "/admin/rentals") {
+    return {
+      spanish: [
+        ...sharedSpanish,
+        type === "property" ? "Alojamientos" : "Inventario",
+      ],
+      english: [
+        ...sharedEnglish,
+        type === "property" ? "Listings" : "Inventory",
+      ],
+    };
+  }
+
+  if (adminPath === "/admin/bookings") {
+    return {
+      spanish: [...sharedSpanish, type === "service" ? "Reservas" : "Reservaciones"],
+      english: [...sharedEnglish, type === "service" ? "Bookings" : "Reservations"],
+    };
+  }
+
+  return {
+    spanish: sharedSpanish,
+    english: sharedEnglish,
+  };
+}
+
 function assertHtmlIncludesAll(html, labels, messagePrefix) {
   for (const label of labels) {
     assert(html.includes(label), `${messagePrefix}: missing ${label}`);
@@ -1425,6 +1498,18 @@ async function verifyLanguagePersistenceAndRendering(supabase, seed, session, re
     getLanguageRenderLabels(seed).spanish,
     `${seed.fixture.key} Spanish public rendering failed`
   );
+  for (const adminPath of seed.fixture.adminPaths) {
+    const adminSpanishHtml = await expectOk(
+      `${adminPath}?verifyLanguage=es`,
+      session,
+      `${seed.fixture.key}-admin-language-es:${adminPath}`
+    );
+    assertHtmlIncludesAll(
+      adminSpanishHtml,
+      getAdminLanguageRenderLabels(seed, adminPath).spanish,
+      `${seed.fixture.key} Spanish admin rendering failed for ${adminPath}`
+    );
+  }
 
   await saveLanguageThroughSettings(seed, session, "en");
   const savedEnglish = await getBusinessLanguage(supabase, seed.business.id);
@@ -1439,9 +1524,22 @@ async function verifyLanguagePersistenceAndRendering(supabase, seed, session, re
     getLanguageRenderLabels(seed).english,
     `${seed.fixture.key} English public rendering after refresh failed`
   );
+  for (const adminPath of seed.fixture.adminPaths) {
+    const adminEnglishHtml = await expectOk(
+      `${adminPath}?verifyLanguage=en`,
+      session,
+      `${seed.fixture.key}-admin-language-en:${adminPath}`
+    );
+    assertHtmlIncludesAll(
+      adminEnglishHtml,
+      getAdminLanguageRenderLabels(seed, adminPath).english,
+      `${seed.fixture.key} English admin rendering after refresh failed for ${adminPath}`
+    );
+  }
 
   results.exercised.push(`${seed.fixture.key} language settings persistence`);
   results.exercised.push(`${seed.fixture.key} language public rendering`);
+  results.exercised.push(`${seed.fixture.key} language admin rendering`);
 }
 
 async function verifyServiceModeToggles(supabase, seed, results) {

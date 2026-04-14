@@ -7,6 +7,7 @@ import {
   getAdminStatusBadgeClass,
 } from "@/lib/adminStatus";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import { createAdminTranslator } from "@/lib/adminI18n";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 type NormalizedItem = {
@@ -437,13 +438,15 @@ export default async function AdminOrdersPage({
   const isStoreBusiness = isStoreBusinessType(business?.business_type);
 
   if (!business) {
-    return <div className="empty-state">No active business.</div>;
+    return <div className="empty-state">{createAdminTranslator(null)("noActiveBusinessFound")}</div>;
   }
+
+  const t = createAdminTranslator(business.language);
 
   if (!isOrderBusinessType(business.business_type)) {
     return (
       <div className="surface-card p-6 text-[var(--text-main)]">
-        Orders are not enabled for this business type.
+        {t("orders")} are not enabled for this business type.
       </div>
     );
   }
@@ -714,8 +717,8 @@ export default async function AdminOrdersPage({
       ) : null}
 
       <section className="premium-card p-6 lg:p-7">
-        <p className="section-kicker">Orders</p>
-        <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.2rem]">Order queue</h1>
+        <p className="section-kicker">{t("orders")}</p>
+        <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.2rem]">{t("orders")} queue</h1>
         <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
           {isStoreBusiness
             ? `Manage incoming product orders for ${business.name}.`
