@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 import { BUSINESS_RUNTIME_SELECT } from "@/lib/businessFields";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
-import { createClient } from "@/lib/supabase/server";
+import {
+  getBusinessStaffRole,
+  getStaffBusinessIdsForUser,
+  type BusinessStaffRole,
+} from "@/lib/businessStaff";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { normalizeBusinessPlanRecord } from "@/lib/businessPlan";
 import type { PlanTier } from "@/lib/planConfig";
 
@@ -29,6 +34,7 @@ type ActiveBusinessRow = {
 
 export type ActiveBusiness = Omit<ActiveBusinessRow, "plan"> & {
   plan: PlanTier;
+  access_role: "owner" | BusinessStaffRole;
 };
 
 export async function getActiveBusiness(
@@ -45,7 +51,10 @@ export async function getActiveBusiness(
 
   if (!user) return null;
 
-  async function normalizeBusiness(data: ActiveBusinessRow | null) {
+  async function normalizeBusiness(
+    data: ActiveBusinessRow | null,
+    accessRole: "owner" | BusinessStaffRole
+  ) {
     if (!data) {
       return null;
     }
@@ -64,6 +73,7 @@ export async function getActiveBusiness(
     return {
       ...normalized,
       plan,
+      access_role: accessRole,
     };
   }
 
@@ -75,7 +85,24 @@ export async function getActiveBusiness(
       .eq("owner_id", user.id)
       .maybeSingle();
 
-    if (data) return normalizeBusiness(data as unknown as ActiveBusinessRow);
+    if (data) return normalizeBusiness(data as unknown as ActiveBusinessRow, "owner");
+
+    const staffRole = await getBusinessStaffRole({
+      businessId: requestedBusinessId,
+      userId: user.id,
+    });
+
+    if (staffRole) {
+      const { data: staffBusiness } = await createAdminClient()
+        .from("businesses")
+        .select(BUSINESS_RUNTIME_SELECT)
+        .eq("id", requestedBusinessId)
+        .maybeSingle();
+
+      if (staffBusiness) {
+        return normalizeBusiness(staffBusiness as unknown as ActiveBusinessRow, staffRole);
+      }
+    }
   }
 
   if (activeId) {
@@ -86,7 +113,24 @@ export async function getActiveBusiness(
       .eq("owner_id", user.id)
       .maybeSingle();
 
-    if (data) return normalizeBusiness(data as unknown as ActiveBusinessRow);
+    if (data) return normalizeBusiness(data as unknown as ActiveBusinessRow, "owner");
+
+    const staffRole = await getBusinessStaffRole({
+      businessId: activeId,
+      userId: user.id,
+    });
+
+    if (staffRole) {
+      const { data: staffBusiness } = await createAdminClient()
+        .from("businesses")
+        .select(BUSINESS_RUNTIME_SELECT)
+        .eq("id", activeId)
+        .maybeSingle();
+
+      if (staffBusiness) {
+        return normalizeBusiness(staffBusiness as unknown as ActiveBusinessRow, staffRole);
+      }
+    }
   }
 
   const { data, error } = await supabase
@@ -107,5 +151,30 @@ export async function getActiveBusiness(
     return null;
   }
 
-  return data ? normalizeBusiness(data as unknown as ActiveBusinessRow) : null;
+  if (data) {
+    return normalizeBusiness(data as unknown as ActiveBusinessRow, "owner");
+  }
+
+  const staffBusinessIds = await getStaffBusinessIdsForUser(user.id);
+  const firstStaffBusinessId = staffBusinessIds[0];
+
+  if (firstStaffBusinessId) {
+    const staffRole = await getBusinessStaffRole({
+      businessId: firstStaffBusinessId,
+      userId: user.id,
+    });
+    if (staffRole) {
+      const { data: staffBusiness } = await createAdminClient()
+        .from("businesses")
+        .select(BUSINESS_RUNTIME_SELECT)
+        .eq("id", firstStaffBusinessId)
+        .maybeSingle();
+
+      if (staffBusiness) {
+        return normalizeBusiness(staffBusiness as unknown as ActiveBusinessRow, staffRole);
+      }
+    }
+  }
+
+  return null;
 }

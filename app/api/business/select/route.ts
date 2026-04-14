@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { getBusinessStaffRole } from "@/lib/businessStaff";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
@@ -30,7 +31,14 @@ export async function POST(req: Request) {
   }
 
   if (!ownedBusiness?.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const staffRole = await getBusinessStaffRole({
+      businessId,
+      userId: user.id,
+    });
+
+    if (!staffRole) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const cookieStore = await cookies();

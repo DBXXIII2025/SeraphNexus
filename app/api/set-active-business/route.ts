@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { getBusinessStaffRole } from "@/lib/businessStaff";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getTenantAdminHomeRoute } from "@/lib/tenantRouting";
 
 export async function POST(req: Request) {
@@ -37,7 +38,30 @@ export async function POST(req: Request) {
   }
 
   if (!ownedBusiness?.id) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+    const staffRole = await getBusinessStaffRole({
+      businessId,
+      userId: user.id,
+    });
+
+    if (!staffRole) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  const switchableBusiness =
+    ownedBusiness ||
+    (
+      await createAdminClient()
+        .from("businesses")
+        .select(
+          "id, owner_id, name, slug, description, business_type, stripe_account_id, stripe_onboarding_complete, stripe_charges_enabled, stripe_payouts_enabled, is_published"
+        )
+        .eq("id", businessId)
+        .maybeSingle()
+    ).data;
+
+  if (!switchableBusiness?.id) {
+    return Response.json({ error: "Business not found" }, { status: 404 });
   }
 
   const cookieStore = await cookies();
@@ -50,7 +74,7 @@ export async function POST(req: Request) {
   });
 
   const redirectTo = await getTenantAdminHomeRoute({
-    business: ownedBusiness,
+    business: switchableBusiness,
     userId: user.id,
   });
 

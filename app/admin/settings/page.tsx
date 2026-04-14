@@ -27,6 +27,7 @@ type SettingsPageProps = {
 
 type SettingsBusiness = {
   id: string;
+  owner_id?: string | null;
   name: string | null;
   slug?: string | null;
   description?: string | null;
@@ -42,6 +43,7 @@ type SettingsBusiness = {
   delivery_enabled?: boolean | null;
   onsite_enabled?: boolean | null;
   remote_enabled?: boolean | null;
+  access_role?: "owner" | "admin" | "manager" | "staff";
 };
 
 function StatusRow({
@@ -121,6 +123,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const canUseAdvancedCustomization = business
     ? canAccessPlanFeature(business.plan, "advanced_customization")
     : false;
+  const canUseTeamRoles = business ? canAccessPlanFeature(business.plan, "team_roles") : false;
+  const canManageTeam =
+    Boolean(business?.owner_id && user?.id && business.owner_id === user.id) ||
+    business?.access_role === "admin";
   const publishGate = business
     ? getFeatureGate(
         business.plan,
@@ -510,7 +516,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </div>
               ) : (
                 <div className="mt-5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                  Elite access is active for advanced branding, future staff roles, and premium
+                  Elite access is active for advanced branding, staff roles, and premium
                   workspace controls.
                 </div>
               )}
@@ -526,7 +532,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </p>
               </div>
 
-              {!canUseAdvancedCustomization ? (
+              {!canUseTeamRoles ? (
                 <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
                   Team and staff roles require Elite.
                 </div>
@@ -536,24 +542,30 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </div>
               ) : (
                 <>
-                  <form action="/api/admin/team" method="POST" className="mt-5 grid gap-3 md:grid-cols-[1fr,160px,auto]">
-                    <input type="hidden" name="action" value="add" />
-                    <input
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="staff@example.com"
-                      className="input-field"
-                    />
-                    <select name="role" defaultValue="staff" className="input-field">
-                      <option value="staff">Staff</option>
-                      <option value="manager">Manager</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
-                      Add staff
-                    </button>
-                  </form>
+                  {canManageTeam ? (
+                    <form action="/api/admin/team" method="POST" className="mt-5 grid gap-3 md:grid-cols-[1fr,160px,auto]">
+                      <input type="hidden" name="action" value="add" />
+                      <input
+                        name="email"
+                        type="email"
+                        required
+                        placeholder="staff@example.com"
+                        className="input-field"
+                      />
+                      <select name="role" defaultValue="staff" className="input-field">
+                        <option value="staff">Staff</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+                        Add staff
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="mt-5 rounded-lg border border-[var(--border-soft)] bg-[rgba(15,12,12,0.56)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                      Staff roster changes require owner or admin access.
+                    </div>
+                  )}
 
                   <div className="mt-5 space-y-3">
                     {(staffState?.members || []).length === 0 ? (
@@ -567,12 +579,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                               {member.role} | {member.status}
                             </p>
                           </div>
-                          {member.status === "active" ? (
+                          {canManageTeam ? (
                             <form action="/api/admin/team" method="POST">
                               <input type="hidden" name="action" value="deactivate" />
                               <input type="hidden" name="staff_id" value={member.id} />
                               <button type="submit" className="btn-secondary px-3 py-2 text-sm">
-                                Deactivate
+                                Remove
                               </button>
                             </form>
                           ) : null}

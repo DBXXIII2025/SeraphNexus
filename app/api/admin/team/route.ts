@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { resolveProfileIdByEmail } from "@/lib/businessStaff";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { canAccessPlanFeature } from "@/lib/planConfig";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 function redirectWith(req: Request, params: Record<string, string>) {
   const url = new URL("/admin/settings", req.url);
@@ -15,10 +16,19 @@ function normalizeRole(value: FormDataEntryValue | null) {
 }
 
 export async function POST(req: Request) {
+  const authClient = await createClient();
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
   const business = await getActiveBusiness();
 
-  if (!business?.id || !business.owner_id) {
+  if (!user || !business?.id || !business.owner_id) {
     return redirectWith(req, { message: "missing-business" });
+  }
+
+  const canManageTeam = business.owner_id === user.id || business.access_role === "admin";
+  if (!canManageTeam) {
+    return redirectWith(req, { error: "team-member-forbidden" });
   }
 
   if (!canAccessPlanFeature(business.plan, "team_roles")) {
@@ -37,17 +47,36 @@ export async function POST(req: Request) {
       return redirectWith(req, { error: "team-member-invalid" });
     }
 
-    const { error } = await supabase.from("business_staff_members").upsert(
-      {
-        business_id: business.id,
-        owner_id: business.owner_id,
-        email,
-        role,
-        status: "active",
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "business_id,email" }
-    );
+    const staffUserId = await resolveProfileIdByEmail(email);
+    if (!staffUserId || staffUserId === business.owner_id) {
+      return redirectWith(req, { error: "team-member-invalid" });
+    }
+
+    const { data: existingMember, error: existingMemberError } = await supabase
+      .from("business_staff_members")
+      .select("id")
+      .eq("business_id", business.id)
+      .eq("user_id", staffUserId)
+      .limit(1);
+
+    if (existingMemberError) {
+      console.error("[admin/team] lookup failed", existingMemberError);
+      return redirectWith(req, { error: "team-member-save-failed" });
+    }
+
+    const existingMemberId = Array.isArray(existingMember) ? existingMember[0]?.id : null;
+
+    const { error } = existingMemberId
+      ? await supabase
+          .from("business_staff_members")
+          .update({ role })
+          .eq("id", existingMemberId)
+          .eq("business_id", business.id)
+      : await supabase.from("business_staff_members").insert({
+          business_id: business.id,
+          user_id: staffUserId,
+          role,
+        });
 
     if (error) {
       console.error("[admin/team] add failed", error);
@@ -65,13 +94,9 @@ export async function POST(req: Request) {
 
     const { error } = await supabase
       .from("business_staff_members")
-      .update({
-        status: "inactive",
-        updated_at: new Date().toISOString(),
-      })
+      .delete()
       .eq("id", staffId)
-      .eq("business_id", business.id)
-      .eq("owner_id", business.owner_id);
+      .eq("business_id", business.id);
 
     if (error) {
       console.error("[admin/team] deactivate failed", error);
