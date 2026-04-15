@@ -57,11 +57,16 @@ export default function BusinessProfileShell({
     setActiveIndex((current) => (current + delta + images.length) % images.length);
   }
 
+  const debugLabelClass =
+    "pointer-events-none absolute left-1 top-1 z-20 rounded bg-black px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-lime-300";
+
   return (
     <div
-      className={`mx-auto w-full max-w-[376px] ${compact ? "space-y-2" : "space-y-2.5"}`}
+      className={`relative mx-auto w-full max-w-[360px] outline outline-2 outline-fuchsia-500 ${compact ? "space-y-2" : "space-y-2.5"}`}
       style={
         {
+          width: "100%",
+          maxWidth: "360px",
           "--business-accent": theme.accentColor,
           "--business-text": theme.textColor,
           "--business-heading-size": `${theme.headingFontSize}px`,
@@ -70,14 +75,35 @@ export default function BusinessProfileShell({
         } as CSSProperties
       }
     >
-      <div className="rounded-lg border border-slate-300 bg-white p-2.5 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
+      <span className={debugLabelClass}>PROFILE_SHELL</span>
+
+      <div className="relative rounded-lg border border-fuchsia-500 bg-white p-2.5 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
+        <span className={debugLabelClass}>HEADER_CARD</span>
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-300 bg-slate-100 shadow-inner">
+          <div
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-lime-500 bg-slate-100 shadow-inner"
+            style={{
+              width: "40px",
+              height: "40px",
+              minWidth: "40px",
+              minHeight: "40px",
+              maxWidth: "40px",
+              maxHeight: "40px",
+            }}
+          >
+            <span className={debugLabelClass}>LOGO_CONTAINER</span>
             {logoUrl ? (
               <img
                 src={logoUrl}
                 alt={`${businessName} logo`}
                 className="h-full w-full object-cover"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  maxWidth: "40px",
+                  maxHeight: "40px",
+                  objectFit: "cover",
+                }}
               />
             ) : (
               <span className="text-[11px] font-semibold tracking-[0.1em] text-slate-700">
@@ -99,7 +125,14 @@ export default function BusinessProfileShell({
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-300 bg-white p-2 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
+      <div
+        className="relative rounded-lg border border-blue-600 bg-white p-2 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80"
+        style={{ width: "100%", maxWidth: "360px" }}
+      >
+        <span className={debugLabelClass}>GALLERY_OUTER</span>
+        <span className="pointer-events-none absolute right-1 top-1 z-20 rounded bg-blue-700 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-white">
+          GALLERY_CARD
+        </span>
         <div className="mb-1.5 flex items-center justify-between px-0.5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             Gallery
@@ -108,13 +141,29 @@ export default function BusinessProfileShell({
             {images.length > 0 ? `${activeIndex + 1} / ${images.length}` : "No photos"}
           </p>
         </div>
-        <div className="overflow-hidden rounded-md border border-slate-400 bg-slate-100 shadow-inner">
-          <div className="relative aspect-[1.2/1]">
+        <div
+          className="overflow-hidden rounded-md border border-blue-600 bg-slate-100 shadow-inner"
+          style={{ width: "100%", maxWidth: "344px" }}
+        >
+          <div
+            className="relative aspect-[1.2/1] outline outline-2 outline-cyan-500"
+            style={{
+              width: "100%",
+              aspectRatio: "1.2 / 1",
+              maxHeight: "287px",
+            }}
+          >
+            <span className={debugLabelClass}>GALLERY_IMAGE</span>
             {activeImage ? (
               <img
                 src={activeImage.image_url}
                 alt={activeImage.alt_text || `${businessName} photo ${activeIndex + 1}`}
                 className="h-full w-full object-cover"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,#f8fafc,#e5e7eb)]">
@@ -171,7 +220,8 @@ export default function BusinessProfileShell({
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-300 bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
+      <div className="relative rounded-lg border border-amber-500 bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
+        <span className={debugLabelClass}>INFO_CARD</span>
         <div className="border-b border-slate-200 pb-2">
           <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
             Business information

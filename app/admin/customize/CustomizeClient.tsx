@@ -327,20 +327,29 @@ export default function CustomizeClient({
               Live
             </span>
           </div>
-          <div className="overflow-hidden rounded-lg border border-white/10 bg-[#f5f7fb] p-2">
-          <BusinessProfileShell
-            businessName={form.name || "Business"}
-            businessDescription={form.description}
-            businessType={form.business_type}
-            logoUrl={logoUrl}
-            images={galleryImages}
-            theme={previewTheme}
-            compact
-          />
+          <div
+            className="relative overflow-hidden rounded-lg border border-red-500 bg-[#f5f7fb] p-2 outline outline-2 outline-red-500"
+            style={{ width: "100%", maxWidth: "384px" }}
+          >
+            <span className="pointer-events-none absolute left-2 top-2 z-30 rounded bg-red-700 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+              ADMIN_PREVIEW_WRAPPER
+            </span>
+            <BusinessProfileShell
+              businessName={form.name || "Business"}
+              businessDescription={form.description}
+              businessType={form.business_type}
+              logoUrl={logoUrl}
+              images={galleryImages}
+              theme={previewTheme}
+              compact
+            />
           </div>
         </div>
 
-        <div className="space-y-2.5 rounded-lg border border-white/10 bg-zinc-950/80 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
+        <div className="relative space-y-2.5 rounded-lg border border-yellow-400 bg-zinc-950/80 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.24)] outline outline-2 outline-yellow-400">
+        <span className="pointer-events-none absolute right-2 top-2 z-30 rounded bg-yellow-500 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-black">
+          ADMIN_CONTROLS_PANEL
+        </span>
         <div
           className={`rounded-lg border px-3.5 py-2.5 text-sm ${
             planNotice.tone === "warning"

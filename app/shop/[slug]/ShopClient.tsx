@@ -221,21 +221,24 @@ export default function ShopClient({
 
   return (
     <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
-      <div className="bg-[#f5f7fb] px-3 py-4 sm:py-5">
-      <BusinessProfileShell
-        businessName={businessName}
-        businessDescription={businessDescription}
-        businessType={businessType}
-        logoUrl={logoUrl}
-        images={galleryImages}
-        theme={pageTheme}
-        action={
-          <MessageBusinessButton
-            businessId={businessId}
-            className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
-          />
-        }
-      />
+      <div className="relative bg-[#f5f7fb] px-3 py-4 outline outline-2 outline-red-500 sm:py-5">
+        <span className="pointer-events-none absolute left-2 top-2 z-30 rounded bg-red-700 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+          PUBLIC_PAGE_WRAPPER
+        </span>
+        <BusinessProfileShell
+          businessName={businessName}
+          businessDescription={businessDescription}
+          businessType={businessType}
+          logoUrl={logoUrl}
+          images={galleryImages}
+          theme={pageTheme}
+          action={
+            <MessageBusinessButton
+              businessId={businessId}
+              className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
+            />
+          }
+        />
       </div>
       <div className="bg-zinc-950">
       <div className="mx-auto max-w-6xl space-y-6 p-6 text-white">
