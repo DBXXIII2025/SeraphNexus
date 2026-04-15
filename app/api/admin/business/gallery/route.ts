@@ -16,6 +16,25 @@ async function getOwnedBusiness(userId: string) {
   return { id: activeBusiness.id, owner_id: activeBusiness.owner_id };
 }
 
+function isMissingGalleryTableError(error: { code?: string | null; message?: string | null } | null) {
+  const message = error?.message || "";
+  return (
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    message.includes("business_page_images")
+  );
+}
+
+function coverImageResponse(url: string) {
+  return {
+    id: "business-cover-image",
+    image_url: url,
+    storage_path: null,
+    alt_text: "Business cover photo",
+    sort_order: 1,
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -48,7 +67,7 @@ export async function POST(req: Request) {
     }
 
     const supabaseAdmin = createAdminClient();
-    const [{ count }, { data: existingImages }] = await Promise.all([
+    const [{ count, error: countError }, { data: existingImages, error: existingImagesError }] = await Promise.all([
       supabaseAdmin
         .from("business_page_images")
         .select("id", { count: "exact", head: true })
@@ -61,7 +80,10 @@ export async function POST(req: Request) {
         .limit(1),
     ]);
 
-    if ((count || 0) >= 20) {
+    const galleryTableMissing =
+      isMissingGalleryTableError(countError) || isMissingGalleryTableError(existingImagesError);
+
+    if (!galleryTableMissing && (count || 0) >= 20) {
       return NextResponse.json({ error: "A business gallery can include up to 20 photos." }, { status: 400 });
     }
 
@@ -86,6 +108,24 @@ export async function POST(req: Request) {
       .from(BUSINESS_PAGE_IMAGES_BUCKET)
       .getPublicUrl(storagePath);
 
+    if (galleryTableMissing) {
+      const { error: coverError } = await supabaseAdmin
+        .from("businesses")
+        .update({ cover_image_url: publicUrlData.publicUrl })
+        .eq("id", ownedBusiness.id)
+        .eq("owner_id", user.id);
+
+      if (coverError) {
+        await supabaseAdmin.storage.from(BUSINESS_PAGE_IMAGES_BUCKET).remove([storagePath]);
+        throw new Error(coverError.message);
+      }
+
+      return NextResponse.json({
+        image: coverImageResponse(publicUrlData.publicUrl),
+        storageMode: "cover_image_url",
+      });
+    }
+
     const nextSortOrder = Number(existingImages?.[0]?.sort_order || 0) + 1;
     const { data: image, error: insertError } = await supabaseAdmin
       .from("business_page_images")
@@ -100,11 +140,29 @@ export async function POST(req: Request) {
       .single();
 
     if (insertError) {
+      if (isMissingGalleryTableError(insertError)) {
+        const { error: coverError } = await supabaseAdmin
+          .from("businesses")
+          .update({ cover_image_url: publicUrlData.publicUrl })
+          .eq("id", ownedBusiness.id)
+          .eq("owner_id", user.id);
+
+        if (coverError) {
+          await supabaseAdmin.storage.from(BUSINESS_PAGE_IMAGES_BUCKET).remove([storagePath]);
+          throw new Error(coverError.message);
+        }
+
+        return NextResponse.json({
+          image: coverImageResponse(publicUrlData.publicUrl),
+          storageMode: "cover_image_url",
+        });
+      }
+
       await supabaseAdmin.storage.from(BUSINESS_PAGE_IMAGES_BUCKET).remove([storagePath]);
       throw new Error(insertError.message);
     }
 
-    return NextResponse.json({ image });
+    return NextResponse.json({ image, storageMode: "business_page_images" });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update gallery." },
@@ -139,6 +197,16 @@ export async function PATCH(req: Request) {
     }
 
     const supabaseAdmin = createAdminClient();
+    const { error: probeError } = await supabaseAdmin
+      .from("business_page_images")
+      .select("id", { head: true })
+      .eq("business_id", ownedBusiness.id)
+      .limit(1);
+
+    if (isMissingGalleryTableError(probeError)) {
+      return NextResponse.json({ success: true, storageMode: "cover_image_url" });
+    }
+
     await Promise.all(
       orderedIds.map((id, index) =>
         supabaseAdmin
@@ -149,7 +217,7 @@ export async function PATCH(req: Request) {
       )
     );
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, storageMode: "business_page_images" });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to reorder gallery." },
@@ -181,12 +249,30 @@ export async function DELETE(req: Request) {
     }
 
     const supabaseAdmin = createAdminClient();
+    if (imageId === "business-cover-image") {
+      const { error: coverError } = await supabaseAdmin
+        .from("businesses")
+        .update({ cover_image_url: null })
+        .eq("id", ownedBusiness.id)
+        .eq("owner_id", user.id);
+
+      if (coverError) {
+        throw new Error(coverError.message);
+      }
+
+      return NextResponse.json({ success: true, storageMode: "cover_image_url" });
+    }
+
     const { data: image, error: lookupError } = await supabaseAdmin
       .from("business_page_images")
       .select("id, storage_path")
       .eq("id", imageId)
       .eq("business_id", ownedBusiness.id)
       .maybeSingle();
+
+    if (isMissingGalleryTableError(lookupError)) {
+      return NextResponse.json({ success: true, storageMode: "cover_image_url" });
+    }
 
     if (lookupError || !image) {
       return NextResponse.json({ error: "Photo not found." }, { status: 404 });

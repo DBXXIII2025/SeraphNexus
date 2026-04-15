@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export const BUSINESS_PAGE_IMAGES_BUCKET = "business-page-images";
+export const BUSINESS_PAGE_IMAGES_BUCKET = "business-assets";
 export const MAX_BUSINESS_PAGE_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -27,6 +27,7 @@ export type BusinessPageCustomization = {
   theme: BusinessPageTheme;
   images: BusinessPageImage[];
   logoUrl: string | null;
+  coverImageUrl: string | null;
   schemaReady: boolean;
   errorMessage: string | null;
 };
@@ -81,12 +82,17 @@ export function normalizeBusinessPageTheme(data: Record<string, unknown> = {}): 
     accentColor,
     textColor: safeTextColor,
     headingFontSize: clampNumber(
-      data.page_heading_font_size,
+      data.heading_font_size ?? data.page_heading_font_size,
       24,
       56,
       DEFAULT_THEME.headingFontSize
     ),
-    bodyFontSize: clampNumber(data.page_body_font_size, 14, 20, DEFAULT_THEME.bodyFontSize),
+    bodyFontSize: clampNumber(
+      data.body_font_size ?? data.page_body_font_size,
+      14,
+      20,
+      DEFAULT_THEME.bodyFontSize
+    ),
     accentTextColor: contrastRatio(accentColor, "#ffffff") >= 4.5 ? "#ffffff" : "#111827",
   };
 }
@@ -109,48 +115,101 @@ export function buildBusinessPageImagePath(args: { businessId: string; fileName:
   return `businesses/${args.businessId}/gallery/${Date.now()}-${sanitizeFileName(args.fileName)}`;
 }
 
+function isMissingCustomizationSchemaError(error: { code?: string | null; message?: string | null } | null) {
+  const message = error?.message || "";
+  return (
+    error?.code === "42703" ||
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    message.includes("business_page_images") ||
+    message.includes("heading_font_size") ||
+    message.includes("body_font_size") ||
+    message.includes("page_accent_color") ||
+    message.includes("page_text_color")
+  );
+}
+
+function coverImageToGalleryImage(coverImageUrl: string | null): BusinessPageImage[] {
+  if (!coverImageUrl) {
+    return [];
+  }
+
+  return [
+    {
+      id: "business-cover-image",
+      image_url: coverImageUrl,
+      storage_path: null,
+      alt_text: "Business cover photo",
+      sort_order: 1,
+    },
+  ];
+}
+
 export async function loadBusinessPageCustomization(
   supabase: SupabaseClient,
   businessId: string
 ): Promise<BusinessPageCustomization> {
   try {
-    const [{ data: business, error: businessError }, { data: images, error: imagesError }] =
-      await Promise.all([
-        supabase
-          .from("businesses")
-          .select("logo_url, page_accent_color, page_text_color, page_heading_font_size, page_body_font_size")
-          .eq("id", businessId)
-          .maybeSingle(),
-        supabase
-          .from("business_page_images")
-          .select("id, image_url, storage_path, alt_text, sort_order")
-          .eq("business_id", businessId)
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true }),
-      ]);
+    let businessQuery = await supabase
+      .from("businesses")
+      .select("logo_url, cover_image_url, page_accent_color, page_text_color, heading_font_size, body_font_size")
+      .eq("id", businessId)
+      .maybeSingle();
 
-    if (businessError || imagesError) {
+    if (businessQuery.error && isMissingCustomizationSchemaError(businessQuery.error)) {
+      businessQuery = await supabase
+        .from("businesses")
+        .select("logo_url, cover_image_url")
+        .eq("id", businessId)
+        .maybeSingle();
+    }
+
+    const { data: business, error: businessError } = businessQuery;
+
+    if (businessError) {
       return {
         theme: normalizeBusinessPageTheme(),
         images: [],
         logoUrl: null,
+        coverImageUrl: null,
         schemaReady: false,
-        errorMessage: businessError?.message || imagesError?.message || "Business page customization is unavailable.",
+        errorMessage: businessError.message || "Business page customization is unavailable.",
       };
     }
 
+    const coverImageUrl =
+      typeof business?.cover_image_url === "string" && business.cover_image_url.trim()
+        ? business.cover_image_url.trim()
+        : null;
+    const { data: images, error: imagesError } = await supabase
+      .from("business_page_images")
+      .select("id, image_url, storage_path, alt_text, sort_order")
+      .eq("business_id", businessId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    const galleryImages =
+      imagesError && isMissingCustomizationSchemaError(imagesError)
+        ? coverImageToGalleryImage(coverImageUrl)
+        : ((images || []) as BusinessPageImage[]).filter((image) => Boolean(image.image_url));
+
     return {
       theme: normalizeBusinessPageTheme((business || {}) as Record<string, unknown>),
-      images: ((images || []) as BusinessPageImage[]).filter((image) => Boolean(image.image_url)),
+      images: galleryImages.length > 0 ? galleryImages : coverImageToGalleryImage(coverImageUrl),
       logoUrl: typeof business?.logo_url === "string" ? business.logo_url : null,
-      schemaReady: true,
-      errorMessage: null,
+      coverImageUrl,
+      schemaReady: !imagesError,
+      errorMessage:
+        imagesError && isMissingCustomizationSchemaError(imagesError)
+          ? "Gallery table is not installed yet. Uploads are saved as the business cover photo until the gallery migration is applied."
+          : imagesError?.message || null,
     };
   } catch (error) {
     return {
       theme: normalizeBusinessPageTheme(),
       images: [],
       logoUrl: null,
+      coverImageUrl: null,
       schemaReady: false,
       errorMessage: error instanceof Error ? error.message : "Business page customization is unavailable.",
     };

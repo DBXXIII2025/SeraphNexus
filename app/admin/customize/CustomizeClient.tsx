@@ -21,8 +21,8 @@ type CustomizeClientProps = {
     business_type: string;
     page_accent_color: string;
     page_text_color: string;
-    page_heading_font_size: number;
-    page_body_font_size: number;
+    heading_font_size: number;
+    body_font_size: number;
   };
   initialLogoUrl: string | null;
   initialGalleryImages: BusinessPageImage[];
@@ -90,10 +90,8 @@ export default function CustomizeClient({
       description: data.business?.description || form.description,
       page_accent_color: data.business?.page_accent_color || form.page_accent_color,
       page_text_color: data.business?.page_text_color || form.page_text_color,
-      page_heading_font_size:
-        data.business?.page_heading_font_size || form.page_heading_font_size,
-      page_body_font_size:
-        data.business?.page_body_font_size || form.page_body_font_size,
+      heading_font_size: data.business?.heading_font_size || form.heading_font_size,
+      body_font_size: data.business?.body_font_size || form.body_font_size,
     };
 
     setForm(nextForm);
@@ -103,7 +101,7 @@ export default function CustomizeClient({
   }
 
   async function uploadGalleryPhoto(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0 || !customizationSchemaReady) {
+    if (!fileList || fileList.length === 0) {
       return;
     }
 
@@ -122,7 +120,11 @@ export default function CustomizeClient({
       if (!res.ok) {
         throw new Error(data.error || "Photo upload failed.");
       }
-      setGalleryImages((current) => [...current, data.image]);
+      setGalleryImages((current) =>
+        data.storageMode === "cover_image_url"
+          ? [data.image]
+          : [...current.filter((image) => image.id !== data.image?.id), data.image]
+      );
       setSuccess("Gallery photo added.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Photo upload failed.");
@@ -176,8 +178,8 @@ export default function CustomizeClient({
   const previewTheme = normalizeBusinessPageTheme({
     page_accent_color: form.page_accent_color,
     page_text_color: form.page_text_color,
-    page_heading_font_size: form.page_heading_font_size,
-    page_body_font_size: form.page_body_font_size,
+    heading_font_size: form.heading_font_size,
+    body_font_size: form.body_font_size,
   });
 
   return (
@@ -307,9 +309,9 @@ export default function CustomizeClient({
               type="number"
               min="24"
               max="56"
-              value={form.page_heading_font_size}
+              value={form.heading_font_size}
               onChange={(e) =>
-                setForm({ ...form, page_heading_font_size: Number(e.target.value) })
+                setForm({ ...form, heading_font_size: Number(e.target.value) })
               }
               className="w-full rounded border border-neutral-700 bg-neutral-800 p-2"
             />
@@ -320,9 +322,9 @@ export default function CustomizeClient({
               type="number"
               min="14"
               max="20"
-              value={form.page_body_font_size}
+              value={form.body_font_size}
               onChange={(e) =>
-                setForm({ ...form, page_body_font_size: Number(e.target.value) })
+                setForm({ ...form, body_font_size: Number(e.target.value) })
               }
               className="w-full rounded border border-neutral-700 bg-neutral-800 p-2"
             />
@@ -342,7 +344,7 @@ export default function CustomizeClient({
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
-                disabled={!customizationSchemaReady || uploadingPhoto}
+                disabled={uploadingPhoto}
                 onChange={(event) => void uploadGalleryPhoto(event.target.files)}
                 className="hidden"
               />

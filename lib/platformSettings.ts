@@ -73,7 +73,89 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   elite_stripe_product_id: null,
 };
 
+const PLAN_COPY_NOTE_PREFIX = "__SERAPH_PLAN_COPY_V1__";
+
+type PlanCopyPayload = {
+  pricing_note?: string;
+  pro?: Partial<
+    Pick<
+      PlatformSettings,
+      "pro_plan_name" | "pro_plan_subtitle" | "pro_plan_features" | "pro_plan_badge" | "pro_plan_cta"
+    >
+  >;
+  elite?: Partial<
+    Pick<
+      PlatformSettings,
+      | "elite_plan_name"
+      | "elite_plan_subtitle"
+      | "elite_plan_features"
+      | "elite_plan_badge"
+      | "elite_plan_cta"
+    >
+  >;
+};
+
+function parsePlanCopyPricingNote(value: unknown): PlanCopyPayload {
+  const raw = String(value || "").trim();
+  if (!raw.startsWith(PLAN_COPY_NOTE_PREFIX)) {
+    return { pricing_note: raw };
+  }
+
+  try {
+    const parsed = JSON.parse(raw.slice(PLAN_COPY_NOTE_PREFIX.length));
+    return parsed && typeof parsed === "object" ? parsed : { pricing_note: raw };
+  } catch {
+    return { pricing_note: raw };
+  }
+}
+
+export function serializePlanCopyPricingNote(args: {
+  pricingNote: string;
+  pro: {
+    name: string;
+    subtitle: string;
+    features: string[];
+    badge: string | null;
+    cta: string;
+  };
+  elite: {
+    name: string;
+    subtitle: string;
+    features: string[];
+    badge: string | null;
+    cta: string;
+  };
+}) {
+  return `${PLAN_COPY_NOTE_PREFIX}${JSON.stringify({
+    pricing_note: args.pricingNote,
+    pro: {
+      pro_plan_name: args.pro.name,
+      pro_plan_subtitle: args.pro.subtitle,
+      pro_plan_features: args.pro.features,
+      pro_plan_badge: args.pro.badge,
+      pro_plan_cta: args.pro.cta,
+    },
+    elite: {
+      elite_plan_name: args.elite.name,
+      elite_plan_subtitle: args.elite.subtitle,
+      elite_plan_features: args.elite.features,
+      elite_plan_badge: args.elite.badge,
+      elite_plan_cta: args.elite.cta,
+    },
+  })}`;
+}
+
+function isMissingPlanCopyColumnError(error: { code?: string | null; message?: string | null } | null) {
+  const message = error?.message || "";
+  return (
+    error?.code === "42703" ||
+    message.includes("pro_plan_") ||
+    message.includes("elite_plan_")
+  );
+}
+
 function normalizePlatformSettingsRow(data: Record<string, any>) {
+  const storedPlanCopy = parsePlanCopyPricingNote(data.pricing_note);
   const normalizeFeatures = (value: unknown, fallback: string[]) => {
     if (!Array.isArray(value)) {
       return fallback;
@@ -95,7 +177,8 @@ function normalizePlatformSettingsRow(data: Record<string, any>) {
     support_email: data.support_email || DEFAULT_PLATFORM_SETTINGS.support_email,
     support_phone: data.support_phone || DEFAULT_PLATFORM_SETTINGS.support_phone,
     pricing_note:
-      String(data.pricing_note || "").trim() || DEFAULT_PLATFORM_SETTINGS.pricing_note,
+      String(storedPlanCopy.pricing_note || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.pricing_note,
     pro_monthly_price_cents:
       typeof data.pro_monthly_price_cents === "number"
         ? data.pro_monthly_price_cents
@@ -117,30 +200,35 @@ function normalizePlatformSettingsRow(data: Record<string, any>) {
         ? data.elite_transaction_fee_bps
         : DEFAULT_PLATFORM_SETTINGS.elite_transaction_fee_bps,
     pro_plan_name:
-      String(data.pro_plan_name || "").trim() || DEFAULT_PLATFORM_SETTINGS.pro_plan_name,
+      String(data.pro_plan_name || storedPlanCopy.pro?.pro_plan_name || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.pro_plan_name,
     pro_plan_subtitle:
-      String(data.pro_plan_subtitle || "").trim() ||
+      String(data.pro_plan_subtitle || storedPlanCopy.pro?.pro_plan_subtitle || "").trim() ||
       DEFAULT_PLATFORM_SETTINGS.pro_plan_subtitle,
     pro_plan_features: normalizeFeatures(
-      data.pro_plan_features,
+      data.pro_plan_features || storedPlanCopy.pro?.pro_plan_features,
       DEFAULT_PLATFORM_SETTINGS.pro_plan_features
     ),
-    pro_plan_badge: String(data.pro_plan_badge || "").trim() || null,
+    pro_plan_badge:
+      String(data.pro_plan_badge || storedPlanCopy.pro?.pro_plan_badge || "").trim() || null,
     pro_plan_cta:
-      String(data.pro_plan_cta || "").trim() || DEFAULT_PLATFORM_SETTINGS.pro_plan_cta,
+      String(data.pro_plan_cta || storedPlanCopy.pro?.pro_plan_cta || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.pro_plan_cta,
     elite_plan_name:
-      String(data.elite_plan_name || "").trim() ||
+      String(data.elite_plan_name || storedPlanCopy.elite?.elite_plan_name || "").trim() ||
       DEFAULT_PLATFORM_SETTINGS.elite_plan_name,
     elite_plan_subtitle:
-      String(data.elite_plan_subtitle || "").trim() ||
+      String(data.elite_plan_subtitle || storedPlanCopy.elite?.elite_plan_subtitle || "").trim() ||
       DEFAULT_PLATFORM_SETTINGS.elite_plan_subtitle,
     elite_plan_features: normalizeFeatures(
-      data.elite_plan_features,
+      data.elite_plan_features || storedPlanCopy.elite?.elite_plan_features,
       DEFAULT_PLATFORM_SETTINGS.elite_plan_features
     ),
-    elite_plan_badge: String(data.elite_plan_badge || "").trim() || null,
+    elite_plan_badge:
+      String(data.elite_plan_badge || storedPlanCopy.elite?.elite_plan_badge || "").trim() ||
+      null,
     elite_plan_cta:
-      String(data.elite_plan_cta || "").trim() ||
+      String(data.elite_plan_cta || storedPlanCopy.elite?.elite_plan_cta || "").trim() ||
       DEFAULT_PLATFORM_SETTINGS.elite_plan_cta,
     pro_price_active:
       typeof data.pro_price_active === "boolean"
@@ -172,13 +260,25 @@ function normalizePlatformSettingsRow(data: Record<string, any>) {
 export async function getPlatformSettings() {
   try {
     const supabase = createAdminClient();
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("platform_settings")
       .select(
         "id, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_plan_name, pro_plan_subtitle, pro_plan_features, pro_plan_badge, pro_plan_cta, elite_plan_name, elite_plan_subtitle, elite_plan_features, elite_plan_badge, elite_plan_cta, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
       )
       .limit(1)
       .maybeSingle();
+
+    if (error && isMissingPlanCopyColumnError(error)) {
+      const fallback = await supabase
+        .from("platform_settings")
+        .select(
+          "id, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
+        )
+        .limit(1)
+        .maybeSingle();
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (!error && data) {
       return normalizePlatformSettingsRow(data);

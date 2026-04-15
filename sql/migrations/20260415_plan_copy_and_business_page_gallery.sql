@@ -21,8 +21,9 @@ alter table public.platform_settings
 alter table public.businesses
   add column if not exists page_accent_color text not null default '#2563eb',
   add column if not exists page_text_color text not null default '#111827',
-  add column if not exists page_heading_font_size integer not null default 36,
-  add column if not exists page_body_font_size integer not null default 16;
+  add column if not exists heading_font_size integer not null default 36,
+  add column if not exists body_font_size integer not null default 16,
+  add column if not exists cover_image_url text;
 
 create table if not exists public.business_page_images (
   id uuid primary key default gen_random_uuid(),
@@ -38,5 +39,5 @@ create index if not exists business_page_images_business_sort_idx
   on public.business_page_images(business_id, sort_order, created_at);
 
 insert into storage.buckets (id, name, public)
-values ('business-page-images', 'business-page-images', true)
+values ('business-assets', 'business-assets', true)
 on conflict (id) do update set public = true;

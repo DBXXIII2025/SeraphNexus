@@ -49,8 +49,8 @@ export default async function CustomizePage() {
           business_type: business.business_type || "service",
           page_accent_color: customization.theme.accentColor,
           page_text_color: customization.theme.textColor,
-          page_heading_font_size: customization.theme.headingFontSize,
-          page_body_font_size: customization.theme.bodyFontSize,
+          heading_font_size: customization.theme.headingFontSize,
+          body_font_size: customization.theme.bodyFontSize,
         }}
         initialLogoUrl={customization.logoUrl}
         initialGalleryImages={customization.images}

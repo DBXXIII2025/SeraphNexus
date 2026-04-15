@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ensureManagedPlanStripePrice } from "@/lib/platformBilling";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
+import { serializePlanCopyPricingNote } from "@/lib/platformSettings";
 
 function parsePriceCents(value: FormDataEntryValue | null, fallback: number) {
   const raw = String(value || "").trim();
@@ -43,6 +44,59 @@ function parseFeeBasisPoints(value: FormDataEntryValue | null, fallback: number)
   }
 
   return Math.round(percent * 100);
+}
+
+function isMissingPlanCopyColumnError(error: { code?: string | null; message?: string | null } | null) {
+  const message = error?.message || "";
+  return (
+    error?.code === "42703" ||
+    message.includes("pro_plan_") ||
+    message.includes("elite_plan_")
+  );
+}
+
+function withoutPlanCopyColumns(payload: Record<string, unknown>, visiblePricingNote: string) {
+  const next = { ...payload };
+  next.pricing_note = serializePlanCopyPricingNote({
+    pricingNote: visiblePricingNote,
+    pro: {
+      name: String(payload.pro_plan_name || "Pro"),
+      subtitle: String(
+        payload.pro_plan_subtitle ||
+          "Enable payments, full messaging, basic analytics, and standard owner controls."
+      ),
+      features: Array.isArray(payload.pro_plan_features)
+        ? payload.pro_plan_features.map((item) => String(item))
+        : [],
+      badge: typeof payload.pro_plan_badge === "string" ? payload.pro_plan_badge : null,
+      cta: String(payload.pro_plan_cta || "Choose Pro"),
+    },
+    elite: {
+      name: String(payload.elite_plan_name || "Elite"),
+      subtitle: String(
+        payload.elite_plan_subtitle ||
+          "Best economics and the full premium operating stack for scaling businesses."
+      ),
+      features: Array.isArray(payload.elite_plan_features)
+        ? payload.elite_plan_features.map((item) => String(item))
+        : [],
+      badge: typeof payload.elite_plan_badge === "string" ? payload.elite_plan_badge : null,
+      cta: String(payload.elite_plan_cta || "Choose Elite"),
+    },
+  });
+
+  delete next.pro_plan_name;
+  delete next.pro_plan_subtitle;
+  delete next.pro_plan_features;
+  delete next.pro_plan_badge;
+  delete next.pro_plan_cta;
+  delete next.elite_plan_name;
+  delete next.elite_plan_subtitle;
+  delete next.elite_plan_features;
+  delete next.elite_plan_badge;
+  delete next.elite_plan_cta;
+
+  return next;
 }
 
 export async function POST(req: Request) {
@@ -167,12 +221,28 @@ export async function POST(req: Request) {
         .update(nextPayload)
         .eq("id", existing.id);
       mutationError = error;
+
+      if (isMissingPlanCopyColumnError(mutationError)) {
+        const { error: fallbackError } = await supabaseAdmin
+          .from("platform_settings")
+          .update(withoutPlanCopyColumns(nextPayload, visiblePricingNote))
+          .eq("id", existing.id);
+        mutationError = fallbackError;
+      }
     } else {
       const { error } = await supabaseAdmin.from("platform_settings").insert({
         ...nextPayload,
         created_at: new Date().toISOString(),
       });
       mutationError = error;
+
+      if (isMissingPlanCopyColumnError(mutationError)) {
+        const { error: fallbackError } = await supabaseAdmin.from("platform_settings").insert({
+          ...withoutPlanCopyColumns(nextPayload, visiblePricingNote),
+          created_at: new Date().toISOString(),
+        });
+        mutationError = fallbackError;
+      }
     }
 
     if (mutationError) {

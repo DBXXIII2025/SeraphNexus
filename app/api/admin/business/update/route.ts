@@ -15,8 +15,8 @@ export async function POST(req: Request) {
     const normalizedTheme = normalizeBusinessPageTheme({
       page_accent_color: body?.page_accent_color,
       page_text_color: body?.page_text_color,
-      page_heading_font_size: body?.page_heading_font_size,
-      page_body_font_size: body?.page_body_font_size,
+      heading_font_size: body?.heading_font_size ?? body?.page_heading_font_size,
+      body_font_size: body?.body_font_size ?? body?.page_body_font_size,
     });
 
     const {
@@ -69,12 +69,12 @@ export async function POST(req: Request) {
         description: description || null,
         page_accent_color: normalizedTheme.accentColor,
         page_text_color: normalizedTheme.textColor,
-        page_heading_font_size: normalizedTheme.headingFontSize,
-        page_body_font_size: normalizedTheme.bodyFontSize,
+        heading_font_size: normalizedTheme.headingFontSize,
+        body_font_size: normalizedTheme.bodyFontSize,
       })
       .eq("id", activeBusiness.id)
       .eq("owner_id", user.id)
-      .select("id, name, slug, description, business_type, page_accent_color, page_text_color, page_heading_font_size, page_body_font_size")
+      .select("id, name, slug, description, business_type, page_accent_color, page_text_color, heading_font_size, body_font_size")
       .single();
 
     if (error) {
