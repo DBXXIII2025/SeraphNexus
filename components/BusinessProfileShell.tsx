@@ -18,6 +18,14 @@ type BusinessProfileShellProps = {
   compact?: boolean;
 };
 
+function Marker({ label }: { label: string }) {
+  return (
+    <span className="mb-1 inline-flex rounded bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+      {label}
+    </span>
+  );
+}
+
 function getInitials(name: string) {
   return (
     name
@@ -59,7 +67,8 @@ export default function BusinessProfileShell({
 
   return (
     <div
-      className={`mx-auto w-full max-w-[392px] ${compact ? "space-y-2" : "space-y-2.5"}`}
+      data-layout-marker="PROFILE_SHELL"
+      className={`mx-auto w-full max-w-[392px] border-2 border-fuchsia-500 bg-fuchsia-50/50 p-1 ${compact ? "space-y-2" : "space-y-2.5"}`}
       style={
         {
           "--business-accent": theme.accentColor,
@@ -70,7 +79,12 @@ export default function BusinessProfileShell({
         } as CSSProperties
       }
     >
-      <div className="rounded-lg border border-slate-300 bg-white p-2.5 shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
+      <Marker label="PROFILE_SHELL" />
+      <div
+        data-layout-marker="HEADER_CARD"
+        className="rounded-lg border-2 border-cyan-500 bg-white p-2.5 shadow-[0_8px_22px_rgba(15,23,42,0.12)]"
+      >
+        <Marker label="HEADER_CARD" />
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-300 bg-slate-100 shadow-inner">
             {logoUrl ? (
@@ -99,7 +113,11 @@ export default function BusinessProfileShell({
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-300 bg-white p-2 shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
+      <div
+        data-layout-marker="GALLERY_CARD"
+        className="rounded-lg border-2 border-blue-500 bg-white p-2 shadow-[0_8px_22px_rgba(15,23,42,0.12)]"
+      >
+        <Marker label="GALLERY_CARD" />
         <div className="mb-2 flex items-center justify-between px-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             Gallery
@@ -171,7 +189,11 @@ export default function BusinessProfileShell({
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-300 bg-white p-3.5 shadow-[0_8px_22px_rgba(15,23,42,0.12)]">
+      <div
+        data-layout-marker="INFO_CARD"
+        className="rounded-lg border-2 border-emerald-500 bg-white p-3.5 shadow-[0_8px_22px_rgba(15,23,42,0.12)]"
+      >
+        <Marker label="INFO_CARD" />
         <div className="border-b border-slate-200 pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
             Business information

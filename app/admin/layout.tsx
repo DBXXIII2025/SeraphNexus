@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ReactNode } from "react";
+import { headers } from "next/headers";
 import { getUserBusinesses } from "@/lib/getBusinesses";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getAdminNav, getBusinessModule, getPublicPath } from "@/lib/businessModules";
@@ -71,6 +72,9 @@ export default async function AdminLayout({
 }: {
   children: ReactNode;
 }) {
+  const requestHeaders = await headers();
+  const currentPath = requestHeaders.get("x-current-path") || "";
+  const isCustomizeRoute = currentPath === "/admin/customize";
   const { user, isPlatformAdmin } = await getPlatformAdminSession();
   const businesses = await getUserBusinesses();
   const activeBusiness = await getActiveBusiness();
@@ -329,6 +333,7 @@ export default async function AdminLayout({
         </aside>
 
         <main className="min-w-0 space-y-6">
+          {!isCustomizeRoute ? (
           <section className="premium-card p-6 lg:p-7">
             <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-4xl">
@@ -374,8 +379,9 @@ export default async function AdminLayout({
               </div>
             </div>
           </section>
+          ) : null}
 
-          {recovery && !recovery.readiness.canPublishLive ? (
+          {recovery && !recovery.readiness.canPublishLive && !isCustomizeRoute ? (
             <section className="surface-card p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>

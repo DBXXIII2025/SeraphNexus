@@ -29,6 +29,10 @@ type CustomizeClientProps = {
   customizationSchemaReady: boolean;
   customizationErrorMessage: string | null;
   initialCompletion: BusinessProfileCompletion;
+  planNotice: {
+    tone: "warning" | "success";
+    message: string;
+  };
 };
 
 export default function CustomizeClient({
@@ -38,6 +42,7 @@ export default function CustomizeClient({
   customizationSchemaReady,
   customizationErrorMessage,
   initialCompletion,
+  planNotice,
 }: CustomizeClientProps) {
   const [form, setForm] = useState(initialBusiness);
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
@@ -310,7 +315,13 @@ export default function CustomizeClient({
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[440px_minmax(0,1fr)] lg:items-start">
-        <div className="rounded-lg border border-white/10 bg-zinc-950/80 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.28)] lg:sticky lg:top-4">
+        <div
+          data-layout-marker="ADMIN_PREVIEW_SHELL"
+          className="rounded-lg border-2 border-orange-500 bg-zinc-950/80 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.28)] lg:sticky lg:top-4"
+        >
+          <span className="mb-2 inline-flex rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+            ADMIN_PREVIEW_SHELL
+          </span>
           <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
@@ -335,7 +346,22 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="space-y-3 rounded-lg border border-white/10 bg-zinc-950/70 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
+        <div
+          data-layout-marker="ADMIN_CONTROLS_PANEL"
+          className="space-y-3 rounded-lg border-2 border-lime-500 bg-zinc-950/70 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.24)]"
+        >
+        <span className="inline-flex rounded bg-lime-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+          ADMIN_CONTROLS_PANEL
+        </span>
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            planNotice.tone === "warning"
+              ? "border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] text-[var(--accent-gold-soft)]"
+              : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+          }`}
+        >
+          {planNotice.message}
+        </div>
         <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
