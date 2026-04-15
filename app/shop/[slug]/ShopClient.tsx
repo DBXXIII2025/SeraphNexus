@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
-import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
 import PublicBusinessGallery from "@/components/PublicBusinessGallery";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
@@ -236,24 +235,9 @@ export default function ShopClient({
           />
         }
       />
+      <div className="bg-zinc-950">
       <div className="mx-auto max-w-6xl space-y-6 p-6 text-white">
-        <div>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-semibold">{businessName}</h1>
-              <p className="text-sm text-gray-400">
-                Browse the live storefront for this business.
-              </p>
-            </div>
-            <MessageBusinessButton
-              businessId={businessId}
-              className="inline-flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-black/30"
-            />
-          </div>
-        </div>
-
-        <PublicBusinessPolicies description={businessDescription} />
-
+        <p className="text-sm text-gray-400">Browse the live storefront for this business.</p>
         <div className="grid gap-6 md:grid-cols-[1.3fr,0.7fr]">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {items.length === 0 ? (
@@ -456,6 +440,7 @@ export default function ShopClient({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

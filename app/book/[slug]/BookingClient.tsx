@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
-import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
 import PublicBusinessGallery from "@/components/PublicBusinessGallery";
 import type { ServiceImageRecord } from "@/lib/serviceImages";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
@@ -99,16 +98,6 @@ function getPrimaryImage(service: Service) {
   return service.images.find((image) => image.is_primary) || service.images[0] || null;
 }
 
-function getInitials(name: string | null | undefined) {
-  const parts = String(name || "Business")
-    .split(/\s+/)
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .slice(0, 2);
-
-  return parts.map((part) => part[0]?.toUpperCase() || "").join("") || "BN";
-}
-
 export default function BookingClient({
   business,
   services,
@@ -154,7 +143,6 @@ export default function BookingClient({
   const selectedGallery = selectedService
     ? selectedService.images.filter((image) => image.id !== selectedServiceImage?.id).slice(0, 3)
     : [];
-  const businessInitials = getInitials(business.name);
   const selectedSlot = useMemo(() => {
     return (
       slots.find(
@@ -406,36 +394,9 @@ export default function BookingClient({
           />
         }
       />
+      <div className="bg-zinc-950">
       <div className="mx-auto max-w-6xl p-6 text-white">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(24,24,27,0.92))] shadow-inner">
-            {business.logo_url ? (
-              <img
-                src={business.logo_url}
-                alt={`${business.name || "Business"} logo`}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="text-sm font-semibold tracking-[0.16em] text-gray-200">
-                {businessInitials}
-              </span>
-            )}
-          </div>
-          <div>
-            <h1 className="mb-2 text-2xl">{business.name}</h1>
-            <p className="text-sm text-gray-400">Your timezone: {timezone}</p>
-          </div>
-        </div>
-        <MessageBusinessButton
-          businessId={business.id}
-          className="inline-flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-black/30"
-        />
-      </div>
-
-      <div className="mb-6">
-        <PublicBusinessPolicies description={business.description || ""} />
-      </div>
+      <p className="mb-4 text-sm text-gray-400">Your timezone: {timezone}</p>
 
       {selectedService ? (
         <div className="mb-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(39,39,42,0.5),rgba(9,9,11,0.85))] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
@@ -449,7 +410,7 @@ export default function BookingClient({
                 />
               ) : (
                 <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-medium uppercase tracking-[0.22em] text-gray-400">
-                  Signature
+                  No image
                 </div>
               )}
             </div>
@@ -463,7 +424,7 @@ export default function BookingClient({
                 <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">
                   {selectedService.images.length > 0
                     ? `${selectedService.images.length} visual${selectedService.images.length === 1 ? "" : "s"}`
-                    : "Premium fallback"}
+                    : "No service image"}
                 </span>
               </div>
             </div>
@@ -529,7 +490,7 @@ export default function BookingClient({
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center px-1 text-center text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500">
-                          Icon
+                          No image
                         </div>
                       )}
                     </div>
@@ -543,7 +504,7 @@ export default function BookingClient({
                       <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-gray-500">
                         {service.images.length > 0
                           ? `${service.images.length} image${service.images.length === 1 ? "" : "s"}`
-                          : "Curated visual coming soon"}
+                          : "No service image"}
                       </div>
                     </div>
                   </div>
@@ -785,6 +746,7 @@ export default function BookingClient({
             {isSubmitting ? "Starting secure checkout..." : t("pay")}
           </button>
         </div>
+      </div>
       </div>
       </div>
     </div>

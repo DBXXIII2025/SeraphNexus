@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
-import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
 import PublicBusinessGallery from "@/components/PublicBusinessGallery";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
@@ -425,24 +424,9 @@ export default function OrderClient({
           />
         }
       />
+      <div className="bg-zinc-950">
       <div className="mx-auto max-w-5xl space-y-6 p-6 text-white">
-        <div>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-semibold">{businessName}</h1>
-              <p className="text-sm text-gray-400">
-                Order from the latest menu.
-              </p>
-            </div>
-            <MessageBusinessButton
-              businessId={businessId}
-              className="inline-flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-black/30"
-            />
-          </div>
-        </div>
-
-        <PublicBusinessPolicies description={businessDescription} />
-
+        <p className="text-sm text-gray-400">Order from the latest menu.</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
             {menuLoading && (
@@ -707,6 +691,7 @@ export default function OrderClient({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

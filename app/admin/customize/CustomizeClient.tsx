@@ -40,8 +40,10 @@ export default function CustomizeClient({
   initialCompletion,
 }: CustomizeClientProps) {
   const [form, setForm] = useState(initialBusiness);
+  const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
   const [galleryImages, setGalleryImages] = useState(initialGalleryImages);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [savedCompletion, setSavedCompletion] = useState(initialCompletion);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +132,64 @@ export default function CustomizeClient({
       setError(err instanceof Error ? err.message : "Photo upload failed.");
     } finally {
       setUploadingPhoto(false);
+    }
+  }
+
+  async function uploadLogo(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    setUploadingLogo(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const uploadForm = new FormData();
+      uploadForm.set("businessId", form.id);
+      uploadForm.set("file", fileList[0]);
+      const res = await fetch("/api/admin/business/logo", {
+        method: "POST",
+        body: uploadForm,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Logo upload failed.");
+      }
+      setLogoUrl(data.logoUrl || null);
+      setSuccess("Business logo updated.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Logo upload failed.");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
+  async function removeLogo() {
+    if (!logoUrl) {
+      return;
+    }
+
+    setUploadingLogo(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const res = await fetch("/api/admin/business/logo", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: form.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Logo could not be removed.");
+      }
+      setLogoUrl(null);
+      setSuccess("Business logo removed.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Logo could not be removed.");
+    } finally {
+      setUploadingLogo(false);
     }
   }
 
@@ -229,56 +289,12 @@ export default function CustomizeClient({
   });
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6 text-white">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 text-white sm:p-6">
       <div>
         <h1 className="font-heading text-2xl">Business Profile</h1>
         <p className="mt-2 text-sm text-gray-400">
-          Keep your public business details complete so customers can trust what
-          they see before they book, order, or inquire.
+          The preview uses the same compact public header, gallery, and information layout customers see.
         </p>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-white">Profile completion</p>
-            <p className="mt-1 text-sm text-gray-400">{completion.summary}</p>
-          </div>
-          <div className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm font-medium text-white">
-            {completion.progressPercent}% complete
-          </div>
-        </div>
-
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-emerald-500"
-            style={{ width: `${completion.progressPercent}%` }}
-          />
-        </div>
-
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {completion.fields.map((field) => (
-            <div
-              key={field.key}
-              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm"
-            >
-              <span className="font-medium text-white">{field.label}</span>
-              <span
-                className={`ml-2 ${
-                  field.missing ? "text-yellow-300" : "text-emerald-300"
-                }`}
-              >
-                {field.missing ? (field.required ? "Required" : "Recommended") : "Ready"}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {savedCompletion.canPublishProfile && !completion.canPublishProfile ? (
-          <p className="mt-4 text-xs text-gray-500">
-            Saving incomplete changes will make the business profile no longer publish-ready.
-          </p>
-        ) : null}
       </div>
 
       {error ? (
@@ -293,7 +309,63 @@ export default function CustomizeClient({
         </div>
       ) : null}
 
-      <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-[minmax(360px,472px),1fr] lg:items-start">
+        <div className="lg:sticky lg:top-6">
+          <PublicBusinessGallery
+            businessName={form.name || "Business"}
+            businessDescription={form.description}
+            businessType={form.business_type}
+            logoUrl={logoUrl}
+            images={galleryImages}
+            theme={previewTheme}
+            compact
+          />
+        </div>
+
+        <div className="space-y-4">
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-white">Profile completion</p>
+              <p className="mt-1 text-sm text-gray-400">{completion.summary}</p>
+            </div>
+            <div className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm font-medium text-white">
+              {completion.progressPercent}% complete
+            </div>
+          </div>
+
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-emerald-500"
+              style={{ width: `${completion.progressPercent}%` }}
+            />
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {completion.fields.map((field) => (
+              <div
+                key={field.key}
+                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm"
+              >
+                <span className="font-medium text-white">{field.label}</span>
+                <span
+                  className={`ml-2 ${
+                    field.missing ? "text-yellow-300" : "text-emerald-300"
+                  }`}
+                >
+                  {field.missing ? (field.required ? "Required" : "Recommended") : "Ready"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {savedCompletion.canPublishProfile && !completion.canPublishProfile ? (
+            <p className="mt-4 text-xs text-gray-500">
+              Saving incomplete changes will make the business profile no longer publish-ready.
+            </p>
+          ) : null}
+        </div>
+
         <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">Header and business information</h2>
@@ -334,6 +406,37 @@ export default function CustomizeClient({
             className="min-h-32 w-full rounded border border-neutral-700 bg-neutral-800 p-2"
           />
         </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Business logo</h2>
+              <p className="mt-1 text-sm text-gray-400">
+                This logo appears in the compact public header.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <label className="rounded border border-neutral-700 px-4 py-2 text-sm text-white">
+                {uploadingLogo ? "Uploading..." : logoUrl ? "Replace logo" : "Upload logo"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  disabled={uploadingLogo}
+                  onChange={(event) => void uploadLogo(event.target.files)}
+                  className="hidden"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void removeLogo()}
+                disabled={uploadingLogo || !logoUrl}
+                className="rounded border border-red-500/30 px-4 py-2 text-sm text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Remove logo
+              </button>
+            </div>
           </div>
         </div>
 
@@ -443,23 +546,6 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-white">Public page preview</h2>
-            <p className="mt-1 text-sm text-gray-400">
-              This mirrors the compact header, smaller gallery, and detail layout customers see.
-            </p>
-          </div>
-          <PublicBusinessGallery
-            businessName={form.name || "Business"}
-            businessDescription={form.description}
-            businessType={form.business_type}
-            logoUrl={initialLogoUrl}
-            images={galleryImages}
-            theme={previewTheme}
-          />
-        </div>
-
         <div className="flex flex-wrap gap-3">
           <button
             onClick={handleSave}
@@ -474,6 +560,7 @@ export default function CustomizeClient({
           >
             Review publish readiness
           </a>
+        </div>
         </div>
       </div>
     </div>

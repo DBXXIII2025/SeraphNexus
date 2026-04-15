@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
-import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
 import PublicBusinessGallery from "@/components/PublicBusinessGallery";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
@@ -214,27 +213,11 @@ export default function RentalCatalogClient({
       />
       <div className="circuit-shell bg-[var(--bg-main)] p-6 text-[var(--text-main)]">
         <div className="relative mx-auto max-w-6xl space-y-6">
-        <div className="shell-panel p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="section-kicker">
-                {business.business_type === "property"
-                  ? t("propertyStays")
-                  : t("rentalInventory")}
-              </p>
-              <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)]">
-                {business.name}
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
-                {business.description ||
-                  "Browse listings, review unavailable dates, and reserve securely."}
-              </p>
-            </div>
-            <MessageBusinessButton businessId={business.id} />
-          </div>
-        </div>
-
-        <PublicBusinessPolicies description={business.description} />
+        <p className="section-kicker">
+          {business.business_type === "property"
+            ? t("propertyStays")
+            : t("rentalInventory")}
+        </p>
 
         <div className="grid gap-6 lg:grid-cols-[1.4fr,0.9fr]">
           <div className="space-y-4">
