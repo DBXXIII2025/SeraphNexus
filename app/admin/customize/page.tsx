@@ -3,6 +3,8 @@ import { getBusinessProfileCompletion } from "@/lib/businessProfileCompletion";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { canAccessPlanFeature } from "@/lib/planConfig";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
+import { createAdminClient } from "@/lib/supabase/server";
+import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import CustomizeClient from "./CustomizeClient";
 
 export default async function CustomizePage() {
@@ -19,6 +21,7 @@ export default async function CustomizePage() {
   }
 
   const profileCompletion = getBusinessProfileCompletion(business);
+  const customization = await loadBusinessPageCustomization(createAdminClient(), business.id);
   const canUseAdvancedCustomization = canAccessPlanFeature(
     business.plan,
     "advanced_customization"
@@ -44,7 +47,15 @@ export default async function CustomizePage() {
           slug: business.slug || "",
           description: business.description || "",
           business_type: business.business_type || "service",
+          page_accent_color: customization.theme.accentColor,
+          page_text_color: customization.theme.textColor,
+          page_heading_font_size: customization.theme.headingFontSize,
+          page_body_font_size: customization.theme.bodyFontSize,
         }}
+        initialLogoUrl={customization.logoUrl}
+        initialGalleryImages={customization.images}
+        customizationSchemaReady={customization.schemaReady}
+        customizationErrorMessage={customization.errorMessage}
         initialCompletion={profileCompletion}
       />
     </div>

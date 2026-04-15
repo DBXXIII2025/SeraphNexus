@@ -9,6 +9,7 @@ import LeadEventTracker from "@/components/LeadEventTracker";
 import RentalCatalogClient from "./RentalCatalogClient";
 import type { Database } from "@/types/database";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
+import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -102,6 +103,7 @@ export default async function RentPage({
     console.log("[rent/page] item count:", mergedProperties.length);
   }
   const businessPreferences = await loadBusinessPreferences(supabase, business.id);
+  const customization = await loadBusinessPageCustomization(supabase, business.id);
 
   return (
     <>
@@ -117,6 +119,9 @@ export default async function RentPage({
           description: business.description || "",
           business_type: business.business_type || "rental",
           language: businessPreferences.language,
+          logo_url: customization.logoUrl,
+          pageTheme: customization.theme,
+          galleryImages: customization.images,
         }}
         isOwner={false}
         properties={mergedProperties}

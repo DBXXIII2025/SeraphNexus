@@ -6,6 +6,8 @@ import { notFound, redirect } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import LeadEventTracker from "@/components/LeadEventTracker";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
+import PublicBusinessGallery from "@/components/PublicBusinessGallery";
+import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 
 type Params = {
   slug: string;
@@ -61,17 +63,32 @@ export default async function PublicRouterPage({
   }
 
   const logoState = await loadBusinessLogoById(business.id);
-  const logoUrl = logoState.schemaReady ? logoState.logoUrl : null;
+  const customization = await loadBusinessPageCustomization(supabase, business.id);
+  const logoUrl = customization.logoUrl || (logoState.schemaReady ? logoState.logoUrl : null);
   const initials = getInitials(business.name);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] px-4 py-10 text-[var(--text-main)]">
+    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
       <LeadEventTracker
         businessId={business.id}
         eventType="page_view"
         source={`/b/${business.slug}`}
       />
-      <div className="mx-auto max-w-4xl space-y-6">
+      <PublicBusinessGallery
+        businessName={business.name || "Business"}
+        businessDescription={business.description || ""}
+        businessType={business.business_type || "General"}
+        logoUrl={logoUrl}
+        images={customization.images}
+        theme={customization.theme}
+        action={
+          <MessageBusinessButton
+            businessId={business.id}
+            className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
+          />
+        }
+      />
+      <div className="mx-auto max-w-4xl space-y-6 px-4 pb-10">
         <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-8 shadow-[0_18px_50px_rgba(60,44,8,0.12)]">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">

@@ -6,6 +6,11 @@ import {
   normalizeBusinessSlug,
   type BusinessProfileCompletion,
 } from "@/lib/businessProfileCompletion";
+import PublicBusinessGallery from "@/components/PublicBusinessGallery";
+import {
+  normalizeBusinessPageTheme,
+  type BusinessPageImage,
+} from "@/lib/businessPageCustomization";
 
 type CustomizeClientProps = {
   initialBusiness: {
@@ -14,15 +19,29 @@ type CustomizeClientProps = {
     slug: string;
     description: string;
     business_type: string;
+    page_accent_color: string;
+    page_text_color: string;
+    page_heading_font_size: number;
+    page_body_font_size: number;
   };
+  initialLogoUrl: string | null;
+  initialGalleryImages: BusinessPageImage[];
+  customizationSchemaReady: boolean;
+  customizationErrorMessage: string | null;
   initialCompletion: BusinessProfileCompletion;
 };
 
 export default function CustomizeClient({
   initialBusiness,
+  initialLogoUrl,
+  initialGalleryImages,
+  customizationSchemaReady,
+  customizationErrorMessage,
   initialCompletion,
 }: CustomizeClientProps) {
   const [form, setForm] = useState(initialBusiness);
+  const [galleryImages, setGalleryImages] = useState(initialGalleryImages);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [savedCompletion, setSavedCompletion] = useState(initialCompletion);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +88,12 @@ export default function CustomizeClient({
       slug: data.business?.slug || normalizeBusinessSlug(form.slug || form.name || ""),
       name: data.business?.name || form.name,
       description: data.business?.description || form.description,
+      page_accent_color: data.business?.page_accent_color || form.page_accent_color,
+      page_text_color: data.business?.page_text_color || form.page_text_color,
+      page_heading_font_size:
+        data.business?.page_heading_font_size || form.page_heading_font_size,
+      page_body_font_size:
+        data.business?.page_body_font_size || form.page_body_font_size,
     };
 
     setForm(nextForm);
@@ -76,6 +101,84 @@ export default function CustomizeClient({
     setSuccess("Business profile updated.");
     setLoading(false);
   }
+
+  async function uploadGalleryPhoto(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0 || !customizationSchemaReady) {
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const uploadForm = new FormData();
+      uploadForm.set("file", fileList[0]);
+      const res = await fetch("/api/admin/business/gallery", {
+        method: "POST",
+        body: uploadForm,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Photo upload failed.");
+      }
+      setGalleryImages((current) => [...current, data.image]);
+      setSuccess("Gallery photo added.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Photo upload failed.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  async function removeGalleryPhoto(imageId: string) {
+    setError(null);
+    setSuccess(null);
+    const previous = galleryImages;
+    setGalleryImages((current) => current.filter((image) => image.id !== imageId));
+
+    try {
+      const res = await fetch("/api/admin/business/gallery", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Photo could not be removed.");
+      }
+      setSuccess("Gallery photo removed.");
+    } catch (err) {
+      setGalleryImages(previous);
+      setError(err instanceof Error ? err.message : "Photo could not be removed.");
+    }
+  }
+
+  async function moveGalleryPhoto(imageId: string, direction: -1 | 1) {
+    const index = galleryImages.findIndex((image) => image.id === imageId);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= galleryImages.length) {
+      return;
+    }
+
+    const reordered = [...galleryImages];
+    const [image] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, image);
+    setGalleryImages(reordered);
+
+    await fetch("/api/admin/business/gallery", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds: reordered.map((entry) => entry.id) }),
+    });
+  }
+
+  const previewTheme = normalizeBusinessPageTheme({
+    page_accent_color: form.page_accent_color,
+    page_text_color: form.page_text_color,
+    page_heading_font_size: form.page_heading_font_size,
+    page_body_font_size: form.page_body_font_size,
+  });
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6 text-white">
@@ -173,6 +276,112 @@ export default function CustomizeClient({
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="min-h-32 w-full rounded border border-neutral-700 bg-neutral-800 p-2"
+          />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <p className="mb-1 text-sm">Page accent color</p>
+            <input
+              type="color"
+              value={form.page_accent_color}
+              onChange={(e) => setForm({ ...form, page_accent_color: e.target.value })}
+              className="h-11 w-full rounded border border-neutral-700 bg-neutral-800 p-1"
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-sm">Page text color</p>
+            <input
+              type="color"
+              value={form.page_text_color}
+              onChange={(e) => setForm({ ...form, page_text_color: e.target.value })}
+              className="h-11 w-full rounded border border-neutral-700 bg-neutral-800 p-1"
+            />
+            <p className="mt-2 text-xs text-gray-400">
+              Very low-contrast text colors are saved as the readable default.
+            </p>
+          </div>
+          <div>
+            <p className="mb-1 text-sm">Heading font size</p>
+            <input
+              type="number"
+              min="24"
+              max="56"
+              value={form.page_heading_font_size}
+              onChange={(e) =>
+                setForm({ ...form, page_heading_font_size: Number(e.target.value) })
+              }
+              className="w-full rounded border border-neutral-700 bg-neutral-800 p-2"
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-sm">Body font size</p>
+            <input
+              type="number"
+              min="14"
+              max="20"
+              value={form.page_body_font_size}
+              onChange={(e) =>
+                setForm({ ...form, page_body_font_size: Number(e.target.value) })
+              }
+              className="w-full rounded border border-neutral-700 bg-neutral-800 p-2"
+            />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Business photo gallery</h2>
+              <p className="mt-1 text-sm text-gray-400">
+                Photos appear in this order on the public page.
+              </p>
+            </div>
+            <label className="rounded border border-neutral-700 px-4 py-2 text-sm text-white">
+              {uploadingPhoto ? "Uploading..." : "Add photo"}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={!customizationSchemaReady || uploadingPhoto}
+                onChange={(event) => void uploadGalleryPhoto(event.target.files)}
+                className="hidden"
+              />
+            </label>
+          </div>
+          {customizationErrorMessage ? (
+            <p className="mt-3 text-sm text-yellow-200">{customizationErrorMessage}</p>
+          ) : null}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {galleryImages.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-white/15 p-5 text-sm text-gray-400">
+                Upload photos to publish a gallery.
+              </div>
+            ) : (
+              galleryImages.map((image, index) => (
+                <div key={image.id} className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
+                  <img src={image.image_url} alt={image.alt_text || "Business gallery photo"} className="aspect-[4/3] w-full object-cover" />
+                  <div className="flex items-center justify-between gap-2 p-3 text-sm">
+                    <span className="text-gray-300">Photo {index + 1}</span>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, -1)} className="rounded border border-white/10 px-2 py-1 disabled:opacity-50" disabled={index === 0}>Up</button>
+                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, 1)} className="rounded border border-white/10 px-2 py-1 disabled:opacity-50" disabled={index === galleryImages.length - 1}>Down</button>
+                      <button type="button" onClick={() => void removeGalleryPhoto(image.id)} className="rounded border border-red-500/30 px-2 py-1 text-red-200">Remove</button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white">
+          <PublicBusinessGallery
+            businessName={form.name || "Business"}
+            businessDescription={form.description}
+            businessType={form.business_type}
+            logoUrl={initialLogoUrl}
+            images={galleryImages}
+            theme={previewTheme}
           />
         </div>
 

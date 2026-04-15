@@ -2,6 +2,7 @@
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { normalizeBusinessSlug } from "@/lib/businessProfileCompletion";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeBusinessPageTheme } from "@/lib/businessPageCustomization";
 
 export async function POST(req: Request) {
   try {
@@ -11,6 +12,12 @@ export async function POST(req: Request) {
     const name = String(body?.name || "").trim();
     const description = String(body?.description || "").trim();
     const requestedSlug = String(body?.slug || "").trim();
+    const normalizedTheme = normalizeBusinessPageTheme({
+      page_accent_color: body?.page_accent_color,
+      page_text_color: body?.page_text_color,
+      page_heading_font_size: body?.page_heading_font_size,
+      page_body_font_size: body?.page_body_font_size,
+    });
 
     const {
       data: { user },
@@ -60,10 +67,14 @@ export async function POST(req: Request) {
         name,
         slug: nextSlug,
         description: description || null,
+        page_accent_color: normalizedTheme.accentColor,
+        page_text_color: normalizedTheme.textColor,
+        page_heading_font_size: normalizedTheme.headingFontSize,
+        page_body_font_size: normalizedTheme.bodyFontSize,
       })
       .eq("id", activeBusiness.id)
       .eq("owner_id", user.id)
-      .select("id, name, slug, description, business_type")
+      .select("id, name, slug, description, business_type, page_accent_color, page_text_color, page_heading_font_size, page_body_font_size")
       .single();
 
     if (error) {

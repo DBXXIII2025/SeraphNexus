@@ -12,6 +12,22 @@ type PricingClientProps = {
     pro: { label: string; active: boolean };
     elite: { label: string; active: boolean };
   };
+  planCopy: {
+    pro: {
+      name: string;
+      subtitle: string;
+      features: string[];
+      badge: string | null;
+      cta: string;
+    };
+    elite: {
+      name: string;
+      subtitle: string;
+      features: string[];
+      badge: string | null;
+      cta: string;
+    };
+  };
 };
 
 const PLANS = [
@@ -56,6 +72,7 @@ export default function PricingClient({
   isPlatformAdmin,
   currentPlan,
   pricing,
+  planCopy,
 }: PricingClientProps) {
   const [billingPlan, setBillingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -155,6 +172,15 @@ export default function PricingClient({
                 : plan.tier === "elite"
                   ? pricing.elite.label
                   : plan.priceLabel;
+            const liveCopy =
+              plan.tier === "pro"
+                ? planCopy.pro
+                : plan.tier === "elite"
+                  ? planCopy.elite
+                  : null;
+            const planLabel = liveCopy?.name || plan.label;
+            const planSummary = liveCopy?.subtitle || plan.summary;
+            const highlights = liveCopy?.features || plan.highlights;
 
             return (
               <article
@@ -164,13 +190,17 @@ export default function PricingClient({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-2xl font-semibold text-[var(--text-strong)]">
-                      {plan.label}
+                      {planLabel}
                     </h2>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
-                      {plan.summary}
+                      {planSummary}
                     </p>
                   </div>
-                  {isCurrentPlan ? (
+                  {liveCopy?.badge ? (
+                    <span className="rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-gold-soft)]">
+                      {liveCopy.badge}
+                    </span>
+                  ) : isCurrentPlan ? (
                     <span className="rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-gold-soft)]">
                       Current
                     </span>
@@ -187,7 +217,7 @@ export default function PricingClient({
                 ) : null}
 
                 <div className="mt-6 space-y-3">
-                  {plan.highlights.map((highlight) => (
+                  {highlights.map((highlight) => (
                     <div
                       key={highlight}
                       className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.42)] px-4 py-3 text-sm text-[var(--text-soft)]"
@@ -226,8 +256,8 @@ export default function PricingClient({
                       {billingPlan === plan.tier
                         ? "Starting checkout..."
                         : !billingActive
-                          ? `${plan.label} unavailable`
-                          : `Choose ${plan.label}`}
+                          ? `${planLabel} unavailable`
+                          : liveCopy?.cta || `Choose ${planLabel}`}
                     </button>
                   ) : plan.tier === "trial" ? (
                     <span className="btn-secondary inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium text-[var(--text-soft)]">

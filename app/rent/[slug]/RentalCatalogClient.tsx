@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
+import PublicBusinessGallery from "@/components/PublicBusinessGallery";
+import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
 
 type PropertyItem = {
@@ -37,6 +39,9 @@ export default function RentalCatalogClient({
     description: string;
     business_type: string;
     language: LanguageCode;
+    logo_url: string | null;
+    pageTheme: BusinessPageTheme;
+    galleryImages: BusinessPageImage[];
   };
   properties: PropertyItem[];
   isOwner: boolean;
@@ -192,8 +197,23 @@ export default function RentalCatalogClient({
   }
 
   return (
-    <div className="circuit-shell min-h-screen bg-[var(--bg-main)] p-6 text-[var(--text-main)]">
-      <div className="relative mx-auto max-w-6xl space-y-6">
+    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
+      <PublicBusinessGallery
+        businessName={business.name}
+        businessDescription={business.description}
+        businessType={business.business_type}
+        logoUrl={business.logo_url}
+        images={business.galleryImages}
+        theme={business.pageTheme}
+        action={
+          <MessageBusinessButton
+            businessId={business.id}
+            className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
+          />
+        }
+      />
+      <div className="circuit-shell bg-[var(--bg-main)] p-6 text-[var(--text-main)]">
+        <div className="relative mx-auto max-w-6xl space-y-6">
         <div className="shell-panel p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -352,6 +372,7 @@ export default function RentalCatalogClient({
               ) : null}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

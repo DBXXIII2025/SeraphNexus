@@ -8,6 +8,7 @@ import { notFound, redirect } from "next/navigation";
 import LeadEventTracker from "@/components/LeadEventTracker";
 import OrderClient from "./OrderClient";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
+import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 
 type Params = {
   slug: string;
@@ -74,6 +75,7 @@ export default async function OrderPage({
     redirect(getCanonicalPublicBusinessRoute(business.business_type, slug).href);
   }
   const businessPreferences = await loadBusinessPreferences(supabase, business.id);
+  const customization = await loadBusinessPageCustomization(supabase, business.id);
 
   return (
     <>
@@ -90,6 +92,9 @@ export default async function OrderPage({
         language={businessPreferences.language}
         pickupEnabled={businessPreferences.pickup_enabled}
         deliveryEnabled={businessPreferences.delivery_enabled}
+        logoUrl={customization.logoUrl}
+        pageTheme={customization.theme}
+        galleryImages={customization.images}
       />
     </>
   );

@@ -513,6 +513,70 @@ export default async function PlatformPage({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="form-section space-y-4">
+              <div className="section-header-copy">
+                <p className="section-kicker">Public Pro Copy</p>
+                <h3 className="text-lg font-semibold text-[var(--text-strong)]">
+                  Live pricing card content
+                </h3>
+              </div>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Plan name</span>
+                <input name="pro_plan_name" defaultValue={settings.pro_plan_name} className="input-field mt-2" />
+              </label>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Subtitle</span>
+                <textarea name="pro_plan_subtitle" defaultValue={settings.pro_plan_subtitle} className="input-field mt-2 min-h-[88px]" />
+              </label>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Included features, one per line</span>
+                <textarea name="pro_plan_features" defaultValue={settings.pro_plan_features.join("\n")} className="input-field mt-2 min-h-[132px]" />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm text-gray-300">
+                  <span className="form-label">Badge text</span>
+                  <input name="pro_plan_badge" defaultValue={settings.pro_plan_badge || ""} className="input-field mt-2" />
+                </label>
+                <label className="text-sm text-gray-300">
+                  <span className="form-label">CTA text</span>
+                  <input name="pro_plan_cta" defaultValue={settings.pro_plan_cta} className="input-field mt-2" />
+                </label>
+              </div>
+            </div>
+
+            <div className="form-section space-y-4">
+              <div className="section-header-copy">
+                <p className="section-kicker">Public Elite Copy</p>
+                <h3 className="text-lg font-semibold text-[var(--text-strong)]">
+                  Live pricing card content
+                </h3>
+              </div>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Plan name</span>
+                <input name="elite_plan_name" defaultValue={settings.elite_plan_name} className="input-field mt-2" />
+              </label>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Subtitle</span>
+                <textarea name="elite_plan_subtitle" defaultValue={settings.elite_plan_subtitle} className="input-field mt-2 min-h-[88px]" />
+              </label>
+              <label className="text-sm text-gray-300">
+                <span className="form-label">Included features, one per line</span>
+                <textarea name="elite_plan_features" defaultValue={settings.elite_plan_features.join("\n")} className="input-field mt-2 min-h-[132px]" />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm text-gray-300">
+                  <span className="form-label">Badge text</span>
+                  <input name="elite_plan_badge" defaultValue={settings.elite_plan_badge || ""} className="input-field mt-2" />
+                </label>
+                <label className="text-sm text-gray-300">
+                  <span className="form-label">CTA text</span>
+                  <input name="elite_plan_cta" defaultValue={settings.elite_plan_cta} className="input-field mt-2" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="form-section space-y-4">
               <div>
                 <p className="form-label">Pro monthly price</p>
                 <input

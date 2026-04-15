@@ -10,6 +10,7 @@ import LeadEventTracker from "@/components/LeadEventTracker";
 import BookingClient from "./BookingClient";
 import { sortServiceImages, type ServiceImageRecord } from "@/lib/serviceImages";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
+import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 
 type Params = {
   slug: string;
@@ -91,6 +92,7 @@ export default async function BookPage({
 
   const logoState = await loadBusinessLogoById(business.id);
   const businessPreferences = await loadBusinessPreferences(supabaseAdmin, business.id);
+  const customization = await loadBusinessPageCustomization(supabaseAdmin, business.id);
 
   const { data: services } = await supabase
     .from("services")
@@ -136,7 +138,9 @@ export default async function BookPage({
         business={{
           ...business,
           ...businessPreferences,
-          logo_url: logoState.schemaReady ? logoState.logoUrl : null,
+          logo_url: customization.logoUrl || (logoState.schemaReady ? logoState.logoUrl : null),
+          pageTheme: customization.theme,
+          galleryImages: customization.images,
         }}
         services={serviceRows}
         isOwner={false}

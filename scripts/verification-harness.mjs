@@ -1273,14 +1273,9 @@ function auditBookingClientSource() {
   );
   assert(
     platformSettingsSource.includes("pro_transaction_fee_bps") &&
-      platformSettingsSource.includes("elite_transaction_fee_bps"),
+      platformSettingsSource.includes("elite_transaction_fee_bps") &&
+      platformSettingsSource.includes("trial_transaction_fee_bps"),
     "Platform settings no longer reads managed transaction fee percentages."
-  );
-  assert(
-    platformSettingsSource.includes("encodePricingNoteWithFeeSettings") &&
-      platformSettingsSource.includes("seraph_fee_bps") &&
-      platformSettingsSource.includes("legacyData"),
-    "Platform settings no longer supports persisted fee percentages on the current live settings schema."
   );
 
   const platformAdminRouteSource = fs.readFileSync(
@@ -1288,10 +1283,12 @@ function auditBookingClientSource() {
     "utf8"
   );
   assert(
-    platformAdminRouteSource.includes("encodePricingNoteWithFeeSettings") &&
-      platformAdminRouteSource.includes("isMissingFeeColumnError") &&
-      platformAdminRouteSource.includes("omitFeeColumns"),
-    "Platform admin save route no longer persists transaction fee percentages with live-schema compatibility."
+    platformAdminRouteSource.includes("trial_transaction_fee_bps") &&
+      platformAdminRouteSource.includes("pro_transaction_fee_bps") &&
+      platformAdminRouteSource.includes("elite_transaction_fee_bps") &&
+      !platformAdminRouteSource.includes("encodePricingNoteWithFeeSettings") &&
+      !platformAdminRouteSource.includes("omitFeeColumns"),
+    "Platform admin save route no longer writes fee percentages directly to platform_settings columns."
   );
 
   return {

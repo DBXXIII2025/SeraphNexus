@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
+import PublicBusinessGallery from "@/components/PublicBusinessGallery";
+import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
 
 type CatalogItem = {
@@ -30,6 +32,9 @@ export default function ShopClient({
   language,
   pickupEnabled,
   deliveryEnabled,
+  logoUrl,
+  pageTheme,
+  galleryImages,
 }: {
   businessId: string;
   businessName: string;
@@ -39,6 +44,9 @@ export default function ShopClient({
   language: LanguageCode;
   pickupEnabled: boolean;
   deliveryEnabled: boolean;
+  logoUrl: string | null;
+  pageTheme: BusinessPageTheme;
+  galleryImages: BusinessPageImage[];
 }) {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -213,8 +221,22 @@ export default function ShopClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f17] p-6 text-white">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
+      <PublicBusinessGallery
+        businessName={businessName}
+        businessDescription={businessDescription}
+        businessType={businessType}
+        logoUrl={logoUrl}
+        images={galleryImages}
+        theme={pageTheme}
+        action={
+          <MessageBusinessButton
+            businessId={businessId}
+            className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
+          />
+        }
+      />
+      <div className="mx-auto max-w-6xl space-y-6 p-6 text-white">
         <div>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>

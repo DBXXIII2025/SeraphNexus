@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import PublicBusinessPolicies from "@/components/PublicBusinessPolicies";
+import PublicBusinessGallery from "@/components/PublicBusinessGallery";
 import type { ServiceImageRecord } from "@/lib/serviceImages";
+import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate } from "@/lib/i18n";
 
 type Slot = {
@@ -35,6 +37,8 @@ type BookingBusiness = {
   language?: "en" | "es" | null;
   onsite_enabled?: boolean | null;
   remote_enabled?: boolean | null;
+  pageTheme: BusinessPageTheme;
+  galleryImages: BusinessPageImage[];
 };
 
 function getTodayLocalDate() {
@@ -387,7 +391,22 @@ export default function BookingClient({
   );
 
   return (
-    <div className="p-6 text-white">
+    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
+      <PublicBusinessGallery
+        businessName={business.name || "Business"}
+        businessDescription={business.description || ""}
+        businessType={business.business_type || "Service"}
+        logoUrl={business.logo_url}
+        images={business.galleryImages}
+        theme={business.pageTheme}
+        action={
+          <MessageBusinessButton
+            businessId={business.id}
+            className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
+          />
+        }
+      />
+      <div className="mx-auto max-w-6xl p-6 text-white">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(24,24,27,0.92))] shadow-inner">
@@ -766,6 +785,7 @@ export default function BookingClient({
             {isSubmitting ? "Starting secure checkout..." : t("pay")}
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

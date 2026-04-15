@@ -256,6 +256,7 @@ export async function ensureManagedPlanStripePrice(args: {
 export async function getManagedPricingSnapshot() {
   const settings = await getPlatformSettings();
   return {
+    settings,
     pro: getManagedPlanPricingFromSettings(settings, "pro"),
     elite: getManagedPlanPricingFromSettings(settings, "elite"),
     defaults: {

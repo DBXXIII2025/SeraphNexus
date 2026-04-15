@@ -9,6 +9,7 @@ import { notFound, redirect } from "next/navigation";
 import LeadEventTracker from "@/components/LeadEventTracker";
 import ShopClient from "./ShopClient";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
+import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 
 type Params = {
   slug: string;
@@ -51,6 +52,7 @@ export default async function ShopPage({
     businessType,
   });
   const businessPreferences = await loadBusinessPreferences(supabase, business.id);
+  const customization = await loadBusinessPageCustomization(supabase, business.id);
 
   if (isDev) {
     console.log("[shop/page] business_type:", businessType);
@@ -72,6 +74,9 @@ export default async function ShopPage({
         language={businessPreferences.language}
         pickupEnabled={businessPreferences.pickup_enabled}
         deliveryEnabled={businessPreferences.delivery_enabled}
+        logoUrl={customization.logoUrl}
+        pageTheme={customization.theme}
+        galleryImages={customization.images}
         items={catalog.items.map((item) => ({
           id: item.id,
           name: item.name,

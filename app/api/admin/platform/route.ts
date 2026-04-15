@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ensureManagedPlanStripePrice } from "@/lib/platformBilling";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
-import { encodePricingNoteWithFeeSettings } from "@/lib/platformSettings";
 
 function parsePriceCents(value: FormDataEntryValue | null, fallback: number) {
   const raw = String(value || "").trim();
@@ -21,6 +20,20 @@ function normalizeOptionalString(value: FormDataEntryValue | null) {
   return normalized || null;
 }
 
+function normalizeRequiredString(value: FormDataEntryValue | null, fallback: string) {
+  return String(value || "").trim() || fallback;
+}
+
+function normalizeFeatureList(value: FormDataEntryValue | null, fallback: string[]) {
+  const features = String(value || "")
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 10);
+
+  return features.length > 0 ? features : fallback;
+}
+
 function parseFeeBasisPoints(value: FormDataEntryValue | null, fallback: number) {
   const raw = String(value || "").trim();
   const percent = Number(raw);
@@ -30,19 +43,6 @@ function parseFeeBasisPoints(value: FormDataEntryValue | null, fallback: number)
   }
 
   return Math.round(percent * 100);
-}
-
-function isMissingFeeColumnError(error: { code?: string; message?: string } | null) {
-  const message = String(error?.message || "").toLowerCase();
-  return error?.code === "42703" && message.includes("transaction_fee_bps");
-}
-
-function omitFeeColumns(payload: Record<string, unknown>) {
-  const nextPayload = { ...payload };
-  delete nextPayload.trial_transaction_fee_bps;
-  delete nextPayload.pro_transaction_fee_bps;
-  delete nextPayload.elite_transaction_fee_bps;
-  return nextPayload;
 }
 
 export async function POST(req: Request) {
@@ -78,16 +78,36 @@ export async function POST(req: Request) {
       support_email:
         String(formData.get("support_email") || "").trim() || "support@seraphnexus.com",
       support_phone: String(formData.get("support_phone") || "").trim() || "(800) 555-0100",
-      pricing_note: encodePricingNoteWithFeeSettings(visiblePricingNote, {
-        trial: trialFeeBps,
-        pro: proFeeBps,
-        elite: eliteFeeBps,
-      }),
+      pricing_note: visiblePricingNote,
       pro_monthly_price_cents: parsePriceCents(formData.get("pro_monthly_price"), 1900),
       elite_monthly_price_cents: parsePriceCents(formData.get("elite_monthly_price"), 4900),
       trial_transaction_fee_bps: trialFeeBps,
       pro_transaction_fee_bps: proFeeBps,
       elite_transaction_fee_bps: eliteFeeBps,
+      pro_plan_name: normalizeRequiredString(formData.get("pro_plan_name"), "Pro"),
+      pro_plan_subtitle: normalizeRequiredString(
+        formData.get("pro_plan_subtitle"),
+        "Enable payments, full messaging, basic analytics, and standard owner controls."
+      ),
+      pro_plan_features: normalizeFeatureList(formData.get("pro_plan_features"), [
+        "5% platform fee",
+        "Stripe payments, full messaging, and standard customization",
+        "Up to 2 businesses with unlimited services and products",
+      ]),
+      pro_plan_badge: normalizeOptionalString(formData.get("pro_plan_badge")),
+      pro_plan_cta: normalizeRequiredString(formData.get("pro_plan_cta"), "Choose Pro"),
+      elite_plan_name: normalizeRequiredString(formData.get("elite_plan_name"), "Elite"),
+      elite_plan_subtitle: normalizeRequiredString(
+        formData.get("elite_plan_subtitle"),
+        "Best economics and the full premium operating stack for scaling businesses."
+      ),
+      elite_plan_features: normalizeFeatureList(formData.get("elite_plan_features"), [
+        "2% platform fee",
+        "Automation, advanced analytics, and advanced messaging",
+        "Priority explore boost with unlimited businesses",
+      ]),
+      elite_plan_badge: normalizeOptionalString(formData.get("elite_plan_badge")),
+      elite_plan_cta: normalizeRequiredString(formData.get("elite_plan_cta"), "Choose Elite"),
       pro_price_active: formData.get("pro_price_active") === "on",
       elite_price_active: formData.get("elite_price_active") === "on",
     };
@@ -147,34 +167,12 @@ export async function POST(req: Request) {
         .update(nextPayload)
         .eq("id", existing.id);
       mutationError = error;
-
-      if (isMissingFeeColumnError(mutationError)) {
-        console.warn(
-          "[admin/platform] transaction fee columns missing; saving fees in pricing_note compatibility marker"
-        );
-        const { error: retryError } = await supabaseAdmin
-          .from("platform_settings")
-          .update(omitFeeColumns(nextPayload))
-          .eq("id", existing.id);
-        mutationError = retryError;
-      }
     } else {
       const { error } = await supabaseAdmin.from("platform_settings").insert({
         ...nextPayload,
         created_at: new Date().toISOString(),
       });
       mutationError = error;
-
-      if (isMissingFeeColumnError(mutationError)) {
-        console.warn(
-          "[admin/platform] transaction fee columns missing; inserting fees in pricing_note compatibility marker"
-        );
-        const { error: retryError } = await supabaseAdmin.from("platform_settings").insert({
-          ...omitFeeColumns(nextPayload),
-          created_at: new Date().toISOString(),
-        });
-        mutationError = retryError;
-      }
     }
 
     if (mutationError) {
