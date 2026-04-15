@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import {
-  buildSortableGalleryImageId,
   buildBusinessPageImagePath,
   BUSINESS_PAGE_IMAGES_BUCKET,
-  extractBusinessAssetStoragePath,
   isAllowedBusinessPageImageType,
   MAX_BUSINESS_PAGE_IMAGE_BYTES,
   type BusinessPageImage,
@@ -19,26 +17,6 @@ async function getOwnedBusiness(userId: string) {
   return { id: activeBusiness.id, owner_id: activeBusiness.owner_id };
 }
 
-function isMissingGalleryTableError(error: { code?: string | null; message?: string | null } | null) {
-  const message = error?.message || "";
-  return (
-    error?.code === "42P01" ||
-    error?.code === "PGRST205" ||
-    message.includes("business_page_images")
-  );
-}
-
-function isMissingGalleryMetadataError(error: { code?: string | null; message?: string | null } | null) {
-  const message = error?.message || "";
-  return (
-    error?.code === "42703" ||
-    message.includes("storage_path") ||
-    message.includes("alt_text") ||
-    message.includes("sort_order") ||
-    message.includes("created_at")
-  );
-}
-
 function normalizeImageRow(row: Record<string, unknown>, index = 0): BusinessPageImage {
   return {
     id: String(row.id || ""),
@@ -46,32 +24,23 @@ function normalizeImageRow(row: Record<string, unknown>, index = 0): BusinessPag
     storage_path:
       typeof row.storage_path === "string" && row.storage_path.trim()
         ? row.storage_path.trim()
-        : extractBusinessAssetStoragePath(String(row.image_url || "")),
+        : null,
     alt_text:
       typeof row.alt_text === "string" && row.alt_text.trim()
         ? row.alt_text.trim()
         : null,
     sort_order: Number.isFinite(Number(row.sort_order)) ? Number(row.sort_order) : index + 1,
+    is_primary: row.is_primary === true,
   };
 }
 
 async function loadGalleryImages(supabaseAdmin: ReturnType<typeof createAdminClient>, businessId: string) {
-  let { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("business_page_images")
-    .select("id, image_url, storage_path, alt_text, sort_order")
+    .select("id, image_url, storage_path, alt_text, sort_order, is_primary, created_at")
     .eq("business_id", businessId)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
-
-  if (error && isMissingGalleryMetadataError(error)) {
-    const fallback = await supabaseAdmin
-      .from("business_page_images")
-      .select("id, image_url")
-      .eq("business_id", businessId)
-      .order("id", { ascending: true });
-    data = fallback.data;
-    error = fallback.error;
-  }
 
   if (error) {
     throw new Error(error.message);
@@ -146,41 +115,17 @@ export async function POST(req: Request) {
     const { data: image, error: insertError } = await supabaseAdmin
       .from("business_page_images")
       .insert({
-        id: buildSortableGalleryImageId(nextSortOrder),
         business_id: ownedBusiness.id,
         image_url: publicUrlData.publicUrl,
         storage_path: storagePath,
         alt_text: String(formData.get("altText") || "").trim() || null,
         sort_order: nextSortOrder,
+        is_primary: existingImages.length === 0,
       })
-      .select("id, image_url, storage_path, alt_text, sort_order")
+      .select("id, image_url, storage_path, alt_text, sort_order, is_primary, created_at")
       .single();
 
     if (insertError) {
-      if (isMissingGalleryMetadataError(insertError)) {
-        const fallbackId = buildSortableGalleryImageId(nextSortOrder);
-        const { data: fallbackImage, error: fallbackError } = await supabaseAdmin
-          .from("business_page_images")
-          .insert({
-            id: fallbackId,
-            business_id: ownedBusiness.id,
-            image_url: publicUrlData.publicUrl,
-          })
-          .select("id, image_url")
-          .single();
-
-        if (fallbackError) {
-          await supabaseAdmin.storage.from(BUSINESS_PAGE_IMAGES_BUCKET).remove([storagePath]);
-          throw new Error(fallbackError.message);
-        }
-
-        return NextResponse.json({
-          image: normalizeImageRow(fallbackImage as Record<string, unknown>, nextSortOrder - 1),
-          images: await loadGalleryImages(supabaseAdmin, ownedBusiness.id),
-          storageMode: "business_page_images",
-        });
-      }
-
       await supabaseAdmin.storage.from(BUSINESS_PAGE_IMAGES_BUCKET).remove([storagePath]);
       throw new Error(insertError.message);
     }
@@ -210,12 +155,13 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
+    const primaryImageId = String(body?.primaryImageId || "").trim();
     const orderedIds = Array.isArray(body?.orderedIds)
       ? body.orderedIds.map((id) => String(id || "").trim()).filter(Boolean)
       : [];
 
-    if (orderedIds.length === 0) {
-      return NextResponse.json({ error: "orderedIds are required." }, { status: 400 });
+    if (orderedIds.length === 0 && !primaryImageId) {
+      return NextResponse.json({ error: "orderedIds or primaryImageId is required." }, { status: 400 });
     }
 
     const ownedBusiness = await getOwnedBusiness(user.id);
@@ -225,32 +171,51 @@ export async function PATCH(req: Request) {
 
     const supabaseAdmin = createAdminClient();
 
-    const updates = await Promise.all(
-      orderedIds.map((id, index) =>
-        supabaseAdmin
-          .from("business_page_images")
-          .update({ sort_order: index + 1 })
-          .eq("id", id)
-          .eq("business_id", ownedBusiness.id)
-      )
-    );
+    if (primaryImageId) {
+      const currentImages = await loadGalleryImages(supabaseAdmin, ownedBusiness.id);
+      const promoted = currentImages.find((image) => image.id === primaryImageId);
+      if (!promoted) {
+        return NextResponse.json({ error: "Photo not found." }, { status: 404 });
+      }
 
-    if (updates.some((result) => isMissingGalleryMetadataError(result.error))) {
-      const idUpdates = await Promise.all(
-        orderedIds.map((id, index) =>
+      const nextOrder = [
+        promoted.id,
+        ...currentImages.filter((image) => image.id !== primaryImageId).map((image) => image.id),
+      ];
+
+      const primaryReset = await supabaseAdmin
+        .from("business_page_images")
+        .update({ is_primary: false })
+        .eq("business_id", ownedBusiness.id);
+
+      if (primaryReset.error) {
+        throw new Error(primaryReset.error.message);
+      }
+
+      const updates = await Promise.all(
+        nextOrder.map((id, index) =>
           supabaseAdmin
             .from("business_page_images")
-            .update({ id: buildSortableGalleryImageId(index + 1) })
+            .update({ sort_order: index + 1, is_primary: id === primaryImageId })
             .eq("id", id)
             .eq("business_id", ownedBusiness.id)
         )
       );
 
-      const failed = idUpdates.find((result) => result.error);
+      const failed = updates.find((result) => result.error);
       if (failed?.error) {
         throw new Error(failed.error.message);
       }
     } else {
+      const updates = await Promise.all(
+        orderedIds.map((id, index) =>
+          supabaseAdmin
+            .from("business_page_images")
+            .update({ sort_order: index + 1, is_primary: index === 0 })
+            .eq("id", id)
+            .eq("business_id", ownedBusiness.id)
+        )
+      );
       const failed = updates.find((result) => result.error);
       if (failed?.error) {
         throw new Error(failed.error.message);
@@ -293,23 +258,12 @@ export async function DELETE(req: Request) {
     }
 
     const supabaseAdmin = createAdminClient();
-    let { data: image, error: lookupError } = await supabaseAdmin
+    const { data: image, error: lookupError } = await supabaseAdmin
       .from("business_page_images")
       .select("id, storage_path")
       .eq("id", imageId)
       .eq("business_id", ownedBusiness.id)
       .maybeSingle();
-
-    if (lookupError && isMissingGalleryMetadataError(lookupError)) {
-      const fallback = await supabaseAdmin
-        .from("business_page_images")
-        .select("id, image_url")
-        .eq("id", imageId)
-        .eq("business_id", ownedBusiness.id)
-        .maybeSingle();
-      image = fallback.data;
-      lookupError = fallback.error;
-    }
 
     if (lookupError || !image) {
       return NextResponse.json({ error: "Photo not found." }, { status: 404 });
@@ -325,13 +279,23 @@ export async function DELETE(req: Request) {
       throw new Error(deleteError.message);
     }
 
-    const storagePath =
-      "storage_path" in image
-        ? String(image.storage_path || "")
-        : extractBusinessAssetStoragePath(String((image as { image_url?: string | null }).image_url || ""));
+    const storagePath = String(image.storage_path || "");
 
     if (storagePath) {
       await supabaseAdmin.storage.from(BUSINESS_PAGE_IMAGES_BUCKET).remove([storagePath]);
+    }
+
+    const remainingImages = await loadGalleryImages(supabaseAdmin, ownedBusiness.id);
+    if (remainingImages.length > 0 && !remainingImages.some((entry) => entry.is_primary)) {
+      const { error: primaryError } = await supabaseAdmin
+        .from("business_page_images")
+        .update({ is_primary: true, sort_order: 1 })
+        .eq("id", remainingImages[0].id)
+        .eq("business_id", ownedBusiness.id);
+
+      if (primaryError) {
+        throw new Error(primaryError.message);
+      }
     }
 
     return NextResponse.json({

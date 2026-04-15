@@ -187,6 +187,40 @@ export default function CustomizeClient({
     }
   }
 
+  async function markPrimaryPhoto(imageId: string) {
+    setError(null);
+    setSuccess(null);
+
+    const previous = galleryImages;
+    const selected = galleryImages.find((image) => image.id === imageId);
+    if (!selected) {
+      return;
+    }
+
+    setGalleryImages([
+      { ...selected, is_primary: true, sort_order: 1 },
+      ...galleryImages
+        .filter((image) => image.id !== imageId)
+        .map((image, index) => ({ ...image, is_primary: false, sort_order: index + 2 })),
+    ]);
+
+    const res = await fetch("/api/admin/business/gallery", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ primaryImageId: imageId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setGalleryImages(previous);
+      setError(data.error || "Primary photo could not be saved.");
+      return;
+    }
+    if (Array.isArray(data.images)) {
+      setGalleryImages(data.images);
+    }
+    setSuccess("Primary gallery photo updated.");
+  }
+
   const previewTheme = normalizeBusinessPageTheme({
     page_accent_color: form.page_accent_color,
     page_text_color: form.page_text_color,
@@ -375,8 +409,11 @@ export default function CustomizeClient({
                 <div key={image.id} className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
                   <img src={image.image_url} alt={image.alt_text || "Business gallery photo"} className="aspect-[4/3] w-full object-cover" />
                   <div className="flex items-center justify-between gap-2 p-3 text-sm">
-                    <span className="text-gray-300">Photo {index + 1}</span>
+                    <span className="text-gray-300">
+                      {image.is_primary ? "Primary photo" : `Photo ${index + 1}`}
+                    </span>
                     <div className="flex gap-2">
+                      <button type="button" onClick={() => void markPrimaryPhoto(image.id)} className="rounded border border-white/10 px-2 py-1 disabled:opacity-50" disabled={image.is_primary}>Primary</button>
                       <button type="button" onClick={() => void moveGalleryPhoto(image.id, -1)} className="rounded border border-white/10 px-2 py-1 disabled:opacity-50" disabled={index === 0}>Up</button>
                       <button type="button" onClick={() => void moveGalleryPhoto(image.id, 1)} className="rounded border border-white/10 px-2 py-1 disabled:opacity-50" disabled={index === galleryImages.length - 1}>Down</button>
                       <button type="button" onClick={() => void removeGalleryPhoto(image.id)} className="rounded border border-red-500/30 px-2 py-1 text-red-200">Remove</button>

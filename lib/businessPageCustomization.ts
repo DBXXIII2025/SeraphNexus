@@ -17,6 +17,7 @@ export type BusinessPageImage = {
   storage_path: string | null;
   alt_text: string | null;
   sort_order: number;
+  is_primary: boolean;
 };
 
 export type BusinessPageTheme = typeof DEFAULT_THEME & {
@@ -114,28 +115,6 @@ export function buildBusinessPageImagePath(args: { businessId: string; fileName:
   return `businesses/${args.businessId}/gallery/${Date.now()}-${sanitizeFileName(args.fileName)}`;
 }
 
-export function buildSortableGalleryImageId(sortOrder: number) {
-  const prefix = Math.max(1, Math.min(0xffffffff, sortOrder))
-    .toString(16)
-    .padStart(8, "0");
-  const randomPart = crypto.randomUUID().slice(9);
-  return `${prefix}-${randomPart}`;
-}
-
-export function extractBusinessAssetStoragePath(publicUrl: string | null | undefined) {
-  if (!publicUrl) {
-    return null;
-  }
-
-  const marker = `/${BUSINESS_PAGE_IMAGES_BUCKET}/`;
-  const markerIndex = publicUrl.indexOf(marker);
-  if (markerIndex < 0) {
-    return null;
-  }
-
-  return decodeURIComponent(publicUrl.slice(markerIndex + marker.length).split("?")[0] || "");
-}
-
 function isMissingCustomizationSchemaError(error: { code?: string | null; message?: string | null } | null) {
   const message = error?.message || "";
   return (
@@ -159,7 +138,7 @@ function normalizeGalleryRows(rows: Array<Record<string, unknown>> = []) {
       storage_path:
         typeof image.storage_path === "string" && image.storage_path.trim()
           ? image.storage_path.trim()
-          : extractBusinessAssetStoragePath(String(image.image_url || "")),
+          : null,
       alt_text:
         typeof image.alt_text === "string" && image.alt_text.trim()
           ? image.alt_text.trim()
@@ -167,6 +146,7 @@ function normalizeGalleryRows(rows: Array<Record<string, unknown>> = []) {
       sort_order: Number.isFinite(Number(image.sort_order))
         ? Number(image.sort_order)
         : index + 1,
+      is_primary: image.is_primary === true,
     }));
 }
 
@@ -203,20 +183,10 @@ export async function loadBusinessPageCustomization(
 
     let { data: images, error: imagesError } = await supabase
       .from("business_page_images")
-      .select("id, image_url, storage_path, alt_text, sort_order")
+      .select("id, image_url, storage_path, alt_text, sort_order, is_primary, created_at")
       .eq("business_id", businessId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
-
-    if (imagesError && isMissingCustomizationSchemaError(imagesError)) {
-      const fallback = await supabase
-        .from("business_page_images")
-        .select("id, image_url")
-        .eq("business_id", businessId)
-        .order("id", { ascending: true });
-      images = fallback.data;
-      imagesError = fallback.error;
-    }
 
     return {
       theme: normalizeBusinessPageTheme((business || {}) as Record<string, unknown>),
