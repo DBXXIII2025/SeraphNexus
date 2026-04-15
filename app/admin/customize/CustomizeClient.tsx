@@ -6,7 +6,7 @@ import {
   normalizeBusinessSlug,
   type BusinessProfileCompletion,
 } from "@/lib/businessProfileCompletion";
-import PublicBusinessGallery from "@/components/PublicBusinessGallery";
+import BusinessProfileShell from "@/components/BusinessProfileShell";
 import {
   normalizeBusinessPageTheme,
   type BusinessPageImage,
@@ -323,7 +323,7 @@ export default function CustomizeClient({
             </span>
           </div>
           <div className="overflow-hidden rounded-lg border border-white/10">
-          <PublicBusinessGallery
+          <BusinessProfileShell
             businessName={form.name || "Business"}
             businessDescription={form.description}
             businessType={form.business_type}

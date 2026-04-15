@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
-import PublicBusinessGallery from "@/components/PublicBusinessGallery";
+import BusinessProfileShell from "@/components/BusinessProfileShell";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
 
@@ -410,7 +410,8 @@ export default function OrderClient({
 
   return (
     <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
-      <PublicBusinessGallery
+      <div className="bg-[#f5f7fb] px-4 py-6 sm:py-8">
+      <BusinessProfileShell
         businessName={businessName}
         businessDescription={businessDescription}
         businessType={businessType}
@@ -424,6 +425,7 @@ export default function OrderClient({
           />
         }
       />
+      </div>
       <div className="bg-zinc-950">
       <div className="mx-auto max-w-5xl space-y-6 p-6 text-white">
         <p className="text-sm text-gray-400">Order from the latest menu.</p>

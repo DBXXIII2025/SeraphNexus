@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
-import PublicBusinessGallery from "@/components/PublicBusinessGallery";
+import BusinessProfileShell from "@/components/BusinessProfileShell";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
 
@@ -197,7 +197,8 @@ export default function RentalCatalogClient({
 
   return (
     <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
-      <PublicBusinessGallery
+      <div className="bg-[#f5f7fb] px-4 py-6 sm:py-8">
+      <BusinessProfileShell
         businessName={business.name}
         businessDescription={business.description}
         businessType={business.business_type}
@@ -211,6 +212,7 @@ export default function RentalCatalogClient({
           />
         }
       />
+      </div>
       <div className="circuit-shell bg-[var(--bg-main)] p-6 text-[var(--text-main)]">
         <div className="relative mx-auto max-w-6xl space-y-6">
         <p className="section-kicker">

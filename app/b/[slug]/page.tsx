@@ -5,7 +5,7 @@ import { loadBusinessLogoById } from "@/lib/businessLogos";
 import { notFound, redirect } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import LeadEventTracker from "@/components/LeadEventTracker";
-import PublicBusinessGallery from "@/components/PublicBusinessGallery";
+import BusinessProfileShell from "@/components/BusinessProfileShell";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 
 type Params = {
@@ -62,7 +62,8 @@ export default async function PublicRouterPage({
         eventType="page_view"
         source={`/b/${business.slug}`}
       />
-      <PublicBusinessGallery
+      <div className="bg-[#f5f7fb] px-4 py-6 sm:py-8">
+      <BusinessProfileShell
         businessName={business.name || "Business"}
         businessDescription={business.description || ""}
         businessType={business.business_type || "General"}
@@ -76,6 +77,7 @@ export default async function PublicRouterPage({
           />
         }
       />
+      </div>
     </div>
   );
 }
