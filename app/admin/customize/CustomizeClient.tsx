@@ -294,6 +294,14 @@ export default function CustomizeClient({
       ) : null}
 
       <div className="space-y-4">
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white">Header and business information</h2>
+            <p className="mt-1 text-sm text-gray-400">
+              These fields feed the compact public header and the detail block below the gallery.
+            </p>
+          </div>
+          <div className="space-y-4">
         <div>
           <p className="mb-1 text-sm">Business name</p>
           <input
@@ -326,7 +334,16 @@ export default function CustomizeClient({
             className="min-h-32 w-full rounded border border-neutral-700 bg-neutral-800 p-2"
           />
         </div>
+          </div>
+        </div>
 
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white">Business information styling</h2>
+            <p className="mt-1 text-sm text-gray-400">
+              Colors and font sizes apply to the compact header and readable business details.
+            </p>
+          </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <p className="mb-1 text-sm">Page accent color</p>
@@ -376,13 +393,14 @@ export default function CustomizeClient({
             />
           </div>
         </div>
+        </div>
 
         <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-white">Business photo gallery</h2>
+              <h2 className="text-lg font-semibold text-white">Gallery image area</h2>
               <p className="mt-1 text-sm text-gray-400">
-                Photos appear in this order on the public page.
+                Manage the compact square gallery shown below the public header.
               </p>
             </div>
             <label className="rounded border border-neutral-700 px-4 py-2 text-sm text-white">
@@ -425,7 +443,13 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white">
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white">Public page preview</h2>
+            <p className="mt-1 text-sm text-gray-400">
+              This mirrors the compact header, smaller gallery, and detail layout customers see.
+            </p>
+          </div>
           <PublicBusinessGallery
             businessName={form.name || "Business"}
             businessDescription={form.description}
