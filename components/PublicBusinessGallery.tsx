@@ -87,7 +87,7 @@ export default function PublicBusinessGallery({
                   aria-label="Previous photo"
                   className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg bg-white/90 text-2xl text-neutral-900 shadow transition hover:bg-white"
                 >
-                  ‹
+                  {"<"}
                 </button>
                 <button
                   type="button"
@@ -95,7 +95,7 @@ export default function PublicBusinessGallery({
                   aria-label="Next photo"
                   className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg bg-white/90 text-2xl text-neutral-900 shadow transition hover:bg-white"
                 >
-                  ›
+                  {">"}
                 </button>
                 <div className="absolute bottom-3 right-3 rounded-lg bg-black/70 px-3 py-1 text-sm text-white">
                   {activeIndex + 1} / {images.length}
