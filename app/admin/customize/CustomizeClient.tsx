@@ -121,8 +121,8 @@ export default function CustomizeClient({
         throw new Error(data.error || "Photo upload failed.");
       }
       setGalleryImages((current) =>
-        data.storageMode === "cover_image_url"
-          ? [data.image]
+        Array.isArray(data.images)
+          ? data.images
           : [...current.filter((image) => image.id !== data.image?.id), data.image]
       );
       setSuccess("Gallery photo added.");
@@ -149,6 +149,9 @@ export default function CustomizeClient({
       if (!res.ok) {
         throw new Error(data.error || "Photo could not be removed.");
       }
+      if (Array.isArray(data.images)) {
+        setGalleryImages(data.images);
+      }
       setSuccess("Gallery photo removed.");
     } catch (err) {
       setGalleryImages(previous);
@@ -168,11 +171,20 @@ export default function CustomizeClient({
     reordered.splice(targetIndex, 0, image);
     setGalleryImages(reordered);
 
-    await fetch("/api/admin/business/gallery", {
+    const res = await fetch("/api/admin/business/gallery", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderedIds: reordered.map((entry) => entry.id) }),
     });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setGalleryImages(galleryImages);
+      setError(data.error || "Photo order could not be saved.");
+      return;
+    }
+    if (Array.isArray(data.images)) {
+      setGalleryImages(data.images);
+    }
   }
 
   const previewTheme = normalizeBusinessPageTheme({

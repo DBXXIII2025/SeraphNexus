@@ -35,8 +35,26 @@ create table if not exists public.business_page_images (
   created_at timestamptz not null default timezone('utc', now())
 );
 
+alter table public.business_page_images
+  add column if not exists storage_path text,
+  add column if not exists alt_text text,
+  add column if not exists sort_order integer not null default 0,
+  add column if not exists is_primary boolean not null default false,
+  add column if not exists created_at timestamptz not null default timezone('utc', now());
+
 create index if not exists business_page_images_business_sort_idx
   on public.business_page_images(business_id, sort_order, created_at);
+
+insert into public.business_page_images (business_id, image_url, alt_text, sort_order, is_primary)
+select b.id, b.cover_image_url, 'Business cover photo', 1, true
+from public.businesses b
+where b.cover_image_url is not null
+  and length(trim(b.cover_image_url)) > 0
+  and not exists (
+    select 1
+    from public.business_page_images existing
+    where existing.business_id = b.id
+  );
 
 insert into storage.buckets (id, name, public)
 values ('business-assets', 'business-assets', true)
