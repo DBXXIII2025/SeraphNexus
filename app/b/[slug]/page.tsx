@@ -62,7 +62,7 @@ export default async function PublicRouterPage({
         eventType="page_view"
         source={`/b/${business.slug}`}
       />
-      <div className="bg-[#f5f7fb] px-4 py-6 sm:py-8">
+      <div className="bg-[#f5f7fb] px-3 py-4 sm:py-5">
       <BusinessProfileShell
         businessName={business.name || "Business"}
         businessDescription={business.description || ""}

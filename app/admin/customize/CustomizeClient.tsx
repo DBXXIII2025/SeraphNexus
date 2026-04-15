@@ -294,10 +294,10 @@ export default function CustomizeClient({
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-3 text-white sm:p-4">
-      <div className="rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-3">
-        <h1 className="font-heading text-2xl">Business Profile</h1>
-        <p className="mt-2 text-sm text-gray-400">
+    <div className="mx-auto max-w-5xl space-y-3 p-2 text-white sm:p-3">
+      <div className="rounded-lg border border-white/10 bg-zinc-950/80 px-3.5 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.22)]">
+        <h1 className="font-heading text-xl">Business Profile</h1>
+        <p className="mt-1.5 text-sm text-gray-400">
           The preview uses the same compact public header, gallery, and information layout customers see.
         </p>
       </div>
@@ -314,15 +314,9 @@ export default function CustomizeClient({
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[440px_minmax(0,1fr)] lg:items-start">
-        <div
-          data-layout-marker="ADMIN_PREVIEW_SHELL"
-          className="rounded-lg border-2 border-orange-500 bg-zinc-950/80 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.28)] lg:sticky lg:top-4"
-        >
-          <span className="mb-2 inline-flex rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-            ADMIN_PREVIEW_SHELL
-          </span>
-          <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-3">
+      <div className="grid gap-3 lg:grid-cols-[400px_minmax(0,1fr)] lg:items-start">
+        <div className="rounded-lg border border-white/10 bg-zinc-950/85 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.28)] lg:sticky lg:top-3">
+          <div className="mb-2.5 flex items-center justify-between border-b border-white/10 pb-2.5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Live preview
@@ -333,7 +327,7 @@ export default function CustomizeClient({
               Live
             </span>
           </div>
-          <div className="overflow-hidden rounded-lg border border-white/10">
+          <div className="overflow-hidden rounded-lg border border-white/10 bg-[#f5f7fb] p-2">
           <BusinessProfileShell
             businessName={form.name || "Business"}
             businessDescription={form.description}
@@ -346,15 +340,9 @@ export default function CustomizeClient({
           </div>
         </div>
 
+        <div className="space-y-2.5 rounded-lg border border-white/10 bg-zinc-950/80 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
         <div
-          data-layout-marker="ADMIN_CONTROLS_PANEL"
-          className="space-y-3 rounded-lg border-2 border-lime-500 bg-zinc-950/70 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.24)]"
-        >
-        <span className="inline-flex rounded bg-lime-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-          ADMIN_CONTROLS_PANEL
-        </span>
-        <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
+          className={`rounded-lg border px-3.5 py-2.5 text-sm ${
             planNotice.tone === "warning"
               ? "border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] text-[var(--accent-gold-soft)]"
               : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
@@ -362,7 +350,7 @@ export default function CustomizeClient({
         >
           {planNotice.message}
         </div>
-        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-white">Profile completion</p>
@@ -373,14 +361,14 @@ export default function CustomizeClient({
             </div>
           </div>
 
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
             <div
               className="h-full rounded-full bg-emerald-500"
               style={{ width: `${completion.progressPercent}%` }}
             />
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {completion.fields.map((field) => (
               <div
                 key={field.key}
@@ -405,14 +393,14 @@ export default function CustomizeClient({
           ) : null}
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
-          <div className="mb-4">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
+          <div className="mb-3">
             <h2 className="text-lg font-semibold text-white">Header and business information</h2>
             <p className="mt-1 text-sm text-gray-400">
               These fields feed the compact public header and the detail block below the gallery.
             </p>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
         <div>
           <p className="mb-1 text-sm">Business name</p>
           <input
@@ -448,7 +436,7 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-white">Business logo</h2>
@@ -479,14 +467,14 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
-          <div className="mb-4">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
+          <div className="mb-3">
             <h2 className="text-lg font-semibold text-white">Business information styling</h2>
             <p className="mt-1 text-sm text-gray-400">
               Colors and font sizes apply to the compact header and readable business details.
             </p>
           </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <div>
             <p className="mb-1 text-sm">Page accent color</p>
             <input
@@ -537,7 +525,7 @@ export default function CustomizeClient({
         </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-white">Gallery image area</h2>
@@ -559,7 +547,7 @@ export default function CustomizeClient({
           {customizationErrorMessage ? (
             <p className="mt-3 text-sm text-yellow-200">{customizationErrorMessage}</p>
           ) : null}
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {galleryImages.length === 0 ? (
               <div className="rounded-lg border border-dashed border-white/15 p-5 text-sm text-gray-400">
                 Upload photos to publish a gallery.

@@ -221,7 +221,7 @@ export default function ShopClient({
 
   return (
     <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
-      <div className="bg-[#f5f7fb] px-4 py-6 sm:py-8">
+      <div className="bg-[#f5f7fb] px-3 py-4 sm:py-5">
       <BusinessProfileShell
         businessName={businessName}
         businessDescription={businessDescription}

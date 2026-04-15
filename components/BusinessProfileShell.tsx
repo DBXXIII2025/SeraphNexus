@@ -18,14 +18,6 @@ type BusinessProfileShellProps = {
   compact?: boolean;
 };
 
-function Marker({ label }: { label: string }) {
-  return (
-    <span className="mb-1 inline-flex rounded bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-      {label}
-    </span>
-  );
-}
-
 function getInitials(name: string) {
   return (
     name
@@ -67,8 +59,7 @@ export default function BusinessProfileShell({
 
   return (
     <div
-      data-layout-marker="PROFILE_SHELL"
-      className={`mx-auto w-full max-w-[392px] border-2 border-fuchsia-500 bg-fuchsia-50/50 p-1 ${compact ? "space-y-2" : "space-y-2.5"}`}
+      className={`mx-auto w-full max-w-[376px] ${compact ? "space-y-2" : "space-y-2.5"}`}
       style={
         {
           "--business-accent": theme.accentColor,
@@ -79,14 +70,9 @@ export default function BusinessProfileShell({
         } as CSSProperties
       }
     >
-      <Marker label="PROFILE_SHELL" />
-      <div
-        data-layout-marker="HEADER_CARD"
-        className="rounded-lg border-2 border-cyan-500 bg-white p-2.5 shadow-[0_8px_22px_rgba(15,23,42,0.12)]"
-      >
-        <Marker label="HEADER_CARD" />
+      <div className="rounded-lg border border-slate-300 bg-white p-2.5 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-300 bg-slate-100 shadow-inner">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-300 bg-slate-100 shadow-inner">
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -94,18 +80,18 @@ export default function BusinessProfileShell({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-xs font-semibold tracking-[0.1em] text-slate-700">
+              <span className="text-[11px] font-semibold tracking-[0.1em] text-slate-700">
                 {initials}
               </span>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
               {businessType || "Business"}
             </p>
             <h1
               className="mt-1 truncate font-semibold leading-tight text-[var(--business-text)]"
-              style={{ fontSize: "min(var(--business-heading-size), 24px)" }}
+              style={{ fontSize: "min(var(--business-heading-size), 22px)" }}
             >
               {businessName}
             </h1>
@@ -113,12 +99,8 @@ export default function BusinessProfileShell({
         </div>
       </div>
 
-      <div
-        data-layout-marker="GALLERY_CARD"
-        className="rounded-lg border-2 border-blue-500 bg-white p-2 shadow-[0_8px_22px_rgba(15,23,42,0.12)]"
-      >
-        <Marker label="GALLERY_CARD" />
-        <div className="mb-2 flex items-center justify-between px-1">
+      <div className="rounded-lg border border-slate-300 bg-white p-2 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
+        <div className="mb-1.5 flex items-center justify-between px-0.5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             Gallery
           </p>
@@ -127,7 +109,7 @@ export default function BusinessProfileShell({
           </p>
         </div>
         <div className="overflow-hidden rounded-md border border-slate-400 bg-slate-100 shadow-inner">
-          <div className="relative aspect-[1.28/1]">
+          <div className="relative aspect-[1.2/1]">
             {activeImage ? (
               <img
                 src={activeImage.image_url}
@@ -148,7 +130,7 @@ export default function BusinessProfileShell({
                   type="button"
                   onClick={() => move(-1)}
                   aria-label="Previous photo"
-                  className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-lg font-semibold text-white shadow-[0_6px_14px_rgba(37,99,235,0.35)] transition hover:bg-blue-700"
+                  className="absolute left-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-base font-semibold text-white shadow-[0_6px_14px_rgba(37,99,235,0.35)] transition hover:bg-blue-700"
                 >
                   {"<"}
                 </button>
@@ -156,7 +138,7 @@ export default function BusinessProfileShell({
                   type="button"
                   onClick={() => move(1)}
                   aria-label="Next photo"
-                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-lg font-semibold text-white shadow-[0_6px_14px_rgba(37,99,235,0.35)] transition hover:bg-blue-700"
+                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-base font-semibold text-white shadow-[0_6px_14px_rgba(37,99,235,0.35)] transition hover:bg-blue-700"
                 >
                   {">"}
                 </button>
@@ -165,7 +147,7 @@ export default function BusinessProfileShell({
           </div>
 
           {images.length > 1 ? (
-            <div className="grid grid-cols-5 gap-1.5 border-t border-slate-300 bg-white p-2">
+            <div className="grid grid-cols-5 gap-1 border-t border-slate-300 bg-white p-1.5">
               {images.slice(0, 10).map((image, index) => (
                 <button
                   key={image.id}
@@ -189,13 +171,9 @@ export default function BusinessProfileShell({
         </div>
       </div>
 
-      <div
-        data-layout-marker="INFO_CARD"
-        className="rounded-lg border-2 border-emerald-500 bg-white p-3.5 shadow-[0_8px_22px_rgba(15,23,42,0.12)]"
-      >
-        <Marker label="INFO_CARD" />
+      <div className="rounded-lg border border-slate-300 bg-white p-3 shadow-[0_10px_26px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
         <div className="border-b border-slate-200 pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
             Business information
           </p>
           <h2 className="mt-1 truncate text-base font-semibold leading-tight text-[var(--business-text)]">
@@ -204,20 +182,20 @@ export default function BusinessProfileShell({
         </div>
         {businessDescription ? (
           <p
-            className="mt-3 whitespace-pre-wrap leading-6 text-[var(--business-text)] opacity-85"
-            style={{ fontSize: "min(var(--business-body-size), 16px)" }}
+            className="mt-2.5 whitespace-pre-wrap leading-6 text-[var(--business-text)] opacity-85"
+            style={{ fontSize: "min(var(--business-body-size), 15px)" }}
           >
             {businessDescription}
           </p>
         ) : (
           <p
-            className="mt-3 leading-6 text-[var(--business-text)] opacity-70"
-            style={{ fontSize: "min(var(--business-body-size), 16px)" }}
+            className="mt-2.5 leading-6 text-[var(--business-text)] opacity-70"
+            style={{ fontSize: "min(var(--business-body-size), 15px)" }}
           >
             Business details will appear here once the owner publishes a description.
           </p>
         )}
-        {action ? <div className="mt-3 border-t border-slate-200 pt-3">{action}</div> : null}
+        {action ? <div className="mt-2.5 border-t border-slate-200 pt-2.5">{action}</div> : null}
       </div>
     </div>
   );
