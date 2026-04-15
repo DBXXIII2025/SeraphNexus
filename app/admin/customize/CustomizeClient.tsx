@@ -289,8 +289,8 @@ export default function CustomizeClient({
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 text-white sm:p-6">
-      <div>
+    <div className="mx-auto max-w-6xl space-y-4 p-3 text-white sm:p-4">
+      <div className="rounded-lg border border-white/10 bg-zinc-950/70 px-4 py-3">
         <h1 className="font-heading text-2xl">Business Profile</h1>
         <p className="mt-2 text-sm text-gray-400">
           The preview uses the same compact public header, gallery, and information layout customers see.
@@ -309,8 +309,20 @@ export default function CustomizeClient({
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(360px,472px),1fr] lg:items-start">
-        <div className="lg:sticky lg:top-6">
+      <div className="grid gap-4 lg:grid-cols-[440px_minmax(0,1fr)] lg:items-start">
+        <div className="rounded-lg border border-white/10 bg-zinc-950/80 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.28)] lg:sticky lg:top-4">
+          <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
+                Live preview
+              </p>
+              <p className="mt-1 text-sm text-gray-300">Public card layout</p>
+            </div>
+            <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-200">
+              Live
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-lg border border-white/10">
           <PublicBusinessGallery
             businessName={form.name || "Business"}
             businessDescription={form.description}
@@ -320,10 +332,11 @@ export default function CustomizeClient({
             theme={previewTheme}
             compact
           />
+          </div>
         </div>
 
-        <div className="space-y-4">
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+        <div className="space-y-3 rounded-lg border border-white/10 bg-zinc-950/70 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-white">Profile completion</p>
@@ -366,7 +379,7 @@ export default function CustomizeClient({
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">Header and business information</h2>
             <p className="mt-1 text-sm text-gray-400">
@@ -409,7 +422,7 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-white">Business logo</h2>
@@ -440,7 +453,7 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">Business information styling</h2>
             <p className="mt-1 text-sm text-gray-400">
@@ -498,12 +511,12 @@ export default function CustomizeClient({
         </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
+        <div className="rounded-lg border border-white/10 bg-zinc-900/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-white">Gallery image area</h2>
               <p className="mt-1 text-sm text-gray-400">
-                Manage the compact square gallery shown below the public header.
+                Manage the compact framed gallery shown below the public header.
               </p>
             </div>
             <label className="rounded border border-neutral-700 px-4 py-2 text-sm text-white">

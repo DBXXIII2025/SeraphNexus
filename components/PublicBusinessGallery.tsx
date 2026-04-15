@@ -70,11 +70,12 @@ export default function PublicBusinessGallery({
         } as CSSProperties
       }
     >
-      <div className={`mx-auto w-full max-w-[472px] px-4 ${compact ? "py-4" : "py-7 sm:py-9"}`}>
-        <div className="space-y-3">
-          <div className="rounded-lg border border-black/10 bg-white p-3 shadow-[0_12px_34px_rgba(15,23,42,0.08)]">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-neutral-100">
+      <div className={`mx-auto w-full max-w-[440px] px-3 ${compact ? "py-3" : "py-6 sm:py-8"}`}>
+        <div className="rounded-lg border border-slate-200 bg-white/85 p-2 shadow-[0_18px_48px_rgba(15,23,42,0.14)]">
+          <div className="space-y-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-[0_6px_16px_rgba(15,23,42,0.06)]">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-inner">
                 {logoUrl ? (
                   <img
                     src={logoUrl}
@@ -87,13 +88,13 @@ export default function PublicBusinessGallery({
                   </span>
                 )}
               </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
                   {businessType || "Business"}
                 </p>
                 <h1
                   className="mt-1 truncate font-semibold leading-tight text-[var(--business-text)]"
-                  style={{ fontSize: "min(var(--business-heading-size), 26px)" }}
+                  style={{ fontSize: "min(var(--business-heading-size), 24px)" }}
                 >
                   {businessName}
                 </h1>
@@ -101,9 +102,17 @@ export default function PublicBusinessGallery({
             </div>
           </div>
 
-          <div className="rounded-lg border border-black/10 bg-white p-2 shadow-[0_12px_34px_rgba(15,23,42,0.08)]">
-            <div className="overflow-hidden rounded-md border border-black/10 bg-neutral-100">
-              <div className="relative aspect-[4/3]">
+          <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-[0_6px_16px_rgba(15,23,42,0.06)]">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Gallery
+              </p>
+              <p className="text-[11px] font-medium text-slate-500">
+                {images.length > 0 ? `${activeIndex + 1} / ${images.length}` : "No photos"}
+              </p>
+            </div>
+            <div className="overflow-hidden rounded-lg border border-slate-300 bg-slate-100 shadow-inner">
+              <div className="relative aspect-[1.28/1]">
                 {activeImage ? (
                   <img
                     src={activeImage.image_url}
@@ -124,7 +133,7 @@ export default function PublicBusinessGallery({
                       type="button"
                       onClick={() => move(-1)}
                       aria-label="Previous photo"
-                      className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-lg font-semibold text-white shadow-md transition hover:bg-blue-700"
+                      className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-lg font-semibold text-white shadow-[0_6px_14px_rgba(37,99,235,0.32)] transition hover:bg-blue-700"
                     >
                       {"<"}
                     </button>
@@ -132,7 +141,7 @@ export default function PublicBusinessGallery({
                       type="button"
                       onClick={() => move(1)}
                       aria-label="Next photo"
-                      className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-lg font-semibold text-white shadow-md transition hover:bg-blue-700"
+                      className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-lg font-semibold text-white shadow-[0_6px_14px_rgba(37,99,235,0.32)] transition hover:bg-blue-700"
                     >
                       {">"}
                     </button>
@@ -141,7 +150,7 @@ export default function PublicBusinessGallery({
               </div>
 
               {images.length > 1 ? (
-                <div className="grid grid-cols-5 gap-1.5 border-t border-black/10 bg-white p-2">
+                <div className="grid grid-cols-5 gap-1.5 border-t border-slate-200 bg-white p-2">
                   {images.slice(0, 10).map((image, index) => (
                     <button
                       key={image.id}
@@ -165,35 +174,34 @@ export default function PublicBusinessGallery({
             </div>
           </div>
 
-          <div className="rounded-lg border border-black/10 bg-white p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)]">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
+          <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-[0_6px_16px_rgba(15,23,42,0.06)]">
+            <div className="border-b border-slate-100 pb-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
                 Business information
               </p>
-              {images.length > 1 ? (
-                <p className="text-xs text-neutral-500">
-                  {activeIndex + 1} / {images.length}
-                </p>
-              ) : null}
+              <h2 className="mt-1 truncate text-base font-semibold leading-tight text-[var(--business-text)]">
+                {businessName}
+              </h2>
             </div>
             {businessDescription ? (
               <p
-                className="mt-3 whitespace-pre-wrap leading-7 text-[var(--business-text)] opacity-85"
-                style={{ fontSize: "min(var(--business-body-size), 18px)" }}
+                className="mt-3 whitespace-pre-wrap leading-6 text-[var(--business-text)] opacity-85"
+                style={{ fontSize: "min(var(--business-body-size), 16px)" }}
               >
                 {businessDescription}
               </p>
             ) : (
               <p
-                className="mt-3 leading-7 text-[var(--business-text)] opacity-70"
-                style={{ fontSize: "min(var(--business-body-size), 18px)" }}
+                className="mt-3 leading-6 text-[var(--business-text)] opacity-70"
+                style={{ fontSize: "min(var(--business-body-size), 16px)" }}
               >
                 Business details will appear here once the owner publishes a description.
               </p>
             )}
           </div>
 
-          {action ? <div className="flex justify-center rounded-lg border border-black/10 bg-white p-3 shadow-[0_12px_34px_rgba(15,23,42,0.08)]">{action}</div> : null}
+          {action ? <div className="flex justify-center rounded-lg border border-slate-200 bg-white p-3 shadow-[0_6px_16px_rgba(15,23,42,0.06)]">{action}</div> : null}
+          </div>
         </div>
       </div>
     </section>
