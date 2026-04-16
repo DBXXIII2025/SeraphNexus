@@ -16,7 +16,7 @@ export default function ExploreLayout({
   grid: React.ReactNode;
 }) {
   return (
-    <div className="px-4 py-6 md:px-8 lg:py-8">
+    <div className="min-h-screen bg-[#f4f6f8] px-4 py-6 text-slate-900 md:px-8 lg:py-8">
       <div className="mx-auto max-w-[1400px] space-y-6">
         {header}
         {controlBar}

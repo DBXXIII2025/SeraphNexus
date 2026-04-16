@@ -31,17 +31,17 @@ export default function ExploreSidebar({
 }) {
   return (
     <div className="space-y-4">
-      <section className="rounded-[1.35rem] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(27,21,21,0.98),rgba(18,14,14,0.98))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold text-[var(--text-strong)]">Filters</p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">Refine what appears in the marketplace grid.</p>
+            <p className="text-xs font-semibold text-slate-950">Filters</p>
+            <p className="mt-1 text-xs text-slate-500">Refine what appears in the marketplace grid.</p>
           </div>
           {hasActiveFilters ? (
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex min-h-9 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-xs font-medium text-[var(--text-soft)] transition hover:border-[rgba(212,175,55,0.14)] hover:text-[var(--text-strong)]"
+              className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-500"
             >
               Clear
             </button>
@@ -50,7 +50,7 @@ export default function ExploreSidebar({
 
         <div className="mt-4 space-y-4">
           <label className="block">
-            <span className="mb-2 block text-xs font-medium text-[var(--text-soft)]">
+            <span className="mb-2 block text-xs font-medium text-slate-700">
               Business Type
             </span>
             <select value={typeFilter} onChange={(event) => onTypeChange(event.target.value)}>
@@ -64,7 +64,7 @@ export default function ExploreSidebar({
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-xs font-medium text-[var(--text-soft)]">
+            <span className="mb-2 block text-xs font-medium text-slate-700">
               Route Type
             </span>
             <select value={routeFilter} onChange={(event) => onRouteChange(event.target.value as ExploreRouteFilterId)}>
@@ -77,7 +77,7 @@ export default function ExploreSidebar({
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-xs font-medium text-[var(--text-soft)]">
+            <span className="mb-2 block text-xs font-medium text-slate-700">
               Status
             </span>
             <select

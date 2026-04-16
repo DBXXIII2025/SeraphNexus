@@ -217,6 +217,48 @@ export default async function AdminLayout({
     );
   }
 
+  if (isCustomizeRoute) {
+    return (
+      <div className="min-h-screen bg-[#f4f6f8] text-slate-900">
+        <header className="border-b border-slate-200 bg-white">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Business website builder
+              </p>
+              <h1 className="mt-1 text-xl font-semibold text-slate-950">
+                {activeBusiness?.name || "Business profile"}
+              </h1>
+            </div>
+            <nav className="flex flex-wrap gap-2 text-sm">
+              <Link
+                href="/admin"
+                className="rounded-md border border-slate-300 bg-white px-3 py-2 font-medium text-slate-800"
+              >
+                Admin
+              </Link>
+              <Link
+                href="/admin/settings"
+                className="rounded-md border border-slate-300 bg-white px-3 py-2 font-medium text-slate-800"
+              >
+                Settings
+              </Link>
+              {activeBusiness?.slug ? (
+                <Link
+                  href={getPublicPath(activeBusiness.business_type, activeBusiness.slug)}
+                  className="rounded-md bg-slate-950 px-3 py-2 font-medium text-white"
+                >
+                  Public page
+                </Link>
+              ) : null}
+            </nav>
+          </div>
+        </header>
+        <main>{children}</main>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-shell min-h-screen bg-transparent text-[var(--text-main)]">
       <div className="relative mx-auto grid max-w-[1520px] gap-6 px-4 py-4 sm:px-6 lg:grid-cols-[312px,1fr] lg:px-8 lg:py-6">

@@ -294,46 +294,47 @@ export default function CustomizeClient({
   });
 
   return (
-    <div className="mx-auto max-w-5xl space-y-3 p-2 text-white sm:p-3">
-      <div className="rounded-lg border border-white/10 bg-zinc-950/80 px-3.5 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.22)]">
-        <h1 className="font-heading text-xl">Business Profile</h1>
-        <p className="mt-1.5 text-sm text-gray-400">
+    <div className="mx-auto max-w-6xl space-y-4 p-3 text-slate-900 sm:p-4">
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
+        <h1 className="font-heading text-2xl text-slate-950">Business Profile</h1>
+        <p className="mt-1.5 text-sm text-slate-600">
           The preview uses the same compact public header, gallery, and information layout customers see.
         </p>
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       ) : null}
 
       {success ? (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {success}
         </div>
       ) : null}
 
-      <div className="grid gap-3 lg:grid-cols-[400px_minmax(0,1fr)] lg:items-start">
-        <div className="rounded-lg border border-white/10 bg-zinc-950/85 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.28)] lg:sticky lg:top-3">
-          <div className="mb-2.5 flex items-center justify-between border-b border-white/10 pb-2.5">
+      <div className="grid gap-4 lg:grid-cols-[410px_minmax(0,1fr)] lg:items-start">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_18px_44px_rgba(15,23,42,0.08)] lg:sticky lg:top-4">
+          <div className="mb-3 flex items-center justify-between border-b border-slate-200 pb-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                 Live preview
               </p>
-              <p className="mt-1 text-sm text-gray-300">Public card layout</p>
+              <p className="mt-1 text-sm text-slate-600">Public card layout</p>
             </div>
-            <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-200">
+            <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
               Live
             </span>
           </div>
           <div
-            className="relative overflow-hidden rounded-lg border border-red-500 bg-[#f5f7fb] p-2 outline outline-2 outline-red-500"
-            style={{ width: "100%", maxWidth: "384px" }}
+            className="overflow-hidden rounded-lg border border-slate-200 p-2"
+            style={{
+              width: "100%",
+              maxWidth: "384px",
+              backgroundColor: previewTheme.backgroundColor,
+            }}
           >
-            <span className="pointer-events-none absolute left-2 top-2 z-30 rounded bg-red-700 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-              ADMIN_PREVIEW_WRAPPER
-            </span>
             <BusinessProfileShell
               businessName={form.name || "Business"}
               businessDescription={form.description}
@@ -346,31 +347,28 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="relative space-y-2.5 rounded-lg border border-yellow-400 bg-zinc-950/80 p-3 shadow-[0_18px_48px_rgba(0,0,0,0.24)] outline outline-2 outline-yellow-400">
-        <span className="pointer-events-none absolute right-2 top-2 z-30 rounded bg-yellow-500 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-black">
-          ADMIN_CONTROLS_PANEL
-        </span>
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
         <div
           className={`rounded-lg border px-3.5 py-2.5 text-sm ${
             planNotice.tone === "warning"
-              ? "border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] text-[var(--accent-gold-soft)]"
-              : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+              ? "border-amber-200 bg-amber-50 text-amber-800"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700"
           }`}
         >
           {planNotice.message}
         </div>
-        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-white">Profile completion</p>
-              <p className="mt-1 text-sm text-gray-400">{completion.summary}</p>
+              <p className="text-sm font-medium text-slate-950">Profile completion</p>
+              <p className="mt-1 text-sm text-slate-600">{completion.summary}</p>
             </div>
-            <div className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm font-medium text-white">
+            <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-900">
               {completion.progressPercent}% complete
             </div>
           </div>
 
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
             <div
               className="h-full rounded-full bg-emerald-500"
               style={{ width: `${completion.progressPercent}%` }}
@@ -381,9 +379,9 @@ export default function CustomizeClient({
             {completion.fields.map((field) => (
               <div
                 key={field.key}
-                className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
               >
-                <span className="font-medium text-white">{field.label}</span>
+                <span className="font-medium text-slate-900">{field.label}</span>
                 <span
                   className={`ml-2 ${
                     field.missing ? "text-yellow-300" : "text-emerald-300"
@@ -402,59 +400,59 @@ export default function CustomizeClient({
           ) : null}
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold text-white">Header and business information</h2>
-            <p className="mt-1 text-sm text-gray-400">
+            <h2 className="text-lg font-semibold text-slate-950">Header and business information</h2>
+            <p className="mt-1 text-sm text-slate-600">
               These fields feed the compact public header and the detail block below the gallery.
             </p>
           </div>
           <div className="space-y-3">
         <div>
-          <p className="mb-1 text-sm">Business name</p>
+          <p className="mb-1 text-sm font-medium text-slate-700">Business name</p>
           <input
             placeholder="Business name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full rounded border border-neutral-700 bg-neutral-800 p-2"
+            className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
           />
         </div>
 
         <div>
-          <p className="mb-1 text-sm">Public slug</p>
+          <p className="mb-1 text-sm font-medium text-slate-700">Public slug</p>
           <input
             placeholder="public-business-slug"
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            className="w-full rounded border border-neutral-700 bg-neutral-800 p-2"
+            className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
           />
-          <p className="mt-2 text-xs text-gray-400">
+          <p className="mt-2 text-xs text-slate-500">
             Preview: /{publicRoutePrefix}/{slugPreview || "your-business"}
           </p>
         </div>
 
         <div>
-          <p className="mb-1 text-sm">Business description</p>
+          <p className="mb-1 text-sm font-medium text-slate-700">Business description</p>
           <textarea
             placeholder="Describe what customers should know before they visit, book, order, or inquire."
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="min-h-32 w-full rounded border border-neutral-700 bg-neutral-800 p-2"
+            className="min-h-32 w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
           />
         </div>
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-white">Business logo</h2>
-              <p className="mt-1 text-sm text-gray-400">
+              <h2 className="text-lg font-semibold text-slate-950">Business logo</h2>
+              <p className="mt-1 text-sm text-slate-600">
                 This logo appears in the compact public header.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <label className="rounded border border-neutral-700 px-4 py-2 text-sm text-white">
+              <label className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800">
                 {uploadingLogo ? "Uploading..." : logoUrl ? "Replace logo" : "Upload logo"}
                 <input
                   type="file"
@@ -468,7 +466,7 @@ export default function CustomizeClient({
                 type="button"
                 onClick={() => void removeLogo()}
                 disabled={uploadingLogo || !logoUrl}
-                className="rounded border border-red-500/30 px-4 py-2 text-sm text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Remove logo
               </button>
@@ -476,37 +474,40 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold text-white">Business information styling</h2>
-            <p className="mt-1 text-sm text-gray-400">
+            <h2 className="text-lg font-semibold text-slate-950">Business information styling</h2>
+            <p className="mt-1 text-sm text-slate-600">
               Colors and font sizes apply to the compact header and readable business details.
             </p>
           </div>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <p className="mb-1 text-sm">Page accent color</p>
+            <p className="mb-1 text-sm font-medium text-slate-700">Page background/theme color</p>
             <input
               type="color"
               value={form.page_accent_color}
               onChange={(e) => setForm({ ...form, page_accent_color: e.target.value })}
-              className="h-11 w-full rounded border border-neutral-700 bg-neutral-800 p-1"
+              className="h-11 w-full rounded border border-slate-300 bg-white p-1"
             />
+            <p className="mt-2 text-xs text-slate-500">
+              This saved theme color drives the public buttons, accents, and page background tint.
+            </p>
           </div>
           <div>
-            <p className="mb-1 text-sm">Page text color</p>
+            <p className="mb-1 text-sm font-medium text-slate-700">Page text color</p>
             <input
               type="color"
               value={form.page_text_color}
               onChange={(e) => setForm({ ...form, page_text_color: e.target.value })}
-              className="h-11 w-full rounded border border-neutral-700 bg-neutral-800 p-1"
+              className="h-11 w-full rounded border border-slate-300 bg-white p-1"
             />
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-xs text-slate-500">
               Very low-contrast text colors are saved as the readable default.
             </p>
           </div>
           <div>
-            <p className="mb-1 text-sm">Heading font size</p>
+            <p className="mb-1 text-sm font-medium text-slate-700">Heading font size</p>
             <input
               type="number"
               min="24"
@@ -515,11 +516,11 @@ export default function CustomizeClient({
               onChange={(e) =>
                 setForm({ ...form, heading_font_size: Number(e.target.value) })
               }
-              className="w-full rounded border border-neutral-700 bg-neutral-800 p-2"
+              className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
             />
           </div>
           <div>
-            <p className="mb-1 text-sm">Body font size</p>
+            <p className="mb-1 text-sm font-medium text-slate-700">Body font size</p>
             <input
               type="number"
               min="14"
@@ -528,21 +529,21 @@ export default function CustomizeClient({
               onChange={(e) =>
                 setForm({ ...form, body_font_size: Number(e.target.value) })
               }
-              className="w-full rounded border border-neutral-700 bg-neutral-800 p-2"
+              className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
             />
           </div>
         </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-zinc-900/85 p-3.5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-white">Gallery image area</h2>
-              <p className="mt-1 text-sm text-gray-400">
-                Manage the compact framed gallery shown below the public header.
+              <h2 className="text-lg font-semibold text-slate-950">Gallery image area</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Manage the compact framed public carousel without enlarging the control panel.
               </p>
             </div>
-            <label className="rounded border border-neutral-700 px-4 py-2 text-sm text-white">
+            <label className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800">
               {uploadingPhoto ? "Uploading..." : "Add photo"}
               <input
                 type="file"
@@ -554,26 +555,26 @@ export default function CustomizeClient({
             </label>
           </div>
           {customizationErrorMessage ? (
-            <p className="mt-3 text-sm text-yellow-200">{customizationErrorMessage}</p>
+            <p className="mt-3 text-sm text-amber-700">{customizationErrorMessage}</p>
           ) : null}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {galleryImages.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-white/15 p-5 text-sm text-gray-400">
+              <div className="col-span-full rounded-lg border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">
                 Upload photos to publish a gallery.
               </div>
             ) : (
               galleryImages.map((image, index) => (
-                <div key={image.id} className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
-                  <img src={image.image_url} alt={image.alt_text || "Business gallery photo"} className="aspect-[4/3] w-full object-cover" />
-                  <div className="flex items-center justify-between gap-2 p-3 text-sm">
-                    <span className="text-gray-300">
+                <div key={image.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <img src={image.image_url} alt={image.alt_text || "Business gallery photo"} className="aspect-square w-full object-cover" />
+                  <div className="space-y-2 p-2 text-xs">
+                    <span className="block font-medium text-slate-700">
                       {image.is_primary ? "Primary photo" : `Photo ${index + 1}`}
                     </span>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => void markPrimaryPhoto(image.id)} className="rounded border border-white/10 px-2 py-1 disabled:opacity-50" disabled={image.is_primary}>Primary</button>
-                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, -1)} className="rounded border border-white/10 px-2 py-1 disabled:opacity-50" disabled={index === 0}>Up</button>
-                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, 1)} className="rounded border border-white/10 px-2 py-1 disabled:opacity-50" disabled={index === galleryImages.length - 1}>Down</button>
-                      <button type="button" onClick={() => void removeGalleryPhoto(image.id)} className="rounded border border-red-500/30 px-2 py-1 text-red-200">Remove</button>
+                    <div className="grid grid-cols-2 gap-1">
+                      <button type="button" onClick={() => void markPrimaryPhoto(image.id)} className="rounded border border-slate-200 px-2 py-1 text-slate-700 disabled:opacity-50" disabled={image.is_primary}>Primary</button>
+                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, -1)} className="rounded border border-slate-200 px-2 py-1 text-slate-700 disabled:opacity-50" disabled={index === 0}>Up</button>
+                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, 1)} className="rounded border border-slate-200 px-2 py-1 text-slate-700 disabled:opacity-50" disabled={index === galleryImages.length - 1}>Down</button>
+                      <button type="button" onClick={() => void removeGalleryPhoto(image.id)} className="rounded border border-red-200 px-2 py-1 text-red-700">Remove</button>
                     </div>
                   </div>
                 </div>
@@ -586,13 +587,13 @@ export default function CustomizeClient({
           <button
             onClick={handleSave}
             disabled={loading}
-            className="rounded bg-purple-700 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded bg-slate-950 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Saving..." : "Save Profile"}
           </button>
           <a
             href="/admin/settings"
-            className="rounded border border-neutral-700 px-4 py-2 text-sm text-white"
+            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800"
           >
             Review publish readiness
           </a>

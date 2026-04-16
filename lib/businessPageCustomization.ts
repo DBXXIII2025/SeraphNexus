@@ -7,6 +7,7 @@ const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const DEFAULT_THEME = {
   accentColor: "#2563eb",
   textColor: "#111827",
+  backgroundColor: "#f4f6f8",
   headingFontSize: 36,
   bodyFontSize: 16,
 };
@@ -73,14 +74,33 @@ function contrastRatio(a: string, b: string) {
   return (high + 0.05) / (low + 0.05);
 }
 
+function channelToHex(value: number) {
+  return Math.round(value).toString(16).padStart(2, "0");
+}
+
+function mixWithWhite(hex: string, whiteRatio: number) {
+  const rgb = hexToRgb(hex);
+  const ratio = Math.min(1, Math.max(0, whiteRatio));
+  const r = rgb.r * 255 * (1 - ratio) + 255 * ratio;
+  const g = rgb.g * 255 * (1 - ratio) + 255 * ratio;
+  const b = rgb.b * 255 * (1 - ratio) + 255 * ratio;
+  return `#${channelToHex(r)}${channelToHex(g)}${channelToHex(b)}`;
+}
+
 export function normalizeBusinessPageTheme(data: Record<string, unknown> = {}): BusinessPageTheme {
-  const textColor = normalizeHexColor(data.page_text_color, DEFAULT_THEME.textColor);
-  const safeTextColor = contrastRatio(textColor, "#ffffff") >= 4.5 ? textColor : DEFAULT_THEME.textColor;
   const accentColor = normalizeHexColor(data.page_accent_color, DEFAULT_THEME.accentColor);
+  const backgroundColor = normalizeHexColor(
+    data.page_background_color,
+    mixWithWhite(accentColor, 0.92)
+  );
+  const textColor = normalizeHexColor(data.page_text_color, DEFAULT_THEME.textColor);
+  const safeTextColor =
+    contrastRatio(textColor, "#ffffff") >= 4.5 ? textColor : DEFAULT_THEME.textColor;
 
   return {
     accentColor,
     textColor: safeTextColor,
+    backgroundColor,
     headingFontSize: clampNumber(
       data.heading_font_size ?? data.page_heading_font_size,
       24,

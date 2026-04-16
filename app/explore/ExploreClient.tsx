@@ -19,6 +19,7 @@ export default function ExploreClient({
   businesses,
   isLoggedIn,
   isPlatformAdmin,
+  settings,
 }: {
   businesses: Business[];
   isLoggedIn: boolean;
@@ -75,6 +76,13 @@ export default function ExploreClient({
   const featuredBusinesses = useMemo(() => {
     return businessViews.filter((business) => business.routeState.isRoutable).slice(0, 3);
   }, [businessViews]);
+  const platformName = settings.platform_name || "Seraph Nexus";
+  const platformInitials =
+    platformName
+      .split(/\s+/)
+      .map((part) => part[0]?.toUpperCase() || "")
+      .join("")
+      .slice(0, 2) || "SN";
 
   const createBusinessHref = isLoggedIn
     ? "/onboarding/create-business"
@@ -123,21 +131,21 @@ export default function ExploreClient({
   }, [actionsOpen]);
 
   const header = (
-    <header className="rounded-[1.4rem] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(28,22,22,0.96),rgba(17,14,14,0.98))] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+    <header className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center">
-          <div className="inline-flex items-center gap-3 rounded-2xl border border-[rgba(212,175,55,0.12)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(212,175,55,0.18),rgba(193,18,31,0.12))] text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-gold-soft)]">
-              SN
+          <div className="inline-flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-950 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+              {platformInitials}
             </span>
-            <span className="text-sm font-semibold text-[var(--text-strong)]">Seraph Nexus</span>
+            <span className="text-sm font-semibold text-slate-950">{platformName}</span>
           </div>
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-3">
           <Link
             href="/explore"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[rgba(212,175,55,0.14)] bg-[rgba(212,175,55,0.08)] px-4 py-2 text-sm font-semibold text-[var(--accent-gold-soft)]"
+            className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800"
           >
             Explore
           </Link>
@@ -148,16 +156,16 @@ export default function ExploreClient({
               aria-expanded={actionsOpen}
               aria-haspopup="menu"
               onClick={() => setActionsOpen((value) => !value)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.82)] px-4 py-2 text-sm font-medium text-[var(--text-strong)] shadow-[0_10px_24px_rgba(0,0,0,0.18)]"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-slate-950 px-4 py-2 text-sm font-medium text-white shadow-[0_10px_24px_rgba(15,23,42,0.12)]"
             >
               <span>{isLoggedIn ? "Actions" : "Account"}</span>
-              <span className="text-[10px] text-[var(--text-muted)]">{actionsOpen ? "Close" : "Open"}</span>
+              <span className="text-[10px] text-slate-300">{actionsOpen ? "Close" : "Open"}</span>
             </button>
 
             {actionsOpen ? (
-              <div className="absolute right-0 top-full z-20 mt-3 w-[240px] rounded-[1.25rem] border border-[rgba(212,175,55,0.14)] bg-[linear-gradient(180deg,rgba(28,22,22,0.98),rgba(17,14,14,0.99))] p-3 shadow-[0_24px_44px_rgba(0,0,0,0.32)]">
+              <div className="absolute right-0 top-full z-20 mt-3 w-[240px] rounded-xl border border-slate-200 bg-white p-3 shadow-[0_24px_44px_rgba(15,23,42,0.16)]">
                 <div className="mb-3 px-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                     {isLoggedIn ? "Workspace Actions" : "Public Actions"}
                   </p>
                 </div>
@@ -207,7 +215,7 @@ export default function ExploreClient({
   );
 
   const controlBar = (
-    <section className="rounded-[1.4rem] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(28,22,22,0.96),rgba(17,14,14,0.98))] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+    <section className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input
           type="text"
@@ -224,8 +232,8 @@ export default function ExploreClient({
             onClick={() => setCategoryFilter("all")}
             className={`rounded-full border px-3 py-2 text-xs font-semibold ${
               categoryFilter === "all"
-                ? "border-[rgba(212,175,55,0.28)] bg-[rgba(212,175,55,0.14)] text-[var(--accent-gold-soft)] shadow-[inset_0_0_0_1px_rgba(212,175,55,0.08)]"
-                : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-[var(--text-soft)] hover:border-[rgba(212,175,55,0.14)] hover:text-[var(--text-strong)]"
+                ? "border-slate-950 bg-slate-950 text-white"
+                : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
             }`}
           >
             All
@@ -237,8 +245,8 @@ export default function ExploreClient({
               onClick={() => setCategoryFilter(category.id)}
               className={`rounded-full border px-3 py-2 text-xs font-semibold ${
                 categoryFilter === category.id
-                  ? "border-[rgba(212,175,55,0.28)] bg-[rgba(212,175,55,0.14)] text-[var(--accent-gold-soft)] shadow-[inset_0_0_0_1px_rgba(212,175,55,0.08)]"
-                  : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-[var(--text-soft)] hover:border-[rgba(212,175,55,0.14)] hover:text-[var(--text-strong)]"
+                  ? "border-slate-950 bg-slate-950 text-white"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
               }`}
             >
               {category.shortLabel}
@@ -265,7 +273,7 @@ export default function ExploreClient({
           <button
             type="button"
             onClick={clearFilters}
-            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-2 text-sm font-medium text-[var(--text-soft)] transition hover:border-[rgba(212,175,55,0.14)] hover:text-[var(--text-strong)]"
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-500"
           >
             Clear filters
           </button>
@@ -290,14 +298,14 @@ export default function ExploreClient({
   );
 
   const mobileSidebar = (
-    <div className="rounded-[1.4rem] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(28,22,22,0.96),rgba(17,14,14,0.98))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
       <button
         type="button"
         onClick={() => setMobileFiltersOpen((value) => !value)}
-        className="flex w-full items-center justify-between rounded-2xl border border-[var(--border-soft)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-left"
+        className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-left"
       >
-        <span className="text-sm font-semibold text-[var(--text-strong)]">Filters</span>
-        <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+        <span className="text-sm font-semibold text-slate-950">Filters</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
           {mobileFiltersOpen ? "Close" : "Open"}
         </span>
       </button>
@@ -308,8 +316,8 @@ export default function ExploreClient({
   const featured = featuredBusinesses.length > 0 ? (
     <section className="space-y-4">
       <div>
-        <p className="section-kicker">Featured</p>
-        <h2 className="mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-[var(--text-strong)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Featured</p>
+        <h2 className="mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-slate-950">
           Featured businesses
         </h2>
       </div>
@@ -324,8 +332,8 @@ export default function ExploreClient({
   const grid = (
     <section className="space-y-4">
       <div>
-        <p className="section-kicker">Results</p>
-        <h2 className="mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-[var(--text-strong)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Results</p>
+        <h2 className="mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-slate-950">
           {sortedBusinesses.length} businesses
         </h2>
       </div>

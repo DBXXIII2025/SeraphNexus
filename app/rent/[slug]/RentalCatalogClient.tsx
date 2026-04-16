@@ -197,10 +197,10 @@ export default function RentalCatalogClient({
 
   return (
     <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
-      <div className="relative bg-[#f5f7fb] px-3 py-4 outline outline-2 outline-red-500 sm:py-5">
-        <span className="pointer-events-none absolute left-2 top-2 z-30 rounded bg-red-700 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-          PUBLIC_PAGE_WRAPPER
-        </span>
+      <div
+        className="px-3 py-5 sm:py-6"
+        style={{ backgroundColor: business.pageTheme.backgroundColor }}
+      >
         <BusinessProfileShell
           businessName={business.name}
           businessDescription={business.description}
