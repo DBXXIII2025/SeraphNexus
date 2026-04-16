@@ -557,7 +557,7 @@ export default function CustomizeClient({
           {customizationErrorMessage ? (
             <p className="mt-3 text-sm text-amber-700">{customizationErrorMessage}</p>
           ) : null}
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-3 gap-2">
             {galleryImages.length === 0 ? (
               <div className="col-span-full rounded-lg border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">
                 Upload photos to publish a gallery.

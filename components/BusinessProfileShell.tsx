@@ -35,14 +35,25 @@ export default function BusinessProfileShell({
   businessDescription,
   businessType,
   logoUrl,
-  images,
+  images: incomingImages,
   theme,
   action,
   compact = false,
 }: BusinessProfileShellProps) {
+  const images = useMemo(
+    () =>
+      Array.isArray(incomingImages)
+        ? incomingImages.filter((image) => Boolean(image?.image_url))
+        : [],
+    [incomingImages]
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const activeImage = images[activeIndex] || null;
   const initials = useMemo(() => getInitials(businessName || "Business"), [businessName]);
+
+  useEffect(() => {
+    console.log("GALLERY_IMAGES:", images.length);
+  }, [images.length]);
 
   useEffect(() => {
     if (activeIndex > 0 && activeIndex >= images.length) {
@@ -50,11 +61,18 @@ export default function BusinessProfileShell({
     }
   }, [activeIndex, images.length]);
 
-  function move(delta: number) {
+  function showPreviousImage() {
     if (images.length <= 1) {
       return;
     }
-    setActiveIndex((current) => (current + delta + images.length) % images.length);
+    setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  }
+
+  function showNextImage() {
+    if (images.length <= 1) {
+      return;
+    }
+    setActiveIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   }
 
   return (
@@ -121,7 +139,7 @@ export default function BusinessProfileShell({
 
       <div
         className="rounded-lg border border-slate-200 bg-white p-2 shadow-[0_14px_32px_rgba(15,23,42,0.12)]"
-        style={{ width: "100%", maxWidth: compact ? "380px" : "390px" }}
+        style={{ width: "100%", maxWidth: "380px", marginInline: "auto" }}
       >
         <div className="mb-1.5 flex items-center justify-between px-0.5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -166,7 +184,7 @@ export default function BusinessProfileShell({
               <>
                 <button
                   type="button"
-                  onClick={() => move(-1)}
+                  onClick={showPreviousImage}
                   aria-label="Previous photo"
                   className="absolute left-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-base font-semibold text-white shadow-[0_6px_14px_rgba(37,99,235,0.35)] transition hover:bg-blue-700"
                 >
@@ -174,7 +192,7 @@ export default function BusinessProfileShell({
                 </button>
                 <button
                   type="button"
-                  onClick={() => move(1)}
+                  onClick={showNextImage}
                   aria-label="Next photo"
                   className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md border border-blue-700 bg-blue-600 text-base font-semibold text-white shadow-[0_6px_14px_rgba(37,99,235,0.35)] transition hover:bg-blue-700"
                 >
@@ -186,7 +204,7 @@ export default function BusinessProfileShell({
 
           {images.length > 1 ? (
             <div className="grid grid-cols-5 gap-1 border-t border-slate-300 bg-white p-1.5">
-              {images.slice(0, 10).map((image, index) => (
+              {images.map((image, index) => (
                 <button
                   key={image.id}
                   type="button"
