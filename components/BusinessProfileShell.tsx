@@ -16,6 +16,12 @@ type BusinessProfileShellProps = {
   theme: BusinessPageTheme;
   action?: ReactNode;
   compact?: boolean;
+  contact?: {
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    address?: string | null;
+  };
 };
 
 function getInitials(name: string) {
@@ -39,6 +45,7 @@ export default function BusinessProfileShell({
   theme,
   action,
   compact = false,
+  contact,
 }: BusinessProfileShellProps) {
   const images = useMemo(
     () =>
@@ -50,10 +57,9 @@ export default function BusinessProfileShell({
   const [activeIndex, setActiveIndex] = useState(0);
   const activeImage = images[activeIndex] || null;
   const initials = useMemo(() => getInitials(businessName || "Business"), [businessName]);
-
-  useEffect(() => {
-    console.log("GALLERY_IMAGES:", images.length);
-  }, [images.length]);
+  const hasContactInfo = Boolean(
+    contact?.phone || contact?.email || contact?.website || contact?.address
+  );
 
   useEffect(() => {
     if (activeIndex > 0 && activeIndex >= images.length) {
@@ -76,12 +82,11 @@ export default function BusinessProfileShell({
   }
 
   return (
-    <div
-      className={`mx-auto w-full max-w-[390px] ${compact ? "space-y-2.5" : "space-y-3"}`}
+    <article
+      className={`mx-auto w-full ${compact ? "max-w-[390px] space-y-3" : "max-w-5xl space-y-5"}`}
       style={
         {
           width: "100%",
-          maxWidth: compact ? "380px" : "390px",
           "--business-accent": theme.accentColor,
           "--business-text": theme.textColor,
           "--business-background": theme.backgroundColor,
@@ -91,17 +96,39 @@ export default function BusinessProfileShell({
         } as CSSProperties
       }
     >
-      <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-[0_14px_32px_rgba(15,23,42,0.12)]">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <header className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-950 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
+              SN
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-950">Seraph Nexus</p>
+              <p className="text-xs text-slate-500">Business profile</p>
+            </div>
+          </div>
+          <nav className="flex items-center gap-2 text-xs font-medium text-slate-600">
+            <a href="/explore" className="rounded-md border border-slate-200 px-3 py-2 hover:border-slate-400">
+              Explore
+            </a>
+            <span className="hidden rounded-md border border-slate-200 px-3 py-2 sm:inline-flex">
+              {businessType || "Business"}
+            </span>
+          </nav>
+        </div>
+      </header>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_18px_44px_rgba(15,23,42,0.10)]">
+        <div className={compact ? "flex min-w-0 items-center gap-3" : "grid gap-4 sm:grid-cols-[72px_minmax(0,1fr)_auto] sm:items-center"}>
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-100 shadow-inner"
+            className="flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-inner"
             style={{
-              width: "40px",
-              height: "40px",
-              minWidth: "40px",
-              minHeight: "40px",
-              maxWidth: "40px",
-              maxHeight: "40px",
+              width: compact ? "44px" : "64px",
+              height: compact ? "44px" : "64px",
+              minWidth: compact ? "44px" : "64px",
+              minHeight: compact ? "44px" : "64px",
+              maxWidth: "64px",
+              maxHeight: "64px",
             }}
           >
             {logoUrl ? (
@@ -112,8 +139,8 @@ export default function BusinessProfileShell({
                 style={{
                   width: "100%",
                   height: "100%",
-                  maxWidth: "40px",
-                  maxHeight: "40px",
+                  maxWidth: "64px",
+                  maxHeight: "64px",
                   objectFit: "cover",
                 }}
               />
@@ -124,22 +151,28 @@ export default function BusinessProfileShell({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
               {businessType || "Business"}
             </p>
             <h1
-              className="mt-1 truncate font-semibold leading-tight text-[var(--business-text)]"
-              style={{ fontSize: "min(var(--business-heading-size), 22px)" }}
+              className="mt-1 font-semibold leading-tight text-[var(--business-text)]"
+              style={{ fontSize: compact ? "min(var(--business-heading-size), 22px)" : "min(var(--business-heading-size), 34px)" }}
             >
               {businessName}
             </h1>
+            {businessDescription ? (
+              <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+                {businessDescription}
+              </p>
+            ) : null}
           </div>
+          {action ? <div className={compact ? "hidden" : "sm:justify-self-end"}>{action}</div> : null}
         </div>
-      </div>
+      </section>
 
-      <div
+      <section
         className="rounded-lg border border-slate-200 bg-white p-2 shadow-[0_14px_32px_rgba(15,23,42,0.12)]"
-        style={{ width: "100%", maxWidth: "380px", marginInline: "auto" }}
+        style={{ width: "100%", maxWidth: compact ? "380px" : "760px", marginInline: "auto" }}
       >
         <div className="mb-1.5 flex items-center justify-between px-0.5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -158,7 +191,7 @@ export default function BusinessProfileShell({
             style={{
               width: "100%",
               aspectRatio: "1.2 / 1",
-              maxHeight: compact ? "300px" : "325px",
+              maxHeight: compact ? "300px" : "520px",
             }}
           >
             {activeImage ? (
@@ -203,7 +236,7 @@ export default function BusinessProfileShell({
           </div>
 
           {images.length > 1 ? (
-            <div className="grid grid-cols-5 gap-1 border-t border-slate-300 bg-white p-1.5">
+            <div className="grid grid-cols-5 gap-1 border-t border-slate-300 bg-white p-1.5 sm:grid-cols-8">
               {images.map((image, index) => (
                 <button
                   key={image.id}
@@ -225,9 +258,9 @@ export default function BusinessProfileShell({
             </div>
           ) : null}
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-[0_14px_32px_rgba(15,23,42,0.12)]">
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.10)]">
         <div className="border-b border-slate-200 pb-2">
           <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--business-accent)]">
             Business information
@@ -251,8 +284,37 @@ export default function BusinessProfileShell({
             Business details will appear here once the owner publishes a description.
           </p>
         )}
-        {action ? <div className="mt-2.5 border-t border-slate-200 pt-2.5">{action}</div> : null}
-      </div>
-    </div>
+        {compact && action ? <div className="mt-2.5 border-t border-slate-200 pt-2.5">{action}</div> : null}
+        {hasContactInfo ? (
+          <div className="mt-4 grid gap-2 border-t border-slate-200 pt-4 text-sm text-slate-700 sm:grid-cols-2">
+            {contact?.phone ? <p><span className="font-semibold">Phone:</span> {contact.phone}</p> : null}
+            {contact?.email ? <p><span className="font-semibold">Email:</span> {contact.email}</p> : null}
+            {contact?.website ? <p><span className="font-semibold">Website:</span> {contact.website}</p> : null}
+            {contact?.address ? <p><span className="font-semibold">Address:</span> {contact.address}</p> : null}
+          </div>
+        ) : null}
+      </section>
+
+      <footer className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold text-slate-950">{businessName}</p>
+            <p className="text-xs text-slate-500">Published on Seraph Nexus</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a href="/explore" className="rounded-md border border-slate-200 px-3 py-2 font-medium text-slate-700">
+              Explore
+            </a>
+            <a href="/legal/terms_of_service" className="rounded-md border border-slate-200 px-3 py-2 font-medium text-slate-700">
+              Terms
+            </a>
+            <a href="/legal/privacy_policy" className="rounded-md border border-slate-200 px-3 py-2 font-medium text-slate-700">
+              Privacy
+            </a>
+            {action ? <div>{action}</div> : null}
+          </div>
+        </div>
+      </footer>
+    </article>
   );
 }
