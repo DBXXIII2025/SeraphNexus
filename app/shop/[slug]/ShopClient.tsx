@@ -34,6 +34,7 @@ export default function ShopClient({
   logoUrl,
   pageTheme,
   galleryImages,
+  profileContact,
 }: {
   businessId: string;
   businessName: string;
@@ -46,6 +47,16 @@ export default function ShopClient({
   logoUrl: string | null;
   pageTheme: BusinessPageTheme;
   galleryImages: BusinessPageImage[];
+  profileContact?: {
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    address?: string | null;
+    serviceArea?: string | null;
+    facebook?: string | null;
+    instagram?: string | null;
+    twitter?: string | null;
+  };
 }) {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -232,6 +243,7 @@ export default function ShopClient({
           logoUrl={logoUrl}
           images={galleryImages}
           theme={pageTheme}
+          contact={profileContact}
           action={
             <MessageBusinessButton
               businessId={businessId}

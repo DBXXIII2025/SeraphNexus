@@ -5,6 +5,7 @@ import { canAccessPlanFeature } from "@/lib/planConfig";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createAdminClient } from "@/lib/supabase/server";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
+import { loadBusinessProfileFields } from "@/lib/businessProfileFields";
 import CustomizeClient from "./CustomizeClient";
 
 export default async function CustomizePage() {
@@ -20,8 +21,15 @@ export default async function CustomizePage() {
     return <div className="text-white">No active business</div>;
   }
 
-  const profileCompletion = getBusinessProfileCompletion(business);
-  const customization = await loadBusinessPageCustomization(createAdminClient(), business.id);
+  const adminClient = createAdminClient();
+  const [customization, profileFields] = await Promise.all([
+    loadBusinessPageCustomization(adminClient, business.id),
+    loadBusinessProfileFields(adminClient, business.id),
+  ]);
+  const profileCompletion = getBusinessProfileCompletion({
+    ...business,
+    ...profileFields,
+  });
   const canUseAdvancedCustomization = canAccessPlanFeature(
     business.plan,
     "advanced_customization"
@@ -39,6 +47,18 @@ export default async function CustomizePage() {
           page_text_color: customization.theme.textColor,
           heading_font_size: customization.theme.headingFontSize,
           body_font_size: customization.theme.bodyFontSize,
+          phone: profileFields.phone || "",
+          email: profileFields.email || "",
+          website: profileFields.website || "",
+          address: profileFields.address || "",
+          city: profileFields.city || "",
+          state: profileFields.state || "",
+          zip: profileFields.zip || "",
+          country: profileFields.country || "",
+          social_facebook: profileFields.social_facebook || "",
+          social_instagram: profileFields.social_instagram || "",
+          social_twitter: profileFields.social_twitter || "",
+          service_area: profileFields.service_area || "",
         }}
         initialLogoUrl={customization.logoUrl}
         initialGalleryImages={customization.images}

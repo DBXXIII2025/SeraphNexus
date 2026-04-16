@@ -11,6 +11,7 @@ import BookingClient from "./BookingClient";
 import { sortServiceImages, type ServiceImageRecord } from "@/lib/serviceImages";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
+import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
 
 type Params = {
   slug: string;
@@ -91,8 +92,11 @@ export default async function BookPage({
   void user;
 
   const logoState = await loadBusinessLogoById(business.id);
-  const businessPreferences = await loadBusinessPreferences(supabaseAdmin, business.id);
-  const customization = await loadBusinessPageCustomization(supabaseAdmin, business.id);
+  const [businessPreferences, customization, profileFields] = await Promise.all([
+    loadBusinessPreferences(supabaseAdmin, business.id),
+    loadBusinessPageCustomization(supabaseAdmin, business.id),
+    loadBusinessProfileFields(supabaseAdmin, business.id),
+  ]);
 
   const { data: services } = await supabase
     .from("services")
@@ -141,6 +145,16 @@ export default async function BookPage({
           logo_url: customization.logoUrl || (logoState.schemaReady ? logoState.logoUrl : null),
           pageTheme: customization.theme,
           galleryImages: customization.images,
+          profileContact: {
+            phone: profileFields.phone,
+            email: profileFields.email,
+            website: profileFields.website,
+            address: formatBusinessAddress(profileFields),
+            serviceArea: profileFields.service_area,
+            facebook: profileFields.social_facebook,
+            instagram: profileFields.social_instagram,
+            twitter: profileFields.social_twitter,
+          },
         }}
         services={serviceRows}
         isOwner={false}

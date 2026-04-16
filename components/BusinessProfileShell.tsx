@@ -21,6 +21,10 @@ type BusinessProfileShellProps = {
     email?: string | null;
     website?: string | null;
     address?: string | null;
+    serviceArea?: string | null;
+    facebook?: string | null;
+    instagram?: string | null;
+    twitter?: string | null;
   };
 };
 
@@ -59,6 +63,7 @@ export default function BusinessProfileShell({
   const initials = useMemo(() => getInitials(businessName || "Business"), [businessName]);
   const hasContactInfo = Boolean(
     contact?.phone || contact?.email || contact?.website || contact?.address
+    || contact?.serviceArea || contact?.facebook || contact?.instagram || contact?.twitter
   );
 
   useEffect(() => {
@@ -291,6 +296,10 @@ export default function BusinessProfileShell({
             {contact?.email ? <p><span className="font-semibold">Email:</span> {contact.email}</p> : null}
             {contact?.website ? <p><span className="font-semibold">Website:</span> {contact.website}</p> : null}
             {contact?.address ? <p><span className="font-semibold">Address:</span> {contact.address}</p> : null}
+            {contact?.serviceArea ? <p><span className="font-semibold">Service area:</span> {contact.serviceArea}</p> : null}
+            {contact?.facebook ? <p><span className="font-semibold">Facebook:</span> {contact.facebook}</p> : null}
+            {contact?.instagram ? <p><span className="font-semibold">Instagram:</span> {contact.instagram}</p> : null}
+            {contact?.twitter ? <p><span className="font-semibold">Twitter/X:</span> {contact.twitter}</p> : null}
           </div>
         ) : null}
       </section>

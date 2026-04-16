@@ -23,6 +23,18 @@ type CustomizeClientProps = {
     page_text_color: string;
     heading_font_size: number;
     body_font_size: number;
+    phone: string;
+    email: string;
+    website: string;
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+    social_facebook: string;
+    social_instagram: string;
+    social_twitter: string;
+    service_area: string;
   };
   initialLogoUrl: string | null;
   initialGalleryImages: BusinessPageImage[];
@@ -99,6 +111,18 @@ export default function CustomizeClient({
       page_text_color: data.business?.page_text_color || form.page_text_color,
       heading_font_size: data.business?.heading_font_size || form.heading_font_size,
       body_font_size: data.business?.body_font_size || form.body_font_size,
+      phone: data.business?.phone ?? form.phone,
+      email: data.business?.email ?? form.email,
+      website: data.business?.website ?? form.website,
+      address: data.business?.address ?? form.address,
+      city: data.business?.city ?? form.city,
+      state: data.business?.state ?? form.state,
+      zip: data.business?.zip ?? form.zip,
+      country: data.business?.country ?? form.country,
+      social_facebook: data.business?.social_facebook ?? form.social_facebook,
+      social_instagram: data.business?.social_instagram ?? form.social_instagram,
+      social_twitter: data.business?.social_twitter ?? form.social_twitter,
+      service_area: data.business?.service_area ?? form.service_area,
     };
 
     setForm(nextForm);
@@ -343,6 +367,18 @@ export default function CustomizeClient({
               images={galleryImages}
               theme={previewTheme}
               compact
+              contact={{
+                phone: form.phone,
+                email: form.email,
+                website: form.website,
+                address: [form.address, [form.city, form.state, form.zip].filter(Boolean).join(", "), form.country]
+                  .filter(Boolean)
+                  .join("\n"),
+                serviceArea: form.service_area,
+                facebook: form.social_facebook,
+                instagram: form.social_instagram,
+                twitter: form.social_twitter,
+              }}
             />
           </div>
         </div>
@@ -444,9 +480,68 @@ export default function CustomizeClient({
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold text-slate-950">Contact Info</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              These fields render on the public profile when present.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Phone</p>
+              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Email</p>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Website</p>
+              <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Service area</p>
+              <input value={form.service_area} onChange={(e) => setForm({ ...form, service_area: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div className="md:col-span-2">
+              <p className="mb-1 text-sm font-medium text-slate-700">Street address</p>
+              <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">City</p>
+              <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">State</p>
+              <input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">ZIP</p>
+              <input value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Country</p>
+              <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Facebook</p>
+              <input value={form.social_facebook} onChange={(e) => setForm({ ...form, social_facebook: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Instagram</p>
+              <input value={form.social_instagram} onChange={(e) => setForm({ ...form, social_instagram: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+            <div>
+              <p className="mb-1 text-sm font-medium text-slate-700">Twitter/X</p>
+              <input value={form.social_twitter} onChange={(e) => setForm({ ...form, social_twitter: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Business logo</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Branding</h2>
               <p className="mt-1 text-sm text-slate-600">
                 This logo appears in the compact public header.
               </p>
@@ -476,7 +571,7 @@ export default function CustomizeClient({
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold text-slate-950">Business information styling</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Theme</h2>
             <p className="mt-1 text-sm text-slate-600">
               Colors and font sizes apply to the compact header and readable business details.
             </p>
@@ -538,7 +633,7 @@ export default function CustomizeClient({
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Gallery image area</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Gallery</h2>
               <p className="mt-1 text-sm text-slate-600">
                 Manage the compact framed public carousel without enlarging the control panel.
               </p>
@@ -580,6 +675,25 @@ export default function CustomizeClient({
                 </div>
               ))
             )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+          <h2 className="text-lg font-semibold text-slate-950">Services / Products</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Manage sellable items in the dedicated operations modules so booking, ordering,
+            checkout, and inventory rules remain connected to real records.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a href="/admin/services" className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800">
+              Services
+            </a>
+            <a href="/admin/products" className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800">
+              Products / Menu
+            </a>
+            <a href="/admin/rentals" className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800">
+              Rentals
+            </a>
           </div>
         </div>
 

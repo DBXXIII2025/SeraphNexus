@@ -38,6 +38,16 @@ type BookingBusiness = {
   remote_enabled?: boolean | null;
   pageTheme: BusinessPageTheme;
   galleryImages: BusinessPageImage[];
+  profileContact?: {
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    address?: string | null;
+    serviceArea?: string | null;
+    facebook?: string | null;
+    instagram?: string | null;
+    twitter?: string | null;
+  };
 };
 
 function getTodayLocalDate() {
@@ -391,6 +401,7 @@ export default function BookingClient({
           logoUrl={business.logo_url}
           images={business.galleryImages}
           theme={business.pageTheme}
+          contact={business.profileContact}
           action={
             <MessageBusinessButton
               businessId={business.id}

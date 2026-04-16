@@ -7,6 +7,7 @@ import MessageBusinessButton from "@/components/MessageBusinessButton";
 import LeadEventTracker from "@/components/LeadEventTracker";
 import BusinessProfileShell from "@/components/BusinessProfileShell";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
+import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
 
 type Params = {
   slug: string;
@@ -52,7 +53,10 @@ export default async function PublicRouterPage({
   }
 
   const logoState = await loadBusinessLogoById(business.id);
-  const customization = await loadBusinessPageCustomization(supabase, business.id);
+  const [customization, profileFields] = await Promise.all([
+    loadBusinessPageCustomization(supabase, business.id),
+    loadBusinessProfileFields(supabase, business.id),
+  ]);
   const logoUrl = customization.logoUrl || (logoState.schemaReady ? logoState.logoUrl : null);
 
   return (
@@ -73,6 +77,16 @@ export default async function PublicRouterPage({
           logoUrl={logoUrl}
           images={customization.images}
           theme={customization.theme}
+          contact={{
+            phone: profileFields.phone,
+            email: profileFields.email,
+            website: profileFields.website,
+            address: formatBusinessAddress(profileFields),
+            serviceArea: profileFields.service_area,
+            facebook: profileFields.social_facebook,
+            instagram: profileFields.social_instagram,
+            twitter: profileFields.social_twitter,
+          }}
           action={
             <MessageBusinessButton
               businessId={business.id}

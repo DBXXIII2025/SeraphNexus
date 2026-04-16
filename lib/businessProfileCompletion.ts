@@ -10,6 +10,14 @@ export type BusinessProfileInput = {
   slug?: string | null;
   description?: string | null;
   business_type?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  service_area?: string | null;
 };
 
 export type BusinessProfileCompletion = {
@@ -60,6 +68,23 @@ export function getBusinessProfileCompletion(
       label: "Business description",
       required: true,
       missing: !hasValue(input.description),
+    },
+    {
+      key: "contact",
+      label: "Contact info",
+      required: false,
+      missing: !hasValue(input.phone) && !hasValue(input.email) && !hasValue(input.website),
+    },
+    {
+      key: "location",
+      label: "Location or service area",
+      required: false,
+      missing:
+        !hasValue(input.address) &&
+        !hasValue(input.city) &&
+        !hasValue(input.state) &&
+        !hasValue(input.zip) &&
+        !hasValue(input.service_area),
     },
   ];
 

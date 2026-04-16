@@ -9,6 +9,7 @@ import LeadEventTracker from "@/components/LeadEventTracker";
 import OrderClient from "./OrderClient";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
+import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
 
 type Params = {
   slug: string;
@@ -74,8 +75,11 @@ export default async function OrderPage({
   if (!isOrderPublicBusinessType(businessType)) {
     redirect(getCanonicalPublicBusinessRoute(business.business_type, slug).href);
   }
-  const businessPreferences = await loadBusinessPreferences(supabase, business.id);
-  const customization = await loadBusinessPageCustomization(supabase, business.id);
+  const [businessPreferences, customization, profileFields] = await Promise.all([
+    loadBusinessPreferences(supabase, business.id),
+    loadBusinessPageCustomization(supabase, business.id),
+    loadBusinessProfileFields(supabase, business.id),
+  ]);
 
   return (
     <>
@@ -95,6 +99,16 @@ export default async function OrderPage({
         logoUrl={customization.logoUrl}
         pageTheme={customization.theme}
         galleryImages={customization.images}
+        profileContact={{
+          phone: profileFields.phone,
+          email: profileFields.email,
+          website: profileFields.website,
+          address: formatBusinessAddress(profileFields),
+          serviceArea: profileFields.service_area,
+          facebook: profileFields.social_facebook,
+          instagram: profileFields.social_instagram,
+          twitter: profileFields.social_twitter,
+        }}
       />
     </>
   );

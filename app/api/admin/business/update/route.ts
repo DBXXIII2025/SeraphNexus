@@ -3,6 +3,10 @@ import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { normalizeBusinessSlug } from "@/lib/businessProfileCompletion";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeBusinessPageTheme } from "@/lib/businessPageCustomization";
+import {
+  buildBusinessProfileUpdate,
+  isMissingBusinessProfileColumns,
+} from "@/lib/businessProfileFields";
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +16,7 @@ export async function POST(req: Request) {
     const name = String(body?.name || "").trim();
     const description = String(body?.description || "").trim();
     const requestedSlug = String(body?.slug || "").trim();
+    const profileUpdate = buildBusinessProfileUpdate(body || {});
     const normalizedTheme = normalizeBusinessPageTheme({
       page_accent_color: body?.page_accent_color,
       page_text_color: body?.page_text_color,
@@ -62,8 +67,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data, error } = await businessesTable
-      .update({
+    const baseUpdate = {
         name,
         slug: nextSlug,
         description: description || null,
@@ -71,11 +75,33 @@ export async function POST(req: Request) {
         page_text_color: normalizedTheme.textColor,
         heading_font_size: normalizedTheme.headingFontSize,
         body_font_size: normalizedTheme.bodyFontSize,
+      };
+
+    const extendedSelect =
+      "id, name, slug, description, business_type, page_accent_color, page_text_color, heading_font_size, body_font_size, phone, email, website, address, city, state, zip, country, social_facebook, social_instagram, social_twitter, hours_json, service_area";
+    const baseSelect =
+      "id, name, slug, description, business_type, page_accent_color, page_text_color, heading_font_size, body_font_size";
+
+    let updateQuery = await businessesTable
+      .update({
+        ...baseUpdate,
+        ...profileUpdate,
       })
       .eq("id", activeBusiness.id)
       .eq("owner_id", user.id)
-      .select("id, name, slug, description, business_type, page_accent_color, page_text_color, heading_font_size, body_font_size")
+      .select(extendedSelect)
       .single();
+
+    if (updateQuery.error && isMissingBusinessProfileColumns(updateQuery.error)) {
+      updateQuery = await businessesTable
+        .update(baseUpdate)
+        .eq("id", activeBusiness.id)
+        .eq("owner_id", user.id)
+        .select(baseSelect)
+        .single();
+    }
+
+    const { data, error } = updateQuery;
 
     if (error) {
       return NextResponse.json(

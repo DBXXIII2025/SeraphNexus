@@ -10,6 +10,7 @@ import RentalCatalogClient from "./RentalCatalogClient";
 import type { Database } from "@/types/database";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
+import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -102,8 +103,11 @@ export default async function RentPage({
   if (isDev) {
     console.log("[rent/page] item count:", mergedProperties.length);
   }
-  const businessPreferences = await loadBusinessPreferences(supabase, business.id);
-  const customization = await loadBusinessPageCustomization(supabase, business.id);
+  const [businessPreferences, customization, profileFields] = await Promise.all([
+    loadBusinessPreferences(supabase, business.id),
+    loadBusinessPageCustomization(supabase, business.id),
+    loadBusinessProfileFields(supabase, business.id),
+  ]);
 
   return (
     <>
@@ -122,6 +126,16 @@ export default async function RentPage({
           logo_url: customization.logoUrl,
           pageTheme: customization.theme,
           galleryImages: customization.images,
+          profileContact: {
+            phone: profileFields.phone,
+            email: profileFields.email,
+            website: profileFields.website,
+            address: formatBusinessAddress(profileFields),
+            serviceArea: profileFields.service_area,
+            facebook: profileFields.social_facebook,
+            instagram: profileFields.social_instagram,
+            twitter: profileFields.social_twitter,
+          },
         }}
         isOwner={false}
         properties={mergedProperties}
