@@ -207,10 +207,7 @@ export default function RentalCatalogClient({
 
   return (
     <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
-      <div
-        className="px-3 py-5 sm:py-6"
-        style={{ backgroundColor: business.pageTheme.backgroundColor }}
-      >
+      <div className="px-3 py-5 sm:py-6">
         <BusinessProfileShell
           businessName={business.name}
           businessDescription={business.description}

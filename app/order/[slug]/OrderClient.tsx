@@ -421,10 +421,7 @@ export default function OrderClient({
 
   return (
     <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
-      <div
-        className="px-3 py-5 sm:py-6"
-        style={{ backgroundColor: pageTheme.backgroundColor }}
-      >
+      <div className="px-3 py-5 sm:py-6">
         <BusinessProfileShell
           businessName={businessName}
           businessDescription={businessDescription}

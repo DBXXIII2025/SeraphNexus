@@ -201,7 +201,7 @@ export async function loadBusinessPageCustomization(
       };
     }
 
-    let { data: images, error: imagesError } = await supabase
+    const { data: images, error: imagesError } = await supabase
       .from("business_page_images")
       .select("id, image_url, storage_path, alt_text, sort_order, is_primary, created_at")
       .eq("business_id", businessId)

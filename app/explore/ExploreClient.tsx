@@ -131,21 +131,21 @@ export default function ExploreClient({
   }, [actionsOpen]);
 
   const header = (
-    <header className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+    <header className="border p-3">
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center">
-          <div className="inline-flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-950 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+          <div className="inline-flex items-center gap-3 border px-3 py-2">
+            <span className="flex h-10 w-10 items-center justify-center border">
               {platformInitials}
             </span>
-            <span className="text-sm font-semibold text-slate-950">{platformName}</span>
+            <span>{platformName}</span>
           </div>
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-3">
           <Link
             href="/explore"
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800"
+            className="inline-flex min-h-11 items-center justify-center border px-4 py-2"
           >
             Explore
           </Link>
@@ -156,16 +156,16 @@ export default function ExploreClient({
               aria-expanded={actionsOpen}
               aria-haspopup="menu"
               onClick={() => setActionsOpen((value) => !value)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-slate-950 px-4 py-2 text-sm font-medium text-white shadow-[0_10px_24px_rgba(15,23,42,0.12)]"
+              className="inline-flex min-h-11 items-center justify-center gap-2 border px-4 py-2"
             >
               <span>{isLoggedIn ? "Actions" : "Account"}</span>
-              <span className="text-[10px] text-slate-300">{actionsOpen ? "Close" : "Open"}</span>
+              <span>{actionsOpen ? "Close" : "Open"}</span>
             </button>
 
             {actionsOpen ? (
-              <div className="absolute right-0 top-full z-20 mt-3 w-[240px] rounded-xl border border-slate-200 bg-white p-3 shadow-[0_24px_44px_rgba(15,23,42,0.16)]">
+              <div className="absolute right-0 top-full z-20 mt-3 w-[240px] border bg-white p-3">
                 <div className="mb-3 px-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <p>
                     {isLoggedIn ? "Workspace Actions" : "Public Actions"}
                   </p>
                 </div>
@@ -176,14 +176,14 @@ export default function ExploreClient({
                       <Link
                         href="/login"
                         onClick={() => setActionsOpen(false)}
-                        className="btn-ghost justify-start px-4 py-2 text-sm font-medium"
+                        className="justify-start border px-4 py-2"
                       >
                         Login
                       </Link>
                       <Link
                         href="/signup"
                         onClick={() => setActionsOpen(false)}
-                        className="btn-secondary justify-start px-4 py-2 text-sm font-medium"
+                        className="justify-start border px-4 py-2"
                       >
                         Sign Up
                       </Link>
@@ -192,7 +192,7 @@ export default function ExploreClient({
                     <Link
                       href={accountHref}
                       onClick={() => setActionsOpen(false)}
-                      className="btn-secondary justify-start px-4 py-2 text-sm font-medium"
+                      className="justify-start border px-4 py-2"
                     >
                       My Account
                     </Link>
@@ -201,7 +201,7 @@ export default function ExploreClient({
                   <Link
                     href={createBusinessHref}
                     onClick={() => setActionsOpen(false)}
-                    className="btn-primary justify-start px-4 py-2 text-sm font-medium"
+                    className="justify-start border px-4 py-2"
                   >
                     Create Business
                   </Link>
@@ -215,7 +215,7 @@ export default function ExploreClient({
   );
 
   const controlBar = (
-    <section className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+    <section className="border p-3">
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input
           type="text"
@@ -230,11 +230,7 @@ export default function ExploreClient({
           <button
             type="button"
             onClick={() => setCategoryFilter("all")}
-            className={`rounded-full border px-3 py-2 text-xs font-semibold ${
-              categoryFilter === "all"
-                ? "border-slate-950 bg-slate-950 text-white"
-                : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
-            }`}
+            className="border px-3 py-2"
           >
             All
           </button>
@@ -243,11 +239,7 @@ export default function ExploreClient({
               key={category.id}
               type="button"
               onClick={() => setCategoryFilter(category.id)}
-              className={`rounded-full border px-3 py-2 text-xs font-semibold ${
-                categoryFilter === category.id
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
-              }`}
+              className="border px-3 py-2"
             >
               {category.shortLabel}
             </button>
@@ -273,7 +265,7 @@ export default function ExploreClient({
           <button
             type="button"
             onClick={clearFilters}
-            className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-500"
+            className="inline-flex min-h-10 items-center justify-center border px-4 py-2"
           >
             Clear filters
           </button>
@@ -298,14 +290,14 @@ export default function ExploreClient({
   );
 
   const mobileSidebar = (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+    <div className="border p-3">
       <button
         type="button"
         onClick={() => setMobileFiltersOpen((value) => !value)}
-        className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-left"
+        className="flex w-full items-center justify-between border px-4 py-3 text-left"
       >
-        <span className="text-sm font-semibold text-slate-950">Filters</span>
-        <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+        <span>Filters</span>
+        <span>
           {mobileFiltersOpen ? "Close" : "Open"}
         </span>
       </button>
@@ -316,8 +308,8 @@ export default function ExploreClient({
   const featured = featuredBusinesses.length > 0 ? (
     <section className="space-y-4">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Featured</p>
-        <h2 className="mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-slate-950">
+        <p>Featured</p>
+        <h2>
           Featured businesses
         </h2>
       </div>
@@ -332,8 +324,8 @@ export default function ExploreClient({
   const grid = (
     <section className="space-y-4">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Results</p>
-        <h2 className="mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-slate-950">
+        <p>Results</p>
+        <h2>
           {sortedBusinesses.length} businesses
         </h2>
       </div>

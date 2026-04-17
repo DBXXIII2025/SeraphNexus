@@ -31,17 +31,17 @@ export default function ExploreSidebar({
 }) {
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+      <section className="border p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold text-slate-950">Filters</p>
-            <p className="mt-1 text-xs text-slate-500">Refine what appears in the marketplace grid.</p>
+            <p>Filters</p>
+            <p>Refine what appears in the marketplace grid.</p>
           </div>
           {hasActiveFilters ? (
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-500"
+              className="inline-flex min-h-9 items-center justify-center border px-3 py-2"
             >
               Clear
             </button>
@@ -50,7 +50,7 @@ export default function ExploreSidebar({
 
         <div className="mt-4 space-y-4">
           <label className="block">
-            <span className="mb-2 block text-xs font-medium text-slate-700">
+            <span className="mb-2 block">
               Business Type
             </span>
             <select value={typeFilter} onChange={(event) => onTypeChange(event.target.value)}>
@@ -64,7 +64,7 @@ export default function ExploreSidebar({
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-xs font-medium text-slate-700">
+            <span className="mb-2 block">
               Route Type
             </span>
             <select value={routeFilter} onChange={(event) => onRouteChange(event.target.value as ExploreRouteFilterId)}>
@@ -77,7 +77,7 @@ export default function ExploreSidebar({
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-xs font-medium text-slate-700">
+            <span className="mb-2 block">
               Status
             </span>
             <select
@@ -93,7 +93,7 @@ export default function ExploreSidebar({
 
       <a
         href={createBusinessHref}
-        className="btn-primary inline-flex min-h-11 w-full items-center justify-center px-4 py-2 text-sm font-semibold"
+        className="inline-flex min-h-11 w-full items-center justify-center border px-4 py-2"
       >
         Create Business
       </a>

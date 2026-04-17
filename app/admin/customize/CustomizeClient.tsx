@@ -356,7 +356,6 @@ export default function CustomizeClient({
             style={{
               width: "100%",
               maxWidth: "384px",
-              backgroundColor: previewTheme.backgroundColor,
             }}
           >
             <BusinessProfileShell

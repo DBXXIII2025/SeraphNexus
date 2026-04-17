@@ -16,17 +16,17 @@ export default function ExploreLayout({
   grid: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#f4f6f8] px-4 py-6 text-slate-900 md:px-8 lg:py-8">
-      <div className="mx-auto max-w-[1400px] space-y-6">
+    <div className="min-h-screen px-4 py-4 md:px-8">
+      <div className="mx-auto max-w-7xl space-y-4">
         {header}
         {controlBar}
 
-        <div className="grid gap-6 xl:grid-cols-[304px_minmax(0,1fr)] xl:gap-8">
+        <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="hidden xl:block">
-            <div className="sticky top-24">{sidebar}</div>
+            {sidebar}
           </aside>
 
-          <main className="min-w-0 space-y-6">
+          <main className="min-w-0 space-y-4">
             <section className="xl:hidden">{mobileSidebar}</section>
             {featured}
             {grid}
