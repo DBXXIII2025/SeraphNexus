@@ -40,6 +40,8 @@ type CustomizeClientProps = {
   initialGalleryImages: BusinessPageImage[];
   customizationSchemaReady: boolean;
   customizationErrorMessage: string | null;
+  profileFieldsSchemaReady: boolean;
+  profileFieldsErrorMessage: string | null;
   initialCompletion: BusinessProfileCompletion;
   planNotice: {
     tone: "warning" | "success";
@@ -53,6 +55,8 @@ export default function CustomizeClient({
   initialGalleryImages,
   customizationSchemaReady,
   customizationErrorMessage,
+  profileFieldsSchemaReady,
+  profileFieldsErrorMessage,
   initialCompletion,
   planNotice,
 }: CustomizeClientProps) {
@@ -66,7 +70,9 @@ export default function CustomizeClient({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const completion = getBusinessProfileCompletion(form);
+  const completion = getBusinessProfileCompletion(form, {
+    includeOptionalProfileFields: profileFieldsSchemaReady,
+  });
   const slugPreview = normalizeBusinessSlug(form.slug || form.name || "");
   const isRentalBusiness =
     form.business_type === "rental" || form.business_type === "property";
@@ -91,7 +97,21 @@ export default function CustomizeClient({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(form),
+      body: JSON.stringify(
+        profileFieldsSchemaReady
+          ? form
+          : {
+              id: form.id,
+              name: form.name,
+              slug: form.slug,
+              description: form.description,
+              business_type: form.business_type,
+              page_accent_color: form.page_accent_color,
+              page_text_color: form.page_text_color,
+              heading_font_size: form.heading_font_size,
+              body_font_size: form.body_font_size,
+            }
+      ),
     });
 
     const data = await res.json().catch(() => ({}));
@@ -126,7 +146,11 @@ export default function CustomizeClient({
     };
 
     setForm(nextForm);
-    setSavedCompletion(getBusinessProfileCompletion(nextForm));
+    setSavedCompletion(
+      getBusinessProfileCompletion(nextForm, {
+        includeOptionalProfileFields: profileFieldsSchemaReady,
+      })
+    );
     setSuccess("Business profile updated.");
     setLoading(false);
   }
@@ -366,18 +390,22 @@ export default function CustomizeClient({
               images={galleryImages}
               theme={previewTheme}
               compact
-              contact={{
-                phone: form.phone,
-                email: form.email,
-                website: form.website,
-                address: [form.address, [form.city, form.state, form.zip].filter(Boolean).join(", "), form.country]
-                  .filter(Boolean)
-                  .join("\n"),
-                serviceArea: form.service_area,
-                facebook: form.social_facebook,
-                instagram: form.social_instagram,
-                twitter: form.social_twitter,
-              }}
+              contact={
+                profileFieldsSchemaReady
+                  ? {
+                      phone: form.phone,
+                      email: form.email,
+                      website: form.website,
+                      address: [form.address, [form.city, form.state, form.zip].filter(Boolean).join(", "), form.country]
+                        .filter(Boolean)
+                        .join("\n"),
+                      serviceArea: form.service_area,
+                      facebook: form.social_facebook,
+                      instagram: form.social_instagram,
+                      twitter: form.social_twitter,
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>
@@ -478,6 +506,7 @@ export default function CustomizeClient({
           </div>
         </div>
 
+        {profileFieldsSchemaReady ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="mb-3">
             <h2 className="text-lg font-semibold text-slate-950">Contact Info</h2>
@@ -536,7 +565,15 @@ export default function CustomizeClient({
             </div>
           </div>
         </div>
+        ) : profileFieldsErrorMessage ? (
+          <div className="border p-3">
+            Contact, location, and social fields are not available because the live database
+            profile-field migration has not been applied.
+          </div>
+        ) : null}
 
+        {customizationSchemaReady ? (
+          <>
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -676,6 +713,13 @@ export default function CustomizeClient({
             )}
           </div>
         </div>
+          </>
+        ) : (
+          <div className="border p-3">
+            Branding, theme, and gallery controls are unavailable because the live database
+            customization migration has not been applied.
+          </div>
+        )}
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <h2 className="text-lg font-semibold text-slate-950">Services / Products</h2>

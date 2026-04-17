@@ -32,6 +32,10 @@ export type BusinessProfileCompletion = {
   summary: string;
 };
 
+type BusinessProfileCompletionOptions = {
+  includeOptionalProfileFields?: boolean;
+};
+
 function hasValue(value: string | null | undefined) {
   return typeof value === "string" ? value.trim().length > 0 : false;
 }
@@ -48,8 +52,10 @@ export function normalizeBusinessSlug(value: string) {
 }
 
 export function getBusinessProfileCompletion(
-  input: BusinessProfileInput
+  input: BusinessProfileInput,
+  options: BusinessProfileCompletionOptions = {}
 ): BusinessProfileCompletion {
+  const includeOptionalProfileFields = options.includeOptionalProfileFields ?? true;
   const fields: ProfileFieldStatus[] = [
     {
       key: "name",
@@ -69,24 +75,29 @@ export function getBusinessProfileCompletion(
       required: true,
       missing: !hasValue(input.description),
     },
-    {
-      key: "contact",
-      label: "Contact info",
-      required: false,
-      missing: !hasValue(input.phone) && !hasValue(input.email) && !hasValue(input.website),
-    },
-    {
-      key: "location",
-      label: "Location or service area",
-      required: false,
-      missing:
-        !hasValue(input.address) &&
-        !hasValue(input.city) &&
-        !hasValue(input.state) &&
-        !hasValue(input.zip) &&
-        !hasValue(input.service_area),
-    },
   ];
+
+  if (includeOptionalProfileFields) {
+    fields.push(
+      {
+        key: "contact",
+        label: "Contact info",
+        required: false,
+        missing: !hasValue(input.phone) && !hasValue(input.email) && !hasValue(input.website),
+      },
+      {
+        key: "location",
+        label: "Location or service area",
+        required: false,
+        missing:
+          !hasValue(input.address) &&
+          !hasValue(input.city) &&
+          !hasValue(input.state) &&
+          !hasValue(input.zip) &&
+          !hasValue(input.service_area),
+      }
+    );
+  }
 
   const missingRequired = fields.filter((field) => field.required && field.missing);
   const missingRecommended = fields.filter((field) => !field.required && field.missing);

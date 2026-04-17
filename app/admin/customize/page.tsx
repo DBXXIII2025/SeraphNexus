@@ -5,7 +5,7 @@ import { canAccessPlanFeature } from "@/lib/planConfig";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createAdminClient } from "@/lib/supabase/server";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
-import { loadBusinessProfileFields } from "@/lib/businessProfileFields";
+import { loadBusinessProfileFieldsState } from "@/lib/businessProfileFields";
 import CustomizeClient from "./CustomizeClient";
 
 export default async function CustomizePage() {
@@ -22,13 +22,16 @@ export default async function CustomizePage() {
   }
 
   const adminClient = createAdminClient();
-  const [customization, profileFields] = await Promise.all([
+  const [customization, profileFieldsState] = await Promise.all([
     loadBusinessPageCustomization(adminClient, business.id),
-    loadBusinessProfileFields(adminClient, business.id),
+    loadBusinessProfileFieldsState(adminClient, business.id),
   ]);
+  const profileFields = profileFieldsState.fields;
   const profileCompletion = getBusinessProfileCompletion({
     ...business,
     ...profileFields,
+  }, {
+    includeOptionalProfileFields: profileFieldsState.schemaReady,
   });
   const canUseAdvancedCustomization = canAccessPlanFeature(
     business.plan,
@@ -64,6 +67,8 @@ export default async function CustomizePage() {
         initialGalleryImages={customization.images}
         customizationSchemaReady={customization.schemaReady}
         customizationErrorMessage={customization.errorMessage}
+        profileFieldsSchemaReady={profileFieldsState.schemaReady}
+        profileFieldsErrorMessage={profileFieldsState.errorMessage}
         initialCompletion={profileCompletion}
         planNotice={
           !canUseAdvancedCustomization

@@ -32,6 +32,12 @@ export const EMPTY_BUSINESS_PROFILE_FIELDS: BusinessProfileFields = {
   service_area: null,
 };
 
+export type BusinessProfileFieldsState = {
+  fields: BusinessProfileFields;
+  schemaReady: boolean;
+  errorMessage: string | null;
+};
+
 export const BUSINESS_PROFILE_FIELD_SELECT = [
   "phone",
   "email",
@@ -99,6 +105,14 @@ export async function loadBusinessProfileFields(
   supabase: SupabaseClient,
   businessId: string
 ): Promise<BusinessProfileFields> {
+  const state = await loadBusinessProfileFieldsState(supabase, businessId);
+  return state.fields;
+}
+
+export async function loadBusinessProfileFieldsState(
+  supabase: SupabaseClient,
+  businessId: string
+): Promise<BusinessProfileFieldsState> {
   const { data, error } = await supabase
     .from("businesses")
     .select(BUSINESS_PROFILE_FIELD_SELECT)
@@ -112,10 +126,18 @@ export async function loadBusinessProfileFields(
         message: error.message,
       });
     }
-    return EMPTY_BUSINESS_PROFILE_FIELDS;
+    return {
+      fields: EMPTY_BUSINESS_PROFILE_FIELDS,
+      schemaReady: false,
+      errorMessage: error.message || "Business profile fields are unavailable.",
+    };
   }
 
-  return normalizeBusinessProfileFields((data || {}) as Record<string, unknown>);
+  return {
+    fields: normalizeBusinessProfileFields((data || {}) as Record<string, unknown>),
+    schemaReady: true,
+    errorMessage: null,
+  };
 }
 
 export function buildBusinessProfileUpdate(input: Record<string, unknown>) {
