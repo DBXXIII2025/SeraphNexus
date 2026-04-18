@@ -41,6 +41,19 @@ function getInitials(name: string) {
   );
 }
 
+function externalHref(value: string) {
+  const trimmed = value.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
+function phoneHref(value: string) {
+  const normalized = value.replace(/[^\d+]/g, "");
+  return normalized ? `tel:${normalized}` : null;
+}
+
 export default function BusinessProfileShell({
   businessName,
   businessDescription,
@@ -218,25 +231,37 @@ export default function BusinessProfileShell({
             {contact?.phone ? (
               <div>
                 <dt>Phone</dt>
-                <dd>{contact.phone}</dd>
+                <dd>
+                  {phoneHref(contact.phone) ? (
+                    <a href={phoneHref(contact.phone) || undefined}>{contact.phone}</a>
+                  ) : (
+                    contact.phone
+                  )}
+                </dd>
               </div>
             ) : null}
             {contact?.email ? (
               <div>
                 <dt>Email</dt>
-                <dd>{contact.email}</dd>
+                <dd>
+                  <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                </dd>
               </div>
             ) : null}
             {contact?.website ? (
               <div>
                 <dt>Website</dt>
-                <dd>{contact.website}</dd>
+                <dd>
+                  <a href={externalHref(contact.website)} rel="noreferrer" target="_blank">
+                    {contact.website}
+                  </a>
+                </dd>
               </div>
             ) : null}
             {contact?.address ? (
               <div>
                 <dt>Address</dt>
-                <dd>{contact.address}</dd>
+                <dd className="whitespace-pre-wrap">{contact.address}</dd>
               </div>
             ) : null}
             {contact?.serviceArea ? (
@@ -248,19 +273,31 @@ export default function BusinessProfileShell({
             {contact?.facebook ? (
               <div>
                 <dt>Facebook</dt>
-                <dd>{contact.facebook}</dd>
+                <dd>
+                  <a href={externalHref(contact.facebook)} rel="noreferrer" target="_blank">
+                    {contact.facebook}
+                  </a>
+                </dd>
               </div>
             ) : null}
             {contact?.instagram ? (
               <div>
                 <dt>Instagram</dt>
-                <dd>{contact.instagram}</dd>
+                <dd>
+                  <a href={externalHref(contact.instagram)} rel="noreferrer" target="_blank">
+                    {contact.instagram}
+                  </a>
+                </dd>
               </div>
             ) : null}
             {contact?.twitter ? (
               <div>
                 <dt>Twitter/X</dt>
-                <dd>{contact.twitter}</dd>
+                <dd>
+                  <a href={externalHref(contact.twitter)} rel="noreferrer" target="_blank">
+                    {contact.twitter}
+                  </a>
+                </dd>
               </div>
             ) : null}
           </dl>
