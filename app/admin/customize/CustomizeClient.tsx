@@ -9,6 +9,7 @@ import {
 import BusinessProfileShell from "@/components/BusinessProfileShell";
 import {
   isAllowedBusinessPageImageType,
+  MAX_BUSINESS_GALLERY_IMAGES,
   normalizeBusinessPageTheme,
   type BusinessPageImage,
 } from "@/lib/businessPageCustomization";
@@ -17,6 +18,7 @@ const CLIENT_MAX_ORIGINAL_IMAGE_BYTES = 15 * 1024 * 1024;
 const CLIENT_MAX_UPLOAD_IMAGE_BYTES = 2 * 1024 * 1024;
 const GALLERY_IMAGE_MAX_DIMENSION = 1800;
 const IMAGE_TOO_LARGE_MESSAGE = "Image too large. Please upload a smaller file.";
+const GALLERY_LIMIT_MESSAGE = "You can upload up to 20 gallery images.";
 
 type CustomizeClientProps = {
   initialBusiness: {
@@ -292,6 +294,38 @@ export default function CustomizeClient({
     });
 
     if (files.length === 0) {
+      return;
+    }
+
+    if (galleryImages.length >= MAX_BUSINESS_GALLERY_IMAGES) {
+      console.warn("[admin/customize] gallery upload blocked at image limit", {
+        businessId: form.id,
+        currentGalleryCount: galleryImages.length,
+        selectedFileCount: files.length,
+        maxGalleryImages: MAX_BUSINESS_GALLERY_IMAGES,
+      });
+      setUploadingPhoto(false);
+      setSuccess(null);
+      setError(GALLERY_LIMIT_MESSAGE);
+      return;
+    }
+
+    if (galleryImages.length + files.length > MAX_BUSINESS_GALLERY_IMAGES) {
+      const remainingSlots = MAX_BUSINESS_GALLERY_IMAGES - galleryImages.length;
+      console.warn("[admin/customize] gallery upload blocked over image limit", {
+        businessId: form.id,
+        currentGalleryCount: galleryImages.length,
+        selectedFileCount: files.length,
+        remainingSlots,
+        maxGalleryImages: MAX_BUSINESS_GALLERY_IMAGES,
+      });
+      setUploadingPhoto(false);
+      setSuccess(null);
+      setError(
+        `${GALLERY_LIMIT_MESSAGE} You have ${remainingSlots} slot${
+          remainingSlots === 1 ? "" : "s"
+        } remaining.`
+      );
       return;
     }
 

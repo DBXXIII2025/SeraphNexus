@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const BUSINESS_PAGE_IMAGES_BUCKET = "business-assets";
+export const MAX_BUSINESS_GALLERY_IMAGES = 20;
 export const MAX_BUSINESS_PAGE_IMAGE_BYTES = 8 * 1024 * 1024;
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);

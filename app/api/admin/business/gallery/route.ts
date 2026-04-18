@@ -3,6 +3,7 @@ import {
   buildBusinessPageImagePath,
   BUSINESS_PAGE_IMAGES_BUCKET,
   isAllowedBusinessPageImageType,
+  MAX_BUSINESS_GALLERY_IMAGES,
   MAX_BUSINESS_PAGE_IMAGE_BYTES,
   type BusinessPageImage,
 } from "@/lib/businessPageCustomization";
@@ -163,8 +164,11 @@ export async function POST(req: Request) {
     const supabaseAdmin = createAdminClient();
     const existingImages = await loadGalleryImages(supabaseAdmin, ownedBusiness.id);
 
-    if (existingImages.length >= 20) {
-      return NextResponse.json({ error: "A business gallery can include up to 20 photos." }, { status: 400 });
+    if (existingImages.length >= MAX_BUSINESS_GALLERY_IMAGES) {
+      return NextResponse.json(
+        { error: "You can upload up to 20 gallery images." },
+        { status: 400 }
+      );
     }
 
     const storagePath = buildBusinessPageImagePath({
