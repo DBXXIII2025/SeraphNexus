@@ -14,8 +14,8 @@ import {
   type BusinessPageImage,
 } from "@/lib/businessPageCustomization";
 
-const CLIENT_MAX_ORIGINAL_IMAGE_BYTES = 15 * 1024 * 1024;
-const CLIENT_MAX_UPLOAD_IMAGE_BYTES = 2 * 1024 * 1024;
+const CLIENT_MAX_ORIGINAL_IMAGE_BYTES = 40 * 1024 * 1024;
+const CLIENT_MAX_UPLOAD_IMAGE_BYTES = 8 * 1024 * 1024;
 const GALLERY_IMAGE_MAX_DIMENSION = 1800;
 const IMAGE_TOO_LARGE_MESSAGE = "Image too large. Please upload a smaller file.";
 const GALLERY_LIMIT_MESSAGE = "You can upload up to 20 gallery images.";
