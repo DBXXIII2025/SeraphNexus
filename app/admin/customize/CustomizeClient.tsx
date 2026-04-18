@@ -166,6 +166,7 @@ export default function CustomizeClient({
 
     try {
       const uploadForm = new FormData();
+      uploadForm.set("businessId", form.id);
       uploadForm.set("file", fileList[0]);
       const res = await fetch("/api/admin/business/gallery", {
         method: "POST",
@@ -256,7 +257,7 @@ export default function CustomizeClient({
       const res = await fetch("/api/admin/business/gallery", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageId }),
+        body: JSON.stringify({ businessId: form.id, imageId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -287,7 +288,10 @@ export default function CustomizeClient({
     const res = await fetch("/api/admin/business/gallery", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedIds: reordered.map((entry) => entry.id) }),
+      body: JSON.stringify({
+        businessId: form.id,
+        orderedIds: reordered.map((entry) => entry.id),
+      }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -320,7 +324,7 @@ export default function CustomizeClient({
     const res = await fetch("/api/admin/business/gallery", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ primaryImageId: imageId }),
+      body: JSON.stringify({ businessId: form.id, primaryImageId: imageId }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

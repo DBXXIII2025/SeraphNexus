@@ -21,6 +21,12 @@ export default async function CustomizePage() {
     return <div className="text-white">No active business</div>;
   }
 
+  console.log("[admin/customize] resolved active business", {
+    businessId: business.id,
+    slug: business.slug || null,
+    name: business.name || null,
+  });
+
   const adminClient = createAdminClient();
   const [customization, profileFieldsState] = await Promise.all([
     loadBusinessPageCustomization(adminClient, business.id),

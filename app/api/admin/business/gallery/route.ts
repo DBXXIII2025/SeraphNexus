@@ -6,15 +6,39 @@ import {
   MAX_BUSINESS_PAGE_IMAGE_BYTES,
   type BusinessPageImage,
 } from "@/lib/businessPageCustomization";
-import { getActiveBusiness } from "@/lib/getActiveBusiness";
+import { getBusinessStaffRole } from "@/lib/businessStaff";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
-async function getOwnedBusiness(userId: string) {
-  const activeBusiness = await getActiveBusiness();
-  if (!activeBusiness || activeBusiness.owner_id !== userId) {
+async function getOwnedBusiness(userId: string, requestedBusinessId: string | null) {
+  if (!requestedBusinessId) {
     return null;
   }
-  return { id: activeBusiness.id, owner_id: activeBusiness.owner_id };
+
+  const supabaseAdmin = createAdminClient();
+  const { data: ownedBusiness, error } = await supabaseAdmin
+    .from("businesses")
+    .select("id, owner_id")
+    .eq("id", requestedBusinessId)
+    .maybeSingle();
+
+  if (error || !ownedBusiness?.id) {
+    return null;
+  }
+
+  if (ownedBusiness.owner_id === userId) {
+    return { id: ownedBusiness.id, owner_id: ownedBusiness.owner_id };
+  }
+
+  const staffRole = await getBusinessStaffRole({
+    businessId: requestedBusinessId,
+    userId,
+  });
+
+  if (!staffRole) {
+    return null;
+  }
+
+  return { id: ownedBusiness.id, owner_id: ownedBusiness.owner_id };
 }
 
 function normalizeImageRow(row: Record<string, unknown>, index = 0): BusinessPageImage {
@@ -35,6 +59,10 @@ function normalizeImageRow(row: Record<string, unknown>, index = 0): BusinessPag
 }
 
 async function loadGalleryImages(supabaseAdmin: ReturnType<typeof createAdminClient>, businessId: string) {
+  console.log("[admin/business/gallery] reload query business_id", {
+    businessId,
+  });
+
   const { data, error } = await supabaseAdmin
     .from("business_page_images")
     .select("id, image_url, storage_path, alt_text, sort_order, is_primary, created_at")
@@ -63,6 +91,7 @@ export async function POST(req: Request) {
     }
 
     const formData = await req.formData();
+    const requestedBusinessId = String(formData.get("businessId") || "").trim();
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
@@ -77,10 +106,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Business photos must be 5 MB or smaller." }, { status: 400 });
     }
 
-    const ownedBusiness = await getOwnedBusiness(user.id);
+    const ownedBusiness = await getOwnedBusiness(user.id, requestedBusinessId);
     if (!ownedBusiness) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
+
+    console.log("[admin/business/gallery] upload business_id", {
+      requestedBusinessId,
+      resolvedBusinessId: ownedBusiness.id,
+      userId: user.id,
+    });
 
     const supabaseAdmin = createAdminClient();
     const existingImages = await loadGalleryImages(supabaseAdmin, ownedBusiness.id);
@@ -131,6 +166,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
+      businessId: ownedBusiness.id,
       image: normalizeImageRow(image as Record<string, unknown>, nextSortOrder - 1),
       images: await loadGalleryImages(supabaseAdmin, ownedBusiness.id),
       storageMode: "business_page_images",
@@ -155,6 +191,7 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
+    const requestedBusinessId = String(body?.businessId || "").trim();
     const primaryImageId = String(body?.primaryImageId || "").trim();
     const orderedIds = Array.isArray(body?.orderedIds)
       ? body.orderedIds.map((id) => String(id || "").trim()).filter(Boolean)
@@ -164,10 +201,16 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "orderedIds or primaryImageId is required." }, { status: 400 });
     }
 
-    const ownedBusiness = await getOwnedBusiness(user.id);
+    const ownedBusiness = await getOwnedBusiness(user.id, requestedBusinessId);
     if (!ownedBusiness) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
+
+    console.log("[admin/business/gallery] patch business_id", {
+      requestedBusinessId,
+      resolvedBusinessId: ownedBusiness.id,
+      userId: user.id,
+    });
 
     const supabaseAdmin = createAdminClient();
 
@@ -224,6 +267,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({
       success: true,
+      businessId: ownedBusiness.id,
       images: await loadGalleryImages(supabaseAdmin, ownedBusiness.id),
       storageMode: "business_page_images",
     });
@@ -247,15 +291,22 @@ export async function DELETE(req: Request) {
     }
 
     const body = await req.json();
+    const requestedBusinessId = String(body?.businessId || "").trim();
     const imageId = String(body?.imageId || "").trim();
     if (!imageId) {
       return NextResponse.json({ error: "imageId is required." }, { status: 400 });
     }
 
-    const ownedBusiness = await getOwnedBusiness(user.id);
+    const ownedBusiness = await getOwnedBusiness(user.id, requestedBusinessId);
     if (!ownedBusiness) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
+
+    console.log("[admin/business/gallery] delete business_id", {
+      requestedBusinessId,
+      resolvedBusinessId: ownedBusiness.id,
+      userId: user.id,
+    });
 
     const supabaseAdmin = createAdminClient();
     const { data: image, error: lookupError } = await supabaseAdmin
@@ -300,6 +351,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({
       success: true,
+      businessId: ownedBusiness.id,
       images: await loadGalleryImages(supabaseAdmin, ownedBusiness.id),
       storageMode: "business_page_images",
     });
