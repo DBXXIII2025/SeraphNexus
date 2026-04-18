@@ -133,16 +133,14 @@ export async function getActiveBusiness(
     }
   }
 
-  const { data, error } = await supabase
+  const { data: ownedBusinesses, error } = await supabase
     .from("businesses")
     .select(BUSINESS_RUNTIME_SELECT)
     .eq("owner_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(2);
 
   if (error) {
-    console.error("[getActiveBusiness] fallback lookup failed", {
+    console.error("[getActiveBusiness] owner lookup failed", {
       userId: user.id,
       requestedBusinessId: requestedBusinessId || null,
       activeId: activeId || null,
@@ -151,14 +149,30 @@ export async function getActiveBusiness(
     return null;
   }
 
-  if (data) {
-    return normalizeBusiness(data as unknown as ActiveBusinessRow, "owner");
+  if (ownedBusinesses?.length === 1) {
+    console.log("[getActiveBusiness] resolved sole owner business", {
+      userId: user.id,
+      requestedBusinessId: requestedBusinessId || null,
+      activeId: activeId || null,
+      businessId: ownedBusinesses[0].id,
+    });
+    return normalizeBusiness(ownedBusinesses[0] as unknown as ActiveBusinessRow, "owner");
+  }
+
+  if ((ownedBusinesses?.length || 0) > 1) {
+    console.warn("[getActiveBusiness] no selected business and multiple owner businesses exist", {
+      userId: user.id,
+      requestedBusinessId: requestedBusinessId || null,
+      activeId: activeId || null,
+      businessIds: ownedBusinesses?.map((business) => business.id) || [],
+    });
+    return null;
   }
 
   const staffBusinessIds = await getStaffBusinessIdsForUser(user.id);
-  const firstStaffBusinessId = staffBusinessIds[0];
 
-  if (firstStaffBusinessId) {
+  if (staffBusinessIds.length === 1) {
+    const firstStaffBusinessId = staffBusinessIds[0];
     const staffRole = await getBusinessStaffRole({
       businessId: firstStaffBusinessId,
       userId: user.id,
@@ -174,6 +188,15 @@ export async function getActiveBusiness(
         return normalizeBusiness(staffBusiness as unknown as ActiveBusinessRow, staffRole);
       }
     }
+  }
+
+  if (staffBusinessIds.length > 1) {
+    console.warn("[getActiveBusiness] no selected business and multiple staff businesses exist", {
+      userId: user.id,
+      requestedBusinessId: requestedBusinessId || null,
+      activeId: activeId || null,
+      businessIds: staffBusinessIds,
+    });
   }
 
   return null;

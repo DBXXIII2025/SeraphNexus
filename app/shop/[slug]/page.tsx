@@ -43,6 +43,12 @@ export default async function ShopPage({
   }
 
   const businessType = (business.business_type || "").toLowerCase();
+  console.log("[public/shop] resolved business_id", {
+    slug,
+    businessId: business.id,
+    businessSlug: business.slug,
+  });
+
   if (!isShopPublicBusinessType(businessType)) {
     redirect(getCanonicalPublicBusinessRoute(business.business_type, slug).href);
   }

@@ -72,6 +72,12 @@ export default async function OrderPage({
     });
   }
 
+  console.log("[public/order] resolved business_id", {
+    slug,
+    businessId: business.id,
+    businessSlug: business.slug,
+  });
+
   if (!isOrderPublicBusinessType(businessType)) {
     redirect(getCanonicalPublicBusinessRoute(business.business_type, slug).href);
   }

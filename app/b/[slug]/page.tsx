@@ -43,6 +43,12 @@ export default async function PublicRouterPage({
     console.log("[b/page] business_type:", business.business_type || null);
   }
 
+  console.log("[public/b] resolved business_id", {
+    slug,
+    businessId: business.id,
+    businessSlug: business.slug,
+  });
+
   const routeState = getPublicBusinessHrefState({
     slug: business.slug,
     businessType: business.business_type,

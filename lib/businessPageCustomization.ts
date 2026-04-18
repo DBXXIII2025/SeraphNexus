@@ -175,6 +175,10 @@ export async function loadBusinessPageCustomization(
   businessId: string
 ): Promise<BusinessPageCustomization> {
   try {
+    console.log("[businessPageCustomization] gallery query business_id", {
+      businessId,
+    });
+
     let businessQuery = await supabase
       .from("businesses")
       .select("logo_url, page_accent_color, page_text_color, heading_font_size, body_font_size")

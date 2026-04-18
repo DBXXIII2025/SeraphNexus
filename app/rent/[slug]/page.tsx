@@ -61,6 +61,12 @@ export default async function RentPage({
     console.log("[rent/page] business_type:", businessType);
   }
 
+  console.log("[public/rent] resolved business_id", {
+    slug,
+    businessId: business.id,
+    businessSlug: business.slug,
+  });
+
   if (!isRentalPublicBusinessType(businessType)) {
     redirect(getCanonicalPublicBusinessRoute(business.business_type, slug).href);
   }

@@ -86,6 +86,12 @@ export default async function BookPage({
     console.log("[book/page] business_type:", businessType);
   }
 
+  console.log("[public/book] resolved business_id", {
+    slug,
+    businessId: business.id,
+    businessSlug: business.slug,
+  });
+
   if (!isBookingPublicBusinessType(businessType)) {
     redirect(getCanonicalPublicBusinessRoute(business.business_type, slug).href);
   }
