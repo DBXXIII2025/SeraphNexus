@@ -1,5 +1,6 @@
 ﻿import { createClient } from "@/lib/supabase/server";
 import { PUBLIC_BUSINESS_ROUTE_SELECT } from "@/lib/publicBusinessQueries";
+import { createAdminClient } from "@/lib/supabase/server";
 import { getPublicBusinessHrefState } from "@/lib/publicBusinessRoutes";
 import { loadBusinessLogoById } from "@/lib/businessLogos";
 import { notFound, redirect } from "next/navigation";
@@ -22,6 +23,7 @@ export default async function PublicRouterPage({
 }) {
   const { slug } = await params;
   const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
   const isDev = process.env.NODE_ENV !== "production";
 
   const { data: business, error } = await supabase
@@ -60,8 +62,8 @@ export default async function PublicRouterPage({
 
   const logoState = await loadBusinessLogoById(business.id);
   const [customization, profileFields] = await Promise.all([
-    loadBusinessPageCustomization(supabase, business.id),
-    loadBusinessProfileFields(supabase, business.id),
+    loadBusinessPageCustomization(supabaseAdmin, business.id),
+    loadBusinessProfileFields(supabaseAdmin, business.id),
   ]);
   const logoUrl = customization.logoUrl || (logoState.schemaReady ? logoState.logoUrl : null);
 
