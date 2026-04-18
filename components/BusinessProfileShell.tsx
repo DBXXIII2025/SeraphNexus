@@ -150,7 +150,6 @@ export default function BusinessProfileShell({
             <h1 className="text-2xl font-semibold">{businessName}</h1>
             {businessDescription ? <p>{businessDescription}</p> : null}
           </div>
-          {!compact && action ? <div>{action}</div> : null}
         </div>
       </section>
 
@@ -225,8 +224,12 @@ export default function BusinessProfileShell({
         ) : (
           <p>Business details will appear here once the owner publishes a description.</p>
         )}
-        {compact && action ? <div className="mt-3">{action}</div> : null}
-        {hasContactInfo ? (
+      </section>
+
+      {hasContactInfo ? (
+        <section className="border p-3">
+          <h2>Contact</h2>
+          <p>Use the business contact details published by the owner.</p>
           <dl className="mt-3 grid gap-2 sm:grid-cols-2">
             {contact?.phone ? (
               <div>
@@ -301,8 +304,15 @@ export default function BusinessProfileShell({
               </div>
             ) : null}
           </dl>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
+
+      {action ? (
+        <section className="border p-3">
+          <h2>Get started</h2>
+          <div className="mt-3">{action}</div>
+        </section>
+      ) : null}
 
       <footer className="border p-3">
         <p>{businessName}</p>
@@ -311,6 +321,7 @@ export default function BusinessProfileShell({
           <Link href="/legal/terms_of_service">Terms</Link>
           <Link href="/legal/privacy_policy">Privacy</Link>
         </div>
+        <p className="mt-2">Business information is provided by the business owner.</p>
       </footer>
     </article>
   );
