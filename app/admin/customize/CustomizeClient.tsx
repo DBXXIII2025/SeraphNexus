@@ -8,9 +8,15 @@ import {
 } from "@/lib/businessProfileCompletion";
 import BusinessProfileShell from "@/components/BusinessProfileShell";
 import {
+  isAllowedBusinessPageImageType,
   normalizeBusinessPageTheme,
   type BusinessPageImage,
 } from "@/lib/businessPageCustomization";
+
+const CLIENT_MAX_ORIGINAL_IMAGE_BYTES = 15 * 1024 * 1024;
+const CLIENT_MAX_UPLOAD_IMAGE_BYTES = 2 * 1024 * 1024;
+const GALLERY_IMAGE_MAX_DIMENSION = 1800;
+const IMAGE_TOO_LARGE_MESSAGE = "Image too large. Please upload a smaller file.";
 
 type CustomizeClientProps = {
   initialBusiness: {
@@ -48,6 +54,90 @@ type CustomizeClientProps = {
     message: string;
   };
 };
+
+function loadImageElement(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Image could not be read."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function compressGalleryImage(file: File) {
+  if (!isAllowedBusinessPageImageType(file.type)) {
+    throw new Error("Only JPG, PNG, and WEBP photos are allowed.");
+  }
+
+  if (file.size > CLIENT_MAX_ORIGINAL_IMAGE_BYTES) {
+    throw new Error(IMAGE_TOO_LARGE_MESSAGE);
+  }
+
+  if (file.size <= CLIENT_MAX_UPLOAD_IMAGE_BYTES) {
+    console.log("[admin/customize] gallery file within upload limit", {
+      fileName: file.name,
+      originalSize: file.size,
+      maxUploadSize: CLIENT_MAX_UPLOAD_IMAGE_BYTES,
+    });
+    return file;
+  }
+
+  const image = await loadImageElement(file);
+  const scale = Math.min(
+    1,
+    GALLERY_IMAGE_MAX_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight)
+  );
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("Image could not be compressed.");
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  const qualityLevels = [0.82, 0.72, 0.62, 0.52, 0.42];
+  for (const quality of qualityLevels) {
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/webp", quality);
+    });
+
+    if (!blob) {
+      continue;
+    }
+
+    console.log("[admin/customize] gallery compression attempt", {
+      fileName: file.name,
+      originalSize: file.size,
+      compressedSize: blob.size,
+      quality,
+      width,
+      height,
+    });
+
+    if (blob.size <= CLIENT_MAX_UPLOAD_IMAGE_BYTES) {
+      const safeName = file.name.replace(/\.[^.]+$/, "") || "business-photo";
+      return new File([blob], `${safeName}.webp`, {
+        type: "image/webp",
+        lastModified: Date.now(),
+      });
+    }
+  }
+
+  throw new Error(IMAGE_TOO_LARGE_MESSAGE);
+}
 
 export default function CustomizeClient({
   initialBusiness,
@@ -208,16 +298,30 @@ export default function CustomizeClient({
 
     try {
       for (const file of files) {
+        const uploadFile = await compressGalleryImage(file);
+        console.log("[admin/customize] gallery upload prepared file", {
+          businessId: form.id,
+          originalFileName: file.name,
+          uploadFileName: uploadFile.name,
+          originalSize: file.size,
+          uploadSize: uploadFile.size,
+          maxUploadSize: CLIENT_MAX_UPLOAD_IMAGE_BYTES,
+        });
+
         const uploadForm = new FormData();
         uploadForm.set("businessId", form.id);
-        uploadForm.set("file", file);
+        uploadForm.set("file", uploadFile);
         const res = await fetch("/api/admin/business/gallery", {
           method: "POST",
           body: uploadForm,
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(data.error || `Photo upload failed for ${file.name}.`);
+          throw new Error(
+            res.status === 413
+              ? IMAGE_TOO_LARGE_MESSAGE
+              : data.error || `Photo upload failed for ${file.name}.`
+          );
         }
 
         if (!data.image?.id) {

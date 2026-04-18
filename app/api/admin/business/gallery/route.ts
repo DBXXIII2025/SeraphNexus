@@ -9,6 +9,8 @@ import {
 import { getBusinessStaffRole } from "@/lib/businessStaff";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
+export const runtime = "nodejs";
+
 async function getOwnedBusiness(userId: string, requestedBusinessId: string | null) {
   if (!requestedBusinessId) {
     return null;
@@ -144,7 +146,7 @@ export async function POST(req: Request) {
     }
 
     if (file.size > MAX_BUSINESS_PAGE_IMAGE_BYTES) {
-      return NextResponse.json({ error: "Business photos must be 5 MB or smaller." }, { status: 400 });
+      return NextResponse.json({ error: "Image too large. Please upload a smaller file." }, { status: 413 });
     }
 
     const ownedBusiness = await getOwnedBusiness(user.id, requestedBusinessId);
