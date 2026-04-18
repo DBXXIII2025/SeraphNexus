@@ -155,8 +155,42 @@ export default function CustomizeClient({
     setLoading(false);
   }
 
-  async function uploadGalleryPhoto(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) {
+  async function refreshGalleryImages(reason: string) {
+    const res = await fetch(
+      `/api/admin/business/gallery?businessId=${encodeURIComponent(form.id)}`,
+      {
+        method: "GET",
+      }
+    );
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.error || "Gallery refresh failed.");
+    }
+
+    if (!Array.isArray(data.images)) {
+      throw new Error("Gallery refresh did not return image rows.");
+    }
+
+    const refreshedImages = data.images as BusinessPageImage[];
+    setGalleryImages(refreshedImages);
+    console.log("[admin/customize] refreshed gallery rows", {
+      businessId: form.id,
+      reason,
+      refreshedGalleryRowCount: refreshedImages.length,
+    });
+
+    return refreshedImages;
+  }
+
+  async function uploadGalleryPhotos(fileList: FileList | null) {
+    const files = Array.from(fileList || []);
+    console.log("[admin/customize] selected gallery file count", {
+      businessId: form.id,
+      selectedFileCount: files.length,
+    });
+
+    if (files.length === 0) {
       return;
     }
 
@@ -164,26 +198,82 @@ export default function CustomizeClient({
     setError(null);
     setSuccess(null);
 
+    let uploadSuccessCount = 0;
+    let insertedRowCount = 0;
+
     try {
-      const uploadForm = new FormData();
-      uploadForm.set("businessId", form.id);
-      uploadForm.set("file", fileList[0]);
-      const res = await fetch("/api/admin/business/gallery", {
-        method: "POST",
-        body: uploadForm,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "Photo upload failed.");
+      for (const file of files) {
+        const uploadForm = new FormData();
+        uploadForm.set("businessId", form.id);
+        uploadForm.set("file", file);
+        const res = await fetch("/api/admin/business/gallery", {
+          method: "POST",
+          body: uploadForm,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Photo upload failed for ${file.name}.`);
+        }
+
+        if (!data.image?.id) {
+          throw new Error(`Photo uploaded but no gallery row was returned for ${file.name}.`);
+        }
+
+        uploadSuccessCount += 1;
+        insertedRowCount += 1;
+        console.log("[admin/customize] gallery upload file complete", {
+          businessId: form.id,
+          fileName: file.name,
+          uploadSuccessCount,
+          insertedRowCount,
+        });
       }
-      setGalleryImages((current) =>
-        Array.isArray(data.images)
-          ? data.images
-          : [...current.filter((image) => image.id !== data.image?.id), data.image]
+
+      const refreshedImages = await refreshGalleryImages("post-upload");
+      console.log("[admin/customize] gallery upload final state", {
+        businessId: form.id,
+        selectedFileCount: files.length,
+        uploadSuccessCount,
+        insertedRowCount,
+        refreshedGalleryRowCount: refreshedImages.length,
+        finalGalleryStateLength: refreshedImages.length,
+      });
+      setSuccess(
+        files.length === 1
+          ? "Gallery photo added."
+          : `${files.length} gallery photos added.`
       );
-      setSuccess("Gallery photo added.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Photo upload failed.");
+      console.error("[admin/customize] gallery upload flow failed", {
+        businessId: form.id,
+        selectedFileCount: files.length,
+        uploadSuccessCount,
+        insertedRowCount,
+        error: err instanceof Error ? err.message : "Photo upload failed.",
+      });
+
+      let message = err instanceof Error ? err.message : "Photo upload failed.";
+      if (uploadSuccessCount > 0) {
+        try {
+          const refreshedImages = await refreshGalleryImages("post-upload-error");
+          console.log("[admin/customize] gallery upload partial final state", {
+            businessId: form.id,
+            selectedFileCount: files.length,
+            uploadSuccessCount,
+            insertedRowCount,
+            refreshedGalleryRowCount: refreshedImages.length,
+            finalGalleryStateLength: refreshedImages.length,
+          });
+          message = `${message} ${uploadSuccessCount} uploaded photo${
+            uploadSuccessCount === 1 ? "" : "s"
+          } were refreshed in the gallery.`;
+        } catch (refreshError) {
+          message = `${message} Gallery refresh failed: ${
+            refreshError instanceof Error ? refreshError.message : "Unknown refresh error."
+          }`;
+        }
+      }
+      setError(message);
     } finally {
       setUploadingPhoto(false);
     }
@@ -682,9 +772,16 @@ export default function CustomizeClient({
               {uploadingPhoto ? "Uploading..." : "Add photo"}
               <input
                 type="file"
+                multiple
                 accept="image/png,image/jpeg,image/webp"
                 disabled={uploadingPhoto}
-                onChange={(event) => void uploadGalleryPhoto(event.target.files)}
+                onChange={(event) => {
+                  const input = event.currentTarget;
+                  const files = input.files;
+                  void uploadGalleryPhotos(files).finally(() => {
+                    input.value = "";
+                  });
+                }}
                 className="hidden"
               />
             </label>

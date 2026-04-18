@@ -79,6 +79,47 @@ async function loadGalleryImages(supabaseAdmin: ReturnType<typeof createAdminCli
     .map((row, index) => normalizeImageRow(row, index));
 }
 
+export async function GET(req: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const requestedBusinessId =
+      new URL(req.url).searchParams.get("businessId")?.trim() || null;
+    const ownedBusiness = await getOwnedBusiness(user.id, requestedBusinessId);
+    if (!ownedBusiness) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    }
+
+    console.log("[admin/business/gallery] fetch business_id", {
+      requestedBusinessId,
+      resolvedBusinessId: ownedBusiness.id,
+      userId: user.id,
+    });
+
+    const supabaseAdmin = createAdminClient();
+    const images = await loadGalleryImages(supabaseAdmin, ownedBusiness.id);
+
+    return NextResponse.json({
+      success: true,
+      businessId: ownedBusiness.id,
+      images,
+      storageMode: "business_page_images",
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to load gallery." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -165,6 +206,13 @@ export async function POST(req: Request) {
       throw new Error(insertError.message);
     }
 
+    console.log("[admin/business/gallery] upload insert complete", {
+      businessId: ownedBusiness.id,
+      uploadedFileName: file.name,
+      uploadSuccessCount: 1,
+      insertedRowCount: image?.id ? 1 : 0,
+    });
+
     return NextResponse.json({
       businessId: ownedBusiness.id,
       image: normalizeImageRow(image as Record<string, unknown>, nextSortOrder - 1),
@@ -193,8 +241,8 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const requestedBusinessId = String(body?.businessId || "").trim();
     const primaryImageId = String(body?.primaryImageId || "").trim();
-    const orderedIds = Array.isArray(body?.orderedIds)
-      ? body.orderedIds.map((id) => String(id || "").trim()).filter(Boolean)
+    const orderedIds: string[] = Array.isArray(body?.orderedIds)
+      ? body.orderedIds.map((id: unknown) => String(id || "").trim()).filter(Boolean)
       : [];
 
     if (orderedIds.length === 0 && !primaryImageId) {
@@ -236,7 +284,7 @@ export async function PATCH(req: Request) {
       }
 
       const updates = await Promise.all(
-        nextOrder.map((id, index) =>
+        nextOrder.map((id: string, index: number) =>
           supabaseAdmin
             .from("business_page_images")
             .update({ sort_order: index + 1, is_primary: id === primaryImageId })
@@ -251,7 +299,7 @@ export async function PATCH(req: Request) {
       }
     } else {
       const updates = await Promise.all(
-        orderedIds.map((id, index) =>
+        orderedIds.map((id: string, index: number) =>
           supabaseAdmin
             .from("business_page_images")
             .update({ sort_order: index + 1, is_primary: index === 0 })
