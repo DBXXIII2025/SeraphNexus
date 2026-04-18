@@ -722,7 +722,7 @@ export default function CustomizeClient({
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold text-slate-950">Header and business information</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Business Info</h2>
             <p className="mt-1 text-sm text-slate-600">
               These fields feed the compact public header and the detail block below the gallery.
             </p>
@@ -1025,20 +1025,38 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className="rounded bg-slate-950 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? "Saving..." : "Save Profile"}
-          </button>
-          <a
-            href="/admin/settings"
-            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800"
-          >
-            Review publish readiness
-          </a>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+          <h2 className="text-lg font-semibold text-slate-950">Public Actions</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Save changes, then open the real public pages that customers can use.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="rounded bg-slate-950 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "Saving..." : "Save Profile"}
+            </button>
+            <a
+              href={`/b/${slugPreview || form.slug || form.id}`}
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+            >
+              Public profile
+            </a>
+            <a
+              href={`/${publicRoutePrefix}/${slugPreview || form.slug || form.id}`}
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+            >
+              Customer action page
+            </a>
+            <a
+              href="/admin/settings"
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+            >
+              Publish settings
+            </a>
+          </div>
         </div>
         </div>
       </div>
