@@ -249,9 +249,9 @@ export default function ExploreClient({
         <select
           value={routeFilter}
           onChange={(event) => setRouteFilter(event.target.value as ExploreRouteFilterId)}
-          aria-label="Sort dropdown"
+          aria-label="Filter by customer action"
         >
-          <option value="all">Sort: Default</option>
+          <option value="all">All actions</option>
           <option value="book">Book</option>
           <option value="order">Order</option>
           <option value="rent">Rent</option>

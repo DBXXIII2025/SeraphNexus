@@ -47,7 +47,7 @@ export type BusinessViewModel = Business & {
   routeLabel: string;
   routeSummary: string;
   displayName: string;
-  displayDescription: string;
+  displayDescription: string | null;
   initials: string;
   score: number;
 };
@@ -214,9 +214,7 @@ export function buildBusinessViewModels(businesses: Business[]) {
         businessType: business.business_type,
       });
       const displayName = business.name?.trim() || "Unnamed business";
-      const displayDescription =
-        business.description?.trim() ||
-        "Published on Seraph Nexus with a live public destination ready for discovery.";
+      const displayDescription = business.description?.trim() || null;
 
       const viewModel: BusinessViewModel = {
         ...business,

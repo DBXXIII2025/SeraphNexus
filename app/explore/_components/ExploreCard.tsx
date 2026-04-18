@@ -31,9 +31,13 @@ export default function ExploreCard({
           {category.shortLabel}
         </span>
 
-        <p className="mt-3 min-h-[3rem] line-clamp-2">
-          {business.displayDescription}
-        </p>
+        {business.displayDescription ? (
+          <p className="mt-3 min-h-[3rem] line-clamp-2">
+            {business.displayDescription}
+          </p>
+        ) : (
+          <p className="mt-3 min-h-[3rem]">No public description yet.</p>
+        )}
 
         <div className="mt-auto pt-4">
           {business.routeState.isRoutable ? (
