@@ -73,14 +73,6 @@ function loadImageElement(file: File) {
 }
 
 async function compressGalleryImage(file: File) {
-  if (!isAllowedBusinessPageImageType(file.type)) {
-    throw new Error("Only JPG, PNG, and WEBP photos are allowed.");
-  }
-
-  if (file.size > CLIENT_MAX_ORIGINAL_IMAGE_BYTES) {
-    throw new Error(IMAGE_TOO_LARGE_MESSAGE);
-  }
-
   if (file.size <= CLIENT_MAX_UPLOAD_IMAGE_BYTES) {
     console.log("[admin/customize] gallery file within upload limit", {
       fileName: file.name,
@@ -137,6 +129,20 @@ async function compressGalleryImage(file: File) {
   }
 
   throw new Error(IMAGE_TOO_LARGE_MESSAGE);
+}
+
+function validateGalleryFilesBeforeUpload(files: File[]) {
+  for (const file of files) {
+    if (!isAllowedBusinessPageImageType(file.type)) {
+      return "Only JPG, PNG, and WEBP photos are allowed.";
+    }
+
+    if (file.size > CLIENT_MAX_ORIGINAL_IMAGE_BYTES) {
+      return IMAGE_TOO_LARGE_MESSAGE;
+    }
+  }
+
+  return null;
 }
 
 export default function CustomizeClient({
@@ -286,6 +292,20 @@ export default function CustomizeClient({
     });
 
     if (files.length === 0) {
+      return;
+    }
+
+    const validationError = validateGalleryFilesBeforeUpload(files);
+    if (validationError) {
+      console.warn("[admin/customize] gallery upload blocked before request", {
+        businessId: form.id,
+        fileCount: files.length,
+        validationError,
+        maxOriginalSize: CLIENT_MAX_ORIGINAL_IMAGE_BYTES,
+      });
+      setUploadingPhoto(false);
+      setSuccess(null);
+      setError(validationError);
       return;
     }
 

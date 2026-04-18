@@ -3,6 +3,7 @@ const nextConfig = {
   experimental: {
     webpackMemoryOptimizations: true,
     preloadEntriesOnStart: false,
+    proxyClientMaxBodySize: "8mb",
     serverActions: {
       bodySizeLimit: "8mb",
     },
