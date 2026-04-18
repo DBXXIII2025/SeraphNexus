@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   getBusinessProfileCompletion,
   normalizeBusinessSlug,
@@ -69,6 +69,7 @@ export default function CustomizeClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const galleryPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const completion = getBusinessProfileCompletion(form, {
     includeOptionalProfileFields: profileFieldsSchemaReady,
@@ -185,6 +186,10 @@ export default function CustomizeClient({
 
   async function uploadGalleryPhotos(fileList: FileList | null) {
     const files = Array.from(fileList || []);
+    console.log("[admin/customize] upload handler start", {
+      businessId: form.id,
+      fileCount: files.length,
+    });
     console.log("[admin/customize] selected gallery file count", {
       businessId: form.id,
       selectedFileCount: files.length,
@@ -768,23 +773,44 @@ export default function CustomizeClient({
                 Manage the compact framed public carousel without enlarging the control panel.
               </p>
             </div>
-            <label className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800">
+            <button
+              type="button"
+              disabled={uploadingPhoto}
+              onClick={() => {
+                console.log("[admin/customize] add photo clicked", {
+                  businessId: form.id,
+                  disabled: uploadingPhoto,
+                });
+                galleryPhotoInputRef.current?.click();
+              }}
+              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
               {uploadingPhoto ? "Uploading..." : "Add photo"}
-              <input
-                type="file"
-                multiple
-                accept="image/png,image/jpeg,image/webp"
-                disabled={uploadingPhoto}
-                onChange={(event) => {
-                  const input = event.currentTarget;
-                  const files = input.files;
-                  void uploadGalleryPhotos(files).finally(() => {
-                    input.value = "";
-                  });
-                }}
-                className="hidden"
-              />
-            </label>
+            </button>
+            <input
+              ref={galleryPhotoInputRef}
+              type="file"
+              multiple
+              accept="image/png,image/jpeg,image/webp"
+              disabled={uploadingPhoto}
+              onChange={(event) => {
+                const input = event.currentTarget;
+                const files = input.files;
+                console.log("FILE SELECTED", {
+                  businessId: form.id,
+                  fileCount: files?.length || 0,
+                  files: Array.from(files || []).map((file) => ({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                  })),
+                });
+                void uploadGalleryPhotos(files).finally(() => {
+                  input.value = "";
+                });
+              }}
+              className="hidden"
+            />
           </div>
           {customizationErrorMessage ? (
             <p className="mt-3 text-sm text-amber-700">{customizationErrorMessage}</p>
