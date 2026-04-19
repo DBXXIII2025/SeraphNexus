@@ -45,6 +45,13 @@ function isMissingBrandingColumnError(error: { code?: string | null; message?: s
   return error?.code === "42703" || message.includes("logo_url");
 }
 
+type PersistedBrandingRow = {
+  id: string;
+  platform_name: string | null;
+  logo_url: string | null;
+  updated_at: string | null;
+};
+
 async function ensurePlatformBrandingBucket(supabaseAdmin: ReturnType<typeof createAdminClient>) {
   console.info("[platform-branding] expected bucket name", PLATFORM_BRAND_ASSETS_BUCKET);
 
@@ -167,6 +174,19 @@ export async function POST(req: Request) {
         logoUrl: null,
       });
 
+      const { data: clearedRow, error: clearedReadError } = await supabaseAdmin
+        .from("platform_settings")
+        .select("id, platform_name, logo_url, updated_at")
+        .eq("id", existing.id)
+        .maybeSingle<PersistedBrandingRow>();
+
+      console.info("[platform-branding] final persisted logo_url after clear", {
+        settingsId: clearedRow?.id || existing.id,
+        platformName: clearedRow?.platform_name || existing.platform_name,
+        logoUrl: clearedRow?.logo_url ?? null,
+        error: clearedReadError?.message || null,
+      });
+
       revalidatePath("/");
       revalidatePath("/explore");
       revalidatePath("/admin/platform");
@@ -226,53 +246,76 @@ export async function POST(req: Request) {
       .from(PLATFORM_BRAND_ASSETS_BUCKET)
       .getPublicUrl(storagePath);
 
+    const savePayload = {
+      logo_url: publicUrlData.publicUrl,
+      updated_at: now,
+    };
+    console.info("[platform-branding] save payload being sent", {
+      settingsId: existing?.id || null,
+      logoUrl: savePayload.logo_url,
+      storagePath,
+    });
+
     let mutationError = null;
+    let persistedBranding: PersistedBrandingRow | null = null;
     if (existing?.id) {
-      const { error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from("platform_settings")
-        .update({
-          logo_url: publicUrlData.publicUrl,
-          updated_at: now,
-        })
-        .eq("id", existing.id);
+        .update(savePayload)
+        .eq("id", existing.id)
+        .select("id, platform_name, logo_url, updated_at")
+        .maybeSingle<PersistedBrandingRow>();
+      persistedBranding = data || null;
       mutationError = error;
     } else {
-      const { error } = await supabaseAdmin.from("platform_settings").insert({
+      const { data, error } = await supabaseAdmin.from("platform_settings").insert({
         platform_name: "Seraph Nexus",
         logo_url: publicUrlData.publicUrl,
         created_at: now,
         updated_at: now,
-      });
+      })
+        .select("id, platform_name, logo_url, updated_at")
+        .maybeSingle<PersistedBrandingRow>();
+      persistedBranding = data || null;
       mutationError = error;
     }
 
-    if (mutationError) {
+    if (mutationError || !persistedBranding?.logo_url) {
       await supabaseAdmin.storage.from(PLATFORM_BRAND_ASSETS_BUCKET).remove([storagePath]);
       if (isMissingBrandingColumnError(mutationError)) {
         return respondWith(req, "error", "platform-branding-migration-required");
       }
-      console.error("[platform-branding] settings update failed", mutationError);
+      console.error("[platform-branding] settings update failed", {
+        mutationError,
+        persistedLogoUrl: persistedBranding?.logo_url || null,
+      });
       return respondWith(req, "error", "platform-branding-save-failed");
     }
 
     console.info("[platform-branding] platform_settings update result", {
-      settingsId: existing?.id || "created",
+      settingsId: persistedBranding.id,
       storagePath,
-      logoUrl: publicUrlData.publicUrl,
+      logoUrl: persistedBranding.logo_url,
+      platformName: persistedBranding.platform_name,
     });
 
     revalidatePath("/");
     revalidatePath("/explore");
     revalidatePath("/pricing");
     revalidatePath("/admin/platform");
-    console.info("[platform-branding] final logo_url returned", publicUrlData.publicUrl);
+    console.info("[platform-branding] final persisted logo_url after save", {
+      settingsId: persistedBranding.id,
+      logoUrl: persistedBranding.logo_url,
+      updatedAt: persistedBranding.updated_at,
+    });
+    console.info("[platform-branding] final logo_url returned", persistedBranding.logo_url);
     console.info("[platform-branding] final branding payload", {
-      platformName: existing.platform_name || "Seraph Nexus",
-      logoUrl: publicUrlData.publicUrl,
+      platformName: persistedBranding.platform_name || "Seraph Nexus",
+      logoUrl: persistedBranding.logo_url,
     });
     return respondWith(req, "success", "platform-logo-updated", {
-      logoUrl: publicUrlData.publicUrl,
-      updatedAt: now,
+      logoUrl: persistedBranding.logo_url,
+      updatedAt: persistedBranding.updated_at || now,
     });
   } catch (error) {
     console.error("[platform-branding] failed", error);

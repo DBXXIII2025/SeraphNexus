@@ -10,13 +10,22 @@ export default async function Navbar() {
     data: { user },
   } = await supabase.auth.getUser();
   const settings = await getPlatformSettings();
+  const siteName = resolvePlatformName(settings);
+  const logoUrl = resolvePlatformLogoUrl(settings);
+
+  console.info("[platform-branding] header branding payload read", {
+    platformName: settings.platform_name,
+    rawLogoUrl: settings.logo_url,
+    resolvedLogoUrl: logoUrl,
+    renderDecision: logoUrl ? "logo" : "fallback",
+  });
 
   return (
     <NavbarClient
       isLoggedIn={Boolean(user)}
       isPlatformAdmin={user ? await getIsPlatformAdminForUserId(user.id) : false}
-      siteName={resolvePlatformName(settings)}
-      logoUrl={resolvePlatformLogoUrl(settings)}
+      siteName={siteName}
+      logoUrl={logoUrl}
     />
   );
 }
