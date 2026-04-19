@@ -2,6 +2,7 @@
 
 import { BusinessViewModel } from "../exploreData";
 import ExploreCard from "./ExploreCard";
+import { PublicEmptyState } from "@/components/public/PublicLayoutSystem";
 
 export default function ExploreGrid({
   businesses,
@@ -10,9 +11,9 @@ export default function ExploreGrid({
 }) {
   if (businesses.length === 0) {
     return (
-      <div className="border p-4">
+      <PublicEmptyState>
         <p>No published businesses match these filters.</p>
-      </div>
+      </PublicEmptyState>
     );
   }
 

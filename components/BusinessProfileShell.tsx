@@ -7,6 +7,12 @@ import type {
   BusinessPageImage,
   BusinessPageTheme,
 } from "@/lib/businessPageCustomization";
+import {
+  PublicHero,
+  PublicSection,
+  PublicSiteShell,
+  PublicTopNav,
+} from "@/components/public/PublicLayoutSystem";
 
 type BusinessProfileShellProps = {
   businessName: string;
@@ -107,29 +113,33 @@ export default function BusinessProfileShell({
   }
 
   return (
-    <article
-      className={`mx-auto w-full ${compact ? "max-w-md space-y-3" : "max-w-4xl space-y-4"}`}
-      data-theme-background={theme.backgroundColor}
-      data-theme-accent={theme.accentColor}
-      data-theme-text={theme.textColor}
+    <PublicSiteShell
+      className={`public-business-page ${compact ? "public-business-page-compact" : ""}`}
     >
-      <header className="border p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p>Seraph Nexus</p>
-            <p>Business profile</p>
-          </div>
-          <nav className="flex gap-2">
-            <a href="/explore">Explore</a>
-            <span>{businessType || "Business"}</span>
-          </nav>
-        </div>
-      </header>
+      <article
+        className={`public-profile-shell ${compact ? "public-profile-shell-compact" : "public-profile-shell-full"}`}
+        data-theme-background={theme.backgroundColor}
+        data-theme-accent={theme.accentColor}
+        data-theme-text={theme.textColor}
+      >
+      <PublicTopNav
+        brand="Seraph Nexus"
+        initials="SN"
+        actions={
+          <>
+            <Link href="/explore" className="public-action-secondary">Explore</Link>
+            <span className="public-chip">{businessType || "Business"}</span>
+          </>
+        }
+      />
 
-      <section className="border p-3">
-        <div className="flex items-start gap-3">
+      <PublicHero
+        eyebrow={businessType || "Business"}
+        title={businessName}
+        description={businessDescription || null}
+        meta={
           <div
-            className="flex shrink-0 items-center justify-center overflow-hidden border"
+            className="public-card-mark overflow-hidden"
             style={{
               width: compact ? "44px" : "56px",
               height: compact ? "44px" : "56px",
@@ -145,20 +155,14 @@ export default function BusinessProfileShell({
               <span>{initials}</span>
             )}
           </div>
-          <div className="min-w-0 flex-1">
-            <p>{businessType || "Business"}</p>
-            <h1 className="text-2xl font-semibold">{businessName}</h1>
-            {businessDescription ? <p>{businessDescription}</p> : null}
-          </div>
-        </div>
-      </section>
+        }
+      />
 
-      <section className="border p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <h2>Gallery</h2>
-          <p>{images.length > 0 ? `${activeIndex + 1} / ${images.length}` : "No photos"}</p>
-        </div>
-        <div className="mx-auto w-full max-w-md border">
+      <PublicSection
+        title="Gallery"
+        description={images.length > 0 ? `${activeIndex + 1} / ${images.length}` : "No photos"}
+      >
+        <div className="public-gallery-frame">
           <div className="relative aspect-[1.2/1]">
             {activeImage ? (
               <img
@@ -178,7 +182,7 @@ export default function BusinessProfileShell({
                   type="button"
                   onClick={showPreviousImage}
                   aria-label="Previous photo"
-                  className="absolute left-2 top-1/2 -translate-y-1/2"
+                  className="public-gallery-button public-gallery-button-left"
                 >
                   Previous
                 </button>
@@ -186,7 +190,7 @@ export default function BusinessProfileShell({
                   type="button"
                   onClick={showNextImage}
                   aria-label="Next photo"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  className="public-gallery-button public-gallery-button-right"
                 >
                   Next
                 </button>
@@ -214,22 +218,21 @@ export default function BusinessProfileShell({
             </div>
           ) : null}
         </div>
-      </section>
+      </PublicSection>
 
-      <section className="border p-3">
-        <h2>Business information</h2>
-        <h3>{businessName}</h3>
+      <PublicSection title="Business information" eyebrow={businessName}>
         {businessDescription ? (
           <p className="whitespace-pre-wrap">{businessDescription}</p>
         ) : (
           <p>Business details will appear here once the owner publishes a description.</p>
         )}
-      </section>
+      </PublicSection>
 
       {hasContactInfo ? (
-        <section className="border p-3">
-          <h2>Contact</h2>
-          <p>Use the business contact details published by the owner.</p>
+        <PublicSection
+          title="Contact"
+          description="Use the business contact details published by the owner."
+        >
           <dl className="mt-3 grid gap-2 sm:grid-cols-2">
             {contact?.phone ? (
               <div>
@@ -304,17 +307,16 @@ export default function BusinessProfileShell({
               </div>
             ) : null}
           </dl>
-        </section>
+        </PublicSection>
       ) : null}
 
       {action ? (
-        <section className="border p-3">
-          <h2>Get started</h2>
+        <PublicSection title="Get started">
           <div className="mt-3">{action}</div>
-        </section>
+        </PublicSection>
       ) : null}
 
-      <footer className="border p-3">
+      <footer className="public-section">
         <p>{businessName}</p>
         <div className="flex flex-wrap gap-2">
           <Link href="/explore">Explore</Link>
@@ -323,6 +325,7 @@ export default function BusinessProfileShell({
         </div>
         <p className="mt-2">Business information is provided by the business owner.</p>
       </footer>
-    </article>
+      </article>
+    </PublicSiteShell>
   );
 }

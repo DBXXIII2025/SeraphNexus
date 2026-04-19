@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PublicCard } from "@/components/public/PublicLayoutSystem";
 import { BusinessViewModel, formatBusinessType, getCategoryMeta } from "../exploreData";
 
 export default function ExploreCard({
@@ -11,9 +12,9 @@ export default function ExploreCard({
   const category = getCategoryMeta(business.categoryId);
 
   return (
-    <article className="flex h-full min-h-[220px] flex-col overflow-hidden border p-3">
-      <div className="flex items-center gap-3 border-b pb-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center border">
+    <PublicCard className="min-h-[240px]">
+      <div className="public-card-header">
+        <div className="public-card-mark">
           {business.initials}
         </div>
         <div className="min-w-0 flex-1">
@@ -27,7 +28,7 @@ export default function ExploreCard({
       </div>
 
       <div className="flex flex-1 flex-col pt-3">
-        <span className="inline-flex w-fit border px-2 py-1">
+        <span className="public-chip">
           {category.shortLabel}
         </span>
 
@@ -43,17 +44,17 @@ export default function ExploreCard({
           {business.routeState.isRoutable ? (
             <Link
               href={business.routeState.href}
-              className="inline-flex min-h-10 w-full items-center justify-center border px-4 py-2"
+              className="public-action-primary w-full"
             >
               {business.routeLabel}
             </Link>
           ) : (
-            <span className="inline-flex min-h-10 w-full items-center justify-center border px-4 py-2">
+            <span className="public-action-secondary w-full">
               Unavailable
             </span>
           )}
         </div>
       </div>
-    </article>
+    </PublicCard>
   );
 }

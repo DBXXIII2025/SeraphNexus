@@ -7,6 +7,12 @@ import ExploreSidebar from "./_components/ExploreSidebar";
 import ExploreGrid from "./_components/ExploreGrid";
 import ExploreCard from "./_components/ExploreCard";
 import {
+  PublicActionLink,
+  PublicHero,
+  PublicSection,
+  PublicTopNav,
+} from "@/components/public/PublicLayoutSystem";
+import {
   buildBusinessViewModels,
   Business,
   ExploreCategoryId,
@@ -131,39 +137,28 @@ export default function ExploreClient({
   }, [actionsOpen]);
 
   const header = (
-    <header className="border p-3">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 flex-1 items-center">
-          <div className="inline-flex items-center gap-3 border px-3 py-2">
-            <span className="flex h-10 w-10 items-center justify-center border">
-              {platformInitials}
-            </span>
-            <span>{platformName}</span>
-          </div>
-        </div>
+    <>
+      <PublicTopNav
+        brand={platformName}
+        initials={platformInitials}
+        actions={
+          <>
+            <PublicActionLink href="/explore" tone="primary">Explore</PublicActionLink>
 
-        <div className="ml-auto flex shrink-0 items-center gap-3">
-          <Link
-            href="/explore"
-            className="inline-flex min-h-11 items-center justify-center border px-4 py-2"
-          >
-            Explore
-          </Link>
-
-          <div ref={actionsMenuRef} className="relative">
-            <button
-              type="button"
-              aria-expanded={actionsOpen}
-              aria-haspopup="menu"
-              onClick={() => setActionsOpen((value) => !value)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 border px-4 py-2"
-            >
-              <span>{isLoggedIn ? "Actions" : "Account"}</span>
-              <span>{actionsOpen ? "Close" : "Open"}</span>
-            </button>
+            <div ref={actionsMenuRef} className="relative">
+              <button
+                type="button"
+                aria-expanded={actionsOpen}
+                aria-haspopup="menu"
+                onClick={() => setActionsOpen((value) => !value)}
+                className="public-action-secondary gap-2"
+              >
+                <span>{isLoggedIn ? "Actions" : "Account"}</span>
+                <span>{actionsOpen ? "Close" : "Open"}</span>
+              </button>
 
             {actionsOpen ? (
-              <div className="absolute right-0 top-full z-20 mt-3 w-[240px] border bg-white p-3">
+              <div className="public-card absolute right-0 top-full z-20 mt-3 w-[240px] p-3">
                 <div className="mb-3 px-2">
                   <p>
                     {isLoggedIn ? "Workspace Actions" : "Public Actions"}
@@ -176,14 +171,14 @@ export default function ExploreClient({
                       <Link
                         href="/login"
                         onClick={() => setActionsOpen(false)}
-                        className="justify-start border px-4 py-2"
+                        className="public-action-secondary justify-start"
                       >
                         Login
                       </Link>
                       <Link
                         href="/signup"
                         onClick={() => setActionsOpen(false)}
-                        className="justify-start border px-4 py-2"
+                        className="public-action-secondary justify-start"
                       >
                         Sign Up
                       </Link>
@@ -192,7 +187,7 @@ export default function ExploreClient({
                     <Link
                       href={accountHref}
                       onClick={() => setActionsOpen(false)}
-                      className="justify-start border px-4 py-2"
+                      className="public-action-secondary justify-start"
                     >
                       My Account
                     </Link>
@@ -201,21 +196,37 @@ export default function ExploreClient({
                   <Link
                     href={createBusinessHref}
                     onClick={() => setActionsOpen(false)}
-                    className="justify-start border px-4 py-2"
+                    className="public-action-primary justify-start"
                   >
                     Create Business
                   </Link>
                 </div>
               </div>
             ) : null}
-          </div>
-        </div>
-      </div>
-    </header>
+            </div>
+          </>
+        }
+      />
+      <PublicHero
+        eyebrow="Business discovery"
+        title="Find businesses ready for action."
+        description={settings.marketing_subheadline || "Browse published businesses, then book, order, rent, shop, or message directly from their public page."}
+        meta={
+          <>
+            <span className="public-chip">{businessViews.length} published</span>
+            <span className="public-chip">{featuredBusinesses.length} featured</span>
+          </>
+        }
+      />
+    </>
   );
 
   const controlBar = (
-    <section className="border p-3">
+    <PublicSection
+      eyebrow="Browse"
+      title="Search and filter"
+      description="Use real public categories and customer action paths to narrow the marketplace."
+    >
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input
           type="text"
@@ -230,7 +241,7 @@ export default function ExploreClient({
           <button
             type="button"
             onClick={() => setCategoryFilter("all")}
-            className="border px-3 py-2"
+            className={categoryFilter === "all" ? "public-action-primary" : "public-action-secondary"}
           >
             All
           </button>
@@ -239,7 +250,7 @@ export default function ExploreClient({
               key={category.id}
               type="button"
               onClick={() => setCategoryFilter(category.id)}
-              className="border px-3 py-2"
+              className={categoryFilter === category.id ? "public-action-primary" : "public-action-secondary"}
             >
               {category.shortLabel}
             </button>
@@ -265,13 +276,13 @@ export default function ExploreClient({
           <button
             type="button"
             onClick={clearFilters}
-            className="inline-flex min-h-10 items-center justify-center border px-4 py-2"
+            className="public-action-secondary"
           >
             Clear filters
           </button>
         </div>
       ) : null}
-    </section>
+    </PublicSection>
   );
 
   const sidebar = (
@@ -290,11 +301,11 @@ export default function ExploreClient({
   );
 
   const mobileSidebar = (
-    <div className="border p-3">
+    <PublicSection>
       <button
         type="button"
         onClick={() => setMobileFiltersOpen((value) => !value)}
-        className="flex w-full items-center justify-between border px-4 py-3 text-left"
+        className="public-action-secondary flex w-full items-center justify-between text-left"
       >
         <span>Filters</span>
         <span>
@@ -302,35 +313,31 @@ export default function ExploreClient({
         </span>
       </button>
       {mobileFiltersOpen ? <div className="mt-4">{sidebar}</div> : null}
-    </div>
+    </PublicSection>
   );
 
   const featured = featuredBusinesses.length > 0 ? (
-    <section className="space-y-4">
-      <div>
-        <p>Featured</p>
-        <h2>
-          Featured businesses
-        </h2>
-      </div>
+    <PublicSection
+      eyebrow="Featured"
+      title="Featured businesses"
+      description="Routable businesses with live customer paths."
+    >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {featuredBusinesses.map((business) => (
           <ExploreCard key={business.id} business={business} />
         ))}
       </div>
-    </section>
+    </PublicSection>
   ) : null;
 
   const grid = (
-    <section className="space-y-4">
-      <div>
-        <p>Results</p>
-        <h2>
-          {sortedBusinesses.length} businesses
-        </h2>
-      </div>
+    <PublicSection
+      eyebrow="Results"
+      title={`${sortedBusinesses.length} businesses`}
+      description="Every card links to the business route currently available for that listing."
+    >
       <ExploreGrid businesses={sortedBusinesses} />
-    </section>
+    </PublicSection>
   );
 
   return (

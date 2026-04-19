@@ -1,5 +1,7 @@
 "use client";
 
+import { PublicSiteShell } from "@/components/public/PublicLayoutSystem";
+
 export default function ExploreLayout({
   header,
   controlBar,
@@ -16,8 +18,8 @@ export default function ExploreLayout({
   grid: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen px-4 py-4 md:px-8">
-      <div className="mx-auto max-w-7xl space-y-4">
+    <PublicSiteShell>
+      <div className="space-y-4">
         {header}
         {controlBar}
 
@@ -33,6 +35,6 @@ export default function ExploreLayout({
           </main>
         </div>
       </div>
-    </div>
+    </PublicSiteShell>
   );
 }

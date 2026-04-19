@@ -5,6 +5,10 @@ import {
   ROUTE_FILTERS,
   formatBusinessType,
 } from "../exploreData";
+import {
+  PublicActionLink,
+  PublicSection,
+} from "@/components/public/PublicLayoutSystem";
 
 export default function ExploreSidebar({
   typeFilter,
@@ -31,23 +35,22 @@ export default function ExploreSidebar({
 }) {
   return (
     <div className="space-y-4">
-      <section className="border p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p>Filters</p>
-            <p>Refine what appears in the marketplace grid.</p>
-          </div>
-          {hasActiveFilters ? (
+      <PublicSection
+        eyebrow="Filters"
+        title="Refine results"
+        description="Control the marketplace grid by type, route, and readiness."
+        actions={
+          hasActiveFilters ? (
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex min-h-9 items-center justify-center border px-3 py-2"
+              className="public-action-secondary"
             >
               Clear
             </button>
-          ) : null}
-        </div>
-
+          ) : null
+        }
+      >
         <div className="mt-4 space-y-4">
           <label className="block">
             <span className="mb-2 block">
@@ -89,14 +92,11 @@ export default function ExploreSidebar({
             </select>
           </label>
         </div>
-      </section>
+      </PublicSection>
 
-      <a
-        href={createBusinessHref}
-        className="inline-flex min-h-11 w-full items-center justify-center border px-4 py-2"
-      >
+      <PublicActionLink href={createBusinessHref} tone="primary">
         Create Business
-      </a>
+      </PublicActionLink>
     </div>
   );
 }
