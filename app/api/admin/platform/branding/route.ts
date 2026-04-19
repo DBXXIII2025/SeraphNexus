@@ -116,8 +116,19 @@ export async function POST(req: Request) {
       return respondWith(req, "error", "platform-branding-settings-unavailable");
     }
 
-    if (!settingsState.hasLogoColumn) {
-      return respondWith(req, "error", "platform-branding-migration-required");
+    const settingsReady = Boolean(existing.id && existing.platform_name);
+    console.info("[platform-branding] readiness decision", {
+      ready: settingsReady,
+      reason: settingsReady
+        ? "platform_settings row and platform_name are present; null logo_url is allowed"
+        : "platform_settings row or platform_name is missing",
+      settingsId: existing.id || null,
+      platformName: existing.platform_name || null,
+      logoUrl: existing.logo_url,
+    });
+
+    if (!settingsReady) {
+      return respondWith(req, "error", "platform-branding-settings-unavailable");
     }
 
     const bucketReady = await ensurePlatformBrandingBucket(supabaseAdmin);
@@ -160,6 +171,10 @@ export async function POST(req: Request) {
       revalidatePath("/explore");
       revalidatePath("/admin/platform");
       console.info("[platform-branding] final logo_url returned", null);
+      console.info("[platform-branding] final branding payload", {
+        platformName: existing.platform_name,
+        logoUrl: null,
+      });
       return respondWith(req, "success", "platform-logo-cleared", {
         logoUrl: null,
         updatedAt: now,
@@ -251,6 +266,10 @@ export async function POST(req: Request) {
     revalidatePath("/pricing");
     revalidatePath("/admin/platform");
     console.info("[platform-branding] final logo_url returned", publicUrlData.publicUrl);
+    console.info("[platform-branding] final branding payload", {
+      platformName: existing.platform_name || "Seraph Nexus",
+      logoUrl: publicUrlData.publicUrl,
+    });
     return respondWith(req, "success", "platform-logo-updated", {
       logoUrl: publicUrlData.publicUrl,
       updatedAt: now,
