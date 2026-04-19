@@ -43,19 +43,41 @@ export function AdminTopNav({
   eyebrow,
   title,
   description,
+  brandName,
+  brandLogoUrl,
   actions,
 }: {
   eyebrow: string;
   title: string;
   description?: string;
+  brandName?: string;
+  brandLogoUrl?: string | null;
   actions?: ReactNode;
 }) {
+  console.info("[platform-branding] admin topnav render decision", {
+    brandName: brandName || "Seraph Nexus",
+    logoUrl: brandLogoUrl || null,
+    renderDecision: brandLogoUrl ? "logo" : "fallback",
+    imageComponent: "img",
+    remoteImageHostConfigMatched: "not applicable; plain img is used",
+  });
+
   return (
     <header className="admin-topnav">
-      <div>
-        <p className="admin-eyebrow">{eyebrow}</p>
-        <h1 className="admin-topnav-title">{title}</h1>
-        {description ? <p className="admin-muted">{description}</p> : null}
+      <div className="admin-topnav-brand-row">
+        <span className="admin-brand-mark">
+          {brandLogoUrl ? (
+            <img src={brandLogoUrl} alt={`${brandName || "Seraph Nexus"} logo`} className="admin-brand-logo" />
+          ) : (
+            "SN"
+          )}
+        </span>
+        <div>
+          <p className="admin-brand-name">{brandName || "Seraph Nexus"}</p>
+          <p className="admin-eyebrow">{eyebrow}</p>
+          <h1 className="admin-topnav-title">{title}</h1>
+          {description ? <p className="admin-muted">{description}</p> : null}
+        </div>
       </div>
       {actions ? <div className="admin-actions">{actions}</div> : null}
     </header>

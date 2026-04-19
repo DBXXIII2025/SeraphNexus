@@ -307,6 +307,39 @@ button:focus {
   margin-bottom: 1rem;
 }
 
+.admin-topnav-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.admin-brand-mark {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.28) !important;
+  color: #d4af37 !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-brand-logo {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+.admin-brand-name {
+  color: #f5f1e8 !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .admin-eyebrow,
 .admin-sidebar-title {
   color: #d4af37 !important;

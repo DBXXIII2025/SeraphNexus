@@ -18,6 +18,8 @@ export default async function Navbar() {
     rawLogoUrl: settings.logo_url,
     resolvedLogoUrl: logoUrl,
     renderDecision: logoUrl ? "logo" : "fallback",
+    imageComponent: "img",
+    remoteImageHostConfigMatched: "not applicable; plain img is used",
   });
 
   return (

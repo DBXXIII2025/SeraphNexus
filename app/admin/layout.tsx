@@ -6,6 +6,8 @@ import { getAdminNav, getBusinessModule, getPublicPath } from "@/lib/businessMod
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { getTenantRecoveryState } from "@/lib/tenantRouting";
 import { createAdminTranslator, translateAdminLabel } from "@/lib/adminI18n";
+import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
+import { getPlatformSettings } from "@/lib/platformSettings";
 import BusinessSwitcher from "@/components/BusinessSwitcher";
 import LogoutButton from "@/app/admin/LogoutButton";
 import {
@@ -82,6 +84,9 @@ export default async function AdminLayout({
   const currentPath = requestHeaders.get("x-current-path") || "";
   const isCustomizeRoute = currentPath === "/admin/customize";
   const { user, isPlatformAdmin } = await getPlatformAdminSession();
+  const platformSettings = await getPlatformSettings();
+  const platformName = resolvePlatformName(platformSettings);
+  const platformLogoUrl = resolvePlatformLogoUrl(platformSettings);
   const businesses = await getUserBusinesses();
   const activeBusiness = await getActiveBusiness();
   const businessModule = getBusinessModule(activeBusiness?.business_type);
@@ -106,6 +111,13 @@ export default async function AdminLayout({
       activeBusinessId: activeBusiness?.id || null,
       activeBusinessType: activeBusiness?.business_type || null,
     });
+    console.log("[platform-branding] admin header branding payload read", {
+      platformName: platformSettings.platform_name,
+      rawLogoUrl: platformSettings.logo_url,
+      resolvedLogoUrl: platformLogoUrl,
+      renderDecision: platformLogoUrl ? "logo" : "fallback",
+      imageComponent: "img",
+    });
   }
 
   if (isPlatformAdmin) {
@@ -116,6 +128,8 @@ export default async function AdminLayout({
             eyebrow="Platform Owner"
             title={user?.email || "Platform owner"}
             description="Platform operations, support, and owner controls."
+            brandName={platformName}
+            brandLogoUrl={platformLogoUrl}
             actions={<LogoutButton />}
           />
         }
@@ -162,6 +176,8 @@ export default async function AdminLayout({
             eyebrow="Business website builder"
             title={activeBusiness?.name || "Business profile"}
             description="Edit the live business profile, gallery, theme, and public actions."
+            brandName={platformName}
+            brandLogoUrl={platformLogoUrl}
             actions={
               <>
                 <AdminActionLink href="/admin">Admin</AdminActionLink>
@@ -191,6 +207,8 @@ export default async function AdminLayout({
           eyebrow={t("ownerWorkspace")}
           title={activeBusiness?.name || t("noActiveBusiness")}
           description={`${businessModule.label} operations and public business management.`}
+          brandName={platformName}
+          brandLogoUrl={platformLogoUrl}
           actions={
             <>
               {activeBusiness ? (
