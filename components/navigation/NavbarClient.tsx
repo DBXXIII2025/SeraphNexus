@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 type NavbarClientProps = {
   isLoggedIn: boolean;
   isPlatformAdmin: boolean;
+  siteName: string;
+  logoUrl?: string | null;
 };
 
 type NavLinkItem = {
@@ -49,6 +51,8 @@ function getLinkClass(
 export default function NavbarClient({
   isLoggedIn,
   isPlatformAdmin,
+  siteName,
+  logoUrl,
 }: NavbarClientProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -118,10 +122,14 @@ export default function NavbarClient({
           className="group inline-flex min-w-0 items-center gap-3 rounded-2xl border border-[rgba(212,175,55,0.12)] bg-[rgba(23,19,19,0.82)] px-3 py-2 pr-4"
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(193,18,31,0.22),rgba(212,175,55,0.16))] text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-gold-soft)]">
-            SN
+            {logoUrl ? (
+              <img src={logoUrl} alt={`${siteName} logo`} className="h-full w-full object-contain" />
+            ) : (
+              "SN"
+            )}
           </span>
           <span className="truncate text-sm font-semibold text-[var(--text-strong)]">
-            Seraph Nexus
+            {siteName}
           </span>
         </Link>
 

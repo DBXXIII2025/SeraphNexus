@@ -494,6 +494,12 @@ button:focus {
   color: #d4af37 !important;
 }
 
+.public-brand-logo {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
 .public-hero,
 .public-section,
 .public-card,

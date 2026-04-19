@@ -20,6 +20,7 @@ import {
   EXPLORE_CATEGORIES,
   PlatformSettings,
 } from "./exploreData";
+import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
 
 export default function ExploreClient({
   businesses,
@@ -82,7 +83,8 @@ export default function ExploreClient({
   const featuredBusinesses = useMemo(() => {
     return businessViews.filter((business) => business.routeState.isRoutable).slice(0, 3);
   }, [businessViews]);
-  const platformName = settings.platform_name || "Seraph Nexus";
+  const platformName = resolvePlatformSiteName(settings);
+  const platformLogoUrl = resolvePlatformLogoUrl(settings);
   const platformInitials =
     platformName
       .split(/\s+/)
@@ -141,6 +143,7 @@ export default function ExploreClient({
       <PublicTopNav
         brand={platformName}
         initials={platformInitials}
+        logoUrl={platformLogoUrl}
         actions={
           <>
             <PublicActionLink href="/explore" tone="primary">Explore</PublicActionLink>

@@ -11,6 +11,8 @@ import type { Database } from "@/types/database";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
+import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { getPlatformSettings } from "@/lib/platformSettings";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -109,10 +111,11 @@ export default async function RentPage({
   if (isDev) {
     console.log("[rent/page] item count:", mergedProperties.length);
   }
-  const [businessPreferences, customization, profileFields] = await Promise.all([
+  const [businessPreferences, customization, profileFields, platformSettings] = await Promise.all([
     loadBusinessPreferences(supabase, business.id),
     loadBusinessPageCustomization(supabase, business.id),
     loadBusinessProfileFields(supabase, business.id),
+    getPlatformSettings(),
   ]);
 
   return (
@@ -132,6 +135,10 @@ export default async function RentPage({
           logo_url: customization.logoUrl,
           pageTheme: customization.theme,
           galleryImages: customization.images,
+          platformBrand: {
+            siteName: resolvePlatformSiteName(platformSettings),
+            logoUrl: resolvePlatformLogoUrl(platformSettings),
+          },
           profileContact: {
             phone: profileFields.phone,
             email: profileFields.email,

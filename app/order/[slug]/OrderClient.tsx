@@ -76,6 +76,7 @@ export default function OrderClient({
   logoUrl,
   pageTheme,
   galleryImages,
+  platformBrand,
   profileContact,
 }: {
   businessId: string;
@@ -88,6 +89,10 @@ export default function OrderClient({
   logoUrl: string | null;
   pageTheme: BusinessPageTheme;
   galleryImages: BusinessPageImage[];
+  platformBrand?: {
+    siteName: string;
+    logoUrl?: string | null;
+  };
   profileContact?: {
     phone?: string | null;
     email?: string | null;
@@ -429,6 +434,7 @@ export default function OrderClient({
           logoUrl={logoUrl}
           images={galleryImages}
           theme={pageTheme}
+          platformBrand={platformBrand}
           contact={profileContact}
           action={
             <MessageBusinessButton

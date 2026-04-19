@@ -9,6 +9,8 @@ import LeadEventTracker from "@/components/LeadEventTracker";
 import BusinessProfileShell from "@/components/BusinessProfileShell";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
+import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { getPlatformSettings } from "@/lib/platformSettings";
 
 type Params = {
   slug: string;
@@ -61,9 +63,10 @@ export default async function PublicRouterPage({
   }
 
   const logoState = await loadBusinessLogoById(business.id);
-  const [customization, profileFields] = await Promise.all([
+  const [customization, profileFields, platformSettings] = await Promise.all([
     loadBusinessPageCustomization(supabaseAdmin, business.id),
     loadBusinessProfileFields(supabaseAdmin, business.id),
+    getPlatformSettings(),
   ]);
   const logoUrl = customization.logoUrl || (logoState.schemaReady ? logoState.logoUrl : null);
 
@@ -82,6 +85,10 @@ export default async function PublicRouterPage({
           logoUrl={logoUrl}
           images={customization.images}
           theme={customization.theme}
+          platformBrand={{
+            siteName: resolvePlatformSiteName(platformSettings),
+            logoUrl: resolvePlatformLogoUrl(platformSettings),
+          }}
           contact={{
             phone: profileFields.phone,
             email: profileFields.email,

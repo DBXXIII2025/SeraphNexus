@@ -41,6 +41,10 @@ export default function RentalCatalogClient({
     logo_url: string | null;
     pageTheme: BusinessPageTheme;
     galleryImages: BusinessPageImage[];
+    platformBrand?: {
+      siteName: string;
+      logoUrl?: string | null;
+    };
     profileContact?: {
       phone?: string | null;
       email?: string | null;
@@ -215,6 +219,7 @@ export default function RentalCatalogClient({
           logoUrl={business.logo_url}
           images={business.galleryImages}
           theme={business.pageTheme}
+          platformBrand={business.platformBrand}
           contact={business.profileContact}
           action={
             <MessageBusinessButton

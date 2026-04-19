@@ -10,6 +10,8 @@ import OrderClient from "./OrderClient";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
+import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { getPlatformSettings } from "@/lib/platformSettings";
 
 type Params = {
   slug: string;
@@ -81,10 +83,11 @@ export default async function OrderPage({
   if (!isOrderPublicBusinessType(businessType)) {
     redirect(getCanonicalPublicBusinessRoute(business.business_type, slug).href);
   }
-  const [businessPreferences, customization, profileFields] = await Promise.all([
+  const [businessPreferences, customization, profileFields, platformSettings] = await Promise.all([
     loadBusinessPreferences(supabase, business.id),
     loadBusinessPageCustomization(supabase, business.id),
     loadBusinessProfileFields(supabase, business.id),
+    getPlatformSettings(),
   ]);
 
   return (
@@ -105,6 +108,10 @@ export default async function OrderPage({
         logoUrl={customization.logoUrl}
         pageTheme={customization.theme}
         galleryImages={customization.images}
+        platformBrand={{
+          siteName: resolvePlatformSiteName(platformSettings),
+          logoUrl: resolvePlatformLogoUrl(platformSettings),
+        }}
         profileContact={{
           phone: profileFields.phone,
           email: profileFields.email,

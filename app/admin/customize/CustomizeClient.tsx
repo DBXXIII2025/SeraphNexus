@@ -46,6 +46,10 @@ type CustomizeClientProps = {
   };
   initialLogoUrl: string | null;
   initialGalleryImages: BusinessPageImage[];
+  platformBrand: {
+    siteName: string;
+    logoUrl?: string | null;
+  };
   customizationSchemaReady: boolean;
   customizationErrorMessage: string | null;
   profileFieldsSchemaReady: boolean;
@@ -151,6 +155,7 @@ export default function CustomizeClient({
   initialBusiness,
   initialLogoUrl,
   initialGalleryImages,
+  platformBrand,
   customizationSchemaReady,
   customizationErrorMessage,
   profileFieldsSchemaReady,
@@ -646,6 +651,7 @@ export default function CustomizeClient({
               logoUrl={logoUrl}
               images={galleryImages}
               theme={previewTheme}
+              platformBrand={platformBrand}
               compact
               contact={
                 profileFieldsSchemaReady

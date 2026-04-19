@@ -2,6 +2,11 @@ import { createAdminClient } from "@/lib/supabase/server";
 
 export type PlatformSettings = {
   id?: string;
+  site_name: string;
+  logo_url: string | null;
+  logo_storage_path: string | null;
+  created_at: string | null;
+  updated_at: string | null;
   platform_name: string;
   marketing_headline: string;
   marketing_subheadline: string;
@@ -32,6 +37,11 @@ export type PlatformSettings = {
 };
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
+  site_name: "Seraph Nexus",
+  logo_url: null,
+  logo_storage_path: null,
+  created_at: null,
+  updated_at: null,
   platform_name: "Seraph Nexus",
   marketing_headline: "Operate bookings, orders, rentals, and client follow-up in one place.",
   marketing_subheadline:
@@ -154,6 +164,16 @@ function isMissingPlanCopyColumnError(error: { code?: string | null; message?: s
   );
 }
 
+function isMissingBrandingColumnError(error: { code?: string | null; message?: string | null } | null) {
+  const message = error?.message || "";
+  return (
+    error?.code === "42703" ||
+    message.includes("site_name") ||
+    message.includes("logo_url") ||
+    message.includes("logo_storage_path")
+  );
+}
+
 function normalizePlatformSettingsRow(data: Record<string, any>) {
   const storedPlanCopy = parsePlanCopyPricingNote(data.pricing_note);
   const normalizeFeatures = (value: unknown, fallback: string[]) => {
@@ -169,6 +189,25 @@ function normalizePlatformSettingsRow(data: Record<string, any>) {
 
   return {
     id: data.id || undefined,
+    site_name:
+      String(data.site_name || data.platform_name || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.site_name,
+    logo_url:
+      typeof data.logo_url === "string" && data.logo_url.trim()
+        ? data.logo_url.trim()
+        : null,
+    logo_storage_path:
+      typeof data.logo_storage_path === "string" && data.logo_storage_path.trim()
+        ? data.logo_storage_path.trim()
+        : null,
+    created_at:
+      typeof data.created_at === "string" && data.created_at.trim()
+        ? data.created_at.trim()
+        : null,
+    updated_at:
+      typeof data.updated_at === "string" && data.updated_at.trim()
+        ? data.updated_at.trim()
+        : null,
     platform_name: data.platform_name || DEFAULT_PLATFORM_SETTINGS.platform_name,
     marketing_headline:
       data.marketing_headline || DEFAULT_PLATFORM_SETTINGS.marketing_headline,
@@ -263,16 +302,16 @@ export async function getPlatformSettings() {
     let { data, error } = await supabase
       .from("platform_settings")
       .select(
-        "id, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_plan_name, pro_plan_subtitle, pro_plan_features, pro_plan_badge, pro_plan_cta, elite_plan_name, elite_plan_subtitle, elite_plan_features, elite_plan_badge, elite_plan_cta, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
+        "id, site_name, logo_url, logo_storage_path, created_at, updated_at, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_plan_name, pro_plan_subtitle, pro_plan_features, pro_plan_badge, pro_plan_cta, elite_plan_name, elite_plan_subtitle, elite_plan_features, elite_plan_badge, elite_plan_cta, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
       )
       .limit(1)
       .maybeSingle();
 
-    if (error && isMissingPlanCopyColumnError(error)) {
+    if (error && (isMissingPlanCopyColumnError(error) || isMissingBrandingColumnError(error))) {
       const fallback = await supabase
         .from("platform_settings")
         .select(
-          "id, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
+          "id, created_at, updated_at, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
         )
         .limit(1)
         .maybeSingle();

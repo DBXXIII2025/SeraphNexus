@@ -12,6 +12,8 @@ import { sortServiceImages, type ServiceImageRecord } from "@/lib/serviceImages"
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
+import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { getPlatformSettings } from "@/lib/platformSettings";
 
 type Params = {
   slug: string;
@@ -98,10 +100,11 @@ export default async function BookPage({
   void user;
 
   const logoState = await loadBusinessLogoById(business.id);
-  const [businessPreferences, customization, profileFields] = await Promise.all([
+  const [businessPreferences, customization, profileFields, platformSettings] = await Promise.all([
     loadBusinessPreferences(supabaseAdmin, business.id),
     loadBusinessPageCustomization(supabaseAdmin, business.id),
     loadBusinessProfileFields(supabaseAdmin, business.id),
+    getPlatformSettings(),
   ]);
 
   const { data: services } = await supabase
@@ -151,6 +154,10 @@ export default async function BookPage({
           logo_url: customization.logoUrl || (logoState.schemaReady ? logoState.logoUrl : null),
           pageTheme: customization.theme,
           galleryImages: customization.images,
+          platformBrand: {
+            siteName: resolvePlatformSiteName(platformSettings),
+            logoUrl: resolvePlatformLogoUrl(platformSettings),
+          },
           profileContact: {
             phone: profileFields.phone,
             email: profileFields.email,

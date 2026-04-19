@@ -6,6 +6,8 @@ import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createAdminClient } from "@/lib/supabase/server";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { loadBusinessProfileFieldsState } from "@/lib/businessProfileFields";
+import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { getPlatformSettings } from "@/lib/platformSettings";
 import CustomizeClient from "./CustomizeClient";
 
 export default async function CustomizePage() {
@@ -28,9 +30,10 @@ export default async function CustomizePage() {
   });
 
   const adminClient = createAdminClient();
-  const [customization, profileFieldsState] = await Promise.all([
+  const [customization, profileFieldsState, platformSettings] = await Promise.all([
     loadBusinessPageCustomization(adminClient, business.id),
     loadBusinessProfileFieldsState(adminClient, business.id),
+    getPlatformSettings(),
   ]);
   const profileFields = profileFieldsState.fields;
   const profileCompletion = getBusinessProfileCompletion({
@@ -71,6 +74,10 @@ export default async function CustomizePage() {
         }}
         initialLogoUrl={customization.logoUrl}
         initialGalleryImages={customization.images}
+        platformBrand={{
+          siteName: resolvePlatformSiteName(platformSettings),
+          logoUrl: resolvePlatformLogoUrl(platformSettings),
+        }}
         customizationSchemaReady={customization.schemaReady}
         customizationErrorMessage={customization.errorMessage}
         profileFieldsSchemaReady={profileFieldsState.schemaReady}

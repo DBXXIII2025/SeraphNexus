@@ -19,16 +19,24 @@ export function PublicSiteShell({
 export function PublicTopNav({
   brand,
   initials,
+  logoUrl,
   actions,
 }: {
   brand: string;
   initials: string;
+  logoUrl?: string | null;
   actions?: ReactNode;
 }) {
   return (
     <header className="public-topnav">
       <Link href="/explore" className="public-brand">
-        <span className="public-brand-mark">{initials}</span>
+        <span className="public-brand-mark">
+          {logoUrl ? (
+            <img src={logoUrl} alt={`${brand} logo`} className="public-brand-logo" />
+          ) : (
+            initials
+          )}
+        </span>
         <span>{brand}</span>
       </Link>
       {actions ? <nav className="public-actions">{actions}</nav> : null}

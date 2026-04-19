@@ -23,6 +23,10 @@ type BusinessProfileShellProps = {
   theme: BusinessPageTheme;
   action?: ReactNode;
   compact?: boolean;
+  platformBrand?: {
+    siteName: string;
+    logoUrl?: string | null;
+  };
   contact?: {
     phone?: string | null;
     email?: string | null;
@@ -69,6 +73,7 @@ export default function BusinessProfileShell({
   theme,
   action,
   compact = false,
+  platformBrand,
   contact,
 }: BusinessProfileShellProps) {
   const images = useMemo(
@@ -81,6 +86,13 @@ export default function BusinessProfileShell({
   const [activeIndex, setActiveIndex] = useState(0);
   const activeImage = images[activeIndex] || null;
   const initials = useMemo(() => getInitials(businessName || "Business"), [businessName]);
+  const platformSiteName = platformBrand?.siteName || "Seraph Nexus";
+  const platformInitials =
+    platformSiteName
+      .split(/\s+/)
+      .map((part) => part[0]?.toUpperCase() || "")
+      .join("")
+      .slice(0, 2) || "SN";
   const hasContactInfo = Boolean(
     contact?.phone ||
       contact?.email ||
@@ -123,8 +135,9 @@ export default function BusinessProfileShell({
         data-theme-text={theme.textColor}
       >
       <PublicTopNav
-        brand="Seraph Nexus"
-        initials="SN"
+        brand={platformSiteName}
+        initials={platformInitials}
+        logoUrl={platformBrand?.logoUrl || null}
         actions={
           <>
             <Link href="/explore" className="public-action-secondary">Explore</Link>

@@ -13,6 +13,10 @@ export type Business = {
 };
 
 export type PlatformSettings = {
+  site_name?: string | null;
+  logo_url?: string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
   platform_name: string;
   marketing_headline: string;
   marketing_subheadline: string;

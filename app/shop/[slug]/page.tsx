@@ -11,6 +11,8 @@ import ShopClient from "./ShopClient";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
+import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { getPlatformSettings } from "@/lib/platformSettings";
 
 type Params = {
   slug: string;
@@ -58,10 +60,11 @@ export default async function ShopPage({
     businessId: business.id,
     businessType,
   });
-  const [businessPreferences, customization, profileFields] = await Promise.all([
+  const [businessPreferences, customization, profileFields, platformSettings] = await Promise.all([
     loadBusinessPreferences(supabase, business.id),
     loadBusinessPageCustomization(supabase, business.id),
     loadBusinessProfileFields(supabase, business.id),
+    getPlatformSettings(),
   ]);
 
   if (isDev) {
@@ -87,6 +90,10 @@ export default async function ShopPage({
         logoUrl={customization.logoUrl}
         pageTheme={customization.theme}
         galleryImages={customization.images}
+        platformBrand={{
+          siteName: resolvePlatformSiteName(platformSettings),
+          logoUrl: resolvePlatformLogoUrl(platformSettings),
+        }}
         profileContact={{
           phone: profileFields.phone,
           email: profileFields.email,
