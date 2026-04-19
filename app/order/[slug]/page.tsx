@@ -10,7 +10,7 @@ import OrderClient from "./OrderClient";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
-import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
 import { getPlatformSettings } from "@/lib/platformSettings";
 
 type Params = {
@@ -109,7 +109,7 @@ export default async function OrderPage({
         pageTheme={customization.theme}
         galleryImages={customization.images}
         platformBrand={{
-          siteName: resolvePlatformSiteName(platformSettings),
+          siteName: resolvePlatformName(platformSettings),
           logoUrl: resolvePlatformLogoUrl(platformSettings),
         }}
         profileContact={{

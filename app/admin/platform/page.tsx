@@ -17,7 +17,7 @@ import { formatPlatformFeeBpsLabel } from "@/lib/platformFees";
 import {
   MAX_PLATFORM_LOGO_BYTES,
   resolvePlatformLogoUrl,
-  resolvePlatformSiteName,
+  resolvePlatformName,
 } from "@/lib/platformBranding";
 import { PLAN_DEFINITIONS, type PlanFeature } from "@/lib/planConfig";
 import {
@@ -398,7 +398,7 @@ export default async function PlatformPage({
   const successMessage = getStatusCopy("success", params?.success);
   const errorMessage = getStatusCopy("error", params?.error);
   const stripeEnvironment = getPlatformStripeEnvironmentSummary();
-  const platformSiteName = resolvePlatformSiteName(settings);
+  const platformSiteName = resolvePlatformName(settings);
   const platformLogoUrl = resolvePlatformLogoUrl(settings);
 
   return (
@@ -692,7 +692,6 @@ export default async function PlatformPage({
           <PlatformBrandingPanel
             siteName={platformSiteName}
             logoUrl={platformLogoUrl}
-            logoStoragePath={settings.logo_storage_path}
             hasStoredLogo={Boolean(settings.logo_url)}
             maxLogoBytes={MAX_PLATFORM_LOGO_BYTES}
           />

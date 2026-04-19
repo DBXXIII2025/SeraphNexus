@@ -11,7 +11,7 @@ import type { Database } from "@/types/database";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
-import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
 import { getPlatformSettings } from "@/lib/platformSettings";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
@@ -136,7 +136,7 @@ export default async function RentPage({
           pageTheme: customization.theme,
           galleryImages: customization.images,
           platformBrand: {
-            siteName: resolvePlatformSiteName(platformSettings),
+            siteName: resolvePlatformName(platformSettings),
             logoUrl: resolvePlatformLogoUrl(platformSettings),
           },
           profileContact: {

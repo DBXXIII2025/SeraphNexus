@@ -36,11 +36,8 @@ export function buildPlatformLogoStoragePath(args: {
   return `logos/site-logo-${args.timestamp || Date.now()}.${extension}`;
 }
 
-export function resolvePlatformSiteName(settings?: Partial<PlatformSettings> | null) {
-  return (
-    String(settings?.site_name || settings?.platform_name || "").trim() ||
-    "Seraph Nexus"
-  );
+export function resolvePlatformName(settings?: Partial<PlatformSettings> | null) {
+  return String(settings?.platform_name || "").trim() || "Seraph Nexus";
 }
 
 export function resolvePlatformLogoUrl(settings?: Partial<PlatformSettings> | null) {

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 type PlatformBrandingPanelProps = {
   siteName: string;
   logoUrl: string | null;
-  logoStoragePath: string | null;
   hasStoredLogo: boolean;
   maxLogoBytes: number;
 };
@@ -15,7 +14,6 @@ type BrandingResponse = {
   ok?: boolean;
   code?: string;
   logoUrl?: string | null;
-  logoStoragePath?: string | null;
   updatedAt?: string;
 };
 
@@ -55,14 +53,12 @@ function withCacheBuster(logoUrl: string | null, updatedAt?: string) {
 export default function PlatformBrandingPanel({
   siteName,
   logoUrl,
-  logoStoragePath,
   hasStoredLogo,
   maxLogoBytes,
 }: PlatformBrandingPanelProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentLogoUrl, setCurrentLogoUrl] = useState(logoUrl);
-  const [currentLogoStoragePath, setCurrentLogoStoragePath] = useState(logoStoragePath);
   const [logoIsStored, setLogoIsStored] = useState(hasStoredLogo);
   const [statusCode, setStatusCode] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<"success" | "error" | null>(null);
@@ -114,7 +110,6 @@ export default function PlatformBrandingPanel({
 
       const nextLogoUrl = withCacheBuster(payload.logoUrl ?? null, payload.updatedAt);
       setCurrentLogoUrl(nextLogoUrl);
-      setCurrentLogoStoragePath(payload.logoStoragePath ?? null);
       setLogoIsStored(Boolean(payload.logoUrl));
       setStatusTone("success");
       setStatusCode(payload.code || "platform-logo-updated");
@@ -163,8 +158,8 @@ export default function PlatformBrandingPanel({
                 ? "Custom platform logo is active."
                 : "No custom logo uploaded. Headers use the fallback mark."}
             </p>
-            <p className="mt-2 break-all text-xs text-[var(--text-muted)]">
-              {currentLogoStoragePath || "No storage path yet."}
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
+              Stored on the existing platform_settings row.
             </p>
           </div>
         </div>

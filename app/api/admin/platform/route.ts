@@ -56,8 +56,7 @@ function isMissingPlanCopyColumnError(error: { code?: string | null; message?: s
 }
 
 function isMissingOptionalPlatformColumnError(error: { code?: string | null; message?: string | null } | null) {
-  const message = error?.message || "";
-  return isMissingPlanCopyColumnError(error) || error?.code === "42703" || message.includes("site_name");
+  return isMissingPlanCopyColumnError(error);
 }
 
 function withoutPlanCopyColumns(payload: Record<string, unknown>, visiblePricingNote: string) {
@@ -91,7 +90,6 @@ function withoutPlanCopyColumns(payload: Record<string, unknown>, visiblePricing
   });
 
   delete next.pro_plan_name;
-  delete next.site_name;
   delete next.pro_plan_subtitle;
   delete next.pro_plan_features;
   delete next.pro_plan_badge;
@@ -129,7 +127,6 @@ export async function POST(req: Request) {
       "Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.";
     const payload = {
       platform_name: String(formData.get("platform_name") || "").trim() || "Seraph Nexus",
-      site_name: String(formData.get("platform_name") || "").trim() || "Seraph Nexus",
       marketing_headline:
         String(formData.get("marketing_headline") || "").trim() ||
         "Operate bookings, orders, rentals, and client follow-up in one place.",

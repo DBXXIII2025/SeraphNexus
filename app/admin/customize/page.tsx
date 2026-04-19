@@ -6,7 +6,7 @@ import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createAdminClient } from "@/lib/supabase/server";
 import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { loadBusinessProfileFieldsState } from "@/lib/businessProfileFields";
-import { resolvePlatformLogoUrl, resolvePlatformSiteName } from "@/lib/platformBranding";
+import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
 import { getPlatformSettings } from "@/lib/platformSettings";
 import CustomizeClient from "./CustomizeClient";
 
@@ -75,7 +75,7 @@ export default async function CustomizePage() {
         initialLogoUrl={customization.logoUrl}
         initialGalleryImages={customization.images}
         platformBrand={{
-          siteName: resolvePlatformSiteName(platformSettings),
+          siteName: resolvePlatformName(platformSettings),
           logoUrl: resolvePlatformLogoUrl(platformSettings),
         }}
         customizationSchemaReady={customization.schemaReady}
