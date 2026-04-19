@@ -58,6 +58,6 @@ where not exists (
 );
 
 insert into storage.buckets (id, name, public)
-values ('platform-brand-assets', 'platform-brand-assets', true)
+values ('platform-branding', 'platform-branding', true)
 on conflict (id) do update
 set public = true;

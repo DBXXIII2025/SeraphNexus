@@ -1,6 +1,6 @@
 import type { PlatformSettings } from "@/lib/platformSettings";
 
-export const PLATFORM_BRAND_ASSETS_BUCKET = "platform-brand-assets";
+export const PLATFORM_BRAND_ASSETS_BUCKET = "platform-branding";
 export const MAX_PLATFORM_LOGO_BYTES = 5 * 1024 * 1024;
 
 const ALLOWED_PLATFORM_LOGO_TYPES = new Set([

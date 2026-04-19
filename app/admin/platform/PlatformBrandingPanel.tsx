@@ -31,7 +31,9 @@ function getStatusMessage(code: string | null, maxLogoBytes: number) {
     "platform-logo-upload-failed": "The logo file could not be uploaded.",
     "platform-branding-settings-unavailable": "Platform branding settings could not be loaded.",
     "platform-branding-migration-required":
-      "Platform branding storage is not ready. Apply the platform branding migration first.",
+      "Platform branding data is not ready. Apply the platform branding migration first.",
+    "platform-branding-storage-unavailable":
+      "Platform branding storage bucket is unavailable. Check the platform-branding bucket setup.",
     "platform-branding-save-failed": "Platform branding could not be updated.",
     "platform-logo-update-failed": "Platform branding could not be updated.",
     forbidden: "Platform admin access is required.",

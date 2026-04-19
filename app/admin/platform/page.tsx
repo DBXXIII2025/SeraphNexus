@@ -217,7 +217,11 @@ function getStatusCopy(
   }
 
   if (value === "platform-branding-migration-required") {
-    return "Platform branding storage is not ready. Apply the platform branding migration first.";
+    return "Platform branding data is not ready. Apply the platform branding migration first.";
+  }
+
+  if (value === "platform-branding-storage-unavailable") {
+    return "Platform branding storage bucket is unavailable. Check the platform-branding bucket setup.";
   }
 
   if (value === "platform-branding-save-failed" || value === "platform-logo-update-failed") {

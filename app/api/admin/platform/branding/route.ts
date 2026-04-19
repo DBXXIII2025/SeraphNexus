@@ -45,6 +45,39 @@ function isMissingBrandingColumnError(error: { code?: string | null; message?: s
   return error?.code === "42703" || message.includes("logo_url");
 }
 
+async function ensurePlatformBrandingBucket(supabaseAdmin: ReturnType<typeof createAdminClient>) {
+  console.info("[platform-branding] expected bucket name", PLATFORM_BRAND_ASSETS_BUCKET);
+
+  const buckets = await supabaseAdmin.storage.listBuckets();
+  const existingBucket = buckets.data?.find((bucket) => bucket.id === PLATFORM_BRAND_ASSETS_BUCKET);
+
+  console.info("[platform-branding] storage readiness check result", {
+    expectedBucket: PLATFORM_BRAND_ASSETS_BUCKET,
+    found: Boolean(existingBucket),
+    error: buckets.error?.message || null,
+  });
+
+  if (buckets.error) {
+    return { ok: false, error: buckets.error.message };
+  }
+
+  if (existingBucket) {
+    return { ok: true, error: null };
+  }
+
+  const created = await supabaseAdmin.storage.createBucket(PLATFORM_BRAND_ASSETS_BUCKET, {
+    public: true,
+  });
+
+  console.info("[platform-branding] storage bucket create result", {
+    expectedBucket: PLATFORM_BRAND_ASSETS_BUCKET,
+    ok: !created.error,
+    error: created.error?.message || null,
+  });
+
+  return { ok: !created.error, error: created.error?.message || null };
+}
+
 export async function POST(req: Request) {
   try {
     console.info("[platform-branding] upload request received");
@@ -85,6 +118,15 @@ export async function POST(req: Request) {
 
     if (!settingsState.hasLogoColumn) {
       return respondWith(req, "error", "platform-branding-migration-required");
+    }
+
+    const bucketReady = await ensurePlatformBrandingBucket(supabaseAdmin);
+    if (!bucketReady.ok) {
+      console.error("[platform-branding] storage bucket not ready", {
+        expectedBucket: PLATFORM_BRAND_ASSETS_BUCKET,
+        error: bucketReady.error,
+      });
+      return respondWith(req, "error", "platform-branding-storage-unavailable");
     }
 
     if (action === "clear") {
@@ -141,28 +183,18 @@ export async function POST(req: Request) {
       fileName: file.name,
       contentType: file.type,
     });
+    console.info("[platform-branding] upload target path", {
+      bucket: PLATFORM_BRAND_ASSETS_BUCKET,
+      storagePath,
+    });
     const uploadBuffer = Buffer.from(await file.arrayBuffer());
-    let { error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from(PLATFORM_BRAND_ASSETS_BUCKET)
       .upload(storagePath, uploadBuffer, {
         contentType: file.type,
         cacheControl: "31536000",
         upsert: false,
       });
-
-    if (uploadError?.message?.toLowerCase().includes("bucket")) {
-      await supabaseAdmin.storage.createBucket(PLATFORM_BRAND_ASSETS_BUCKET, {
-        public: true,
-      });
-      const retry = await supabaseAdmin.storage
-        .from(PLATFORM_BRAND_ASSETS_BUCKET)
-        .upload(storagePath, uploadBuffer, {
-          contentType: file.type,
-          cacheControl: "31536000",
-          upsert: false,
-        });
-      uploadError = retry.error;
-    }
 
     console.info("[platform-branding] storage upload result", {
       storagePath,
