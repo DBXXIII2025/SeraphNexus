@@ -1,11 +1,76 @@
+create table if not exists public.platform_settings (
+  id uuid primary key default gen_random_uuid(),
+  platform_name text not null default 'Seraph Nexus',
+  marketing_headline text not null default 'Operate bookings, orders, rentals, and client follow-up in one place.',
+  marketing_subheadline text not null default 'Launch-ready business tools with Stripe Connect payouts, admin operations, and polished customer flows.',
+  support_email text not null default 'support@seraphnexus.com',
+  support_phone text not null default '(800) 555-0100',
+  pricing_note text not null default 'Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.',
+  pro_monthly_price_cents integer not null default 1900,
+  elite_monthly_price_cents integer not null default 4900,
+  trial_transaction_fee_bps integer not null default 1000,
+  pro_transaction_fee_bps integer not null default 500,
+  elite_transaction_fee_bps integer not null default 200,
+  pro_price_active boolean not null default true,
+  elite_price_active boolean not null default true,
+  pro_stripe_price_id text null,
+  elite_stripe_price_id text null,
+  pro_stripe_product_id text null,
+  elite_stripe_product_id text null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
 alter table public.platform_settings
   add column if not exists site_name text not null default 'Seraph Nexus',
   add column if not exists logo_url text,
-  add column if not exists logo_storage_path text;
+  add column if not exists logo_storage_path text,
+  add column if not exists singleton_key boolean not null default true;
+
+create unique index if not exists platform_settings_singleton_idx
+on public.platform_settings (singleton_key)
+where singleton_key = true;
 
 update public.platform_settings
 set site_name = coalesce(nullif(site_name, ''), nullif(platform_name, ''), 'Seraph Nexus')
 where site_name is null or site_name = '';
+
+insert into public.platform_settings (
+  site_name,
+  platform_name,
+  marketing_headline,
+  marketing_subheadline,
+  support_email,
+  support_phone,
+  pricing_note,
+  pro_monthly_price_cents,
+  elite_monthly_price_cents,
+  trial_transaction_fee_bps,
+  pro_transaction_fee_bps,
+  elite_transaction_fee_bps,
+  pro_price_active,
+  elite_price_active,
+  singleton_key
+)
+select
+  'Seraph Nexus',
+  'Seraph Nexus',
+  'Operate bookings, orders, rentals, and client follow-up in one place.',
+  'Launch-ready business tools with Stripe Connect payouts, admin operations, and polished customer flows.',
+  'support@seraphnexus.com',
+  '(800) 555-0100',
+  'Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.',
+  1900,
+  4900,
+  1000,
+  500,
+  200,
+  true,
+  true,
+  true
+where not exists (
+  select 1 from public.platform_settings
+);
 
 insert into storage.buckets (id, name, public)
 values ('platform-brand-assets', 'platform-brand-assets', true)

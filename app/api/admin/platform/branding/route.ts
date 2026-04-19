@@ -7,6 +7,7 @@ import {
   MAX_PLATFORM_LOGO_BYTES,
   PLATFORM_BRAND_ASSETS_BUCKET,
 } from "@/lib/platformBranding";
+import { bootstrapPlatformSettings } from "@/lib/platformSettings";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 function wantsJson(req: Request) {
@@ -61,15 +62,28 @@ export async function POST(req: Request) {
     const supabaseAdmin = createAdminClient();
     const now = new Date().toISOString();
 
-    const { data: existing, error: existingError } = await supabaseAdmin
-      .from("platform_settings")
-      .select("id, logo_storage_path")
-      .limit(1)
-      .maybeSingle();
+    const settingsState = await bootstrapPlatformSettings();
+    const existing = settingsState.settings;
 
-    if (existingError) {
-      console.error("[platform-branding] settings lookup failed", existingError);
+    console.info("[platform-branding] platform_settings query result", {
+      settingsId: existing.id || null,
+      logoUrl: existing.logo_url,
+      logoStoragePath: existing.logo_storage_path,
+      hasBrandingColumns: settingsState.hasBrandingColumns,
+      bootstrapCreated: settingsState.bootstrapCreated,
+      errorMessage:
+        settingsState.error instanceof Error
+          ? settingsState.error.message
+          : String((settingsState.error as { message?: string } | null)?.message || ""),
+    });
+
+    if (settingsState.error) {
+      console.error("[platform-branding] settings lookup failed", settingsState.error);
       return respondWith(req, "error", "platform-branding-settings-unavailable");
+    }
+
+    if (!settingsState.hasBrandingColumns) {
+      return respondWith(req, "error", "platform-branding-migration-required");
     }
 
     if (action === "clear") {

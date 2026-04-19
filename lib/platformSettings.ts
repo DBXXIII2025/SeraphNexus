@@ -296,35 +296,155 @@ function normalizePlatformSettingsRow(data: Record<string, any>) {
   };
 }
 
-export async function getPlatformSettings() {
+const PLATFORM_SETTINGS_FULL_SELECT =
+  "id, site_name, logo_url, logo_storage_path, created_at, updated_at, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_plan_name, pro_plan_subtitle, pro_plan_features, pro_plan_badge, pro_plan_cta, elite_plan_name, elite_plan_subtitle, elite_plan_features, elite_plan_badge, elite_plan_cta, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id";
+
+const PLATFORM_SETTINGS_BRANDING_SELECT =
+  "id, site_name, logo_url, logo_storage_path, created_at, updated_at, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id";
+
+const PLATFORM_SETTINGS_LEGACY_SELECT =
+  "id, created_at, updated_at, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id";
+
+function buildDefaultPlatformSettingsInsertPayload(args: { includeBranding: boolean }) {
+  const payload: Record<string, unknown> = {
+    platform_name: DEFAULT_PLATFORM_SETTINGS.platform_name,
+    marketing_headline: DEFAULT_PLATFORM_SETTINGS.marketing_headline,
+    marketing_subheadline: DEFAULT_PLATFORM_SETTINGS.marketing_subheadline,
+    support_email: DEFAULT_PLATFORM_SETTINGS.support_email,
+    support_phone: DEFAULT_PLATFORM_SETTINGS.support_phone,
+    pricing_note: DEFAULT_PLATFORM_SETTINGS.pricing_note,
+    pro_monthly_price_cents: DEFAULT_PLATFORM_SETTINGS.pro_monthly_price_cents,
+    elite_monthly_price_cents: DEFAULT_PLATFORM_SETTINGS.elite_monthly_price_cents,
+    trial_transaction_fee_bps: DEFAULT_PLATFORM_SETTINGS.trial_transaction_fee_bps,
+    pro_transaction_fee_bps: DEFAULT_PLATFORM_SETTINGS.pro_transaction_fee_bps,
+    elite_transaction_fee_bps: DEFAULT_PLATFORM_SETTINGS.elite_transaction_fee_bps,
+    pro_price_active: DEFAULT_PLATFORM_SETTINGS.pro_price_active,
+    elite_price_active: DEFAULT_PLATFORM_SETTINGS.elite_price_active,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (args.includeBranding) {
+    payload.site_name = DEFAULT_PLATFORM_SETTINGS.site_name;
+    payload.logo_url = null;
+    payload.logo_storage_path = null;
+  }
+
+  return payload;
+}
+
+async function readPlatformSettingsRow(
+  supabase: ReturnType<typeof createAdminClient>,
+  selectColumns: string
+) {
+  return supabase
+    .from("platform_settings")
+    .select(selectColumns)
+    .limit(1)
+    .maybeSingle();
+}
+
+export async function bootstrapPlatformSettings() {
   try {
     const supabase = createAdminClient();
-    let { data, error } = await supabase
-      .from("platform_settings")
-      .select(
-        "id, site_name, logo_url, logo_storage_path, created_at, updated_at, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_plan_name, pro_plan_subtitle, pro_plan_features, pro_plan_badge, pro_plan_cta, elite_plan_name, elite_plan_subtitle, elite_plan_features, elite_plan_badge, elite_plan_cta, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
-      )
-      .limit(1)
-      .maybeSingle();
+    let hasBrandingColumns = true;
+    let bootstrapCreated = false;
+    let { data, error } = await readPlatformSettingsRow(
+      supabase,
+      PLATFORM_SETTINGS_FULL_SELECT
+    );
 
-    if (error && (isMissingPlanCopyColumnError(error) || isMissingBrandingColumnError(error))) {
-      const fallback = await supabase
-        .from("platform_settings")
-        .select(
-          "id, created_at, updated_at, platform_name, marketing_headline, marketing_subheadline, support_email, support_phone, pricing_note, pro_monthly_price_cents, elite_monthly_price_cents, trial_transaction_fee_bps, pro_transaction_fee_bps, elite_transaction_fee_bps, pro_price_active, elite_price_active, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
-        )
-        .limit(1)
-        .maybeSingle();
+    console.info("[platform-settings] full query result", {
+      hasData: Boolean(data),
+      errorCode: error?.code || null,
+      errorMessage: error?.message || null,
+    });
+
+    if (error && isMissingPlanCopyColumnError(error) && !isMissingBrandingColumnError(error)) {
+      const fallback = await readPlatformSettingsRow(
+        supabase,
+        PLATFORM_SETTINGS_BRANDING_SELECT
+      );
       data = fallback.data;
       error = fallback.error;
     }
 
-    if (!error && data) {
-      return normalizePlatformSettingsRow(data);
+    if (error && isMissingBrandingColumnError(error)) {
+      hasBrandingColumns = false;
+      const fallback = await readPlatformSettingsRow(
+        supabase,
+        PLATFORM_SETTINGS_LEGACY_SELECT
+      );
+      console.info("[platform-settings] legacy query result", {
+        hasData: Boolean(fallback.data),
+        errorCode: fallback.error?.code || null,
+        errorMessage: fallback.error?.message || null,
+      });
+      data = fallback.data;
+      error = fallback.error;
     }
 
-    return DEFAULT_PLATFORM_SETTINGS;
-  } catch {
-    return DEFAULT_PLATFORM_SETTINGS;
+    if (!error && !data) {
+      const insertPayload = buildDefaultPlatformSettingsInsertPayload({
+        includeBranding: hasBrandingColumns,
+      });
+      const inserted = await supabase
+        .from("platform_settings")
+        .insert(insertPayload)
+        .select(hasBrandingColumns ? PLATFORM_SETTINGS_BRANDING_SELECT : PLATFORM_SETTINGS_LEGACY_SELECT)
+        .limit(1)
+        .maybeSingle();
+
+      console.info("[platform-settings] bootstrap insert result", {
+        created: !inserted.error && Boolean(inserted.data),
+        errorCode: inserted.error?.code || null,
+        errorMessage: inserted.error?.message || null,
+      });
+
+      bootstrapCreated = !inserted.error && Boolean(inserted.data);
+      data = inserted.data;
+      error = inserted.error;
+    }
+
+    if (!error && data) {
+      const settings = normalizePlatformSettingsRow(data);
+      console.info("[platform-settings] final branding object", {
+        id: settings.id || null,
+        siteName: settings.site_name,
+        logoUrl: settings.logo_url,
+        hasBrandingColumns,
+        bootstrapCreated,
+      });
+      return {
+        settings,
+        hasBrandingColumns,
+        bootstrapCreated,
+        error: null,
+      };
+    }
+
+    console.error("[platform-settings] bootstrap failed", {
+      errorCode: error?.code || null,
+      errorMessage: error?.message || null,
+    });
+    return {
+      settings: DEFAULT_PLATFORM_SETTINGS,
+      hasBrandingColumns: false,
+      bootstrapCreated,
+      error,
+    };
+  } catch (error) {
+    console.error("[platform-settings] bootstrap exception", error);
+    return {
+      settings: DEFAULT_PLATFORM_SETTINGS,
+      hasBrandingColumns: false,
+      bootstrapCreated: false,
+      error,
+    };
   }
+}
+
+export async function getPlatformSettings() {
+  const result = await bootstrapPlatformSettings();
+  return result.settings;
 }
