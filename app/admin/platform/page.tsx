@@ -24,6 +24,7 @@ import {
   getPlatformIncomeAudit,
   getPlatformOwnerBusinessAudits,
 } from "@/lib/platformOwnerCleanup";
+import PlatformBrandingPanel from "./PlatformBrandingPanel";
 
 type PlatformPageProps = {
   searchParams?: Promise<{
@@ -688,81 +689,13 @@ export default async function PlatformPage({
         </form>
 
         <div className="space-y-6">
-          <section className="premium-card p-6">
-            <div className="section-header-copy">
-              <p className="section-kicker">Platform Branding</p>
-              <h2 className="section-title">Global site logo</h2>
-              <p className="section-description">
-                Manage the official platform mark shown in public headers next to {platformSiteName}.
-              </p>
-            </div>
-
-            <div className="mt-5 table-row-panel p-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-[rgba(212,175,55,0.24)] bg-[rgba(15,12,12,0.72)] p-2">
-                  {platformLogoUrl ? (
-                    <img
-                      src={platformLogoUrl}
-                      alt={`${platformSiteName} logo`}
-                      className="h-full w-full object-contain"
-                    />
-                  ) : (
-                    <span className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--accent-gold-soft)]">
-                      SN
-                    </span>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-[var(--text-strong)]">{platformSiteName}</p>
-                  <p className="mt-1 text-sm text-[var(--text-soft)]">
-                    {settings.logo_url
-                      ? "Custom platform logo is active."
-                      : "No custom logo uploaded. Headers use the fallback mark."}
-                  </p>
-                  <p className="mt-2 break-all text-xs text-[var(--text-muted)]">
-                    {settings.logo_storage_path || "No storage path yet."}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <form
-              action="/api/admin/platform/branding"
-              method="POST"
-              encType="multipart/form-data"
-              className="mt-5 space-y-4"
-            >
-              <label className="text-sm text-gray-300">
-                <span className="form-label">Replace logo</span>
-                <input
-                  name="logo"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  className="input-field mt-2"
-                />
-              </label>
-              <p className="text-xs text-[var(--text-muted)]">
-                Upload a JPG, PNG, WEBP, or SVG logo up to{" "}
-                {Math.round(MAX_PLATFORM_LOGO_BYTES / 1024 / 1024)} MB. New files use unique
-                storage paths and header URLs are versioned from the settings timestamp.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
-                  Upload platform logo
-                </button>
-                {settings.logo_url ? (
-                  <button
-                    type="submit"
-                    name="_action"
-                    value="clear"
-                    className="btn-secondary px-4 py-2 text-sm font-medium"
-                  >
-                    Clear logo
-                  </button>
-                ) : null}
-              </div>
-            </form>
-          </section>
+          <PlatformBrandingPanel
+            siteName={platformSiteName}
+            logoUrl={platformLogoUrl}
+            logoStoragePath={settings.logo_storage_path}
+            hasStoredLogo={Boolean(settings.logo_url)}
+            maxLogoBytes={MAX_PLATFORM_LOGO_BYTES}
+          />
 
           <section className="premium-card p-6">
             <div className="section-header-copy">

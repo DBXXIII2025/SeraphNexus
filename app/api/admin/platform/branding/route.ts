@@ -9,7 +9,31 @@ import {
 } from "@/lib/platformBranding";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
-function redirectWith(req: Request, key: "success" | "error", value: string) {
+function wantsJson(req: Request) {
+  return (
+    req.headers.get("accept")?.includes("application/json") ||
+    req.headers.get("x-requested-with") === "platform-branding-client"
+  );
+}
+
+function respondWith(
+  req: Request,
+  key: "success" | "error",
+  value: string,
+  body: Record<string, unknown> = {},
+  status = key === "success" ? 200 : 400
+) {
+  if (wantsJson(req)) {
+    return NextResponse.json(
+      {
+        ok: key === "success",
+        code: value,
+        ...body,
+      },
+      { status }
+    );
+  }
+
   return NextResponse.redirect(
     new URL(`/admin/platform?${key}=${encodeURIComponent(value)}`, req.url)
   );
@@ -22,13 +46,14 @@ function isMissingBrandingColumnError(error: { code?: string | null; message?: s
 
 export async function POST(req: Request) {
   try {
+    console.info("[platform-branding] upload request received");
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user || !(await getIsPlatformAdminForUserId(user.id))) {
-      return redirectWith(req, "error", "forbidden");
+      return respondWith(req, "error", "forbidden", {}, 403);
     }
 
     const formData = await req.formData();
@@ -44,12 +69,12 @@ export async function POST(req: Request) {
 
     if (existingError) {
       console.error("[platform-branding] settings lookup failed", existingError);
-      return redirectWith(req, "error", "platform-branding-settings-unavailable");
+      return respondWith(req, "error", "platform-branding-settings-unavailable");
     }
 
     if (action === "clear") {
       if (!existing?.id) {
-        return redirectWith(req, "error", "platform-branding-settings-unavailable");
+        return respondWith(req, "error", "platform-branding-settings-unavailable");
       }
 
       const { error: updateError } = await supabaseAdmin
@@ -63,11 +88,17 @@ export async function POST(req: Request) {
 
       if (updateError) {
         if (isMissingBrandingColumnError(updateError)) {
-          return redirectWith(req, "error", "platform-branding-migration-required");
+          return respondWith(req, "error", "platform-branding-migration-required");
         }
         console.error("[platform-branding] clear failed", updateError);
-        return redirectWith(req, "error", "platform-branding-save-failed");
+        return respondWith(req, "error", "platform-branding-save-failed");
       }
+
+      console.info("[platform-branding] platform_settings update result", {
+        action: "clear",
+        settingsId: existing.id,
+        logoUrl: null,
+      });
 
       if (existing.logo_storage_path) {
         await supabaseAdmin.storage
@@ -78,20 +109,25 @@ export async function POST(req: Request) {
       revalidatePath("/");
       revalidatePath("/explore");
       revalidatePath("/admin/platform");
-      return redirectWith(req, "success", "platform-logo-cleared");
+      console.info("[platform-branding] final logo_url returned", null);
+      return respondWith(req, "success", "platform-logo-cleared", {
+        logoUrl: null,
+        logoStoragePath: null,
+        updatedAt: now,
+      });
     }
 
     const file = formData.get("logo");
     if (!(file instanceof File)) {
-      return redirectWith(req, "error", "platform-logo-required");
+      return respondWith(req, "error", "platform-logo-required");
     }
 
     if (!isAllowedPlatformLogoType(file.type)) {
-      return redirectWith(req, "error", "platform-logo-type-invalid");
+      return respondWith(req, "error", "platform-logo-type-invalid");
     }
 
     if (file.size > MAX_PLATFORM_LOGO_BYTES) {
-      return redirectWith(req, "error", "platform-logo-too-large");
+      return respondWith(req, "error", "platform-logo-too-large");
     }
 
     const storagePath = buildPlatformLogoStoragePath({
@@ -121,9 +157,15 @@ export async function POST(req: Request) {
       uploadError = retry.error;
     }
 
+    console.info("[platform-branding] storage upload result", {
+      storagePath,
+      ok: !uploadError,
+      error: uploadError?.message || null,
+    });
+
     if (uploadError) {
       console.error("[platform-branding] upload failed", uploadError);
-      return redirectWith(req, "error", "platform-logo-upload-failed");
+      return respondWith(req, "error", "platform-logo-upload-failed");
     }
 
     const { data: publicUrlData } = supabaseAdmin.storage
@@ -156,11 +198,17 @@ export async function POST(req: Request) {
     if (mutationError) {
       await supabaseAdmin.storage.from(PLATFORM_BRAND_ASSETS_BUCKET).remove([storagePath]);
       if (isMissingBrandingColumnError(mutationError)) {
-        return redirectWith(req, "error", "platform-branding-migration-required");
+        return respondWith(req, "error", "platform-branding-migration-required");
       }
       console.error("[platform-branding] settings update failed", mutationError);
-      return redirectWith(req, "error", "platform-branding-save-failed");
+      return respondWith(req, "error", "platform-branding-save-failed");
     }
+
+    console.info("[platform-branding] platform_settings update result", {
+      settingsId: existing?.id || "created",
+      storagePath,
+      logoUrl: publicUrlData.publicUrl,
+    });
 
     if (existing?.logo_storage_path) {
       await supabaseAdmin.storage
@@ -172,9 +220,14 @@ export async function POST(req: Request) {
     revalidatePath("/explore");
     revalidatePath("/pricing");
     revalidatePath("/admin/platform");
-    return redirectWith(req, "success", "platform-logo-updated");
+    console.info("[platform-branding] final logo_url returned", publicUrlData.publicUrl);
+    return respondWith(req, "success", "platform-logo-updated", {
+      logoUrl: publicUrlData.publicUrl,
+      logoStoragePath: storagePath,
+      updatedAt: now,
+    });
   } catch (error) {
     console.error("[platform-branding] failed", error);
-    return redirectWith(req, "error", "platform-logo-update-failed");
+    return respondWith(req, "error", "platform-logo-update-failed", {}, 500);
   }
 }
