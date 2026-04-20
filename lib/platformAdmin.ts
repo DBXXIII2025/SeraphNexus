@@ -1,7 +1,7 @@
 ﻿import { redirect } from "next/navigation";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
-export const PLATFORM_ADMIN_HOME = "/platform-admin";
+export const PLATFORM_ADMIN_HOME = "/admin";
 
 type PlatformAdminProfile = {
   id: string;

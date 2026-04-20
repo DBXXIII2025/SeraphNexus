@@ -28,10 +28,9 @@ function buildRedirect(req: Request, params: Record<string, string>) {
 
 function revalidateGrantViews() {
   revalidatePath("/admin/platform");
-  revalidatePath("/platform-admin");
-  revalidatePath("/platform-admin/businesses");
-  revalidatePath("/platform-admin/revenue");
   revalidatePath("/admin");
+  revalidatePath("/admin/businesses");
+  revalidatePath("/admin/revenue");
   revalidatePath("/admin/settings");
   revalidatePath("/admin/upgrade");
 }

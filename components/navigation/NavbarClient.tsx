@@ -99,7 +99,7 @@ export default function NavbarClient({
               },
             ]),
         {
-          href: isPlatformAdmin ? "/platform-admin" : "/admin",
+          href: "/admin",
           label: isPlatformAdmin ? "Platform Admin" : "Admin",
           emphasis: "secondary" as const,
         },

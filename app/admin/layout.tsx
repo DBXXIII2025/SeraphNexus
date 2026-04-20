@@ -22,7 +22,9 @@ import {
 
 const PLATFORM_OWNER_NAV = [
   { href: "/admin/dashboard", label: "Overview" },
+  { href: "/admin/businesses", label: "Businesses" },
   { href: "/admin/messages", label: "Support Inbox" },
+  { href: "/admin/revenue", label: "Revenue" },
   { href: "/admin/platform", label: "Platform Control" },
 ];
 
@@ -110,6 +112,7 @@ export default async function AdminLayout({
       isPlatformAdmin,
       activeBusinessId: activeBusiness?.id || null,
       activeBusinessType: activeBusiness?.business_type || null,
+      canonicalControlCenter: "/admin",
     });
     console.log("[platform-branding] admin header branding payload read", {
       platformName: platformSettings.platform_name,

@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
 import { PUBLIC_EXPLORE_BUSINESSES_SELECT } from "@/lib/publicBusinessQueries";
 import { getPlatformSettings } from "@/lib/platformSettings";
 import ExploreClient from "./ExploreClient";
@@ -27,7 +26,6 @@ export default async function ExplorePage() {
     <ExploreClient
       businesses={businesses || []}
       isLoggedIn={Boolean(user)}
-      isPlatformAdmin={user ? await getIsPlatformAdminForUserId(user.id) : false}
       settings={settings}
     />
   );

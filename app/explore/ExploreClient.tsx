@@ -25,12 +25,10 @@ import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBrand
 export default function ExploreClient({
   businesses,
   isLoggedIn,
-  isPlatformAdmin,
   settings,
 }: {
   businesses: Business[];
   isLoggedIn: boolean;
-  isPlatformAdmin: boolean;
   settings: PlatformSettings;
 }) {
   const [search, setSearch] = useState("");
@@ -96,7 +94,7 @@ export default function ExploreClient({
     ? "/onboarding/create-business"
     : "/login?next=/onboarding/create-business";
 
-  const accountHref = isPlatformAdmin ? "/platform-admin" : "/admin";
+  const accountHref = "/admin";
   const hasActiveFilters =
     Boolean(search.trim()) ||
     categoryFilter !== "all" ||
