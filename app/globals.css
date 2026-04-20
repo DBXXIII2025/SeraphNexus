@@ -167,18 +167,6 @@ button:focus {
   box-shadow: var(--focus-ring) !important;
 }
 
-[class*="bg-"] {
-  background-color: transparent !important;
-}
-
-[class*="text-"] {
-  color: inherit !important;
-}
-
-[class*="border-"] {
-  border-color: var(--border-soft) !important;
-}
-
 .admin-shell,
 .circuit-shell,
 .shell-panel,
@@ -247,21 +235,12 @@ button:focus {
 
 .admin-system {
   min-height: 100vh;
-  background:
-    linear-gradient(180deg, rgba(91, 62, 150, 0.08), transparent 18%),
-    var(--page-bg) !important;
+  background: var(--page-bg) !important;
   color: var(--text-main) !important;
 }
 
 .admin-system * {
   border-color: var(--border-soft) !important;
-}
-
-.admin-system-glow {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(91, 62, 150, 0.08), transparent 42%) !important;
 }
 
 .admin-system-layout {
@@ -466,21 +445,12 @@ button:focus {
 
 .public-system {
   min-height: 100vh;
-  background:
-    linear-gradient(180deg, rgba(91, 62, 150, 0.08), transparent 22%),
-    var(--page-bg) !important;
+  background: var(--page-bg) !important;
   color: var(--text-main) !important;
 }
 
 .public-system * {
   border-color: var(--border-soft) !important;
-}
-
-.public-system-glow {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(91, 62, 150, 0.08), transparent 48%) !important;
 }
 
 .public-container {
@@ -493,10 +463,6 @@ button:focus {
 
 .public-business-page-compact {
   min-height: auto !important;
-}
-
-.public-business-page-compact .public-system-glow {
-  display: none;
 }
 
 .public-business-page-compact .public-container {
@@ -744,34 +710,4 @@ button:focus {
   .public-hero {
     grid-template-columns: minmax(0, 1fr) auto;
   }
-}
-
-[class*="bg-black"],
-[class*="bg-[rgba(15,12,12"],
-[class*="bg-[rgba(23,19,19"],
-[class*="bg-[rgba(31,25,25"],
-[class*="bg-[rgba(12,10,10"],
-[class*="bg-[rgba(7,7,7"] {
-  background: var(--surface-muted) !important;
-}
-
-[class*="border-white/10"],
-[class*="border-[rgba(212,175,55"],
-[class*="border-[rgba(193,18,31"] {
-  border-color: var(--border-soft) !important;
-}
-
-[class*="text-white"],
-[class*="text-gray-"],
-[class*="text-[var(--accent-gold"],
-[class*="text-[#f1a0a7"] {
-  color: var(--text-main) !important;
-}
-
-[class*="bg-[rgba(212,175,55"] {
-  background: var(--accent-muted) !important;
-}
-
-[class*="bg-[rgba(193,18,31"] {
-  background: var(--destructive-bg) !important;
 }

@@ -18,8 +18,7 @@ export function AdminShell({
   wide?: boolean;
 }) {
   return (
-    <div className="admin-system min-h-screen">
-      <div className="admin-system-glow" />
+    <div className="admin-system min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       <div className="admin-system-layout">
         {topbar}
         <div

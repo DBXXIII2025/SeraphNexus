@@ -9,8 +9,8 @@ export default function DashboardSidebar() {
   const linkClass = (path: string) =>
     `block px-3 py-2 rounded-md text-sm transition ${
       pathname.startsWith(path)
-        ? "bg-purple-600 text-white"
-        : "text-gray-400 hover:text-white hover:bg-white/5"
+        ? "bg-[var(--accent)] text-[var(--accent-contrast)]"
+        : "text-[var(--text-soft)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent-strong)]"
     }`;
 
   return (

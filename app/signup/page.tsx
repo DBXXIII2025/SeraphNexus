@@ -129,30 +129,30 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black px-4 text-white">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--page-bg)] px-4 text-[var(--text-main)]">
       <form
         onSubmit={handleSignup}
-        className="w-full max-w-sm rounded-xl border border-white/10 bg-zinc-900/80 p-6 shadow-lg"
+        className="w-full max-w-sm rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]"
       >
         <h1 className="mb-2 text-center text-2xl font-semibold">Sign Up</h1>
-        <p className="mb-6 text-center text-sm text-gray-400">
+        <p className="mb-6 text-center text-sm text-[var(--text-soft)]">
           Create your Seraph Nexus account.
         </p>
 
         {inviteToken ? (
-          <div className="mb-4 rounded-lg border border-[rgba(212,175,55,0.16)] bg-[rgba(212,175,55,0.08)] px-3 py-2 text-xs text-[var(--accent-gold-soft)]">
+          <div className="mb-4 rounded-lg border border-[var(--border-soft)] bg-[var(--accent-muted)] px-3 py-2 text-xs text-[var(--accent)]">
             Private trial invite detected. Sign up with the invited email to activate it.
           </div>
         ) : null}
 
-        <div className="mb-4 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-gray-400">
+        <div className="mb-4 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-2 text-xs text-[var(--text-soft)]">
           New accounts continue into the correct workspace path after signup.
         </div>
 
-        <label className="mb-2 block text-sm text-gray-300">Email</label>
+        <label className="mb-2 block text-sm text-[var(--text-soft)]">Email</label>
         <input
           type="email"
-          className="mb-3 w-full rounded-md p-2 text-black outline-none focus:ring-2 focus:ring-purple-500"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -160,10 +160,10 @@ export default function SignupPage() {
           required
         />
 
-        <label className="mb-2 block text-sm text-gray-300">Password</label>
+        <label className="mb-2 block text-sm text-[var(--text-soft)]">Password</label>
         <input
           type="password"
-          className="mb-3 w-full rounded-md p-2 text-black outline-none focus:ring-2 focus:ring-purple-500"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="At least 8 characters"
@@ -171,12 +171,12 @@ export default function SignupPage() {
           required
         />
 
-        <label className="mb-2 block text-sm text-gray-300">
+        <label className="mb-2 block text-sm text-[var(--text-soft)]">
           Confirm Password
         </label>
         <input
           type="password"
-          className="mb-3 w-full rounded-md p-2 text-black outline-none focus:ring-2 focus:ring-purple-500"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="Re-enter your password"
@@ -184,24 +184,24 @@ export default function SignupPage() {
           required
         />
 
-        {error ? <div className="mb-3 text-sm text-red-400">{error}</div> : null}
+        {error ? <div className="mb-3 text-sm text-[var(--destructive)]">{error}</div> : null}
         {message ? (
-          <div className="mb-3 text-sm text-green-400">{message}</div>
+          <div className="mb-3 text-sm text-[var(--success)]">{message}</div>
         ) : null}
 
         <button
           type="submit"
-          className="w-full rounded-md bg-purple-600 py-2 transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-md bg-[var(--accent)] py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={loading}
         >
           {loading ? "Creating account..." : "Create Account"}
         </button>
 
-        <p className="mt-4 text-center text-sm text-gray-400">
+        <p className="mt-4 text-center text-sm text-[var(--text-soft)]">
           Already have an account?{" "}
           <Link
             href={`/login?next=${encodeURIComponent(nextPath)}`}
-            className="text-purple-300 hover:text-purple-200"
+            className="text-[var(--accent)] hover:text-[var(--accent-strong)]"
           >
             Log In
           </Link>

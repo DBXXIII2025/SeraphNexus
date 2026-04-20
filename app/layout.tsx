@@ -10,7 +10,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)]">
+        <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
           <Navbar />
           {children}
         </div>

@@ -9,12 +9,12 @@ export default function Header() {
   const linkClass = (path: string) =>
     `px-3 py-2 rounded-md text-sm ${
       pathname.startsWith(path)
-        ? "bg-purple-600 text-white"
-        : "text-gray-400 hover:text-white hover:bg-white/5"
+        ? "bg-[var(--accent)] text-[var(--accent-contrast)]"
+        : "text-[var(--text-soft)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent-strong)]"
     }`;
 
   return (
-    <header className="border-b border-white/10 bg-black/40 backdrop-blur-md">
+    <header className="border-b border-[var(--border-soft)] bg-[var(--surface)]">
       <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
         <Link href="/" className="font-bold text-lg">
           Seraph Nexus

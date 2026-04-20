@@ -87,9 +87,9 @@ export default function CreateBusinessForm() {
   return (
     <form onSubmit={handleCreate} className="space-y-4">
       <div>
-        <label className="block text-sm text-gray-300">Business Name</label>
+        <label className="block text-sm text-[var(--text-soft)]">Business Name</label>
         <input
-          className="mt-2 w-full border border-white/10 bg-black/40 p-2 rounded-md text-white outline-none focus:ring-2 focus:ring-purple-500"
+          className="mt-2 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
           value={businessName}
           onChange={(e) => setBusinessName(e.target.value)}
           placeholder="Acme Studios"
@@ -97,7 +97,7 @@ export default function CreateBusinessForm() {
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="block text-sm text-gray-300">Business Type</legend>
+        <legend className="block text-sm text-[var(--text-soft)]">Business Type</legend>
         <div
           className="mt-2 grid gap-3"
           role="radiogroup"
@@ -111,8 +111,8 @@ export default function CreateBusinessForm() {
                 key={option.value}
                 className={`block cursor-pointer rounded-xl border p-4 transition focus-within:ring-2 focus-within:ring-green-400/70 ${
                   selected
-                    ? "border-green-500 bg-green-500/10 shadow-[0_0_0_1px_rgba(34,197,94,0.25)]"
-                    : "border-white/10 bg-black/30 hover:border-white/20 hover:bg-black/40"
+                    ? "border-[var(--accent)] bg-[var(--accent-muted)] shadow-[var(--shadow-soft)]"
+                    : "border-[var(--border-soft)] bg-[var(--surface-muted)] hover:border-[var(--border-strong)] hover:bg-[var(--accent-muted)]"
                 }`}
                 tabIndex={0}
                 aria-checked={selected}
@@ -133,10 +133,10 @@ export default function CreateBusinessForm() {
                 />
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-sm font-medium text-white">
+                    <div className="text-sm font-medium text-[var(--text-strong)]">
                       {option.label}
                     </div>
-                    <div className="mt-1 text-sm text-gray-400">
+                    <div className="mt-1 text-sm text-[var(--text-soft)]">
                       {option.description}
                     </div>
                   </div>
@@ -144,13 +144,13 @@ export default function CreateBusinessForm() {
                     aria-hidden="true"
                     className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
                       selected
-                        ? "border-green-400 bg-green-400/20"
-                        : "border-white/20 bg-transparent"
+                        ? "border-[var(--accent)] bg-[var(--accent-muted)]"
+                        : "border-[var(--border-soft)] bg-transparent"
                     }`}
                   >
                     <div
                       className={`h-2.5 w-2.5 rounded-full transition ${
-                        selected ? "bg-green-400" : "bg-transparent"
+                        selected ? "bg-[var(--accent)]" : "bg-transparent"
                       }`}
                     />
                   </div>
@@ -161,12 +161,12 @@ export default function CreateBusinessForm() {
         </div>
       </fieldset>
 
-      {error && <div className="text-sm text-red-400">{error}</div>}
-      {message && <div className="text-sm text-green-400">{message}</div>}
+      {error && <div className="text-sm text-[var(--destructive)]">{error}</div>}
+      {message && <div className="text-sm text-[var(--success)]">{message}</div>}
 
       <button
         type="submit"
-        className="bg-green-600 px-4 py-2 rounded-md hover:bg-green-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
+        className="rounded-md bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
         disabled={loading || !businessName.trim()}
       >
         {loading ? "Creating..." : "Create Business"}

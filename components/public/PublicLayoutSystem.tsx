@@ -9,8 +9,7 @@ export function PublicSiteShell({
   className?: string;
 }) {
   return (
-    <div className={`public-system ${className}`}>
-      <div className="public-system-glow" />
+    <div className={`public-system bg-[var(--page-bg)] text-[var(--text-main)] ${className}`}>
       <div className="public-container">{children}</div>
     </div>
   );

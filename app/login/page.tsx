@@ -78,24 +78,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--page-bg)] px-4 text-[var(--text-main)]">
       <form
         onSubmit={handleLogin}
-        className="bg-zinc-900/80 border border-white/10 p-6 rounded-xl w-full max-w-sm shadow-lg"
+        className="w-full max-w-sm rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]"
       >
         <h1 className="text-2xl font-semibold mb-2 text-center">Login</h1>
-        <p className="text-sm text-gray-400 mb-6 text-center">
+        <p className="mb-6 text-center text-sm text-[var(--text-soft)]">
           Sign in with your email and password.
         </p>
 
-        <div className="mb-4 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-gray-400">
+        <div className="mb-4 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-2 text-xs text-[var(--text-soft)]">
           You will continue to the correct workspace route after sign-in.
         </div>
 
-        <label className="block text-sm text-gray-300 mb-2">Email</label>
+        <label className="mb-2 block text-sm text-[var(--text-soft)]">Email</label>
         <input
           type="email"
-          className="w-full p-2 text-black rounded-md mb-3 outline-none focus:ring-2 focus:ring-purple-500"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -103,10 +103,10 @@ export default function LoginPage() {
           required
         />
 
-        <label className="block text-sm text-gray-300 mb-2">Password</label>
+        <label className="mb-2 block text-sm text-[var(--text-soft)]">Password</label>
         <input
           type="password"
-          className="w-full p-2 text-black rounded-md mb-3 outline-none focus:ring-2 focus:ring-purple-500"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Enter your password"
@@ -117,35 +117,35 @@ export default function LoginPage() {
         <div className="mb-3 text-right">
           <Link
             href="/forgot-password"
-            className="text-sm text-purple-300 hover:text-purple-200"
+            className="text-sm text-[var(--accent)] hover:text-[var(--accent-strong)]"
           >
             Forgot password?
           </Link>
         </div>
 
         {resetStatus === "success" && !error ? (
-          <div className="mb-3 text-sm text-green-400">
+          <div className="mb-3 text-sm text-[var(--success)]">
             Password updated. Sign in with your new password.
           </div>
         ) : null}
 
         {error && (
-          <div className="text-sm text-red-400 mb-3">{error}</div>
+          <div className="mb-3 text-sm text-[var(--destructive)]">{error}</div>
         )}
 
         <button
           type="submit"
-          className="w-full bg-purple-600 py-2 rounded-md hover:bg-purple-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full rounded-md bg-[var(--accent)] py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={loading || !email || !password}
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
 
-        <p className="mt-4 text-center text-sm text-gray-400">
+        <p className="mt-4 text-center text-sm text-[var(--text-soft)]">
           Need an account?{" "}
           <Link
             href={`/signup?next=${encodeURIComponent(nextPath)}`}
-            className="text-purple-300 hover:text-purple-200"
+            className="text-[var(--accent)] hover:text-[var(--accent-strong)]"
           >
             Sign up
           </Link>
