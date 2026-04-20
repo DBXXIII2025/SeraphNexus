@@ -14,14 +14,14 @@ export type InAppTransactionSection = {
 
 function getBadgeClass(tone: "confirmed" | "pending" | "attention") {
   if (tone === "confirmed") {
-    return "border-[rgba(212,175,55,0.26)] bg-[rgba(212,175,55,0.12)] text-[var(--accent-gold-soft)]";
+    return "border-[var(--success)] bg-[var(--success-bg)] text-[var(--success)]";
   }
 
   if (tone === "pending") {
-    return "border-[rgba(184,176,170,0.2)] bg-[rgba(184,176,170,0.08)] text-[var(--text-soft)]";
+    return "border-[var(--border-soft)] bg-[var(--muted-bg)] text-[var(--text-soft)]";
   }
 
-  return "border-[rgba(193,18,31,0.3)] bg-[rgba(193,18,31,0.12)] text-[#f1a0a7]";
+  return "border-[var(--destructive)] bg-[var(--destructive-bg)] text-[var(--destructive)]";
 }
 
 export default function InAppTransactionCard({
@@ -65,7 +65,7 @@ export default function InAppTransactionCard({
         </div>
 
         {amount || meta ? (
-          <div className="min-w-[180px] rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4 text-right">
+          <div className="min-w-[180px] rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4 text-right">
             {amount ? (
               <p className="text-lg font-semibold text-[var(--text-strong)]">
                 {amount}

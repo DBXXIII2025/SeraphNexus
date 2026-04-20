@@ -30,21 +30,21 @@ function getLinkClass(
   active: boolean
 ) {
   if (emphasis === "primary") {
-    return "inline-flex min-h-11 items-center justify-center rounded-xl border border-[rgba(143,12,21,0.9)] bg-[linear-gradient(135deg,var(--accent),var(--accent-strong))] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] shadow-[0_16px_34px_rgba(193,18,31,0.22)]";
+    return "inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--accent)] bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] shadow-[var(--shadow-soft)]";
   }
 
   if (emphasis === "secondary") {
     return `inline-flex min-h-11 items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium ${
       active
-        ? "border-[rgba(212,175,55,0.24)] bg-[rgba(212,175,55,0.08)] text-[var(--text-strong)]"
-        : "border-[var(--border-soft)] bg-[rgba(23,19,19,0.82)] text-[var(--text-strong)] hover:border-[rgba(212,175,55,0.18)] hover:bg-[rgba(31,25,25,0.96)]"
+        ? "border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--accent-strong)]"
+        : "border-[var(--border-soft)] bg-[var(--surface)] text-[var(--accent-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
     }`;
   }
 
   return `inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-sm ${
     active
       ? "text-[var(--text-strong)]"
-      : "text-[var(--text-soft)] hover:bg-[rgba(31,25,25,0.72)] hover:text-[var(--text-strong)]"
+      : "text-[var(--text-soft)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent-strong)]"
   }`;
 }
 
@@ -115,13 +115,13 @@ export default function NavbarClient({
       ];
 
   return (
-    <div className="sticky top-0 z-50 border-b border-[rgba(212,175,55,0.08)] bg-[rgba(12,10,10,0.78)] backdrop-blur-xl">
+    <div className="sticky top-0 z-50 border-b border-[var(--border-soft)] bg-[var(--surface)]">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href={homeHref}
-          className="group inline-flex min-w-0 items-center gap-3 rounded-2xl border border-[rgba(212,175,55,0.12)] bg-[rgba(23,19,19,0.82)] px-3 py-2 pr-4"
+          className="group inline-flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 pr-4 shadow-[var(--shadow-soft)]"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(193,18,31,0.22),rgba(212,175,55,0.16))] text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-gold-soft)]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(91,62,150,0.22)] bg-[var(--accent-muted)] text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">
             {logoUrl ? (
               <img src={logoUrl} alt={`${siteName} logo`} className="h-full w-full object-contain" />
             ) : (
@@ -165,7 +165,7 @@ export default function NavbarClient({
           aria-label="Toggle site navigation"
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen((value) => !value)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.86)] text-[var(--text-strong)] md:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] text-[var(--text-strong)] md:hidden"
         >
           <span className="flex flex-col gap-1.5">
             <span className="block h-0.5 w-5 rounded bg-current" />
@@ -176,7 +176,7 @@ export default function NavbarClient({
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-[rgba(212,175,55,0.08)] bg-[rgba(12,10,10,0.94)] px-4 py-4 md:hidden">
+        <div className="border-t border-[var(--border-soft)] bg-[var(--surface)] px-4 py-4 md:hidden">
           <div className="mx-auto max-w-7xl space-y-4">
             <div className="grid gap-2">
               {primaryLinks.map((item) => (
@@ -194,7 +194,7 @@ export default function NavbarClient({
               ))}
             </div>
 
-            <div className="rounded-2xl border border-[rgba(212,175,55,0.12)] bg-[rgba(23,19,19,0.9)] p-3">
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-3">
               <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
                 Quick actions
               </p>

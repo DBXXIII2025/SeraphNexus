@@ -8,25 +8,25 @@ const STAT_ITEMS: Array<{
   key: keyof LeadSummaryMetrics;
   label: string;
   detail: string;
-  accent: "crimson" | "gold" | "neutral";
+  accent: "priority" | "highlight" | "neutral";
 }> = [
   {
     key: "needsFollowUpLeads",
     label: "Needs Follow-Up",
     detail: "Open leads that still need direct owner action.",
-    accent: "crimson",
+    accent: "priority",
   },
   {
     key: "highPriorityLeads",
     label: "High Priority",
     detail: "Leads showing strong buying or booking intent.",
-    accent: "gold",
+    accent: "highlight",
   },
   {
     key: "uncontactedLeads",
     label: "Uncontacted",
     detail: "Leads without a recorded follow-up touch yet.",
-    accent: "crimson",
+    accent: "priority",
   },
   {
     key: "newLeads",
@@ -38,7 +38,7 @@ const STAT_ITEMS: Array<{
     key: "recentLeads",
     label: "Recent",
     detail: "Leads active within the last 48 hours.",
-    accent: "gold",
+    accent: "highlight",
   },
   {
     key: "totalGroupedLeads",
@@ -54,10 +54,10 @@ export default function LeadStatsCards({ summary }: Props) {
       {STAT_ITEMS.map((item) => {
         const value = summary[item.key];
         const accentClass =
-          item.accent === "crimson"
-            ? "text-[var(--accent-soft)]"
-            : item.accent === "gold"
-              ? "text-[var(--accent-gold-soft)]"
+          item.accent === "priority"
+            ? "text-[var(--accent)]"
+            : item.accent === "highlight"
+              ? "text-[var(--accent-soft)]"
               : "text-[var(--text-strong)]";
 
         return (

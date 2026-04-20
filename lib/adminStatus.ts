@@ -132,22 +132,22 @@ export function getAdminStatusBadgeClass(status: string | null | undefined) {
   const tone = getBadgeTone(status);
 
   if (tone === "attention") {
-    return "border-[rgba(193,18,31,0.22)] bg-[rgba(193,18,31,0.12)] text-[var(--accent-soft)]";
+    return "border-[var(--warning)] bg-[var(--warning-bg)] text-[var(--warning)]";
   }
 
   if (tone === "success") {
-    return "border-[rgba(212,175,55,0.22)] bg-[rgba(212,175,55,0.1)] text-[var(--accent-gold-soft)]";
+    return "border-[var(--success)] bg-[var(--success-bg)] text-[var(--success)]";
   }
 
   if (tone === "destructive") {
-    return "border-red-500/30 bg-red-500/10 text-red-200";
+    return "border-[var(--destructive)] bg-[var(--destructive-bg)] text-[var(--destructive)]";
   }
 
   if (tone === "informational") {
-    return "border-white/10 bg-black/20 text-gray-300";
+    return "border-[var(--info)] bg-[var(--info-bg)] text-[var(--info)]";
   }
 
-  return "border-[var(--border-soft)] bg-[rgba(31,25,25,0.9)] text-[var(--text-soft)]";
+  return "border-[var(--border-soft)] bg-[var(--muted-bg)] text-[var(--text-soft)]";
 }
 
 export function getAdminStatusPresentation(
@@ -178,7 +178,7 @@ export function getAdminActionButtonClass(tone: AdminActionTone) {
   }
 
   if (tone === "danger") {
-    return "rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/14";
+    return "rounded-xl border border-[var(--destructive)] bg-[var(--destructive-bg)] px-4 py-2 text-sm font-medium text-[var(--destructive)] transition";
   }
 
   return "btn-secondary px-4 py-2 text-sm font-medium";

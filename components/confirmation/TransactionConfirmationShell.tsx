@@ -9,7 +9,7 @@ function getStateTone(state: TransactionConfirmationPayload["state"]) {
     return {
       badge: "Confirmed",
       badgeClass:
-        "border-[rgba(212,175,55,0.26)] bg-[rgba(212,175,55,0.12)] text-[var(--accent-gold-soft)]",
+        "border-[var(--success)] bg-[var(--success-bg)] text-[var(--success)]",
       panelClass: "premium-card",
     };
   }
@@ -18,7 +18,7 @@ function getStateTone(state: TransactionConfirmationPayload["state"]) {
     return {
       badge: "Finalizing",
       badgeClass:
-        "border-[rgba(184,176,170,0.2)] bg-[rgba(184,176,170,0.08)] text-[var(--text-soft)]",
+        "border-[var(--border-soft)] bg-[var(--muted-bg)] text-[var(--text-soft)]",
       panelClass: "surface-card",
     };
   }
@@ -26,7 +26,7 @@ function getStateTone(state: TransactionConfirmationPayload["state"]) {
   return {
     badge: "Needs Review",
     badgeClass:
-      "border-[rgba(193,18,31,0.3)] bg-[rgba(193,18,31,0.12)] text-[#f1a0a7]",
+      "border-[var(--destructive)] bg-[var(--destructive-bg)] text-[var(--destructive)]",
     panelClass: "surface-card",
   };
 }
@@ -83,7 +83,7 @@ export default function TransactionConfirmationShell({
               </p>
             </div>
 
-            <div className="w-full max-w-sm rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-5">
+            <div className="w-full max-w-sm rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-5">
               <p className="section-kicker">Next step</p>
               <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
                 {confirmation.nextStep}

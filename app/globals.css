@@ -6,39 +6,53 @@
   color-scheme: light;
   --font-body: Arial, Helvetica, sans-serif;
   --font-heading: Arial, Helvetica, sans-serif;
-  --bg-main: #ffffff;
-  --surface: transparent;
-  --surface-muted: transparent;
-  --surface-dark-undertone: transparent;
-  --surface-dark-soft: transparent;
-  --panel: transparent;
-  --panel-strong: transparent;
-  --bg-card: transparent;
-  --border: #cccccc;
-  --border-soft: #cccccc;
-  --border-strong: #999999;
-  --accent: currentColor;
-  --accent-strong: currentColor;
-  --accent-soft: currentColor;
-  --accent-contrast: currentColor;
-  --accent-gold: currentColor;
-  --accent-gold-soft: currentColor;
-  --accent-gold-glow: transparent;
-  --text-main: #111111;
+  --page-bg: #f8f7f4;
+  --section-bg: #f1efea;
+  --surface: #ffffff;
+  --surface-muted: #f6f4ef;
+  --surface-raised: #ffffff;
+  --panel: #ffffff;
+  --panel-strong: #f1efea;
+  --bg-card: #ffffff;
+  --border: #e4e2dd;
+  --border-soft: #e4e2dd;
+  --border-strong: #c8c2d6;
+  --accent: #5b3e96;
+  --accent-strong: #3a2a6a;
+  --accent-soft: #7c5cc4;
+  --accent-muted: #eee8fa;
+  --accent-contrast: #ffffff;
+  --active-bg: #eee8fa;
+  --muted-bg: #f1efea;
+  --destructive: #a93f55;
+  --destructive-bg: #f9e9ed;
+  --success: #217a58;
+  --success-bg: #e8f5ef;
+  --warning: #8b6b18;
+  --warning-bg: #fbf2d8;
+  --info: #3f5f9a;
+  --info-bg: #e9eef9;
+  --text-main: #1a1a1a;
   --text-strong: #111111;
-  --text-soft: #333333;
-  --text-muted: #555555;
-  --shadow-soft: none;
-  --shadow-card: none;
-  --shadow-premium: none;
-  --focus-ring: 0 0 0 1px #111111;
+  --text-soft: #6b6b6b;
+  --text-muted: #85807a;
+  --shadow-soft: 0 10px 30px rgba(58, 42, 106, 0.08);
+  --shadow-card: 0 16px 42px rgba(58, 42, 106, 0.1);
+  --shadow-premium: 0 22px 60px rgba(58, 42, 106, 0.12);
+  --focus-ring: 0 0 0 3px rgba(91, 62, 150, 0.2);
+  --bg-main: var(--page-bg);
+  --surface-dark-undertone: var(--section-bg);
+  --surface-dark-soft: var(--surface-muted);
+  --accent-gold: var(--accent);
+  --accent-gold-soft: var(--accent-soft);
+  --accent-gold-glow: rgba(91, 62, 150, 0.16);
 }
 
 html,
 body {
   min-height: 100%;
-  background: #ffffff;
-  color: #111111;
+  background: var(--page-bg);
+  color: var(--text-main);
   font-family: var(--font-body);
 }
 
@@ -61,7 +75,6 @@ body::after,
 }
 
 * {
-  box-shadow: none !important;
   text-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -69,7 +82,6 @@ body::after,
 
 body * {
   background-image: none !important;
-  border-radius: 0 !important;
 }
 
 h1,
@@ -108,13 +120,26 @@ button,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #999999;
-  background: transparent !important;
-  color: inherit !important;
+  border: 1px solid var(--border-strong);
+  background: var(--surface) !important;
+  color: var(--text-strong) !important;
   min-height: 2.25rem;
   padding: 0.4rem 0.7rem;
-  font-weight: 400;
+  font-weight: 600;
   text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-contrast) !important;
+}
+
+.btn-secondary,
+.btn-ghost {
+  background: var(--surface) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--accent-strong) !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
@@ -123,9 +148,9 @@ textarea,
 .input-field {
   min-height: 2.25rem;
   width: 100%;
-  border: 1px solid #999999;
-  background: #ffffff !important;
-  color: #111111 !important;
+  border: 1px solid var(--border-soft);
+  background: var(--surface) !important;
+  color: var(--text-main) !important;
   padding: 0.4rem 0.55rem;
 }
 
@@ -138,8 +163,8 @@ input:focus,
 select:focus,
 textarea:focus,
 button:focus {
-  outline: 1px solid #111111;
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: var(--focus-ring) !important;
 }
 
 [class*="bg-"] {
@@ -151,15 +176,7 @@ button:focus {
 }
 
 [class*="border-"] {
-  border-color: #cccccc !important;
-}
-
-[class*="rounded"] {
-  border-radius: 0 !important;
-}
-
-[class*="shadow"] {
-  box-shadow: none !important;
+  border-color: var(--border-soft) !important;
 }
 
 .admin-shell,
@@ -174,10 +191,10 @@ button:focus {
 .empty-state,
 .status-chip,
 .nav-item {
-  background: transparent !important;
-  border: 1px solid #cccccc;
-  color: inherit !important;
-  box-shadow: none !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border-soft);
+  color: var(--text-main) !important;
+  box-shadow: var(--shadow-soft) !important;
   backdrop-filter: none !important;
 }
 
@@ -231,21 +248,20 @@ button:focus {
 .admin-system {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 18% 0%, rgba(212, 175, 55, 0.14), transparent 26%),
-    radial-gradient(circle at 88% 8%, rgba(143, 12, 21, 0.14), transparent 22%),
-    #080808 !important;
-  color: #f6f2e8 !important;
+    linear-gradient(180deg, rgba(91, 62, 150, 0.08), transparent 18%),
+    var(--page-bg) !important;
+  color: var(--text-main) !important;
 }
 
 .admin-system * {
-  border-color: rgba(212, 175, 55, 0.18) !important;
+  border-color: var(--border-soft) !important;
 }
 
 .admin-system-glow {
   pointer-events: none;
   position: fixed;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 18%) !important;
+  background: linear-gradient(135deg, rgba(91, 62, 150, 0.08), transparent 42%) !important;
 }
 
 .admin-system-layout {
@@ -278,9 +294,10 @@ button:focus {
 .admin-page-header,
 .admin-topnav,
 .admin-sidebar-section {
-  background: rgba(18, 18, 18, 0.92) !important;
-  border: 1px solid rgba(212, 175, 55, 0.18) !important;
-  color: #f6f2e8 !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border-soft) !important;
+  color: var(--text-main) !important;
+  box-shadow: var(--shadow-soft) !important;
 }
 
 .admin-system-sidebar {
@@ -321,8 +338,9 @@ button:focus {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid rgba(212, 175, 55, 0.28) !important;
-  color: #d4af37 !important;
+  border: 1px solid rgba(91, 62, 150, 0.22) !important;
+  background: var(--accent-muted) !important;
+  color: var(--accent) !important;
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -334,7 +352,7 @@ button:focus {
 }
 
 .admin-brand-name {
-  color: #f5f1e8 !important;
+  color: var(--accent-strong) !important;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -342,7 +360,7 @@ button:focus {
 
 .admin-eyebrow,
 .admin-sidebar-title {
-  color: #d4af37 !important;
+  color: var(--accent) !important;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -351,7 +369,7 @@ button:focus {
 
 .admin-topnav-title,
 .admin-page-title {
-  color: #fffaf0 !important;
+  color: var(--text-strong) !important;
   font-weight: 700;
   line-height: 1.1;
 }
@@ -365,7 +383,7 @@ button:focus {
 }
 
 .admin-muted {
-  color: rgba(246, 242, 232, 0.68) !important;
+  color: var(--text-soft) !important;
   margin-top: 0.25rem;
 }
 
@@ -383,25 +401,26 @@ button:focus {
   min-height: 2.35rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(212, 175, 55, 0.2) !important;
+  border: 1px solid var(--border-soft) !important;
   padding: 0.5rem 0.7rem;
   text-decoration: none;
 }
 
 .admin-nav-link {
   justify-content: flex-start;
-  color: rgba(246, 242, 232, 0.74) !important;
+  color: var(--text-soft) !important;
 }
 
 .admin-nav-link-active,
 .admin-action-primary {
-  background: rgba(212, 175, 55, 0.16) !important;
-  color: #fffaf0 !important;
-  border-color: rgba(212, 175, 55, 0.48) !important;
+  background: var(--accent) !important;
+  color: var(--accent-contrast) !important;
+  border-color: var(--accent) !important;
 }
 
 .admin-action-secondary {
-  color: rgba(246, 242, 232, 0.78) !important;
+  background: var(--surface) !important;
+  color: var(--accent-strong) !important;
 }
 
 .admin-sidebar-nav {
@@ -418,9 +437,9 @@ button:focus {
 .admin-system select,
 .admin-system textarea,
 .admin-system .input-field {
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: #fffaf0 !important;
-  border-color: rgba(212, 175, 55, 0.22) !important;
+  background: var(--surface) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-soft) !important;
 }
 
 @media (min-width: 1024px) {
@@ -448,21 +467,20 @@ button:focus {
 .public-system {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 16% 0%, rgba(212, 175, 55, 0.16), transparent 28%),
-    radial-gradient(circle at 88% 12%, rgba(143, 12, 21, 0.12), transparent 24%),
-    #070707 !important;
-  color: #f7f0df !important;
+    linear-gradient(180deg, rgba(91, 62, 150, 0.08), transparent 22%),
+    var(--page-bg) !important;
+  color: var(--text-main) !important;
 }
 
 .public-system * {
-  border-color: rgba(212, 175, 55, 0.18) !important;
+  border-color: var(--border-soft) !important;
 }
 
 .public-system-glow {
   pointer-events: none;
   position: fixed;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 20%) !important;
+  background: linear-gradient(135deg, rgba(91, 62, 150, 0.08), transparent 48%) !important;
 }
 
 .public-container {
@@ -490,9 +508,10 @@ button:focus {
 .public-section,
 .public-card,
 .public-empty-state {
-  background: rgba(18, 18, 18, 0.9) !important;
-  border: 1px solid rgba(212, 175, 55, 0.18) !important;
-  color: #f7f0df !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border-soft) !important;
+  color: var(--text-main) !important;
+  box-shadow: var(--shadow-soft) !important;
 }
 
 .public-topnav {
@@ -513,7 +532,7 @@ button:focus {
 
 .public-brand {
   text-decoration: none;
-  color: #fffaf0 !important;
+  color: var(--text-strong) !important;
   font-weight: 700;
 }
 
@@ -523,8 +542,9 @@ button:focus {
   width: 2.5rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(212, 175, 55, 0.32) !important;
-  color: #d4af37 !important;
+  border: 1px solid rgba(91, 62, 150, 0.24) !important;
+  background: var(--accent-muted) !important;
+  color: var(--accent) !important;
 }
 
 .public-brand-logo {
@@ -546,7 +566,7 @@ button:focus {
 }
 
 .public-eyebrow {
-  color: #d4af37 !important;
+  color: var(--accent) !important;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -555,7 +575,7 @@ button:focus {
 
 .public-hero-title,
 .public-section-title {
-  color: #fffaf0 !important;
+  color: var(--text-strong) !important;
   font-weight: 800;
   line-height: 1.08;
 }
@@ -570,7 +590,7 @@ button:focus {
 }
 
 .public-muted {
-  color: rgba(247, 240, 223, 0.7) !important;
+  color: var(--text-soft) !important;
 }
 
 .public-hero-copy {
@@ -592,19 +612,20 @@ button:focus {
   min-height: 2.5rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(212, 175, 55, 0.25) !important;
+  border: 1px solid var(--border-soft) !important;
   padding: 0.55rem 0.85rem;
   text-decoration: none;
 }
 
 .public-action-primary {
-  background: rgba(212, 175, 55, 0.18) !important;
-  color: #fffaf0 !important;
-  border-color: rgba(212, 175, 55, 0.52) !important;
+  background: var(--accent) !important;
+  color: var(--accent-contrast) !important;
+  border-color: var(--accent) !important;
 }
 
 .public-action-secondary {
-  color: rgba(247, 240, 223, 0.78) !important;
+  background: var(--surface) !important;
+  color: var(--accent-strong) !important;
 }
 
 .public-card {
@@ -617,7 +638,7 @@ button:focus {
   display: flex;
   gap: 0.85rem;
   align-items: center;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.16) !important;
+  border-bottom: 1px solid var(--border-soft) !important;
   padding-bottom: 0.85rem;
 }
 
@@ -628,17 +649,19 @@ button:focus {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(212, 175, 55, 0.28) !important;
-  color: #d4af37 !important;
+  border: 1px solid rgba(91, 62, 150, 0.22) !important;
+  background: var(--accent-muted) !important;
+  color: var(--accent) !important;
   font-weight: 700;
 }
 
 .public-chip {
   display: inline-flex;
   width: fit-content;
-  border: 1px solid rgba(212, 175, 55, 0.2) !important;
+  border: 1px solid rgba(91, 62, 150, 0.2) !important;
   padding: 0.25rem 0.5rem;
-  color: #d4af37 !important;
+  background: var(--accent-muted) !important;
+  color: var(--accent) !important;
   font-size: 0.8rem;
 }
 
@@ -653,9 +676,9 @@ button:focus {
 .public-system select,
 .public-system textarea,
 .public-system .input-field {
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: #fffaf0 !important;
-  border-color: rgba(212, 175, 55, 0.24) !important;
+  background: var(--surface) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-soft) !important;
 }
 
 .public-profile-shell {
@@ -679,17 +702,18 @@ button:focus {
   margin-inline: auto;
   width: 100%;
   max-width: 44rem;
-  border: 1px solid rgba(212, 175, 55, 0.22) !important;
-  background: rgba(0, 0, 0, 0.32) !important;
+  border: 1px solid var(--border-soft) !important;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow-card) !important;
 }
 
 .public-gallery-button {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(7, 7, 7, 0.76) !important;
-  color: #d4af37 !important;
-  border-color: rgba(212, 175, 55, 0.48) !important;
+  background: var(--accent) !important;
+  color: var(--accent-contrast) !important;
+  border-color: var(--accent) !important;
 }
 
 .public-gallery-button-left {
@@ -720,4 +744,34 @@ button:focus {
   .public-hero {
     grid-template-columns: minmax(0, 1fr) auto;
   }
+}
+
+[class*="bg-black"],
+[class*="bg-[rgba(15,12,12"],
+[class*="bg-[rgba(23,19,19"],
+[class*="bg-[rgba(31,25,25"],
+[class*="bg-[rgba(12,10,10"],
+[class*="bg-[rgba(7,7,7"] {
+  background: var(--surface-muted) !important;
+}
+
+[class*="border-white/10"],
+[class*="border-[rgba(212,175,55"],
+[class*="border-[rgba(193,18,31"] {
+  border-color: var(--border-soft) !important;
+}
+
+[class*="text-white"],
+[class*="text-gray-"],
+[class*="text-[var(--accent-gold"],
+[class*="text-[#f1a0a7"] {
+  color: var(--text-main) !important;
+}
+
+[class*="bg-[rgba(212,175,55"] {
+  background: var(--accent-muted) !important;
+}
+
+[class*="bg-[rgba(193,18,31"] {
+  background: var(--destructive-bg) !important;
 }
