@@ -10,7 +10,7 @@ export default function DashboardSidebar() {
     `block px-3 py-2 rounded-md text-sm transition ${
       pathname.startsWith(path)
         ? "bg-[var(--accent)] text-[var(--accent-contrast)]"
-        : "text-[var(--text-soft)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent-strong)]"
+        : "text-[var(--text-soft)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent-soft)]"
     }`;
 
   return (

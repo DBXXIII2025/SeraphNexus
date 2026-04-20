@@ -95,7 +95,7 @@ export default function LoginPage() {
         <label className="mb-2 block text-sm text-[var(--text-soft)]">Email</label>
         <input
           type="email"
-          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -106,7 +106,7 @@ export default function LoginPage() {
         <label className="mb-2 block text-sm text-[var(--text-soft)]">Password</label>
         <input
           type="password"
-          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Enter your password"
@@ -117,7 +117,7 @@ export default function LoginPage() {
         <div className="mb-3 text-right">
           <Link
             href="/forgot-password"
-            className="text-sm text-[var(--accent)] hover:text-[var(--accent-strong)]"
+            className="text-sm text-[var(--accent)] hover:text-[var(--accent-soft)]"
           >
             Forgot password?
           </Link>
@@ -135,7 +135,7 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="w-full rounded-md bg-[var(--accent)] py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex rounded-md bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={loading || !email || !password}
         >
           {loading ? "Signing in..." : "Sign In"}
@@ -145,7 +145,7 @@ export default function LoginPage() {
           Need an account?{" "}
           <Link
             href={`/signup?next=${encodeURIComponent(nextPath)}`}
-            className="text-[var(--accent)] hover:text-[var(--accent-strong)]"
+            className="text-[var(--accent)] hover:text-[var(--accent-soft)]"
           >
             Sign up
           </Link>

@@ -407,7 +407,7 @@ export default function BookingClient({
           action={
             <MessageBusinessButton
               businessId={business.id}
-              className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
+              className="btn-primary inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium"
             />
           }
         />
@@ -669,7 +669,7 @@ export default function BookingClient({
           <div className="mt-3 rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-3 text-sm text-[var(--text-soft)]">
             <p>{availabilityMessage}</p>
             {availabilityConfigured === false && isOwner && (
-              <a href="/admin/calendar" className="text-purple-300 underline">
+              <a href="/admin/calendar" className="text-[#D1D5DB] underline">
                 Set availability in your admin calendar
               </a>
             )}
@@ -759,7 +759,7 @@ export default function BookingClient({
               selectedServiceIds.length === 0 ||
               !hasEnabledServiceMode
             }
-            className="mt-4 w-full rounded bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[var(--text-main)] hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 inline-flex rounded bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[var(--accent-contrast)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Starting secure checkout..." : t("pay")}
           </button>

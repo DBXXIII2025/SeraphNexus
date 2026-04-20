@@ -17,13 +17,13 @@
   --border: #34384a;
   --border-soft: #34384a;
   --border-strong: #4b5068;
-  --accent: #7c5cc4;
-  --accent-strong: #5b3e96;
-  --accent-soft: #9b7bff;
-  --accent-muted: rgba(124, 92, 196, 0.14);
-  --accent-border: rgba(155, 123, 255, 0.28);
-  --accent-contrast: #ffffff;
-  --active-bg: rgba(124, 92, 196, 0.2);
+  --accent: #d1d5db;
+  --accent-strong: #9ca3af;
+  --accent-soft: #e5e7eb;
+  --accent-muted: rgba(209, 213, 219, 0.08);
+  --accent-border: #3b3f55;
+  --accent-contrast: #111827;
+  --active-bg: rgba(209, 213, 219, 0.12);
   --muted-bg: #1f2233;
   --destructive: #f87171;
   --destructive-bg: rgba(248, 113, 113, 0.12);
@@ -41,10 +41,10 @@
   --text-strong: #f5f7fb;
   --text-soft: #a1a1aa;
   --text-muted: #7f8496;
-  --shadow-soft: 0 12px 32px rgba(6, 8, 18, 0.28);
-  --shadow-card: 0 18px 48px rgba(6, 8, 18, 0.34);
-  --shadow-premium: 0 24px 70px rgba(6, 8, 18, 0.42);
-  --focus-ring: 0 0 0 3px rgba(155, 123, 255, 0.28);
+  --shadow-soft: 0 14px 36px rgba(6, 8, 18, 0.32);
+  --shadow-card: 0 22px 56px rgba(6, 8, 18, 0.42);
+  --shadow-premium: 0 30px 82px rgba(6, 8, 18, 0.5);
+  --focus-ring: 0 0 0 3px rgba(209, 213, 219, 0.24);
   --bg-main: var(--page-bg);
   --surface-dark-undertone: var(--section-bg);
   --surface-dark-soft: var(--surface-muted);
@@ -137,11 +137,28 @@ button,
   color: var(--accent-contrast) !important;
 }
 
+.btn-primary:hover {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent-soft) !important;
+}
+
+.btn-primary:active {
+  background: var(--accent-strong) !important;
+  border-color: var(--accent-strong) !important;
+}
+
 .btn-secondary,
 .btn-ghost {
   background: var(--surface-raised) !important;
   border-color: var(--border-soft) !important;
   color: var(--text-strong) !important;
+}
+
+.btn-secondary:hover,
+.btn-ghost:hover {
+  background: rgba(209, 213, 219, 0.08) !important;
+  border-color: var(--accent-border) !important;
+  color: var(--accent) !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),

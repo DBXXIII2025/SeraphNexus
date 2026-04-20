@@ -410,7 +410,7 @@ export default function OrderClient({
               )}
               <button
                 onClick={() => addToCart(item)}
-                className="mt-3 bg-purple-600 px-3 py-1 rounded text-sm hover:bg-purple-500"
+                className="mt-3 bg-[#D1D5DB] text-[#111827] px-3 py-1 rounded text-sm hover:bg-[#E5E7EB] active:bg-[#9CA3AF]"
               >
                 {t("addToCart")}
               </button>
@@ -439,7 +439,7 @@ export default function OrderClient({
           action={
             <MessageBusinessButton
               businessId={businessId}
-              className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
+              className="btn-primary inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium"
             />
           }
         />
@@ -503,7 +503,7 @@ export default function OrderClient({
                           )}
                           <button
                             onClick={() => addToCart(item)}
-                            className="mt-3 bg-purple-600 px-3 py-1 rounded text-sm hover:bg-purple-500"
+                            className="mt-3 bg-[#D1D5DB] text-[#111827] px-3 py-1 rounded text-sm hover:bg-[#E5E7EB] active:bg-[#9CA3AF]"
                           >
                 {t("addToCart")}
                           </button>
@@ -551,7 +551,7 @@ export default function OrderClient({
                           )}
                           <button
                             onClick={() => addToCart(item)}
-                            className="mt-3 bg-purple-600 px-3 py-1 rounded text-sm hover:bg-purple-500"
+                            className="mt-3 bg-[#D1D5DB] text-[#111827] px-3 py-1 rounded text-sm hover:bg-[#E5E7EB] active:bg-[#9CA3AF]"
                           >
                             {t("addToCart")}
                           </button>

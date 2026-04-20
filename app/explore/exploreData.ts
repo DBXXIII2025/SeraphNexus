@@ -62,7 +62,7 @@ export const EXPLORE_CATEGORIES: ExploreCategory[] = [
     shortLabel: "Service",
     description: "Appointments, consulting, and service-led operators positioned for direct conversion.",
     strapline: "Client-ready booking businesses",
-    tone: "from-[rgba(124,92,196,0.35)] via-[rgba(124,92,196,0.16)] to-transparent",
+    tone: "from-transparent via-transparent to-transparent",
   },
   {
     id: "food",
@@ -70,7 +70,7 @@ export const EXPLORE_CATEGORIES: ExploreCategory[] = [
     shortLabel: "Food",
     description: "Dining, menus, delivery, and food-led storefronts built for immediate ordering.",
     strapline: "Order-first hospitality",
-    tone: "from-[rgba(155,123,255,0.28)] via-[rgba(124,92,196,0.14)] to-transparent",
+    tone: "from-transparent via-transparent to-transparent",
   },
   {
     id: "rentals",

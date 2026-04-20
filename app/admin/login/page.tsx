@@ -37,7 +37,7 @@ export default function LoginPage() {
 
         <button
           onClick={login}
-          className="w-full rounded bg-[var(--accent)] py-2 text-[var(--accent-contrast)] hover:bg-[var(--accent-soft)]"
+          className="inline-flex rounded bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)]"
         >
           Login
         </button>

@@ -224,7 +224,7 @@ export default function RentalCatalogClient({
           action={
             <MessageBusinessButton
               businessId={business.id}
-              className="inline-flex items-center rounded-lg bg-[var(--business-accent)] px-4 py-2 text-sm font-medium text-[var(--business-accent-text)]"
+              className="btn-primary inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium"
             />
           }
         />

@@ -44,7 +44,7 @@ function getLinkClass(
   return `inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-sm ${
     active
       ? "text-[var(--text-strong)]"
-      : "text-[var(--text-soft)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent-strong)]"
+      : "text-[var(--text-soft)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent-soft)]"
   }`;
 }
 

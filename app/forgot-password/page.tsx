@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
         <label className="mb-2 block text-sm text-[var(--text-soft)]">Email</label>
         <input
           type="email"
-          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="you@example.com"
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
 
         <button
           type="submit"
-          className="w-full rounded-md bg-[var(--accent)] py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex rounded-md bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={loading}
         >
           {loading ? "Sending reset link..." : "Send reset link"}
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
 
         <p className="mt-4 text-center text-sm text-[var(--text-soft)]">
           Remembered your password?{" "}
-          <Link href="/login" className="text-[var(--accent)] hover:text-[var(--accent-strong)]">
+          <Link href="/login" className="text-[var(--accent)] hover:text-[var(--accent-soft)]">
             Back to login
           </Link>
         </p>

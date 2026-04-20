@@ -146,7 +146,7 @@ if (file.size > 3 * 1024 * 1024) {
           <div>
             <label className="block text-sm text-[var(--text-soft)] mb-2">Business Name</label>
             <input
-              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -155,7 +155,7 @@ if (file.size > 3 * 1024 * 1024) {
           <div>
             <label className="block text-sm text-[var(--text-soft)] mb-2">Description</label>
             <textarea
-              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
+              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB] min-h-[120px]"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -164,7 +164,7 @@ if (file.size > 3 * 1024 * 1024) {
           <div>
             <label className="block text-sm text-[var(--text-soft)] mb-2">Refund Policy</label>
             <textarea
-              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
+              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB] min-h-[120px]"
               value={refundPolicy}
               onChange={(e) => setRefundPolicy(e.target.value)}
               placeholder="Describe cancellation, refund timing, and non-refundable charges."
@@ -176,7 +176,7 @@ if (file.size > 3 * 1024 * 1024) {
               Late Fee Disclosure
             </label>
             <textarea
-              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
+              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB] min-h-[120px]"
               value={lateFeeDisclosure}
               onChange={(e) => setLateFeeDisclosure(e.target.value)}
               placeholder="For rental or property businesses, disclose any late, overstay, holdover, cleaning, or similar fees."
@@ -187,7 +187,7 @@ if (file.size > 3 * 1024 * 1024) {
             <div>
               <label className="block text-sm text-[var(--text-soft)] mb-2">Font Family</label>
               <input
-                className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value)}
                 placeholder="Inter, sans-serif"
@@ -222,7 +222,7 @@ if (file.size > 3 * 1024 * 1024) {
 
           <button
             type="submit"
-            className="bg-purple-600 px-4 py-2 rounded-md hover:bg-purple-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="bg-[#D1D5DB] text-[#111827] px-4 py-2 rounded-md hover:bg-[#E5E7EB] active:bg-[#9CA3AF] transition disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={saving}
           >
             {saving ? "Saving..." : "Save Changes"}

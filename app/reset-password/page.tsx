@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
         <label className="mb-2 block text-sm text-[var(--text-soft)]">New Password</label>
         <input
           type="password"
-          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="At least 8 characters"
@@ -137,7 +137,7 @@ export default function ResetPasswordPage() {
         </label>
         <input
           type="password"
-          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           placeholder="Re-enter your new password"
@@ -157,7 +157,7 @@ export default function ResetPasswordPage() {
 
         <button
           type="submit"
-          className="w-full rounded-md bg-[var(--accent)] py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex rounded-md bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={loading || !ready}
         >
           {loading ? "Updating password..." : "Update password"}

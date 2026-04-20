@@ -126,7 +126,7 @@ export default function LegalAcceptanceForm({
         type="button"
         onClick={handleContinue}
         disabled={!allChecked || loading || disabled}
-        className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-[var(--accent-contrast)] hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-medium text-[var(--accent-contrast)] hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {disabled
           ? "Legal storage unavailable"
