@@ -94,18 +94,18 @@ export default function AdminImagesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black text-[var(--tic-pink)] flex items-center justify-center">
+      <main className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)] flex items-center justify-center">
         Loading...
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-black text-[var(--tic-pink)] p-10">
+    <main className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)] p-10">
       <h1 className="text-2xl font-semibold mb-6">Property Images</h1>
 
       <label className="inline-block mb-6">
-        <span className="bg-[var(--tic-pink)] text-black px-6 py-3 rounded cursor-pointer font-semibold">
+        <span className="bg-[var(--accent)] text-[var(--accent-contrast)] px-6 py-3 rounded cursor-pointer font-semibold">
           {uploading ? "Uploading..." : "Upload New Image"}
         </span>
         <input

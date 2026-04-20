@@ -37,7 +37,7 @@ export default function PublicBusinessLink({
         </div>
       ) : (
         <div className="mt-5 space-y-3">
-          <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-[var(--text-strong)]">
+          <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-strong)]">
             {publicUrl}
           </div>
           <div className="flex flex-wrap gap-3">

@@ -236,7 +236,7 @@ export default function ShopClient({
   }
 
   return (
-    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
+    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       <div className="px-3 py-5 sm:py-6">
         <BusinessProfileShell
           businessName={businessName}
@@ -255,22 +255,22 @@ export default function ShopClient({
           }
         />
       </div>
-      <div className="bg-zinc-950">
-      <div className="mx-auto max-w-6xl space-y-6 p-6 text-white">
-        <p className="text-sm text-gray-400">Browse the live storefront for this business.</p>
+      <div className="bg-[var(--page-bg)]">
+      <div className="mx-auto max-w-6xl space-y-6 p-6 text-[var(--text-main)]">
+        <p className="text-sm text-[var(--text-soft)]">Browse the live storefront for this business.</p>
         <div className="grid gap-6 md:grid-cols-[1.3fr,0.7fr]">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {items.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-6 text-sm text-gray-400">
+              <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-sm text-[var(--text-soft)]">
                 No items have been published yet.
               </div>
             ) : (
               items.map((item) => (
                 <div
                   key={item.id}
-                  className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900/70"
+                  className="overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface)]"
                 >
-                  <div className="aspect-[4/3] bg-black/40">
+                  <div className="aspect-[4/3] bg-[var(--surface-muted)]">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
@@ -284,7 +284,7 @@ export default function ShopClient({
                       <div>
                         <p className="font-medium">{item.name}</p>
                         {item.description && (
-                          <p className="mt-1 text-sm text-gray-400">
+                          <p className="mt-1 text-sm text-[var(--text-soft)]">
                             {item.description}
                           </p>
                         )}
@@ -306,23 +306,23 @@ export default function ShopClient({
             )}
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-5">
+          <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-5">
             <h2 className="text-lg font-semibold">{t("yourCart")}</h2>
             <div className="mt-4 space-y-3 text-sm">
               {cart.length === 0 ? (
-                <p className="text-gray-400">{t("cartEmpty")}</p>
+                <p className="text-[var(--text-soft)]">{t("cartEmpty")}</p>
               ) : (
                 cart.map((item) => (
                   <div key={item.id} className="flex justify-between gap-4">
                     <div>
                       <p>{item.name}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-[var(--text-soft)]">
                         ${item.price.toFixed(2)} each
                       </p>
                       <div className="mt-2 flex items-center gap-2">
                         <button
                           type="button"
-                          className="rounded border border-white/20 px-2 py-1"
+                          className="rounded border border-[var(--border-strong)] px-2 py-1"
                           onClick={() => updateQuantity(item.id, -1)}
                         >
                           -
@@ -330,7 +330,7 @@ export default function ShopClient({
                         <span>{item.quantity}</span>
                         <button
                           type="button"
-                          className="rounded border border-white/20 px-2 py-1"
+                          className="rounded border border-[var(--border-strong)] px-2 py-1"
                           onClick={() => updateQuantity(item.id, 1)}
                         >
                           +
@@ -343,7 +343,7 @@ export default function ShopClient({
               )}
             </div>
 
-            <div className="mt-4 border-t border-white/10 pt-4">
+            <div className="mt-4 border-t border-[var(--border-soft)] pt-4">
               <div className="flex justify-between text-sm font-semibold">
                 <span>{t("total")}</span>
                 <span>${total.toFixed(2)}</span>
@@ -355,19 +355,19 @@ export default function ShopClient({
                 placeholder={t("name")}
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+                className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
               />
               <input
                 placeholder={t("emailAddress")}
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
-                className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+                className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
               />
               <input
                 placeholder={t("phone")}
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+                className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
               />
               <div className="flex gap-3">
                 {pickupEnabled ? (
@@ -376,8 +376,8 @@ export default function ShopClient({
                     onClick={() => setFulfillmentType("pickup")}
                     className={`flex-1 rounded border py-2 ${
                       fulfillmentType === "pickup"
-                        ? "border-green-500 bg-green-600/20"
-                        : "border-white/10 bg-black/30"
+                        ? "border-[var(--success)] bg-[var(--success-bg)]"
+                        : "border-[var(--border-soft)] bg-[var(--surface-muted)]"
                     }`}
                   >
                     {t("pickup")}
@@ -389,8 +389,8 @@ export default function ShopClient({
                     onClick={() => setFulfillmentType("delivery")}
                     className={`flex-1 rounded border py-2 ${
                       fulfillmentType === "delivery"
-                        ? "border-green-500 bg-green-600/20"
-                        : "border-white/10 bg-black/30"
+                        ? "border-[var(--success)] bg-[var(--success-bg)]"
+                        : "border-[var(--border-soft)] bg-[var(--surface-muted)]"
                     }`}
                   >
                     {t("delivery")}
@@ -409,32 +409,32 @@ export default function ShopClient({
                     placeholder={t("streetAddress")}
                     value={addressLine1}
                     onChange={(e) => setAddressLine1(e.target.value)}
-                    className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+                    className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
                   />
                   <input
                     placeholder={t("aptSuiteOptional")}
                     value={addressLine2}
                     onChange={(e) => setAddressLine2(e.target.value)}
-                    className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+                    className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
                   />
                   <input
                     placeholder={t("city")}
                     value={addressCity}
                     onChange={(e) => setAddressCity(e.target.value)}
-                    className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+                    className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
                   />
                   <div className="flex gap-2">
                     <input
                       placeholder={t("state")}
                       value={addressState}
                       onChange={(e) => setAddressState(e.target.value)}
-                      className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+                      className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
                     />
                     <input
                       placeholder={t("zip")}
                       value={addressPostal}
                       onChange={(e) => setAddressPostal(e.target.value)}
-                      className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+                      className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
                     />
                   </div>
                 </div>
@@ -444,7 +444,7 @@ export default function ShopClient({
                 placeholder="Notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="min-h-[90px] w-full rounded-md border border-white/10 bg-black/40 p-2"
+                className="min-h-[90px] w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
               />
 
               {error && <p className="text-sm text-red-400">{error}</p>}

@@ -1,4 +1,4 @@
-﻿import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { PUBLIC_BUSINESS_ROUTE_SELECT } from "@/lib/publicBusinessQueries";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getPublicBusinessHrefState } from "@/lib/publicBusinessRoutes";
@@ -71,7 +71,7 @@ export default async function PublicRouterPage({
   const logoUrl = customization.logoUrl || (logoState.schemaReady ? logoState.logoUrl : null);
 
   return (
-    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
+    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       <LeadEventTracker
         businessId={business.id}
         eventType="page_view"

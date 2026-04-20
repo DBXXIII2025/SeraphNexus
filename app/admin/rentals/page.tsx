@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { getTenantQuickstart } from "@/lib/tenantQuickstart";
 import RentalsCalendarPanel from "@/components/admin/RentalsCalendarPanel";
 import { createClient } from "@/lib/supabase/server";
@@ -263,7 +263,7 @@ export default async function AdminRentalsPage({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-[rgba(193,18,31,0.18)] bg-[rgba(193,18,31,0.1)] p-4">
+            <div className="rounded-2xl border border-[var(--destructive-border)] bg-[var(--destructive-bg)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Blocked Windows
               </p>
@@ -274,11 +274,11 @@ export default async function AdminRentalsPage({
                 Current blocked date entries in the active calendar view.
               </p>
             </div>
-            <div className="rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] p-4">
+            <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Reservation Value
               </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--accent-gold-soft)]">
+              <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
                 ${(totalRevenue / 100).toFixed(2)}
               </p>
               <p className="mt-2 text-sm text-[var(--text-soft)]">
@@ -303,7 +303,7 @@ export default async function AdminRentalsPage({
       ) : null}
 
       {warningMessage ? (
-        <div className="rounded-2xl border border-[rgba(212,175,55,0.3)] bg-[rgba(212,175,55,0.14)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+        <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
           {warningMessage}
         </div>
       ) : null}
@@ -311,20 +311,20 @@ export default async function AdminRentalsPage({
       {propertyList.length === 0 ? (
         <section className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-6">
           <p className="text-xs uppercase tracking-[0.18em] text-yellow-200">Quickstart</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">{quickstart.title}</h2>
+          <h2 className="mt-2 text-xl font-semibold text-[var(--text-main)]">{quickstart.title}</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-yellow-100/90">
             {quickstart.description}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <a
               href="#create-listing"
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500"
+              className="rounded-md bg-[var(--success)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--success)]"
             >
               {quickstart.primaryLabel}
             </a>
             <Link
               href={quickstart.secondaryHref}
-              className="rounded-md border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
+              className="rounded-md border border-[var(--border-soft)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--accent-muted)]"
             >
               {quickstart.secondaryLabel}
             </Link>
@@ -344,7 +344,7 @@ export default async function AdminRentalsPage({
           </div>
 
           {propertyList.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.68)] px-4 py-6 text-sm text-[var(--text-soft)]">
+            <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-6 text-sm text-[var(--text-soft)]">
               Create a listing to activate the calendar and availability controls. Use the quickstart below to save your first real property or rental item.
             </div>
           ) : (
@@ -358,8 +358,8 @@ export default async function AdminRentalsPage({
                     href={`/admin/rentals?property=${encodeURIComponent(String(property.id))}`}
                     className={`block rounded-2xl border p-4 ${
                       isSelected
-                        ? "border-[rgba(212,175,55,0.22)] bg-[rgba(212,175,55,0.08)] shadow-[0_0_18px_rgba(212,175,55,0.08)]"
-                        : "border-[var(--border-soft)] bg-[rgba(15,12,12,0.48)] hover:border-[rgba(193,18,31,0.18)] hover:bg-[rgba(23,19,19,0.88)]"
+                        ? "border-[var(--accent-border)] bg-[var(--accent-muted)] shadow-[var(--shadow-soft)]"
+                        : "border-[var(--border-soft)] bg-[var(--surface-raised)] hover:border-[var(--destructive-border)] hover:bg-[var(--surface-raised)]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -440,7 +440,7 @@ export default async function AdminRentalsPage({
           </p>
 
           {propertyList.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.68)] px-4 py-4 text-sm text-[var(--text-soft)]">
+            <div className="mt-4 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-4 text-sm text-[var(--text-soft)]">
               Create a listing first, then return here to block dates for it.
             </div>
           ) : (
@@ -450,7 +450,7 @@ export default async function AdminRentalsPage({
               {propertyList.length === 1 ? (
                 <>
                   <input type="hidden" name="property_id" value={autoSelectedPropertyId} />
-                  <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.6)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                  <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
                     Listing: {propertyList[0].name}
                   </div>
                 </>
@@ -624,10 +624,10 @@ export default async function AdminRentalsPage({
                         >
                           {formatAdminStatusLabel(reservation.status, "Pending")}
                         </span>
-                        <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[rgba(31,25,25,0.9)] px-3 py-1 text-xs font-medium text-[var(--text-soft)]">
+                        <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--text-soft)]">
                           Payment {formatAdminStatusLabel(reservation.payment_status, "Pending")}
                         </span>
-                        <span className="inline-flex rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-xs font-medium text-[var(--accent-gold-soft)]">
+                        <span className="inline-flex rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-xs font-medium text-[var(--accent-soft)]">
                           ${(Number(reservation.amount_total || 0) / 100).toFixed(2)}
                         </span>
                       </div>
@@ -638,7 +638,7 @@ export default async function AdminRentalsPage({
                           )}&conversation=${encodeURIComponent(
                             String(conversationIdByBookingId.get(String(reservation.id)))
                           )}`}
-                          className="mt-3 inline-flex text-sm font-medium text-[var(--accent-soft)] hover:text-[var(--accent-gold-soft)]"
+                          className="mt-3 inline-flex text-sm font-medium text-[var(--accent-soft)] hover:text-[var(--accent-soft)]"
                         >
                           Reply to guest
                         </Link>

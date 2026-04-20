@@ -78,9 +78,9 @@ export default async function TransactionsPage() {
 
   if (!business) {
     return (
-      <div className="space-y-4 text-white">
+      <div className="space-y-4 text-[var(--text-main)]">
         <h1 className="text-2xl font-semibold">Transactions</h1>
-        <p className="text-sm text-gray-400">No active business found.</p>
+        <p className="text-sm text-[var(--text-soft)]">No active business found.</p>
       </div>
     );
   }

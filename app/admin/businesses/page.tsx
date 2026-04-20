@@ -108,7 +108,7 @@ export default async function AdminBusinessesPage({
       <section className="surface-card overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-[rgba(15,12,12,0.82)] text-[var(--text-muted)]">
+            <thead className="bg-[var(--surface-raised)] text-[var(--text-muted)]">
               <tr>
                 <th className="px-4 py-3 font-medium">Business</th>
                 <th className="px-4 py-3 font-medium">Owner</th>

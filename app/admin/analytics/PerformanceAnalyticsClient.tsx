@@ -98,7 +98,7 @@ function EmptyState({
   detail: string;
 }) {
   return (
-    <div className="rounded-3xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.48)] px-6 py-12 text-center">
+    <div className="rounded-3xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-6 py-12 text-center">
       <p className="text-base font-medium text-[var(--text-strong)]">{title}</p>
       <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">{detail}</p>
     </div>
@@ -221,7 +221,7 @@ export default function PerformanceAnalyticsClient({
           </div>
 
           <div className="min-w-full space-y-4 xl:min-w-[340px]">
-            <div className="rounded-3xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4">
+            <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
                 Date range
               </p>
@@ -235,8 +235,8 @@ export default function PerformanceAnalyticsClient({
                       onClick={() => setRangePreset(option.value)}
                       className={`rounded-full border px-3 py-2 text-sm transition ${
                         isActive
-                          ? "border-[var(--accent-gold-soft)] bg-[rgba(212,175,55,0.12)] text-[var(--text-strong)]"
-                          : "border-[var(--border-soft)] bg-[rgba(15,12,12,0.42)] text-[var(--text-soft)] hover:border-[var(--accent-gold-soft)]/50"
+                          ? "border-[var(--accent-soft)] bg-[var(--accent-muted)] text-[var(--text-strong)]"
+                          : "border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-soft)] hover:border-[var(--accent-soft)]"
                       }`}
                     >
                       {option.label}
@@ -269,7 +269,7 @@ export default function PerformanceAnalyticsClient({
               ) : null}
             </div>
 
-            <div className="rounded-3xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4">
+            <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
                 Metric
               </p>
@@ -285,10 +285,10 @@ export default function PerformanceAnalyticsClient({
                       onClick={() => setSelectedMetric(metric)}
                       className={`rounded-full border px-3 py-2 text-sm transition ${
                         isActive
-                          ? "border-[var(--accent-soft)] bg-[rgba(193,18,31,0.14)] text-[var(--text-strong)]"
+                          ? "border-[var(--accent-soft)] bg-[var(--destructive-bg)] text-[var(--text-strong)]"
                           : isSupported
-                            ? "border-[var(--border-soft)] bg-[rgba(15,12,12,0.42)] text-[var(--text-soft)] hover:border-[var(--accent-soft)]/50"
-                            : "cursor-not-allowed border-[var(--border-soft)] bg-[rgba(15,12,12,0.24)] text-[var(--text-muted)] opacity-55"
+                            ? "border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-soft)] hover:border-[var(--accent-soft)]"
+                            : "cursor-not-allowed border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-muted)] opacity-55"
                       }`}
                     >
                       {METRIC_LABELS[metric]}
@@ -313,7 +313,7 @@ export default function PerformanceAnalyticsClient({
         </div>
         <div className="metric-card p-5">
           <p className="section-kicker">Peak day</p>
-          <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-gold-soft)]">
+          <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
             {formatMetricValue(selectedMetric, selectedMetricPeak)}
           </p>
           <p className="mt-2 text-sm text-[var(--text-soft)]">
@@ -357,7 +357,7 @@ export default function PerformanceAnalyticsClient({
 
         <div className="mt-6 min-h-[360px]">
           {state.status === "loading" && !state.data ? (
-            <div className="h-[360px] animate-pulse rounded-3xl border border-[var(--border-soft)] bg-[linear-gradient(135deg,rgba(212,175,55,0.08),rgba(15,12,12,0.65))]" />
+            <div className="h-[360px] animate-pulse rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-raised)]" />
           ) : state.status === "error" ? (
             <EmptyState
               title="Analytics could not be loaded"
@@ -424,7 +424,7 @@ export default function PerformanceAnalyticsClient({
         ) : null}
 
         {state.data?.warnings && state.data.warnings.length > 0 ? (
-          <div className="mt-4 rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+          <div className="mt-4 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
             {state.data.warnings[0]}
           </div>
         ) : null}

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
@@ -393,7 +393,7 @@ export default function BookingClient({
   );
 
   return (
-    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
+    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       <div className="px-3 py-5 sm:py-6">
         <BusinessProfileShell
           businessName={business.name || "Business"}
@@ -412,14 +412,14 @@ export default function BookingClient({
           }
         />
       </div>
-      <div className="bg-zinc-950">
-      <div className="mx-auto max-w-6xl p-6 text-white">
-      <p className="mb-4 text-sm text-gray-400">Your timezone: {timezone}</p>
+      <div className="bg-[var(--page-bg)]">
+      <div className="mx-auto max-w-6xl p-6 text-[var(--text-main)]">
+      <p className="mb-4 text-sm text-[var(--text-soft)]">Your timezone: {timezone}</p>
 
       {selectedService ? (
-        <div className="mb-6 rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(39,39,42,0.5),rgba(9,9,11,0.85))] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+        <div className="mb-6 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="h-[88px] w-[88px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(24,24,27,0.92))] shadow-inner">
+            <div className="h-[88px] w-[88px] shrink-0 overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] shadow-inner">
               {selectedServiceImage?.image_url ? (
                 <img
                   src={selectedServiceImage.image_url}
@@ -427,16 +427,16 @@ export default function BookingClient({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-medium uppercase tracking-[0.22em] text-gray-400">
+                <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--text-soft)]">
                   No image
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Selected service</p>
-              <h2 className="mt-1 text-lg font-semibold text-white">{selectedService.name || "Service"}</h2>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Selected service</p>
+              <h2 className="mt-1 text-lg font-semibold text-[var(--text-main)]">{selectedService.name || "Service"}</h2>
               <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-gray-200">
+                <span className="rounded-full border border-[var(--border-soft)] bg-[var(--accent-muted)] px-2.5 py-1 text-[var(--text-main)]">
                   ${Number(selectedService.price || 0).toFixed(2)}
                 </span>
                 <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">
@@ -451,7 +451,7 @@ export default function BookingClient({
                 {selectedGallery.map((image) => (
                   <div
                     key={image.id}
-                    className="h-12 w-12 overflow-hidden rounded-xl border border-white/10 bg-zinc-950"
+                    className="h-12 w-12 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)]"
                   >
                     {image.image_url ? (
                       <img
@@ -469,9 +469,9 @@ export default function BookingClient({
       ) : null}
 
       <div className="mb-6">
-        <label className="mb-2 block text-sm text-gray-300">{t("services")}</label>
+        <label className="mb-2 block text-sm text-[var(--text-soft)]">{t("services")}</label>
         {services.length === 0 ? (
-          <div className="rounded-md border border-white/10 bg-black/30 p-3 text-sm text-gray-300">
+          <div className="rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-3 text-sm text-[var(--text-soft)]">
             No services are published for this business yet.
           </div>
         ) : (
@@ -494,12 +494,12 @@ export default function BookingClient({
                   }}
                   className={`rounded-2xl border p-3 text-left transition ${
                     isSelected
-                      ? "border-blue-400 bg-blue-600/20 shadow-[0_10px_30px_rgba(59,130,246,0.14)]"
-                      : "border-white/10 bg-[linear-gradient(180deg,rgba(24,24,27,0.9),rgba(9,9,11,0.96))] hover:border-white/30"
+                      ? "border-[var(--accent)] bg-[var(--accent-muted)] shadow-[var(--shadow-soft)]"
+                      : "border-[var(--border-soft)] bg-[var(--surface)] hover:border-[var(--border-strong)]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(24,24,27,0.92))]">
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)]">
                       {primaryImage?.image_url ? (
                         <img
                           src={primaryImage.image_url}
@@ -507,19 +507,19 @@ export default function BookingClient({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center px-1 text-center text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500">
+                        <div className="flex h-full items-center justify-center px-1 text-center text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                           No image
                         </div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-white">
+                      <div className="font-medium text-[var(--text-main)]">
                         {service.name || "Service"}
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-300">
+                      <div className="mt-1 flex flex-wrap gap-2 text-xs text-[var(--text-soft)]">
                         <span>${Number(service.price || 0).toFixed(2)}</span>
                       </div>
-                      <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-gray-500">
+                      <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
                         {service.images.length > 0
                           ? `${service.images.length} image${service.images.length === 1 ? "" : "s"}`
                           : "No service image"}
@@ -534,10 +534,10 @@ export default function BookingClient({
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">{t("name")}</label>
+        <label className="mb-1 block text-sm text-[var(--text-soft)]">{t("name")}</label>
         <input
           type="text"
-          className="w-full p-2 text-black"
+          className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           placeholder="Your full name"
@@ -546,10 +546,10 @@ export default function BookingClient({
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">{t("phone")}</label>
+        <label className="mb-1 block text-sm text-[var(--text-soft)]">{t("phone")}</label>
         <input
           type="tel"
-          className="w-full p-2 text-black"
+          className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="(555) 123-4567"
@@ -558,10 +558,10 @@ export default function BookingClient({
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">{t("emailAddress")}</label>
+        <label className="mb-1 block text-sm text-[var(--text-soft)]">{t("emailAddress")}</label>
         <input
           type="email"
-          className="w-full p-2 text-black"
+          className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
@@ -570,7 +570,7 @@ export default function BookingClient({
       </div>
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">{t("serviceMode")}</label>
+        <label className="mb-1 block text-sm text-[var(--text-soft)]">{t("serviceMode")}</label>
         <div className="flex gap-3">
           {serviceModes.remote ? (
             <button
@@ -578,8 +578,8 @@ export default function BookingClient({
               onClick={() => setServiceMode("remote")}
               className={`flex-1 rounded border py-2 ${
                 serviceMode === "remote"
-                  ? "border-blue-400 bg-blue-600/20"
-                  : "border-white/20 bg-black/20"
+                  ? "border-[var(--accent)] bg-[var(--accent-muted)]"
+                  : "border-[var(--border-strong)] bg-[var(--surface-muted)]"
               }`}
             >
               {t("remote")}
@@ -591,8 +591,8 @@ export default function BookingClient({
               onClick={() => setServiceMode("onsite")}
               className={`flex-1 rounded border py-2 ${
                 serviceMode === "onsite"
-                  ? "border-blue-400 bg-blue-600/20"
-                  : "border-white/20 bg-black/20"
+                  ? "border-[var(--accent)] bg-[var(--accent-muted)]"
+                  : "border-[var(--border-strong)] bg-[var(--surface-muted)]"
               }`}
             >
               {t("onsite")}
@@ -610,7 +610,7 @@ export default function BookingClient({
         <div className="mb-4 space-y-2">
           <input
             type="text"
-            className="w-full p-2 text-black"
+            className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
             value={addressLine1}
             onChange={(e) => setAddressLine1(e.target.value)}
             placeholder={t("streetAddress")}
@@ -618,14 +618,14 @@ export default function BookingClient({
           />
           <input
             type="text"
-            className="w-full p-2 text-black"
+            className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
             value={addressLine2}
             onChange={(e) => setAddressLine2(e.target.value)}
             placeholder={t("aptSuiteOptional")}
           />
           <input
             type="text"
-            className="w-full p-2 text-black"
+            className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
             value={addressCity}
             onChange={(e) => setAddressCity(e.target.value)}
             placeholder={t("city")}
@@ -634,7 +634,7 @@ export default function BookingClient({
           <div className="flex gap-3">
             <input
               type="text"
-              className="w-full p-2 text-black"
+              className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
               value={addressState}
               onChange={(e) => setAddressState(e.target.value)}
               placeholder={t("state")}
@@ -642,7 +642,7 @@ export default function BookingClient({
             />
             <input
               type="text"
-              className="w-full p-2 text-black"
+              className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
               value={addressPostal}
               onChange={(e) => setAddressPostal(e.target.value)}
               placeholder={t("zip")}
@@ -653,10 +653,10 @@ export default function BookingClient({
       )}
 
       <div className="mb-4">
-        <label className="mb-1 block text-sm text-gray-300">{t("date")}</label>
+        <label className="mb-1 block text-sm text-[var(--text-soft)]">{t("date")}</label>
         <input
           type="date"
-          className="p-2 text-black"
+          className="rounded border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)]"
           value={selectedDate}
           min={todayDate}
           onChange={(e) => {
@@ -666,7 +666,7 @@ export default function BookingClient({
           disabled={services.length === 0}
         />
         {showEmptyState && (
-          <div className="mt-3 rounded-md border border-white/10 bg-black/30 p-3 text-sm text-gray-300">
+          <div className="mt-3 rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-3 text-sm text-[var(--text-soft)]">
             <p>{availabilityMessage}</p>
             {availabilityConfigured === false && isOwner && (
               <a href="/admin/calendar" className="text-purple-300 underline">
@@ -678,7 +678,7 @@ export default function BookingClient({
       </div>
 
       {schedulingModel === "flexible_date" && selectedDate && slots.length > 0 ? (
-        <div className="mb-4 rounded-md border border-blue-400/30 bg-blue-600/10 p-3 text-sm text-blue-100">
+        <div className="mb-4 rounded-md border border-[var(--accent-border)] bg-[var(--accent-muted)] p-3 text-sm text-[var(--text-main)]">
           This business accepts date-based bookings. Choose your service date and complete checkout.
           The business can confirm the exact time afterward.
         </div>
@@ -690,12 +690,12 @@ export default function BookingClient({
 
       <div className="mt-6 space-y-4">
         <div>
-          <label className="mb-1 block text-sm text-gray-300">{t("time")}</label>
+          <label className="mb-1 block text-sm text-[var(--text-soft)]">{t("time")}</label>
           <select
             value={selectedSlotKey}
             onChange={(event) => setSelectedSlotKey(event.target.value)}
             disabled={!selectedDate || isLoading || slots.length === 0}
-            className="w-full rounded border border-white/20 bg-black/30 p-3 text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface-muted)] p-3 text-[var(--text-main)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option value="">
               {isLoading
@@ -716,14 +716,14 @@ export default function BookingClient({
               );
             })}
           </select>
-          <p className="mt-2 text-xs text-gray-400">
+          <p className="mt-2 text-xs text-[var(--text-soft)]">
             Select a date and time, review your booking, then use Pay to continue to secure checkout.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{t("review")}</p>
-          <div className="mt-3 space-y-2 text-sm text-gray-200">
+        <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">{t("review")}</p>
+          <div className="mt-3 space-y-2 text-sm text-[var(--text-main)]">
             <div>
               {t("services")}:{" "}
               {selectedServices.length > 0
@@ -742,7 +742,7 @@ export default function BookingClient({
             </div>
             <div>{t("total")}: ${selectedSlotPrice.toFixed(2)}</div>
             {selectedSlot?.is_flexible ? (
-              <div className="text-xs text-blue-100">
+              <div className="text-xs text-[var(--text-main)]">
                 Exact scheduling can be confirmed after booking.
               </div>
             ) : null}
@@ -759,7 +759,7 @@ export default function BookingClient({
               selectedServiceIds.length === 0 ||
               !hasEnabledServiceMode
             }
-            className="mt-4 w-full rounded bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 w-full rounded bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[var(--text-main)] hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Starting secure checkout..." : t("pay")}
           </button>

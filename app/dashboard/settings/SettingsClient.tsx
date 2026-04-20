@@ -130,10 +130,10 @@ if (file.size > 3 * 1024 * 1024) {
   };
 
   return (
-    <div className="text-white">
+    <div className="text-[var(--text-main)]">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Business Settings</h1>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-[var(--text-soft)]">
           Customize how your business appears to customers.
         </p>
       </div>
@@ -141,30 +141,30 @@ if (file.size > 3 * 1024 * 1024) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <form
           onSubmit={handleSave}
-          className="lg:col-span-2 bg-zinc-900/70 border border-white/10 rounded-xl p-6 space-y-5"
+          className="lg:col-span-2 bg-[var(--surface)] border border-[var(--border-soft)] rounded-xl p-6 space-y-5"
         >
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Business Name</label>
+            <label className="block text-sm text-[var(--text-soft)] mb-2">Business Name</label>
             <input
-              className="w-full border border-white/10 bg-black/40 p-2 rounded-md text-white outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Description</label>
+            <label className="block text-sm text-[var(--text-soft)] mb-2">Description</label>
             <textarea
-              className="w-full border border-white/10 bg-black/40 p-2 rounded-md text-white outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
+              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Refund Policy</label>
+            <label className="block text-sm text-[var(--text-soft)] mb-2">Refund Policy</label>
             <textarea
-              className="w-full border border-white/10 bg-black/40 p-2 rounded-md text-white outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
+              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
               value={refundPolicy}
               onChange={(e) => setRefundPolicy(e.target.value)}
               placeholder="Describe cancellation, refund timing, and non-refundable charges."
@@ -172,11 +172,11 @@ if (file.size > 3 * 1024 * 1024) {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-2">
+            <label className="block text-sm text-[var(--text-soft)] mb-2">
               Late Fee Disclosure
             </label>
             <textarea
-              className="w-full border border-white/10 bg-black/40 p-2 rounded-md text-white outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
+              className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px]"
               value={lateFeeDisclosure}
               onChange={(e) => setLateFeeDisclosure(e.target.value)}
               placeholder="For rental or property businesses, disclose any late, overstay, holdover, cleaning, or similar fees."
@@ -185,19 +185,19 @@ if (file.size > 3 * 1024 * 1024) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-300 mb-2">Font Family</label>
+              <label className="block text-sm text-[var(--text-soft)] mb-2">Font Family</label>
               <input
-                className="w-full border border-white/10 bg-black/40 p-2 rounded-md text-white outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2 rounded-md text-[var(--text-main)] outline-none focus:ring-2 focus:ring-purple-500"
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value)}
                 placeholder="Inter, sans-serif"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-2">Font Color</label>
+              <label className="block text-sm text-[var(--text-soft)] mb-2">Font Color</label>
               <input
                 type="color"
-                className="w-full h-10 border border-white/10 bg-black/40 p-1 rounded-md"
+                className="w-full h-10 border border-[var(--border-soft)] bg-[var(--surface-muted)] p-1 rounded-md"
                 value={fontColor}
                 onChange={(e) => setFontColor(e.target.value)}
               />
@@ -210,9 +210,9 @@ if (file.size > 3 * 1024 * 1024) {
               type="checkbox"
               checked={isPublished}
               onChange={(e) => setIsPublished(e.target.checked)}
-              className="h-4 w-4 rounded border-white/20 bg-black/40"
+              className="h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--surface-muted)]"
             />
-            <label htmlFor="published" className="text-sm text-gray-300">
+            <label htmlFor="published" className="text-sm text-[var(--text-soft)]">
               Published and visible on the public booking page
             </label>
           </div>
@@ -230,13 +230,13 @@ if (file.size > 3 * 1024 * 1024) {
         </form>
 
         <div className="space-y-6">
-          <div className="bg-zinc-900/70 border border-white/10 rounded-xl p-6">
+          <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-4">Logo</h2>
-            <div className="w-24 h-24 rounded-xl bg-black/40 border border-white/10 overflow-hidden mb-3">
+            <div className="w-24 h-24 rounded-xl bg-[var(--surface-muted)] border border-[var(--border-soft)] overflow-hidden mb-3">
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                <div className="w-full h-full flex items-center justify-center text-xs text-[var(--text-muted)]">
                   No logo
                 </div>
               )}
@@ -251,16 +251,16 @@ if (file.size > 3 * 1024 * 1024) {
               disabled={uploadingLogo}
               className="text-sm"
             />
-            {uploadingLogo && <p className="text-xs text-gray-400 mt-2">Uploading...</p>}
+            {uploadingLogo && <p className="text-xs text-[var(--text-soft)] mt-2">Uploading...</p>}
           </div>
 
-          <div className="bg-zinc-900/70 border border-white/10 rounded-xl p-6">
+          <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-4">Cover Image</h2>
-            <div className="w-full h-32 rounded-xl bg-black/40 border border-white/10 overflow-hidden mb-3">
+            <div className="w-full h-32 rounded-xl bg-[var(--surface-muted)] border border-[var(--border-soft)] overflow-hidden mb-3">
               {coverUrl ? (
                 <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                <div className="w-full h-full flex items-center justify-center text-xs text-[var(--text-muted)]">
                   No cover
                 </div>
               )}
@@ -275,12 +275,12 @@ if (file.size > 3 * 1024 * 1024) {
               disabled={uploadingCover}
               className="text-sm"
             />
-            {uploadingCover && <p className="text-xs text-gray-400 mt-2">Uploading...</p>}
+            {uploadingCover && <p className="text-xs text-[var(--text-soft)] mt-2">Uploading...</p>}
           </div>
 
-          <div className="bg-zinc-900/70 border border-white/10 rounded-xl p-6">
+          <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-3">Preview</h2>
-            <div className="rounded-xl border border-white/10 bg-black/40 p-4" style={previewStyles}>
+            <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4" style={previewStyles}>
               <p className="text-sm">{name || "Business Name"}</p>
               <p className="text-xs opacity-70">
                 {description || "Add a description to introduce your business."}

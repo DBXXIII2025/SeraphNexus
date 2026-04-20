@@ -134,17 +134,17 @@ export default function PricingClient({
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3 text-sm text-[var(--text-soft)]">
-            <span className="rounded-full border border-[rgba(212,175,55,0.16)] bg-[rgba(212,175,55,0.08)] px-3 py-1">
+            <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1">
               Current plan: {currentPlan}
             </span>
-            <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] px-3 py-1">
+            <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-3 py-1">
               Active business: {activeBusinessId ? "selected" : "not selected"}
             </span>
           </div>
         </section>
 
         {error ? (
-          <div className="rounded-2xl border border-[rgba(193,18,31,0.3)] bg-[rgba(193,18,31,0.1)] px-4 py-3 text-sm text-[#f8c6ca]">
+          <div className="rounded-2xl border border-[var(--destructive-border)] bg-[var(--destructive-bg)] px-4 py-3 text-sm text-[var(--destructive)]">
             {error}
           </div>
         ) : null}
@@ -185,7 +185,7 @@ export default function PricingClient({
             return (
               <article
                 key={plan.tier}
-                className="surface-card flex h-full flex-col border-[rgba(212,175,55,0.16)] p-5"
+                className="surface-card flex h-full flex-col border-[var(--accent-border)] p-5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -197,11 +197,11 @@ export default function PricingClient({
                     </p>
                   </div>
                   {liveCopy?.badge ? (
-                    <span className="rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-gold-soft)]">
+                    <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-soft)]">
                       {liveCopy.badge}
                     </span>
                   ) : isCurrentPlan ? (
-                    <span className="rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-gold-soft)]">
+                    <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-soft)]">
                       Current
                     </span>
                   ) : null}
@@ -220,7 +220,7 @@ export default function PricingClient({
                   {highlights.map((highlight) => (
                     <div
                       key={highlight}
-                      className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.42)] px-4 py-3 text-sm text-[var(--text-soft)]"
+                      className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]"
                     >
                       {highlight}
                     </div>

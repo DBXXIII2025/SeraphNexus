@@ -146,28 +146,28 @@ export default function RentalsCalendarPanel({
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(193,18,31,0.22)] bg-[rgba(193,18,31,0.1)] px-3 py-1 text-[var(--accent-soft)]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--destructive-border)] bg-[var(--destructive-bg)] px-3 py-1 text-[var(--accent-soft)]">
             <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
             Blocked
           </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.22)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-[var(--accent-gold-soft)]">
-            <span className="h-2 w-2 rounded-full bg-[var(--accent-gold)]" />
+          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-[var(--accent-soft)]">
+            <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
             Reservations
           </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(232,204,106,0.28)] bg-[rgba(232,204,106,0.1)] px-3 py-1 text-[var(--accent-gold-soft)]">
-            <span className="h-2 w-2 rounded-full bg-[var(--accent-gold-soft)]" />
+          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-1 text-[var(--accent-soft)]">
+            <span className="h-2 w-2 rounded-full bg-[var(--accent-soft)]" />
             Selected day
           </span>
         </div>
       </div>
 
       {!selectedProperty && propertyCount > 1 ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.68)] px-4 py-10 text-sm text-[var(--text-soft)]">
+        <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-10 text-sm text-[var(--text-soft)]">
           Choose a listing from the selector to activate the calendar view.
         </div>
       ) : (
         <div className="mt-5 space-y-5">
-          <div className="fullcalendar-shell rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4">
+          <div className="fullcalendar-shell rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
             <FullCalendar
               plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
@@ -189,11 +189,11 @@ export default function RentalsCalendarPanel({
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4">
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Selected Day
               </p>
-              <p className="mt-2 text-lg font-semibold text-[var(--accent-gold-soft)]">
+              <p className="mt-2 text-lg font-semibold text-[var(--accent-soft)]">
                 {selectedDate ? formatDate(selectedDate) : "Select a date"}
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
@@ -203,7 +203,7 @@ export default function RentalsCalendarPanel({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-[rgba(193,18,31,0.18)] bg-[rgba(193,18,31,0.08)] p-4">
+              <div className="rounded-2xl border border-[var(--destructive-border)] bg-[var(--destructive-bg)] p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                   Blocked on day
                 </p>
@@ -211,11 +211,11 @@ export default function RentalsCalendarPanel({
                   {selectedDateBlocks.length}
                 </p>
               </div>
-              <div className="rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] p-4">
+              <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                   Reservations on day
                 </p>
-                <p className="mt-2 text-2xl font-semibold text-[var(--accent-gold-soft)]">
+                <p className="mt-2 text-2xl font-semibold text-[var(--accent-soft)]">
                   {selectedDateReservations.length}
                 </p>
               </div>
@@ -224,7 +224,7 @@ export default function RentalsCalendarPanel({
 
           {selectedDate ? (
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4">
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                   Blocks on selected day
                 </p>
@@ -235,7 +235,7 @@ export default function RentalsCalendarPanel({
                     {selectedDateBlocks.map((block) => (
                       <div
                         key={block.id}
-                        className="rounded-2xl border border-[rgba(193,18,31,0.18)] bg-[rgba(193,18,31,0.08)] px-4 py-3"
+                        className="rounded-2xl border border-[var(--destructive-border)] bg-[var(--destructive-bg)] px-4 py-3"
                       >
                         <p className="font-medium text-[var(--text-strong)]">
                           {propertyNameById.get(String(block.property_id)) || "Listing"}
@@ -252,7 +252,7 @@ export default function RentalsCalendarPanel({
                 )}
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4">
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                   Reservations on selected day
                 </p>
@@ -266,7 +266,7 @@ export default function RentalsCalendarPanel({
                       return (
                         <div
                           key={reservation.id}
-                          className="rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3"
+                          className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3"
                         >
                           <p className="font-medium text-[var(--text-strong)]">
                             {getReservationGuestLabel(reservation)}

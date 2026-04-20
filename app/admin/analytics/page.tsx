@@ -97,7 +97,7 @@ export default async function AdminAnalyticsPage() {
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div className="metric-card p-5">
               <p className="section-kicker">Elite ready</p>
-              <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-gold-soft)]">
+              <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
                 Enabled
               </p>
               <p className="mt-2 text-sm text-[var(--text-soft)]">
@@ -126,7 +126,7 @@ export default async function AdminAnalyticsPage() {
             </div>
           </div>
         ) : (
-          <div className="mt-5 rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-4 text-sm text-[var(--accent-gold-soft)]">
+          <div className="mt-5 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-4 text-sm text-[var(--accent-soft)]">
             Elite adds advanced analytics, customer insight views, trend reporting, and richer
             conversion monitoring.
             <Link href="/admin/upgrade" className="btn-secondary ml-4 inline-flex px-4 py-2 text-sm font-medium">

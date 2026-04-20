@@ -85,7 +85,7 @@ export default async function AdminLeadsPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-[rgba(193,18,31,0.2)] bg-[rgba(193,18,31,0.1)] p-4">
+            <div className="rounded-2xl border border-[var(--destructive-border)] bg-[var(--destructive-bg)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Needs Follow-Up
               </p>
@@ -96,11 +96,11 @@ export default async function AdminLeadsPage() {
                 Open leads that still need owner action.
               </p>
             </div>
-            <div className="rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] p-4">
+            <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 High Priority
               </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--accent-gold-soft)]">
+              <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
                 {dashboard.summary.highPriorityLeads}
               </p>
               <p className="mt-2 text-sm text-[var(--text-soft)]">
@@ -124,7 +124,7 @@ export default async function AdminLeadsPage() {
             {emptyStateSuggestions.map((item) => (
               <div
                 key={item}
-                className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4 text-sm text-[var(--text-soft)]"
+                className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]"
               >
                 {item}
               </div>

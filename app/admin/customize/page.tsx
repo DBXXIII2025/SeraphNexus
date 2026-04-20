@@ -20,7 +20,7 @@ export default async function CustomizePage() {
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="text-white">No active business</div>;
+    return <div className="text-[var(--text-main)]">No active business</div>;
   }
 
   console.log("[admin/customize] resolved active business", {

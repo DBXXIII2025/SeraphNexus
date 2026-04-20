@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
@@ -126,8 +126,8 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
                 href={`/admin/messages?conversation=${encodeURIComponent(conversation.id)}`}
                 className={`block rounded-2xl border px-4 py-4 text-left transition ${
                   conversation.id === selectedConversationId
-                    ? "border-[rgba(193,18,31,0.24)] bg-[rgba(193,18,31,0.1)]"
-                    : "border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] hover:border-[rgba(212,175,55,0.16)]"
+                    ? "border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
+                    : "border-[var(--border-soft)] bg-[var(--surface-raised)] hover:border-[var(--accent-border)]"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -140,7 +140,7 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
                       {conversation.lastMessageExcerpt || "No messages yet"}
                     </p>
                   </div>
-                  <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(31,25,25,0.9)] px-2 py-1 text-xs text-[var(--text-soft)]">
+                  <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-2 py-1 text-xs text-[var(--text-soft)]">
                     {conversation.unreadForPlatform > 0
                       ? `${conversation.unreadForPlatform} unread`
                       : conversation.status === "awaiting_business"
@@ -159,7 +159,7 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
 
       <div className="surface-card p-6">
         {!selectedConversation || !thread.conversation ? (
-          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.66)] p-6 text-sm text-[var(--text-soft)]">
+          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
             Select a support thread to view business context and reply.
           </div>
         ) : (
@@ -172,11 +172,11 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
                 Owner: {selectedConversation.ownerName || selectedConversation.ownerEmail || "Unknown"}
               </p>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
                   <p>Business type: {selectedConversation.businessType || "business"}</p>
                   <p>Business ID: {selectedConversation.businessId}</p>
                 </div>
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
                   <p>Owner email: {selectedConversation.ownerEmail || "Unknown"}</p>
                   <p>Owner phone: {selectedConversation.ownerPhone || "No phone"}</p>
                 </div>
@@ -186,14 +186,14 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
               </p>
             </div>
 
-            <div className="mt-5 space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.74)] p-4">
+            <div className="mt-5 space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
               {thread.messages.map((message) => (
                 <div
                   key={message.id}
                   className={`rounded-xl px-4 py-3 ${
                     message.senderType === "platform_admin"
-                      ? "ml-auto max-w-[88%] border border-[rgba(193,18,31,0.24)] bg-[rgba(193,18,31,0.14)]"
-                      : "max-w-[88%] border border-[var(--border-soft)] bg-[rgba(31,25,25,0.92)]"
+                      ? "ml-auto max-w-[88%] border border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
+                      : "max-w-[88%] border border-[var(--border-soft)] bg-[var(--surface-raised)]"
                   }`}
                 >
                   <p className="text-sm leading-6 text-[var(--text-main)]">{message.body}</p>

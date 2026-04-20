@@ -22,7 +22,7 @@ export default async function DashboardPage() {
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="p-6 text-white">No business found.</div>;
+    return <div className="p-6 text-[var(--text-main)]">No business found.</div>;
   }
 
   const dashboard = await buildDashboardData({

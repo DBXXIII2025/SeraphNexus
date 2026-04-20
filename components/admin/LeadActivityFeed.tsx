@@ -19,11 +19,11 @@ function formatDateTime(value: string | null) {
 
 function getEventTone(eventType: string) {
   if (eventType === "checkout_started" || eventType === "booking_started") {
-    return "border-[rgba(193,18,31,0.22)]";
+    return "border-[var(--destructive-border)]";
   }
 
   if (eventType === "message_sent" || eventType === "message_click") {
-    return "border-[rgba(212,175,55,0.18)]";
+    return "border-[var(--accent-border)]";
   }
 
   return "border-[var(--border-soft)]";
@@ -43,7 +43,7 @@ export default function LeadActivityFeed({ items }: Props) {
       </div>
 
       {items.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.72)] px-4 py-8 text-sm text-[var(--text-soft)]">
+        <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
           No lead activity has been captured for this business yet.
         </div>
       ) : (
@@ -51,7 +51,7 @@ export default function LeadActivityFeed({ items }: Props) {
           {items.map((item) => (
             <div
               key={item.id}
-              className={`rounded-2xl border bg-[rgba(15,12,12,0.52)] p-5 shadow-[0_16px_30px_rgba(0,0,0,0.24)] ${getEventTone(
+              className={`rounded-2xl border bg-[var(--surface-raised)] p-5 shadow-[var(--shadow-card)] ${getEventTone(
                 item.eventType
               )}`}
             >
@@ -59,7 +59,7 @@ export default function LeadActivityFeed({ items }: Props) {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium text-[var(--text-strong)]">{item.label}</p>
-                    <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(31,25,25,0.88)] px-2.5 py-1 text-xs font-medium capitalize text-[var(--text-soft)]">
+                    <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-2.5 py-1 text-xs font-medium capitalize text-[var(--text-soft)]">
                       {item.sourceType.replace("_", " ")}
                     </span>
                     {item.status ? (
@@ -83,7 +83,7 @@ export default function LeadActivityFeed({ items }: Props) {
                       {item.details.map((detail) => (
                         <span
                           key={detail}
-                          className="rounded-full border border-[var(--border-soft)] bg-[rgba(31,25,25,0.88)] px-2.5 py-1 text-xs text-[var(--text-soft)]"
+                          className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-2.5 py-1 text-xs text-[var(--text-soft)]"
                         >
                           {detail}
                         </span>
@@ -106,7 +106,7 @@ export default function LeadActivityFeed({ items }: Props) {
                   {item.actionHref && item.actionLabel ? (
                     <Link
                       href={item.actionHref}
-                      className="inline-flex rounded-full border border-[var(--border-soft)] bg-[rgba(31,25,25,0.88)] px-3 py-1 text-xs font-medium text-[var(--text-strong)] transition hover:border-[rgba(212,175,55,0.2)] hover:bg-[rgba(36,29,29,0.98)]"
+                      className="inline-flex rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--text-strong)] transition hover:border-[var(--accent-border)] hover:bg-[var(--surface-raised)]"
                     >
                       {item.actionLabel}
                     </Link>

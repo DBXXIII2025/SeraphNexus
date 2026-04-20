@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, useState } from "react";
 import type { ServiceImageRecord } from "@/lib/serviceImages";
@@ -152,15 +152,15 @@ export default function ServiceImagesManager({
   }
 
   return (
-    <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+    <div className="mt-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Service Images</p>
-          <p className="mt-1 max-w-2xl text-sm text-gray-300">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Service Images</p>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--text-soft)]">
             Organize compact service visuals for {serviceName}. The primary image leads public cards, while extras stay tucked into the gallery.
           </p>
         </div>
-        <label className="inline-flex cursor-pointer items-center rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10">
+        <label className="inline-flex cursor-pointer items-center rounded-md border border-[var(--border-soft)] bg-[var(--accent-muted)] px-3 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--accent-muted)]">
           Upload images
           <input
             ref={inputRef}
@@ -177,8 +177,8 @@ export default function ServiceImagesManager({
       {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
 
       {images.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(24,24,27,0.7))] p-4 text-sm text-gray-400">
-          <p className="font-medium text-gray-200">No service visuals yet</p>
+        <div className="mt-4 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
+          <p className="font-medium text-[var(--text-main)]">No service visuals yet</p>
           <p className="mt-2 leading-6">
             Add a compact square or landscape image to give this service a polished preview without overpowering the booking flow.
           </p>
@@ -188,9 +188,9 @@ export default function ServiceImagesManager({
           {images.map((image, index) => (
             <div
               key={image.id}
-              className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(39,39,42,0.55),rgba(9,9,11,0.92))] p-3"
+              className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-3"
             >
-              <div className="relative aspect-[1.05/1] overflow-hidden rounded-xl border border-white/10 bg-zinc-950 shadow-inner">
+              <div className="relative aspect-[1.05/1] overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] shadow-inner">
                 {image.image_url ? (
                   <img
                     src={image.image_url}
@@ -198,7 +198,7 @@ export default function ServiceImagesManager({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-[10px] font-medium uppercase tracking-[0.22em] text-gray-500">
+                  <div className="flex h-full items-center justify-center text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--text-muted)]">
                     Placeholder
                   </div>
                 )}
@@ -209,12 +209,12 @@ export default function ServiceImagesManager({
                   className={`rounded-full px-2 py-1 text-[11px] font-medium ${
                     image.is_primary
                       ? "border border-emerald-500/20 bg-emerald-500/12 text-emerald-200"
-                      : "border border-white/10 bg-white/5 text-gray-300"
+                      : "border border-[var(--border-soft)] bg-[var(--accent-muted)] text-[var(--text-soft)]"
                   }`}
                 >
                   {image.is_primary ? "Primary" : `Image ${index + 1}`}
                 </span>
-                <span className="text-[11px] uppercase tracking-[0.16em] text-gray-500">
+                <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
                   Slot {index + 1}
                 </span>
               </div>
@@ -223,7 +223,7 @@ export default function ServiceImagesManager({
                 <button
                   type="button"
                   onClick={() => void setPrimary(image.id)}
-                  className="rounded-md border border-white/10 px-2 py-2 text-white transition hover:bg-white/5 disabled:opacity-50"
+                  className="rounded-md border border-[var(--border-soft)] px-2 py-2 text-[var(--text-main)] transition hover:bg-[var(--accent-muted)] disabled:opacity-50"
                   disabled={isWorking || image.is_primary === true}
                 >
                   Make primary
@@ -239,7 +239,7 @@ export default function ServiceImagesManager({
                 <button
                   type="button"
                   onClick={() => void moveImage(image.id, -1)}
-                  className="rounded-md border border-white/10 px-2 py-2 text-white transition hover:bg-white/5 disabled:opacity-50"
+                  className="rounded-md border border-[var(--border-soft)] px-2 py-2 text-[var(--text-main)] transition hover:bg-[var(--accent-muted)] disabled:opacity-50"
                   disabled={isWorking || index === 0}
                 >
                   Move left
@@ -247,7 +247,7 @@ export default function ServiceImagesManager({
                 <button
                   type="button"
                   onClick={() => void moveImage(image.id, 1)}
-                  className="rounded-md border border-white/10 px-2 py-2 text-white transition hover:bg-white/5 disabled:opacity-50"
+                  className="rounded-md border border-[var(--border-soft)] px-2 py-2 text-[var(--text-main)] transition hover:bg-[var(--accent-muted)] disabled:opacity-50"
                   disabled={isWorking || index === images.length - 1}
                 >
                   Move right

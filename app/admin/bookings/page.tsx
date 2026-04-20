@@ -211,14 +211,14 @@ function SummaryCard({
     tone === "success"
       ? "text-emerald-300"
       : tone === "alert"
-        ? "text-amber-300"
-        : "text-white";
+        ? "text-[var(--warning)]"
+        : "text-[var(--text-main)]";
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5">
-      <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
+    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-5">
+      <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
       <p className={`mt-2 text-3xl font-semibold ${valueClass}`}>{value}</p>
-      <p className="mt-2 text-sm text-gray-400">{detail}</p>
+      <p className="mt-2 text-sm text-[var(--text-soft)]">{detail}</p>
     </div>
   );
 }
@@ -242,7 +242,7 @@ function renderServiceCard(record: ServiceBookingRecord) {
       className={`rounded-2xl border p-5 ${
         record.isFallback
           ? "border-yellow-500/20 bg-yellow-500/10"
-          : "border-white/10 bg-zinc-900/70"
+          : "border-[var(--border-soft)] bg-[var(--surface)]"
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -256,7 +256,7 @@ function renderServiceCard(record: ServiceBookingRecord) {
             >
               {formatAdminStatusLabel(record.status, "Pending")}
             </span>
-            <span className="inline-flex rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-medium capitalize text-gray-300">
+            <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-medium capitalize text-[var(--text-soft)]">
               Payment {formatPaymentLabel(record.paymentStatus)}
             </span>
           </div>
@@ -269,27 +269,27 @@ function renderServiceCard(record: ServiceBookingRecord) {
 
         <div className="text-right">
           <p className="text-lg font-semibold">${record.amount.toFixed(2)}</p>
-          <p className="text-xs text-gray-500">{formatTimestamp(record.createdAt)}</p>
+          <p className="text-xs text-[var(--text-muted)]">{formatTimestamp(record.createdAt)}</p>
         </div>
       </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
             Customer
           </p>
-          <div className="mt-2 space-y-1 text-sm text-gray-200">
+          <div className="mt-2 space-y-1 text-sm text-[var(--text-main)]">
             <p>Name: {record.customerName}</p>
             <p>Email: {record.customerEmail || "No email provided"}</p>
             <p>Phone: {record.customerPhone || "No phone provided"}</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
             Appointment
           </p>
-          <div className="mt-2 space-y-2 text-sm text-gray-200">
+          <div className="mt-2 space-y-2 text-sm text-[var(--text-main)]">
             <p>Service: {record.serviceName || "Service details unavailable"}</p>
             {record.serviceDetails.length > 0 ? (
               <p>{record.serviceDetails.join(" | ")}</p>
@@ -302,11 +302,11 @@ function renderServiceCard(record: ServiceBookingRecord) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
             Location / Notes
           </p>
-          <div className="mt-2 space-y-2 text-sm text-gray-200">
+          <div className="mt-2 space-y-2 text-sm text-[var(--text-main)]">
             <p>{record.address || "No address required for this booking."}</p>
             <p>Notes: {record.notes || "No special instructions."}</p>
           </div>
@@ -318,7 +318,7 @@ function renderServiceCard(record: ServiceBookingRecord) {
           {record.conversationHref ? (
             <Link
               href={record.conversationHref}
-              className="rounded-md border border-amber-500/30 px-3 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/10"
+              className="rounded-md border border-amber-500/30 px-3 py-2 text-sm font-medium text-[var(--warning)] hover:bg-amber-500/10"
             >
               Reply to customer
             </Link>
@@ -361,7 +361,7 @@ function renderServiceCard(record: ServiceBookingRecord) {
               <input
                 type="datetime-local"
                 name="new_time"
-                className="rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-white"
+                className="rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--text-main)]"
                 aria-label={`Reschedule ${record.customerName}`}
               />
               <button
@@ -393,14 +393,14 @@ export default async function AdminBookingsPage({
   const isDev = process.env.NODE_ENV !== "production";
 
   if (!business) {
-    return <div className="text-white">{createAdminTranslator(null)("noActiveBusiness")}</div>;
+    return <div className="text-[var(--text-main)]">{createAdminTranslator(null)("noActiveBusiness")}</div>;
   }
 
   const t = createAdminTranslator(business.language);
 
   if (!isBookingBusinessType(business.business_type)) {
     return (
-      <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-6 text-white">
+      <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-[var(--text-main)]">
         {t("bookings")} are only available for service, rental, and property businesses.
       </div>
     );
@@ -651,7 +651,7 @@ export default async function AdminBookingsPage({
   const rentalPendingCount = rentalRows.filter((row) => row.status === "pending").length;
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-[var(--text-main)]">
       {params?.success === "deleted" ? (
         <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
           Pending unpaid booking deleted.
@@ -676,10 +676,10 @@ export default async function AdminBookingsPage({
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6">
-        <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{pageTitle}</p>
+      <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-6">
+        <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">{pageTitle}</p>
         <h1 className="mt-2 text-2xl font-semibold">{pageTitle} queue</h1>
-        <p className="mt-3 text-sm leading-6 text-gray-400">
+        <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
           {businessModule.label} operations for {business.name}.
         </p>
       </section>
@@ -721,7 +721,7 @@ export default async function AdminBookingsPage({
       </div>
 
       {(!rows || rows.length === 0) && fallbackRows.length === 0 ? (
-        <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-6 text-sm text-gray-400">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-sm text-[var(--text-soft)]">
           {isRental
             ? "No reservations yet. When guests book a stay, it will appear here with status actions."
             : "No bookings yet. When customers schedule an appointment, it will appear here with confirmation controls."}
@@ -743,23 +743,23 @@ export default async function AdminBookingsPage({
                 return (
                   <div
                     key={rowId}
-                    className="rounded-xl border border-white/10 bg-zinc-900/70 p-5"
+                    className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-5"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="space-y-1">
                         <p className="font-semibold">{getReservationGuestLabel(row)}</p>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-[var(--text-soft)]">
                           {formatReservationRange(
                             displayRange?.startDate || asString(row.check_in_date),
                             displayRange?.endDate || asString(row.check_out_date)
                           )}
                         </p>
                         {rowPropertyId ? (
-                          <p className="text-sm text-gray-400">
+                          <p className="text-sm text-[var(--text-soft)]">
                             {propertyNameById.get(rowPropertyId) || "Listing"}
                           </p>
                         ) : null}
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-[var(--text-soft)]">
                           Guest: {guestName} | Email: {guestEmail} | Phone: {guestPhone}
                         </p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -770,10 +770,10 @@ export default async function AdminBookingsPage({
                           >
                             {formatAdminStatusLabel(rowStatus, "Pending")}
                           </span>
-                          <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[rgba(31,25,25,0.9)] px-3 py-1 text-xs font-medium text-[var(--text-soft)] capitalize">
+                          <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium text-[var(--text-soft)] capitalize">
                             Payment {formatPaymentLabel(asString(row.payment_status))}
                           </span>
-                          <span className="inline-flex rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-xs font-medium text-[var(--accent-gold-soft)]">
+                          <span className="inline-flex rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-xs font-medium text-[var(--accent-soft)]">
                             ${rowAmount.toFixed(2)}
                           </span>
                         </div>
@@ -784,7 +784,7 @@ export default async function AdminBookingsPage({
                             )}&conversation=${encodeURIComponent(
                               String(conversationIdByBookingId.get(rowId))
                             )}`}
-                          className="mt-3 inline-flex text-sm font-medium text-[var(--accent-soft)] hover:text-[var(--accent-gold-soft)]"
+                          className="mt-3 inline-flex text-sm font-medium text-[var(--accent-soft)] hover:text-[var(--accent-soft)]"
                         >
                           Reply to customer
                         </Link>
@@ -808,7 +808,7 @@ export default async function AdminBookingsPage({
 
                       <div className="text-right">
                         <p className="text-lg font-semibold">${rowAmount.toFixed(2)}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[var(--text-muted)]">
                           {formatTimestamp(rowCreatedAt)}
                         </p>
                       </div>

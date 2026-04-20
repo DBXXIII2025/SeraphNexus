@@ -212,7 +212,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </div>
       ) : null}
       {message === "publish-plan-locked" ? (
-        <div className="rounded-xl border border-[rgba(212,175,55,0.24)] bg-[rgba(212,175,55,0.1)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+        <div className="rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
           Publishing is locked on the {plan?.label || "current"} plan. Upgrade to Pro or Elite to
           make this business visible on Explore and public routes.
         </div>
@@ -377,7 +377,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               ) : null}
 
               {!canUsePayments ? (
-                <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+                <div className="mt-5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
                   Stripe payments are available on Pro and Elite. Upgrade this business to connect
                   Stripe and accept live bookings or orders.
                 </div>
@@ -454,7 +454,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </div>
               ) : null}
               {publishGate && !publishGate.allowed ? (
-                <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+                <div className="mt-5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
                   Publishing is locked on {plan?.label || "the current"} plan. Upgrade to Pro or
                   Elite before making this business visible publicly.
                 </div>
@@ -510,7 +510,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </div>
 
               {!canUseAdvancedCustomization ? (
-                <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+                <div className="mt-5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
                   Advanced customization, team and staff roles, and premium workspace controls are
                   reserved for Elite.
                 </div>
@@ -533,7 +533,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </div>
 
               {!canUseTeamRoles ? (
-                <div className="mt-5 rounded-lg border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+                <div className="mt-5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
                   Team and staff roles require Elite.
                 </div>
               ) : staffState?.error ? (
@@ -562,7 +562,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                       </button>
                     </form>
                   ) : (
-                    <div className="mt-5 rounded-lg border border-[var(--border-soft)] bg-[rgba(15,12,12,0.56)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                    <div className="mt-5 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
                       Staff roster changes require owner or admin access.
                     </div>
                   )}

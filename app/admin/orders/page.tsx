@@ -220,7 +220,7 @@ function SummaryCard({
 }) {
   const valueClass =
     tone === "success"
-      ? "text-[var(--accent-gold-soft)]"
+      ? "text-[var(--accent-soft)]"
       : tone === "alert"
         ? "text-[var(--accent-soft)]"
         : "text-[var(--text-strong)]";
@@ -265,10 +265,10 @@ function renderOrderCard(
             >
               {formatAdminStatusLabel(record.visibleStatus, "Pending")}
             </span>
-            <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[rgba(15,12,12,0.72)] px-3 py-1 text-xs font-medium capitalize text-[var(--text-soft)]">
+            <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium capitalize text-[var(--text-soft)]">
               Payment {formatAdminStatusLabel(record.paymentStatus, "Pending")}
             </span>
-            <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[rgba(15,12,12,0.72)] px-3 py-1 text-xs font-medium capitalize text-[var(--text-soft)]">
+            <span className="inline-flex rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-3 py-1 text-xs font-medium capitalize text-[var(--text-soft)]">
               {formatAdminStatusLabel(record.fulfillmentType, "Pending")}
             </span>
           </div>
@@ -305,7 +305,7 @@ function renderOrderCard(
             <div>
               <p className="mb-1">Items</p>
               {record.items.length === 0 ? (
-                <p className="text-gray-400">No item details available.</p>
+                <p className="text-[var(--text-soft)]">No item details available.</p>
               ) : (
                 <div className="space-y-2">
                   {record.items.map((item, index) => (

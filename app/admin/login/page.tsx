@@ -22,22 +22,22 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-6 rounded-xl shadow w-96 space-y-4">
+    <main className="min-h-screen flex items-center justify-center bg-[var(--page-bg)] text-[var(--text-main)]">
+      <div className="w-96 space-y-4 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
         <h1 className="text-xl font-semibold">Admin Login</h1>
 
         <input
           type="password"
-          className="w-full border px-3 py-2 rounded"
+          className="w-full rounded border border-[var(--border-soft)] bg-[var(--surface-raised)] px-3 py-2 text-[var(--text-main)]"
           placeholder="Admin password"
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-sm text-[var(--destructive)]">{error}</p>}
 
         <button
           onClick={login}
-          className="w-full bg-blue-600 text-white py-2 rounded"
+          className="w-full rounded bg-[var(--accent)] py-2 text-[var(--accent-contrast)] hover:bg-[var(--accent-soft)]"
         >
           Login
         </button>

@@ -48,7 +48,7 @@ function groupByDate(
 
 function OverviewMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4">
+    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
       <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">{value}</p>
     </div>

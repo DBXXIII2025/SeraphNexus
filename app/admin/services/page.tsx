@@ -30,7 +30,7 @@ function StatusMessage({
     tone === "success"
       ? "rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200"
       : tone === "warning"
-        ? "rounded-xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] p-4 text-sm text-[var(--accent-gold-soft)]"
+        ? "rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-4 text-sm text-[var(--accent-soft)]"
         : "rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200";
 
   return <div className={className}>{children}</div>;
@@ -279,7 +279,7 @@ export default async function AdminServicesPage({
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex items-start gap-4">
                     <div className="space-y-2">
-                      <div className="h-[76px] w-[76px] overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),rgba(15,12,12,0.92))]">
+                      <div className="h-[76px] w-[76px] overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)]">
                         {primaryImage?.image_url ? (
                           <img
                             src={primaryImage.image_url}
@@ -297,7 +297,7 @@ export default async function AdminServicesPage({
                           {secondaryImages.map((image) => (
                             <div
                               key={image.id}
-                              className="h-8 w-8 overflow-hidden rounded-lg border border-[var(--border-soft)] bg-[rgba(15,12,12,0.88)]"
+                              className="h-8 w-8 overflow-hidden rounded-lg border border-[var(--border-soft)] bg-[var(--surface-raised)]"
                             >
                               {image.image_url ? (
                                 <img

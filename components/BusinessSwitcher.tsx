@@ -27,7 +27,7 @@ export default function BusinessSwitcher({
 
   if (!businesses || businesses.length === 0) {
     return (
-      <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.68)] px-4 py-4 text-sm text-[var(--text-soft)]">
+      <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-4 text-sm text-[var(--text-soft)]">
         No businesses yet.
       </div>
     );

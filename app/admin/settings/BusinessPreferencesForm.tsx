@@ -125,7 +125,7 @@ export default function BusinessPreferencesForm({
           <select
             value={language}
             onChange={(event) => setLanguage(event.target.value === "es" ? "es" : "en")}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-[var(--text-strong)]"
+            className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--text-strong)]"
           >
             <option value="en">English</option>
             <option value="es">Spanish</option>
@@ -133,7 +133,7 @@ export default function BusinessPreferencesForm({
         </label>
 
         {showOrderModes ? (
-          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+          <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4">
             <p className="text-sm font-medium text-[var(--text-strong)]">
               {isFoodBusiness(business.business_type) ? "Food fulfillment" : "Order fulfillment"}
             </p>
@@ -159,7 +159,7 @@ export default function BusinessPreferencesForm({
         ) : null}
 
         {showServiceModes ? (
-          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+          <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4">
             <p className="text-sm font-medium text-[var(--text-strong)]">{label("serviceMode")}</p>
             <div className="mt-3 flex flex-wrap gap-4 text-sm text-[var(--text-soft)]">
               <label className="inline-flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function BusinessPreferencesForm({
         ) : null}
 
         {!showOrderModes && !showServiceModes ? (
-          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-[var(--text-soft)]">
+          <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4 text-sm text-[var(--text-soft)]">
             Property and rental businesses are always on-site. No remote, pickup, or delivery
             toggles are shown.
           </div>

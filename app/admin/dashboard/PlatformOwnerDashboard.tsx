@@ -49,7 +49,7 @@ export default async function PlatformOwnerDashboard({
             <p
               className={`mt-5 text-4xl font-semibold ${
                 metric.tone === "success"
-                  ? "text-[var(--accent-gold-soft)]"
+                  ? "text-[var(--accent-soft)]"
                   : metric.tone === "alert"
                     ? "text-[var(--accent-soft)]"
                     : "text-[var(--text-strong)]"
@@ -105,7 +105,7 @@ export default async function PlatformOwnerDashboard({
               </div>
             ))}
             {platformData.businessesNeedingAttention.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
                 No businesses are currently flagged by onboarding, legal, or payout
                 readiness checks.
               </div>
@@ -123,7 +123,7 @@ export default async function PlatformOwnerDashboard({
               {platformData.supportThreads.slice(0, 5).map((thread) => (
                 <div
                   key={thread.id}
-                  className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4"
+                  className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4"
                 >
                   <p className="font-medium text-[var(--text-strong)]">
                     {thread.businessName || "Business"}
@@ -138,7 +138,7 @@ export default async function PlatformOwnerDashboard({
                 </div>
               ))}
               {platformData.supportThreads.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+                <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
                   No platform support threads yet.
                 </div>
               ) : null}
@@ -203,7 +203,7 @@ export default async function PlatformOwnerDashboard({
             </div>
           ))}
           {testBusinessCandidates.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
               No likely test or demo businesses were detected for the platform-owner
               account.
             </div>

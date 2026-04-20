@@ -93,7 +93,7 @@ export default async function LegalAcceptancePage({
             {missingDocumentKeys.join(", ")}
           </p>
           {legalState.unavailable ? (
-            <p className="mt-2 text-[var(--accent-gold-soft)]">
+            <p className="mt-2 text-[var(--accent-soft)]">
               Legal acceptance storage is currently unavailable. Admin gating will fail open until
               this storage is restored.
             </p>

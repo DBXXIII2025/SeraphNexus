@@ -75,11 +75,11 @@ function hoursSince(value: string | null) {
 function getPriorityClasses(priority: LeadVisitorSummary["priority"]) {
   switch (priority) {
     case "urgent":
-      return "border-[rgba(193,18,31,0.24)] bg-[rgba(193,18,31,0.12)] text-[var(--accent-soft)]";
+      return "border-[var(--destructive-border)] bg-[var(--destructive-bg)] text-[var(--accent-soft)]";
     case "high":
-      return "border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] text-[var(--accent-gold-soft)]";
+      return "border-[var(--accent-border)] bg-[var(--accent-muted)] text-[var(--accent-soft)]";
     default:
-      return "border-[var(--border-soft)] bg-[rgba(31,25,25,0.88)] text-[var(--text-soft)]";
+      return "border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-soft)]";
   }
 }
 
@@ -102,7 +102,7 @@ function BreakdownList({
           {items.map((item) => (
             <div
               key={item.label}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.5)] px-3 py-3"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-3 py-3"
             >
               <p className="truncate text-sm text-[var(--text-strong)]">{item.label}</p>
               <span className="text-sm font-medium text-[var(--text-soft)]">{item.count}</span>
@@ -309,7 +309,7 @@ export default function LeadFollowUpPanel({
           </div>
 
           <div className="grid min-w-[280px] gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-[rgba(193,18,31,0.2)] bg-[rgba(193,18,31,0.1)] p-4">
+            <div className="rounded-2xl border border-[var(--destructive-border)] bg-[var(--destructive-bg)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Needs Follow-Up
               </p>
@@ -317,15 +317,15 @@ export default function LeadFollowUpPanel({
                 {visibleNeedsFollowUp}
               </p>
             </div>
-            <div className="rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] p-4">
+            <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Uncontacted
               </p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--accent-gold-soft)]">
+              <p className="mt-2 text-2xl font-semibold text-[var(--accent-soft)]">
                 {visibleUncontacted}
               </p>
             </div>
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-4">
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Urgent
               </p>
@@ -337,7 +337,7 @@ export default function LeadFollowUpPanel({
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[1.45fr,0.95fr]">
-          <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] p-4">
+          <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <label className="space-y-2 text-sm">
                 <span className="text-[var(--text-soft)]">Search</span>
@@ -403,7 +403,7 @@ export default function LeadFollowUpPanel({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.5)] p-4">
+          <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
               Signal Snapshot
             </p>
@@ -423,12 +423,12 @@ export default function LeadFollowUpPanel({
         </div>
 
         {visitors.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.72)] px-4 py-8 text-sm text-[var(--text-soft)]">
+          <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
             Visitor grouping will appear once this business captures page views, direct message
             intent, guest messages, or checkout starts.
           </div>
         ) : filteredVisitors.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.72)] px-4 py-8 text-sm text-[var(--text-soft)]">
+          <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
             No leads match the current filters. Clear or broaden the filters to restore the queue.
           </div>
         ) : (
@@ -439,7 +439,7 @@ export default function LeadFollowUpPanel({
               return (
                 <div
                   key={visitor.key}
-                  className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-5 shadow-[0_16px_32px_rgba(0,0,0,0.26)]"
+                  className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-5 shadow-[var(--shadow-card)]"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-2">
@@ -461,7 +461,7 @@ export default function LeadFollowUpPanel({
                         >
                           {formatAdminStatusLabel(visitor.latestStatus, "New")}
                         </span>
-                        <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(31,25,25,0.88)] px-2.5 py-1 text-xs capitalize text-[var(--text-soft)]">
+                        <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-2.5 py-1 text-xs capitalize text-[var(--text-soft)]">
                           {formatSourceTypeLabel(visitor.sourceType)}
                         </span>
                       </div>
@@ -488,34 +488,34 @@ export default function LeadFollowUpPanel({
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] px-4 py-3">
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Events</p>
                       <p className="mt-2 text-xl font-semibold text-[var(--text-strong)]">{visitor.totalEvents}</p>
                     </div>
-                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] px-4 py-3">
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Messages</p>
-                      <p className="mt-2 text-xl font-semibold text-[var(--accent-gold-soft)]">{visitor.messagesSent}</p>
+                      <p className="mt-2 text-xl font-semibold text-[var(--accent-soft)]">{visitor.messagesSent}</p>
                     </div>
-                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] px-4 py-3">
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Message Clicks</p>
                       <p className="mt-2 text-xl font-semibold text-[var(--text-strong)]">{visitor.messageClicks}</p>
                     </div>
-                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] px-4 py-3">
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Bookings</p>
                       <p className="mt-2 text-xl font-semibold text-[var(--accent-soft)]">{visitor.bookingStarts}</p>
                     </div>
-                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] px-4 py-3">
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Checkouts</p>
-                      <p className="mt-2 text-xl font-semibold text-[var(--accent-gold-soft)]">{visitor.checkoutStarts}</p>
+                      <p className="mt-2 text-xl font-semibold text-[var(--accent-soft)]">{visitor.checkoutStarts}</p>
                     </div>
-                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] px-4 py-3">
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Views</p>
                       <p className="mt-2 text-xl font-semibold text-[var(--text-strong)]">{visitor.pageViews}</p>
                     </div>
                   </div>
 
                   <div className="mt-4 grid gap-4 xl:grid-cols-[1.25fr,0.95fr]">
-                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] p-4">
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <label className="space-y-2 text-sm">
                           <span className="text-[var(--text-soft)]">Lead status</span>
@@ -585,7 +585,7 @@ export default function LeadFollowUpPanel({
                       ) : null}
                     </div>
 
-                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(23,19,19,0.94)] p-4">
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
                       <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                         Quick actions
                       </p>

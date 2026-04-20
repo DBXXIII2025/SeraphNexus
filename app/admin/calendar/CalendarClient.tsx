@@ -29,10 +29,10 @@ export default function CalendarClient({
   };
 
   return (
-    <main className="min-h-screen bg-black text-rosepink p-8">
+    <main className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)] p-8">
       <h1 className="text-2xl mb-6">Booking Calendar</h1>
 
-      <div className="bg-black border border-rosepink rounded p-4">
+      <div className="bg-[var(--surface)] border border-[var(--border-soft)] rounded p-4">
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"

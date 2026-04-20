@@ -82,7 +82,7 @@ async function PlatformOwnerRevenuePage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="metric-card p-6">
           <p className="section-kicker">Projected MRR</p>
-          <p className="mt-5 text-4xl font-semibold text-[var(--accent-gold-soft)]">
+          <p className="mt-5 text-4xl font-semibold text-[var(--accent-soft)]">
             {formatCurrency(data.totalMRR)}
           </p>
           <p className="mt-3 text-sm text-[var(--text-soft)]">
@@ -177,7 +177,7 @@ async function PlatformOwnerRevenuePage() {
             </h2>
             <div className="mt-5 space-y-3">
               {data.planDistribution.map((plan) => (
-                <div key={plan.label} className="flex items-center justify-between rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] px-4 py-3">
+                <div key={plan.label} className="flex items-center justify-between rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3">
                   <p className="text-[var(--text-strong)]">{plan.label}</p>
                   <span className="text-sm text-[var(--text-soft)]">{plan.count}</span>
                 </div>
@@ -318,7 +318,7 @@ export default async function RevenuePage() {
 
         <div className="metric-card p-5">
           <p className="section-kicker">Net earnings</p>
-          <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-gold-soft)]">
+          <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
             {formatCurrency(netRevenue)}
           </p>
         </div>

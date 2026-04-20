@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, useState } from "react";
 import {
@@ -604,41 +604,41 @@ export default function CustomizeClient({
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-3 text-slate-900 sm:p-4">
-      <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
-        <h1 className="font-heading text-2xl text-slate-950">Business Profile</h1>
-        <p className="mt-1.5 text-sm text-slate-600">
+    <div className="mx-auto max-w-6xl space-y-4 p-3 text-[var(--text-strong)] sm:p-4">
+      <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] px-4 py-4 shadow-[var(--shadow-soft)]">
+        <h1 className="font-heading text-2xl text-[var(--text-strong)]">Business Profile</h1>
+        <p className="mt-1.5 text-sm text-[var(--text-soft)]">
           The preview uses the same compact public header, gallery, and information layout customers see.
         </p>
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl border border-[var(--destructive)] bg-red-50 px-4 py-3 text-sm text-[var(--destructive)]">
           {error}
         </div>
       ) : null}
 
       {success ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="rounded-xl border border-[var(--success)] bg-[var(--success-bg)] px-4 py-3 text-sm text-[var(--success)]">
           {success}
         </div>
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[410px_minmax(0,1fr)] lg:items-start">
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_18px_44px_rgba(15,23,42,0.08)] lg:sticky lg:top-4">
-          <div className="mb-3 flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-3 shadow-[var(--shadow-card)] lg:sticky lg:top-4">
+          <div className="mb-3 flex items-center justify-between border-b border-[var(--border-soft)] pb-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
                 Live preview
               </p>
-              <p className="mt-1 text-sm text-slate-600">Public card layout</p>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">Public card layout</p>
             </div>
-            <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
+            <span className="rounded-md border border-[var(--success)] bg-[var(--success-bg)] px-2 py-1 text-xs text-[var(--success)]">
               Live
             </span>
           </div>
           <div
-            className="overflow-hidden rounded-lg border border-slate-200 p-2"
+            className="overflow-hidden rounded-lg border border-[var(--border-soft)] p-2"
             style={{
               width: "100%",
               maxWidth: "384px",
@@ -673,30 +673,30 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
+        <div className="space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
         <div
           className={`rounded-lg border px-3.5 py-2.5 text-sm ${
             planNotice.tone === "warning"
-              ? "border-amber-200 bg-amber-50 text-amber-800"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? "border-amber-200 bg-[var(--warning-bg)] text-[var(--warning)]"
+              : "border-emerald-200 bg-[var(--success-bg)] text-[var(--success)]"
           }`}
         >
           {planNotice.message}
         </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-slate-950">Profile completion</p>
-              <p className="mt-1 text-sm text-slate-600">{completion.summary}</p>
+              <p className="text-sm font-medium text-[var(--text-strong)]">Profile completion</p>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">{completion.summary}</p>
             </div>
-            <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-900">
+            <div className="rounded-full border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-1 text-sm font-medium text-[var(--text-strong)]">
               {completion.progressPercent}% complete
             </div>
           </div>
 
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--border-soft)]">
             <div
-              className="h-full rounded-full bg-emerald-500"
+              className="h-full rounded-full bg-[var(--success-bg)]0"
               style={{ width: `${completion.progressPercent}%` }}
             />
           </div>
@@ -705,9 +705,9 @@ export default function CustomizeClient({
             {completion.fields.map((field) => (
               <div
                 key={field.key}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                className="rounded-lg border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 text-sm"
               >
-                <span className="font-medium text-slate-900">{field.label}</span>
+                <span className="font-medium text-[var(--text-strong)]">{field.label}</span>
                 <span
                   className={`ml-2 ${
                     field.missing ? "text-yellow-300" : "text-emerald-300"
@@ -720,111 +720,111 @@ export default function CustomizeClient({
           </div>
 
           {savedCompletion.canPublishProfile && !completion.canPublishProfile ? (
-            <p className="mt-4 text-xs text-gray-500">
+            <p className="mt-4 text-xs text-[var(--text-muted)]">
               Saving incomplete changes will make the business profile no longer publish-ready.
             </p>
           ) : null}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold text-slate-950">Business Info</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-lg font-semibold text-[var(--text-strong)]">Business Info</h2>
+            <p className="mt-1 text-sm text-[var(--text-soft)]">
               These fields feed the compact public header and the detail block below the gallery.
             </p>
           </div>
           <div className="space-y-3">
         <div>
-          <p className="mb-1 text-sm font-medium text-slate-700">Business name</p>
+          <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Business name</p>
           <input
             placeholder="Business name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
+            className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
           />
         </div>
 
         <div>
-          <p className="mb-1 text-sm font-medium text-slate-700">Public slug</p>
+          <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Public slug</p>
           <input
             placeholder="public-business-slug"
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
+            className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
           />
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
             Preview: /{publicRoutePrefix}/{slugPreview || "your-business"}
           </p>
         </div>
 
         <div>
-          <p className="mb-1 text-sm font-medium text-slate-700">Business description</p>
+          <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Business description</p>
           <textarea
             placeholder="Describe what customers should know before they visit, book, order, or inquire."
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="min-h-32 w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
+            className="min-h-32 w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
           />
         </div>
           </div>
         </div>
 
         {profileFieldsSchemaReady ? (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold text-slate-950">Contact Info</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-lg font-semibold text-[var(--text-strong)]">Contact Info</h2>
+            <p className="mt-1 text-sm text-[var(--text-soft)]">
               These fields render on the public profile when present.
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">Phone</p>
-              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Phone</p>
+              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">Email</p>
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Email</p>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">Website</p>
-              <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Website</p>
+              <input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">Service area</p>
-              <input value={form.service_area} onChange={(e) => setForm({ ...form, service_area: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Service area</p>
+              <input value={form.service_area} onChange={(e) => setForm({ ...form, service_area: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div className="md:col-span-2">
-              <p className="mb-1 text-sm font-medium text-slate-700">Street address</p>
-              <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Street address</p>
+              <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">City</p>
-              <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">City</p>
+              <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">State</p>
-              <input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">State</p>
+              <input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">ZIP</p>
-              <input value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">ZIP</p>
+              <input value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">Country</p>
-              <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Country</p>
+              <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">Facebook</p>
-              <input value={form.social_facebook} onChange={(e) => setForm({ ...form, social_facebook: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Facebook</p>
+              <input value={form.social_facebook} onChange={(e) => setForm({ ...form, social_facebook: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">Instagram</p>
-              <input value={form.social_instagram} onChange={(e) => setForm({ ...form, social_instagram: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Instagram</p>
+              <input value={form.social_instagram} onChange={(e) => setForm({ ...form, social_instagram: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
             <div>
-              <p className="mb-1 text-sm font-medium text-slate-700">Twitter/X</p>
-              <input value={form.social_twitter} onChange={(e) => setForm({ ...form, social_twitter: e.target.value })} className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950" />
+              <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Twitter/X</p>
+              <input value={form.social_twitter} onChange={(e) => setForm({ ...form, social_twitter: e.target.value })} className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]" />
             </div>
           </div>
         </div>
@@ -837,16 +837,16 @@ export default function CustomizeClient({
 
         {customizationSchemaReady ? (
           <>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Branding</h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <h2 className="text-lg font-semibold text-[var(--text-strong)]">Branding</h2>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">
                 This logo appears in the compact public header.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <label className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800">
+              <label className="rounded border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--text-strong)]">
                 {uploadingLogo ? "Uploading..." : logoUrl ? "Replace logo" : "Upload logo"}
                 <input
                   type="file"
@@ -860,7 +860,7 @@ export default function CustomizeClient({
                 type="button"
                 onClick={() => void removeLogo()}
                 disabled={uploadingLogo || !logoUrl}
-                className="rounded border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded border border-[var(--destructive)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--destructive)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Remove logo
               </button>
@@ -868,40 +868,40 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
           <div className="mb-3">
-            <h2 className="text-lg font-semibold text-slate-950">Theme</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-lg font-semibold text-[var(--text-strong)]">Theme</h2>
+            <p className="mt-1 text-sm text-[var(--text-soft)]">
               Colors and font sizes apply to the compact header and readable business details.
             </p>
           </div>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <p className="mb-1 text-sm font-medium text-slate-700">Page background/theme color</p>
+            <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Page background/theme color</p>
             <input
               type="color"
               value={form.page_accent_color}
               onChange={(e) => setForm({ ...form, page_accent_color: e.target.value })}
-              className="h-11 w-full rounded border border-slate-300 bg-white p-1"
+              className="h-11 w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-1"
             />
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
               This saved theme color drives the public buttons, accents, and page background tint.
             </p>
           </div>
           <div>
-            <p className="mb-1 text-sm font-medium text-slate-700">Page text color</p>
+            <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Page text color</p>
             <input
               type="color"
               value={form.page_text_color}
               onChange={(e) => setForm({ ...form, page_text_color: e.target.value })}
-              className="h-11 w-full rounded border border-slate-300 bg-white p-1"
+              className="h-11 w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-1"
             />
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
               Very low-contrast text colors are saved as the readable default.
             </p>
           </div>
           <div>
-            <p className="mb-1 text-sm font-medium text-slate-700">Heading font size</p>
+            <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Heading font size</p>
             <input
               type="number"
               min="24"
@@ -910,11 +910,11 @@ export default function CustomizeClient({
               onChange={(e) =>
                 setForm({ ...form, heading_font_size: Number(e.target.value) })
               }
-              className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
+              className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
             />
           </div>
           <div>
-            <p className="mb-1 text-sm font-medium text-slate-700">Body font size</p>
+            <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Body font size</p>
             <input
               type="number"
               min="14"
@@ -923,17 +923,17 @@ export default function CustomizeClient({
               onChange={(e) =>
                 setForm({ ...form, body_font_size: Number(e.target.value) })
               }
-              className="w-full rounded border border-slate-300 bg-white p-2 text-slate-950"
+              className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
             />
           </div>
         </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Gallery</h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <h2 className="text-lg font-semibold text-[var(--text-strong)]">Gallery</h2>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">
                 Manage the compact framed public carousel without enlarging the control panel.
               </p>
             </div>
@@ -947,7 +947,7 @@ export default function CustomizeClient({
                 });
                 galleryPhotoInputRef.current?.click();
               }}
-              className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border border-[var(--border-strong)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploadingPhoto ? "Uploading..." : "Add photo"}
             </button>
@@ -977,26 +977,26 @@ export default function CustomizeClient({
             />
           </div>
           {customizationErrorMessage ? (
-            <p className="mt-3 text-sm text-amber-700">{customizationErrorMessage}</p>
+            <p className="mt-3 text-sm text-[var(--warning)]">{customizationErrorMessage}</p>
           ) : null}
           <div className="mt-3 grid grid-cols-3 gap-2">
             {galleryImages.length === 0 ? (
-              <div className="col-span-full rounded-lg border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">
+              <div className="col-span-full rounded-lg border border-dashed border-[var(--border-strong)] bg-[var(--surface)] p-5 text-sm text-[var(--text-muted)]">
                 Upload photos to publish a gallery.
               </div>
             ) : (
               galleryImages.map((image, index) => (
-                <div key={image.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                <div key={image.id} className="overflow-hidden rounded-lg border border-[var(--border-soft)] bg-[var(--surface)]">
                   <img src={image.image_url} alt={image.alt_text || "Business gallery photo"} className="aspect-square w-full object-cover" />
                   <div className="space-y-2 p-2 text-xs">
-                    <span className="block font-medium text-slate-700">
+                    <span className="block font-medium text-[var(--text-soft)]">
                       {image.is_primary ? "Primary photo" : `Photo ${index + 1}`}
                     </span>
                     <div className="grid grid-cols-2 gap-1">
-                      <button type="button" onClick={() => void markPrimaryPhoto(image.id)} className="rounded border border-slate-200 px-2 py-1 text-slate-700 disabled:opacity-50" disabled={image.is_primary}>Primary</button>
-                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, -1)} className="rounded border border-slate-200 px-2 py-1 text-slate-700 disabled:opacity-50" disabled={index === 0}>Up</button>
-                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, 1)} className="rounded border border-slate-200 px-2 py-1 text-slate-700 disabled:opacity-50" disabled={index === galleryImages.length - 1}>Down</button>
-                      <button type="button" onClick={() => void removeGalleryPhoto(image.id)} className="rounded border border-red-200 px-2 py-1 text-red-700">Remove</button>
+                      <button type="button" onClick={() => void markPrimaryPhoto(image.id)} className="rounded border border-[var(--border-soft)] px-2 py-1 text-[var(--text-soft)] disabled:opacity-50" disabled={image.is_primary}>Primary</button>
+                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, -1)} className="rounded border border-[var(--border-soft)] px-2 py-1 text-[var(--text-soft)] disabled:opacity-50" disabled={index === 0}>Up</button>
+                      <button type="button" onClick={() => void moveGalleryPhoto(image.id, 1)} className="rounded border border-[var(--border-soft)] px-2 py-1 text-[var(--text-soft)] disabled:opacity-50" disabled={index === galleryImages.length - 1}>Down</button>
+                      <button type="button" onClick={() => void removeGalleryPhoto(image.id)} className="rounded border border-[var(--destructive)] px-2 py-1 text-[var(--destructive)]">Remove</button>
                     </div>
                   </div>
                 </div>
@@ -1012,53 +1012,53 @@ export default function CustomizeClient({
           </div>
         )}
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
-          <h2 className="text-lg font-semibold text-slate-950">Services / Products</h2>
-          <p className="mt-1 text-sm text-slate-600">
+        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
+          <h2 className="text-lg font-semibold text-[var(--text-strong)]">Services / Products</h2>
+          <p className="mt-1 text-sm text-[var(--text-soft)]">
             Manage sellable items in the dedicated operations modules so booking, ordering,
             checkout, and inventory rules remain connected to real records.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <a href="/admin/services" className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800">
+            <a href="/admin/services" className="rounded border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-strong)]">
               Services
             </a>
-            <a href="/admin/products" className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800">
+            <a href="/admin/products" className="rounded border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-strong)]">
               Products / Menu
             </a>
-            <a href="/admin/rentals" className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800">
+            <a href="/admin/rentals" className="rounded border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-strong)]">
               Rentals
             </a>
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5">
-          <h2 className="text-lg font-semibold text-slate-950">Public Actions</h2>
-          <p className="mt-1 text-sm text-slate-600">
+        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
+          <h2 className="text-lg font-semibold text-[var(--text-strong)]">Public Actions</h2>
+          <p className="mt-1 text-sm text-[var(--text-soft)]">
             Save changes, then open the real public pages that customers can use.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={handleSave}
               disabled={loading}
-              className="rounded bg-slate-950 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Saving..." : "Save Profile"}
             </button>
             <a
               href={`/b/${slugPreview || form.slug || form.id}`}
-              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+              className="rounded border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-strong)]"
             >
               Public profile
             </a>
             <a
               href={`/${publicRoutePrefix}/${slugPreview || form.slug || form.id}`}
-              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+              className="rounded border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-strong)]"
             >
               Customer action page
             </a>
             <a
               href="/admin/settings"
-              className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800"
+              className="rounded border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-strong)]"
             >
               Publish settings
             </a>

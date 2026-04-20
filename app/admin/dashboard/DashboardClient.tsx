@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import type { DashboardData, DashboardMetricTone } from "@/lib/adminDashboard";
@@ -22,7 +22,7 @@ type DashboardClientProps = {
 
 function getMetricToneClasses(tone: DashboardMetricTone) {
   if (tone === "success") {
-    return "text-[var(--accent-gold-soft)]";
+    return "text-[var(--accent-soft)]";
   }
 
   if (tone === "alert") {
@@ -115,7 +115,7 @@ export default function DashboardClient({
               ))}
               <div className="table-row-panel p-4 sm:col-span-2">
                 <p className="text-xs font-medium text-[var(--text-muted)]">{t("operationsConsole")}</p>
-                <p className="mt-2 text-lg font-semibold text-[var(--accent-gold-soft)]">
+                <p className="mt-2 text-lg font-semibold text-[var(--accent-soft)]">
                   {dashboard.heroTitle}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
@@ -143,7 +143,7 @@ export default function DashboardClient({
                   {readiness.blockers.map((blocker) => (
                     <div
                       key={blocker.id}
-                      className="rounded-xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3"
+                      className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3"
                     >
                       <p className="text-sm font-medium text-[var(--text-strong)]">
                         {blocker.label}
@@ -157,7 +157,7 @@ export default function DashboardClient({
               ) : null}
             </div>
 
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4 lg:min-w-[240px]">
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 lg:min-w-[240px]">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 {t("continueSetup")}
               </p>
@@ -180,7 +180,7 @@ export default function DashboardClient({
           {readiness.blockers.some((blocker) => blocker.kind === "offerings") ? (
             <div className="mt-5 rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-5">
               <p className="text-xs uppercase tracking-[0.18em] text-yellow-200">First Data Quickstart</p>
-              <h3 className="mt-2 text-lg font-semibold text-white">
+              <h3 className="mt-2 text-lg font-semibold text-[var(--text-main)]">
                 {readiness.blockers.find((blocker) => blocker.kind === "offerings")?.label || "Create your first record"}
               </h3>
               <p className="mt-2 text-sm leading-6 text-yellow-100/90">
@@ -211,14 +211,14 @@ export default function DashboardClient({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4 lg:min-w-[240px]">
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 lg:min-w-[240px]">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Setup Progress
               </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--accent-gold-soft)]">
+              <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
                 {onboarding.progressPercent}%
               </p>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--accent-muted)]">
                 <div
                   className="h-full rounded-full bg-[var(--accent)]"
                   style={{ width: `${onboarding.progressPercent}%` }}
@@ -258,11 +258,11 @@ export default function DashboardClient({
               <Link
                 key={trigger.id}
                 href={trigger.href}
-                className="table-row-panel block p-4 transition hover:border-[rgba(212,175,55,0.18)]"
+                className="table-row-panel block p-4 transition hover:border-[var(--accent-border)]"
               >
                 <p className="text-sm font-medium text-[var(--text-strong)]">{trigger.title}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">{trigger.detail}</p>
-                <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-[var(--accent-gold-soft)]">
+                <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-[var(--accent-soft)]">
                   Upgrade options
                 </p>
               </Link>
@@ -317,7 +317,7 @@ export default function DashboardClient({
                       {item.href ? (
                         <Link
                           href={item.href}
-                          className="mt-3 inline-flex text-sm font-medium text-[var(--accent-gold-soft)]"
+                          className="mt-3 inline-flex text-sm font-medium text-[var(--accent-soft)]"
                         >
                           View details
                         </Link>
@@ -371,7 +371,7 @@ export default function DashboardClient({
               This dashboard is resolved from the active business record and only shows modules that
               match the current `business_type`.
             </p>
-            <div className="mt-5 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4">
+            <div className="mt-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
                 Business Type
               </p>

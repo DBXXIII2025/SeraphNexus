@@ -105,13 +105,13 @@ export default function UpgradeClient({
               className={`rounded-2xl border p-6 ${
                 isCurrent
                   ? "border-emerald-500/40 bg-emerald-500/10"
-                  : "border-white/10 bg-zinc-900/70"
+                  : "border-[var(--border-soft)] bg-[var(--surface)]"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">{plan.label}</h2>
-                  <p className="mt-1 text-sm text-gray-400">{plan.description}</p>
+                  <p className="mt-1 text-sm text-[var(--text-soft)]">{plan.description}</p>
                 </div>
                 {isCurrent ? (
                   <span className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-200">
@@ -122,26 +122,26 @@ export default function UpgradeClient({
 
               <div className="mt-5">
                 <p className="text-3xl font-semibold">{priceLabel}</p>
-                <p className="mt-1 text-sm text-gray-400">
+                <p className="mt-1 text-sm text-[var(--text-soft)]">
                   Platform fee: {feeLabel}
                 </p>
                 {!billingActive && tier !== "trial" ? (
-                  <p className="mt-2 text-xs text-amber-300">
+                  <p className="mt-2 text-xs text-[var(--warning)]">
                     Temporarily unavailable for new subscriptions
                   </p>
                 ) : null}
               </div>
 
-              <ul className="mt-5 space-y-2 text-sm text-gray-300">
+              <ul className="mt-5 space-y-2 text-sm text-[var(--text-soft)]">
                 {plan.highlights.map((highlight) => (
-                  <li key={highlight} className="rounded-lg bg-black/20 px-3 py-2">
+                  <li key={highlight} className="rounded-lg bg-[var(--surface-muted)] px-3 py-2">
                     {highlight}
                   </li>
                 ))}
               </ul>
 
               <div className="mt-5 space-y-2">
-                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   Feature Access
                 </p>
                 <div className="space-y-2">
@@ -151,11 +151,11 @@ export default function UpgradeClient({
                     return (
                       <div
                         key={feature}
-                        className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm"
+                        className="flex items-center justify-between rounded-lg border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-2 text-sm"
                       >
                         <span>{FEATURE_LABELS[feature]}</span>
                         <span
-                          className={enabled ? "text-emerald-300" : "text-gray-500"}
+                          className={enabled ? "text-emerald-300" : "text-[var(--text-muted)]"}
                         >
                           {enabled ? "Included" : "Locked"}
                         </span>
@@ -169,7 +169,7 @@ export default function UpgradeClient({
                 type="button"
                 onClick={() => choosePlan(tier)}
                 disabled={isCurrent || loadingPlan !== null || (!billingActive && tier !== "trial")}
-                className="mt-6 w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-6 w-full rounded-lg bg-[var(--surface-raised)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--accent-muted)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCurrent
                   ? "Current Plan"

@@ -6,9 +6,9 @@ export default async function SettingsPage() {
 
   if (!business) {
     return (
-      <div className="text-white">
+      <div className="text-[var(--text-main)]">
         <h1 className="text-2xl font-semibold mb-2">Business Settings</h1>
-        <p className="text-sm text-gray-400">No active business found.</p>
+        <p className="text-sm text-[var(--text-soft)]">No active business found.</p>
       </div>
     );
   }

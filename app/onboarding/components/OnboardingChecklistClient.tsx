@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -54,17 +54,17 @@ export default function OnboardingChecklistClient({
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[rgba(212,175,55,0.16)] bg-[rgba(15,12,12,0.62)] p-5">
+          <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--surface-raised)] p-5">
             <p className="section-kicker">Progress</p>
             <div className="mt-4 flex items-end justify-between gap-3">
-              <p className="text-4xl font-semibold text-[var(--accent-gold-soft)]">
+              <p className="text-4xl font-semibold text-[var(--accent-soft)]">
                 {onboarding.progressPercent}%
               </p>
               <span className="status-chip">
                 {onboarding.completedCount}/{onboarding.totalCount} complete
               </span>
             </div>
-            <div className="mt-4 h-3 overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
+            <div className="mt-4 h-3 overflow-hidden rounded-full bg-[var(--accent-muted)]">
               <div
                 className="h-full rounded-full bg-[var(--accent)]"
                 style={{ width: `${onboarding.progressPercent}%` }}
@@ -146,8 +146,8 @@ export default function OnboardingChecklistClient({
                         step.completed
                           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                           : isCurrent
-                            ? "border-[rgba(212,175,55,0.26)] bg-[rgba(212,175,55,0.12)] text-[var(--accent-gold-soft)]"
-                            : "border-[var(--border-soft)] bg-[rgba(15,12,12,0.6)] text-[var(--text-soft)]"
+                            ? "border-[var(--accent-border)] bg-[var(--accent-muted)] text-[var(--accent-soft)]"
+                            : "border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-soft)]"
                       }`}
                     >
                       {step.completed ? "Completed" : isCurrent ? "Current" : "Incomplete"}

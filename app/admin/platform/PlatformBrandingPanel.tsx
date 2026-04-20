@@ -140,7 +140,7 @@ export default function PlatformBrandingPanel({
 
       <div className="mt-5 table-row-panel p-4">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-[rgba(212,175,55,0.24)] bg-[rgba(15,12,12,0.72)] p-2">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-[var(--accent-border)] bg-[var(--surface-raised)] p-2">
             {currentLogoUrl ? (
               <img
                 src={currentLogoUrl}
@@ -148,7 +148,7 @@ export default function PlatformBrandingPanel({
                 className="h-full w-full object-contain"
               />
             ) : (
-              <span className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--accent-gold-soft)]">
+              <span className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--accent-soft)]">
                 SN
               </span>
             )}
@@ -168,7 +168,7 @@ export default function PlatformBrandingPanel({
       </div>
 
       <div className="mt-5 space-y-4">
-        <label className="text-sm text-gray-300">
+        <label className="text-sm text-[var(--text-soft)]">
           <span className="form-label">Replace logo</span>
           <input
             ref={fileInputRef}

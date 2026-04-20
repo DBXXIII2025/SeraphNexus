@@ -54,7 +54,7 @@ export default function ConnectStripeButton({
         type="button"
         onClick={handleConnect}
         disabled={loading}
-        className={`rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={`rounded-md bg-[var(--success)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--success)] disabled:cursor-not-allowed disabled:opacity-60 ${
           className || ""
         }`}
       >

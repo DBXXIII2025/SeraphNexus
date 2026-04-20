@@ -18,7 +18,7 @@ export default async function AdminUpgradePage({
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="text-white">{createAdminTranslator(null)("noActiveBusiness")}</div>;
+    return <div className="text-[var(--text-main)]">{createAdminTranslator(null)("noActiveBusiness")}</div>;
   }
 
   const t = createAdminTranslator(business.language);
@@ -33,10 +33,10 @@ export default async function AdminUpgradePage({
         : plan.monthlyPriceLabel;
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-[var(--text-main)]">
       <div>
         <h1 className="text-2xl font-semibold">{t("upgrade")}</h1>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-[var(--text-soft)]">
           Manage plan access and transaction fees for {business.name}.
         </p>
       </div>
@@ -54,22 +54,22 @@ export default async function AdminUpgradePage({
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6">
+      <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
               Current Plan
             </p>
             <h2 className="mt-2 text-2xl font-semibold">{plan.label}</h2>
-            <p className="mt-2 text-sm text-gray-400">
+            <p className="mt-2 text-sm text-[var(--text-soft)]">
               Billing: {currentPriceLabel}
             </p>
-            <p className="mt-2 text-sm text-gray-400">
+            <p className="mt-2 text-sm text-[var(--text-soft)]">
               Current platform fee: {platformFee.label || getPlatformFeeLabel(business.plan)} per
               successful transaction.
             </p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-gray-300">
+          <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text-soft)]">
             Businesses on lower-fee plans keep more of each Stripe Connect payout.
           </div>
         </div>

@@ -210,7 +210,7 @@ export default function RentalCatalogClient({
   }
 
   return (
-    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
+    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       <div className="px-3 py-5 sm:py-6">
         <BusinessProfileShell
           businessName={business.name}
@@ -257,7 +257,7 @@ export default function RentalCatalogClient({
                     }}
                     className={`w-full rounded-2xl border p-5 text-left transition ${
                       selected
-                        ? "border-[rgba(212,175,55,0.22)] bg-[rgba(36,29,29,0.96)] shadow-[0_0_18px_rgba(212,175,55,0.08)]"
+                        ? "border-[var(--accent)] bg-[var(--accent-muted)] shadow-[var(--shadow-soft)]"
                         : "border-[var(--border-soft)] bg-[var(--panel)] hover:border-[var(--accent-soft)]"
                     }`}
                   >
@@ -270,7 +270,7 @@ export default function RentalCatalogClient({
                           {property.description || "Private listing details available after booking."}
                         </p>
                       </div>
-                      <p className="text-sm font-semibold text-[var(--accent-gold-soft)]">
+                      <p className="text-sm font-semibold text-[var(--accent-soft)]">
                         ${Number(property.price || 0).toFixed(2)}
                       </p>
                     </div>

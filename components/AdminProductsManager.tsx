@@ -224,10 +224,10 @@ export default function AdminProductsManager({
   }
 
   return (
-    <div className="max-w-5xl space-y-6 text-white">
+    <div className="max-w-5xl space-y-6 text-[var(--text-main)]">
       <div>
         <h1 className="text-2xl font-semibold">{pageTitle}</h1>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-[var(--text-soft)]">
           Edit the live catalog for this business. New prices apply to future purchases only.
           Historical orders keep the original charged totals.
         </p>
@@ -236,20 +236,20 @@ export default function AdminProductsManager({
       {products.length === 0 ? (
         <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-6">
           <p className="text-xs uppercase tracking-[0.18em] text-yellow-200">Quickstart</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">{quickstart.title}</h2>
+          <h2 className="mt-2 text-xl font-semibold text-[var(--text-main)]">{quickstart.title}</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-yellow-100/90">
             {quickstart.description}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <a
               href="#create-item"
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500"
+              className="rounded-md bg-[var(--success)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--success)]"
             >
               {quickstart.primaryLabel}
             </a>
             <Link
               href={quickstart.secondaryHref}
-              className="rounded-md border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
+              className="rounded-md border border-[var(--border-soft)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--accent-muted)]"
             >
               {quickstart.secondaryLabel}
             </Link>
@@ -258,7 +258,7 @@ export default function AdminProductsManager({
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
-        <div id="create-item" className="rounded-xl border border-white/10 bg-zinc-900/70 p-6">
+        <div id="create-item" className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">
               {form.id ? "Edit Item" : `Create ${pageTitle.slice(0, -1) || "Item"}`}
@@ -266,7 +266,7 @@ export default function AdminProductsManager({
             {form.id && (
               <button
                 type="button"
-                className="text-sm text-gray-400 underline"
+                className="text-sm text-[var(--text-soft)] underline"
                 onClick={resetForm}
               >
                 Cancel edit
@@ -279,14 +279,14 @@ export default function AdminProductsManager({
               placeholder="Name"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+              className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
             />
 
             <textarea
               placeholder="Description"
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              className="min-h-[120px] w-full rounded-md border border-white/10 bg-black/40 p-2"
+              className="min-h-[120px] w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
             />
 
             <input
@@ -294,7 +294,7 @@ export default function AdminProductsManager({
               inputMode="decimal"
               value={form.price}
               onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
-              className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+              className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
             />
 
             <select
@@ -302,7 +302,7 @@ export default function AdminProductsManager({
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, is_active: e.target.value === "active" }))
               }
-              className="w-full rounded-md border border-white/10 bg-black/40 p-2"
+              className="w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface-muted)] p-2"
             >
               <option value="active">Active</option>
               <option value="archived">Archived</option>
@@ -331,30 +331,30 @@ export default function AdminProductsManager({
               type="button"
               onClick={handleSave}
               disabled={loading}
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500 disabled:opacity-60"
+              className="rounded-md bg-[var(--success)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--success)] disabled:opacity-60"
             >
               {loading ? "Saving..." : form.id ? "Save Changes" : "Create Item"}
             </button>
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-6">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6">
           <h2 className="mb-4 text-lg font-semibold">Live Catalog</h2>
           {products.length === 0 ? (
             <div className="space-y-4">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-[var(--text-soft)]">
                 No items yet. Create the first real catalog entry to unlock order-ready setup.
               </p>
               <div className="flex flex-wrap gap-3">
                 <a
                   href="#create-item"
-                  className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500"
+                  className="rounded-md bg-[var(--success)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--success)]"
                 >
                   {quickstart.primaryLabel}
                 </a>
                 <Link
                   href={quickstart.secondaryHref}
-                  className="rounded-md border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
+                  className="rounded-md border border-[var(--border-soft)] px-4 py-2 text-sm font-medium text-[var(--text-main)] transition hover:bg-[var(--accent-muted)]"
                 >
                   {quickstart.secondaryLabel}
                 </Link>
@@ -365,21 +365,21 @@ export default function AdminProductsManager({
               {products.map((product) => (
                 <div
                   key={product.id}
-                  className="rounded-lg border border-white/10 bg-black/30 p-4 text-left"
+                  className="rounded-lg border border-[var(--border-soft)] bg-[var(--surface-muted)] p-4 text-left"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <button type="button" onClick={() => startEdit(product)} className="text-left">
-                        <p className="font-medium text-white">{product.name}</p>
+                        <p className="font-medium text-[var(--text-main)]">{product.name}</p>
                       </button>
                       {product.description && (
-                        <p className="mt-1 text-sm text-gray-400">{product.description}</p>
+                        <p className="mt-1 text-sm text-[var(--text-soft)]">{product.description}</p>
                       )}
-                      <p className="mt-2 text-xs text-gray-500">
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
                         {product.is_active === false ? "Archived" : "Active"}
                       </p>
                     </div>
-                    <p className="text-sm font-semibold text-white">
+                    <p className="text-sm font-semibold text-[var(--text-main)]">
                       ${Number(product.price).toFixed(2)}
                     </p>
                   </div>
@@ -388,7 +388,7 @@ export default function AdminProductsManager({
                     <button
                       type="button"
                       onClick={() => startEdit(product)}
-                      className="rounded-md border border-white/10 px-3 py-2 text-sm text-white transition hover:bg-white/5"
+                      className="rounded-md border border-[var(--border-soft)] px-3 py-2 text-sm text-[var(--text-main)] transition hover:bg-[var(--accent-muted)]"
                     >
                       Edit
                     </button>
@@ -406,7 +406,7 @@ export default function AdminProductsManager({
                         type="button"
                         disabled={loading}
                         onClick={() => handleLifecycleAction(product, "archive")}
-                        className="rounded-md border border-amber-500/30 px-3 py-2 text-sm text-amber-300 transition hover:bg-amber-500/10 disabled:opacity-60"
+                        className="rounded-md border border-amber-500/30 px-3 py-2 text-sm text-[var(--warning)] transition hover:bg-amber-500/10 disabled:opacity-60"
                       >
                         Archive
                       </button>

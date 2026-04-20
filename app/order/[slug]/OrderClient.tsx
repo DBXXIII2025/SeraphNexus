@@ -375,7 +375,7 @@ export default function OrderClient({
         <div>
           <h2 className="text-lg font-semibold">{category.name || "Menu"}</h2>
           {category.description && (
-            <p className="text-sm text-gray-400">{category.description}</p>
+            <p className="text-sm text-[var(--text-soft)]">{category.description}</p>
           )}
         </div>
         {items.map((item) => {
@@ -391,19 +391,19 @@ export default function OrderClient({
           return (
             <div
               key={item.id}
-              className="bg-black/40 border border-white/10 rounded-xl p-4"
+              className="bg-[var(--surface-muted)] border border-[var(--border-soft)] rounded-xl p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-semibold">{item.name || "Menu item"}</h3>
                   {item.description && (
-                    <p className="text-sm text-gray-400">{item.description}</p>
+                    <p className="text-sm text-[var(--text-soft)]">{item.description}</p>
                   )}
                 </div>
                 <div className="text-sm">${priceNumber.toFixed(2)}</div>
               </div>
               {groupNames.length > 0 && (
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-[var(--text-muted)] mt-2">
                   Options: {groupNames.join(", ")}
                   {optionCount > 0 ? ` (${optionCount})` : ""}
                 </p>
@@ -425,7 +425,7 @@ export default function OrderClient({
   const menuIsEmpty = !menuLoading && !menuError && activeItems.length === 0;
 
   return (
-    <div className="min-h-screen bg-white text-[var(--business-text,#111827)]">
+    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       <div className="px-3 py-5 sm:py-6">
         <BusinessProfileShell
           businessName={businessName}
@@ -444,19 +444,19 @@ export default function OrderClient({
           }
         />
       </div>
-      <div className="bg-zinc-950">
-      <div className="mx-auto max-w-5xl space-y-6 p-6 text-white">
-        <p className="text-sm text-gray-400">Order from the latest menu.</p>
+      <div className="bg-[var(--page-bg)]">
+      <div className="mx-auto max-w-5xl space-y-6 p-6 text-[var(--text-main)]">
+        <p className="text-sm text-[var(--text-soft)]">Order from the latest menu.</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
             {menuLoading && (
-              <p className="text-sm text-gray-400">Loading menu...</p>
+              <p className="text-sm text-[var(--text-soft)]">Loading menu...</p>
             )}
             {menuError && (
               <p className="text-sm text-red-400">{menuError}</p>
             )}
             {menuIsEmpty && (
-              <p className="text-sm text-gray-400">Menu not available.</p>
+              <p className="text-sm text-[var(--text-soft)]">Menu not available.</p>
             )}
             {!menuLoading && !menuError && !menuIsEmpty && (
               <div className="space-y-6">
@@ -480,7 +480,7 @@ export default function OrderClient({
                       return (
                         <div
                           key={item.id}
-                          className="bg-black/40 border border-white/10 rounded-xl p-4"
+                          className="bg-[var(--surface-muted)] border border-[var(--border-soft)] rounded-xl p-4"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div>
@@ -488,7 +488,7 @@ export default function OrderClient({
                                 {item.name || "Menu item"}
                               </h3>
                               {item.description && (
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm text-[var(--text-soft)]">
                                   {item.description}
                                 </p>
                               )}
@@ -496,7 +496,7 @@ export default function OrderClient({
                             <div className="text-sm">${priceNumber.toFixed(2)}</div>
                           </div>
                           {groupNames.length > 0 && (
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-xs text-[var(--text-muted)] mt-2">
                               Options: {groupNames.join(", ")}
                               {optionCount > 0 ? ` (${optionCount})` : ""}
                             </p>
@@ -528,7 +528,7 @@ export default function OrderClient({
                       return (
                         <div
                           key={item.id}
-                          className="bg-black/40 border border-white/10 rounded-xl p-4"
+                          className="bg-[var(--surface-muted)] border border-[var(--border-soft)] rounded-xl p-4"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div>
@@ -536,7 +536,7 @@ export default function OrderClient({
                                 {item.name || "Menu item"}
                               </h3>
                               {item.description && (
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm text-[var(--text-soft)]">
                                   {item.description}
                                 </p>
                               )}
@@ -544,7 +544,7 @@ export default function OrderClient({
                             <div className="text-sm">${priceNumber.toFixed(2)}</div>
                           </div>
                           {groupNames.length > 0 && (
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-xs text-[var(--text-muted)] mt-2">
                               Options: {groupNames.join(", ")}
                               {optionCount > 0 ? ` (${optionCount})` : ""}
                             </p>
@@ -564,29 +564,29 @@ export default function OrderClient({
             )}
           </div>
 
-          <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-4">
+          <div className="bg-[var(--surface-muted)] border border-[var(--border-soft)] rounded-xl p-4 space-y-4">
             <h2 className="text-lg font-semibold">{t("yourOrder")}</h2>
             {cart.length === 0 ? (
-              <p className="text-sm text-gray-400">{t("cartEmpty")}</p>
+              <p className="text-sm text-[var(--text-soft)]">{t("cartEmpty")}</p>
             ) : (
               <div className="space-y-3 text-sm">
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between items-center">
                     <div>
                       <div>{item.name}</div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-xs text-[var(--text-soft)]">
                         ${item.price.toFixed(2)} each
                       </div>
                       <div className="mt-1 flex items-center gap-3">
                         <button
-                          className="px-2 py-1 border border-white/20 rounded"
+                          className="px-2 py-1 border border-[var(--border-strong)] rounded"
                           onClick={() => updateQty(item.id, -1)}
                         >
                           -
                         </button>
                         <span>{item.qty}</span>
                         <button
-                          className="px-2 py-1 border border-white/20 rounded"
+                          className="px-2 py-1 border border-[var(--border-strong)] rounded"
                           onClick={() => updateQty(item.id, 1)}
                         >
                           +
@@ -596,7 +596,7 @@ export default function OrderClient({
                     <div>${(item.price * item.qty).toFixed(2)}</div>
                   </div>
                 ))}
-                <div className="border-t border-white/10 pt-2 flex justify-between font-semibold">
+                <div className="border-t border-[var(--border-soft)] pt-2 flex justify-between font-semibold">
                   <span>{t("total")}</span>
                   <span>${total.toFixed(2)}</span>
                 </div>
@@ -605,7 +605,7 @@ export default function OrderClient({
 
             <div className="space-y-2">
               <div className="space-y-1">
-                <label className="text-xs text-gray-400">{t("fulfillment")}</label>
+                <label className="text-xs text-[var(--text-soft)]">{t("fulfillment")}</label>
                 <div className="flex gap-3">
                   {pickupEnabled ? (
                     <button
@@ -613,8 +613,8 @@ export default function OrderClient({
                       onClick={() => setFulfillmentType("pickup")}
                       className={`flex-1 py-2 rounded border ${
                         fulfillmentType === "pickup"
-                          ? "border-green-500 bg-green-600/20"
-                          : "border-white/10 bg-black/30"
+                          ? "border-[var(--success)] bg-[var(--success-bg)]"
+                          : "border-[var(--border-soft)] bg-[var(--surface-muted)]"
                       }`}
                     >
                       {t("pickup")}
@@ -626,8 +626,8 @@ export default function OrderClient({
                       onClick={() => setFulfillmentType("delivery")}
                       className={`flex-1 py-2 rounded border ${
                         fulfillmentType === "delivery"
-                          ? "border-green-500 bg-green-600/20"
-                          : "border-white/10 bg-black/30"
+                          ? "border-[var(--success)] bg-[var(--success-bg)]"
+                          : "border-[var(--border-soft)] bg-[var(--surface-muted)]"
                       }`}
                     >
                       {t("delivery")}
@@ -642,19 +642,19 @@ export default function OrderClient({
               </div>
               <input
                 placeholder={t("name")}
-                className="w-full p-2 rounded bg-black/40 border border-white/10"
+                className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)]"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
               />
               <input
                 placeholder={t("emailAddress")}
-                className="w-full p-2 rounded bg-black/40 border border-white/10"
+                className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)]"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
               />
               <input
                 placeholder={t("phone")}
-                className="w-full p-2 rounded bg-black/40 border border-white/10"
+                className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)]"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
               />
@@ -662,32 +662,32 @@ export default function OrderClient({
                 <div className="space-y-2">
                   <input
                     placeholder={t("streetAddress")}
-                    className="w-full p-2 rounded bg-black/40 border border-white/10"
+                    className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)]"
                     value={addressLine1}
                     onChange={(e) => setAddressLine1(e.target.value)}
                   />
                   <input
                     placeholder={t("aptSuiteOptional")}
-                    className="w-full p-2 rounded bg-black/40 border border-white/10"
+                    className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)]"
                     value={addressLine2}
                     onChange={(e) => setAddressLine2(e.target.value)}
                   />
                   <input
                     placeholder={t("city")}
-                    className="w-full p-2 rounded bg-black/40 border border-white/10"
+                    className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)]"
                     value={addressCity}
                     onChange={(e) => setAddressCity(e.target.value)}
                   />
                   <div className="flex gap-3">
                     <input
                       placeholder={t("state")}
-                      className="w-full p-2 rounded bg-black/40 border border-white/10"
+                      className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)]"
                       value={addressState}
                       onChange={(e) => setAddressState(e.target.value)}
                     />
                     <input
                       placeholder={t("zip")}
-                      className="w-full p-2 rounded bg-black/40 border border-white/10"
+                      className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)]"
                       value={addressPostal}
                       onChange={(e) => setAddressPostal(e.target.value)}
                     />
@@ -696,7 +696,7 @@ export default function OrderClient({
               )}
               <textarea
                 placeholder="Notes (optional)"
-                className="w-full p-2 rounded bg-black/40 border border-white/10 min-h-[80px]"
+                className="w-full p-2 rounded bg-[var(--surface-muted)] border border-[var(--border-soft)] min-h-[80px]"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />

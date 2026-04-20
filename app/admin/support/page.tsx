@@ -59,7 +59,7 @@ export default async function AdminSupportPage({
         <section className="surface-card p-6">
           <p className="section-kicker">Support</p>
           <h1 className="section-title">Platform support</h1>
-          <div className="mt-4 rounded-xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] p-6 text-sm text-[var(--text-soft)]">
+          <div className="mt-4 rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
             The platform-owner account uses <Link href="/admin/messages" className="underline">/admin/messages</Link> for business-owner support threads and does not open tenant support requests.
           </div>
         </section>
@@ -152,8 +152,8 @@ export default async function AdminSupportPage({
                   href={`/admin/support?conversation=${encodeURIComponent(conversation.id)}`}
                   className={`block rounded-xl border p-4 ${
                     conversation.id === selectedConversationId
-                      ? "border-[rgba(193,18,31,0.24)] bg-[rgba(193,18,31,0.1)]"
-                      : "border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] hover:border-[rgba(212,175,55,0.16)]"
+                      ? "border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
+                      : "border-[var(--border-soft)] bg-[var(--surface-raised)] hover:border-[var(--accent-border)]"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -200,7 +200,7 @@ export default async function AdminSupportPage({
                   className={`rounded-xl px-4 py-3 ${
                     message.senderType === "business_owner"
                       ? "ml-auto max-w-[88%] border border-amber-500/20 bg-amber-500/10"
-                      : "max-w-[88%] border border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)]"
+                      : "max-w-[88%] border border-[var(--border-soft)] bg-[var(--surface-raised)]"
                   }`}
                 >
                   <p className="text-sm leading-6">{message.body}</p>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, useState } from "react";
 
@@ -112,10 +112,10 @@ export default function BusinessLogoManager({
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(39,39,42,0.5),rgba(9,9,11,0.88))] p-5">
+    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),rgba(24,24,27,0.92))] shadow-inner">
+          <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] shadow-inner">
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -123,16 +123,16 @@ export default function BusinessLogoManager({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-lg font-semibold tracking-[0.16em] text-gray-200">
+              <span className="text-lg font-semibold tracking-[0.16em] text-[var(--text-main)]">
                 {initials}
               </span>
             )}
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Business logo</p>
-            <h3 className="mt-1 text-lg font-semibold text-white">{businessName}</h3>
-            <p className="mt-1 max-w-xl text-sm text-gray-300">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Business logo</p>
+            <h3 className="mt-1 text-lg font-semibold text-[var(--text-main)]">{businessName}</h3>
+            <p className="mt-1 max-w-xl text-sm text-[var(--text-soft)]">
               Use a compact, clean mark that reads well in admin identity blocks and public headers.
             </p>
           </div>
@@ -143,9 +143,9 @@ export default function BusinessLogoManager({
             className={`inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium transition ${
               isConfigured
                 ? lockedMessage
-                  ? "cursor-not-allowed border-white/10 bg-black/20 text-gray-500"
-                  : "cursor-pointer border-white/10 bg-white/5 text-white hover:bg-white/10"
-                : "cursor-not-allowed border-white/10 bg-black/20 text-gray-500"
+                  ? "cursor-not-allowed border-[var(--border-soft)] bg-[var(--surface-muted)] text-[var(--text-muted)]"
+                  : "cursor-pointer border-[var(--border-soft)] bg-[var(--accent-muted)] text-[var(--text-main)] hover:bg-[var(--accent-muted)]"
+                : "cursor-not-allowed border-[var(--border-soft)] bg-[var(--surface-muted)] text-[var(--text-muted)]"
             }`}
           >
             {logoUrl ? "Replace logo" : "Upload logo"}
@@ -177,21 +177,21 @@ export default function BusinessLogoManager({
       ) : null}
 
       {lockedMessage ? (
-        <div className="mt-4 rounded-xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-3 text-sm text-[var(--accent-gold-soft)]">
+        <div className="mt-4 rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
           {lockedMessage}
         </div>
       ) : null}
 
       {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}
 
-      <div className="mt-4 grid gap-3 text-xs text-gray-400 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3">
+      <div className="mt-4 grid gap-3 text-xs text-[var(--text-soft)] sm:grid-cols-3">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-3">
           Recommended format: square or near-square mark
         </div>
-        <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-3">
           Accepted types: JPG, PNG, WEBP
         </div>
-        <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-muted)] px-3 py-3">
           Max file size: 2 MB
         </div>
       </div>

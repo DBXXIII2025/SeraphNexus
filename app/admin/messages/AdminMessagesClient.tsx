@@ -564,13 +564,13 @@ export default function AdminMessagesClient({
           context.
         </p>
 
-        <div className="mt-4 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3 text-sm text-[var(--text-soft)]">
+        <div className="mt-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
           <p>Active business: {activeBusinessName}</p>
           <p>Inbox scope: {scopedBusinessType || activeBusinessType || "business"}</p>
         </div>
 
         {syncError ? (
-          <div className="mt-4 rounded-2xl border border-[rgba(212,175,55,0.3)] bg-[rgba(212,175,55,0.14)] px-4 py-3 text-sm text-[var(--text-main)]">
+          <div className="mt-4 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--text-main)]">
             {syncError}
           </div>
         ) : null}
@@ -594,8 +594,8 @@ export default function AdminMessagesClient({
                   }}
                   className={`block w-full rounded-2xl border px-4 py-4 text-left transition ${
                     conversation.id === selectedConversationId
-                      ? "border-[rgba(193,18,31,0.24)] bg-[rgba(193,18,31,0.1)] shadow-[0_14px_28px_rgba(193,18,31,0.12)]"
-                      : "border-[var(--border-soft)] bg-[rgba(15,12,12,0.52)] hover:border-[rgba(212,175,55,0.16)] hover:bg-[rgba(31,25,25,0.92)]"
+                      ? "border-[var(--destructive-border)] bg-[var(--destructive-bg)] shadow-[var(--shadow-soft)]"
+                      : "border-[var(--border-soft)] bg-[var(--surface-raised)] hover:border-[var(--accent-border)] hover:bg-[var(--surface-raised)]"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -633,11 +633,11 @@ export default function AdminMessagesClient({
 
       <div className="surface-card p-6">
         {conversations.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.66)] p-6 text-sm text-[var(--text-soft)]">
+          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
             No conversations yet. New client messages for this business will appear here.
           </div>
         ) : !selectedConversation ? (
-          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.66)] p-6 text-sm text-[var(--text-soft)]">
+          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
             Select a conversation to view and respond.
           </div>
         ) : (
@@ -654,11 +654,11 @@ export default function AdminMessagesClient({
                 {threadConversation?.subject || selectedConversation.subject || "Conversation"}
               </p>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
                   <p>Business: {threadBusiness?.name || scopedBusinessName}</p>
                   <p>Type: {threadBusiness?.business_type || scopedBusinessType || "business"}</p>
                 </div>
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
                   <p>Context: {getContextLabel(threadConversation || selectedConversation)}</p>
                   <p>
                     Contact:{" "}
@@ -682,7 +682,7 @@ export default function AdminMessagesClient({
               </p>
             </div>
 
-            <div className="mt-5 space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.74)] p-4">
+            <div className="mt-5 space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
               {sortedMessages.length === 0 ? (
                 <p className="text-sm text-[var(--text-soft)]">No messages yet.</p>
               ) : (
@@ -691,8 +691,8 @@ export default function AdminMessagesClient({
                     key={message.id}
                     className={`rounded-xl px-4 py-3 ${
                       message.sender_type === "business"
-                        ? "ml-auto max-w-[85%] border border-[rgba(193,18,31,0.24)] bg-[rgba(193,18,31,0.14)]"
-                        : "max-w-[85%] border border-[var(--border-soft)] bg-[rgba(31,25,25,0.92)]"
+                        ? "ml-auto max-w-[85%] border border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
+                        : "max-w-[85%] border border-[var(--border-soft)] bg-[var(--surface-raised)]"
                     }`}
                   >
                     <p className="text-sm leading-6 text-[var(--text-main)]">{message.body}</p>
@@ -713,7 +713,7 @@ export default function AdminMessagesClient({
                           type="button"
                           onClick={() => handleUnsend(message.id)}
                           disabled={unsendingMessageId === message.id}
-                          className="text-xs font-medium text-[var(--accent-gold-soft)] underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                          className="text-xs font-medium text-[var(--accent-soft)] underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {unsendingMessageId === message.id ? "Unsending..." : "Unsend"}
                         </button>

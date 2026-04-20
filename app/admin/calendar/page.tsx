@@ -9,12 +9,12 @@ export default async function AdminCalendarPage() {
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="p-8 text-white">No active business</div>;
+    return <div className="p-8 text-[var(--text-main)]">No active business</div>;
   }
 
   if (isRentalBusinessType(business.business_type)) {
     return (
-      <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-6 text-white">
+      <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-[var(--text-main)]">
         Rental and property businesses use the dedicated reservations calendar in
         Inventory & Calendar.
       </div>
@@ -23,7 +23,7 @@ export default async function AdminCalendarPage() {
 
   if (business.business_type !== "service") {
     return (
-      <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-6 text-white">
+      <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-[var(--text-main)]">
         Calendar view is only available for service businesses.
       </div>
     );

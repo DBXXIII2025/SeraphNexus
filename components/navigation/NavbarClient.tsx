@@ -36,8 +36,8 @@ function getLinkClass(
   if (emphasis === "secondary") {
     return `inline-flex min-h-11 items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium ${
       active
-        ? "border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--accent-strong)]"
-        : "border-[var(--border-soft)] bg-[var(--surface)] text-[var(--accent-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
+        ? "border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--text-strong)]"
+        : "border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--accent-muted)]"
     }`;
   }
 
@@ -115,13 +115,13 @@ export default function NavbarClient({
       ];
 
   return (
-    <div className="sticky top-0 z-50 border-b border-[var(--border-soft)] bg-[var(--surface)]">
+    <div className="sticky top-0 z-50 border-b border-[var(--border-soft)] bg-[var(--section-bg)]">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href={homeHref}
           className="group inline-flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 pr-4 shadow-[var(--shadow-soft)]"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(91,62,150,0.22)] bg-[var(--accent-muted)] text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">
             {logoUrl ? (
               <img src={logoUrl} alt={`${siteName} logo`} className="h-full w-full object-contain" />
             ) : (
@@ -165,7 +165,7 @@ export default function NavbarClient({
           aria-label="Toggle site navigation"
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen((value) => !value)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] text-[var(--text-strong)] md:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-strong)] md:hidden"
         >
           <span className="flex flex-col gap-1.5">
             <span className="block h-0.5 w-5 rounded bg-current" />
@@ -176,7 +176,7 @@ export default function NavbarClient({
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-[var(--border-soft)] bg-[var(--surface)] px-4 py-4 md:hidden">
+        <div className="border-t border-[var(--border-soft)] bg-[var(--section-bg)] px-4 py-4 md:hidden">
           <div className="mx-auto max-w-7xl space-y-4">
             <div className="grid gap-2">
               {primaryLinks.map((item) => (

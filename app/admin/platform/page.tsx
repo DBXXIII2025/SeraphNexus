@@ -319,7 +319,7 @@ export default async function PlatformPage({
           className="surface-card space-y-5 p-6"
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Platform name</span>
               <input
                 name="platform_name"
@@ -328,7 +328,7 @@ export default async function PlatformPage({
                 className="input-field disabled:opacity-60"
               />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Support email</span>
               <input
                 name="support_email"
@@ -338,7 +338,7 @@ export default async function PlatformPage({
               />
             </label>
           </div>
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-[var(--text-soft)]">
             <span className="form-label">Headline</span>
             <input
               name="marketing_headline"
@@ -347,7 +347,7 @@ export default async function PlatformPage({
               className="input-field disabled:opacity-60"
             />
           </label>
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-[var(--text-soft)]">
             <span className="form-label">Subheadline</span>
             <textarea
               name="marketing_subheadline"
@@ -357,7 +357,7 @@ export default async function PlatformPage({
             />
           </label>
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Support phone</span>
               <input
                 name="support_phone"
@@ -366,7 +366,7 @@ export default async function PlatformPage({
                 className="input-field disabled:opacity-60"
               />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Pricing note</span>
               <input
                 name="pricing_note"
@@ -469,7 +469,7 @@ export default async function PlatformPage({
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Trial / inactive fee %</span>
                 <input
                   name="trial_transaction_fee_percent"
@@ -481,7 +481,7 @@ export default async function PlatformPage({
                   className="input-field mt-2"
                 />
               </label>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Pro fee %</span>
                 <input
                   name="pro_transaction_fee_percent"
@@ -493,7 +493,7 @@ export default async function PlatformPage({
                   className="input-field mt-2"
                 />
               </label>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Elite fee %</span>
                 <input
                   name="elite_transaction_fee_percent"
@@ -520,17 +520,17 @@ export default async function PlatformPage({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Platform name</span>
               <input name="platform_name" defaultValue={settings.platform_name} className="input-field" />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Support email</span>
               <input name="support_email" defaultValue={settings.support_email} className="input-field" />
             </label>
           </div>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-[var(--text-soft)]">
             <span className="form-label">Headline</span>
             <input
               name="marketing_headline"
@@ -539,7 +539,7 @@ export default async function PlatformPage({
             />
           </label>
 
-          <label className="text-sm text-gray-300">
+          <label className="text-sm text-[var(--text-soft)]">
             <span className="form-label">Subheadline</span>
             <textarea
               name="marketing_subheadline"
@@ -549,11 +549,11 @@ export default async function PlatformPage({
           </label>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Support phone</span>
               <input name="support_phone" defaultValue={settings.support_phone} className="input-field" />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Pricing note</span>
               <input name="pricing_note" defaultValue={settings.pricing_note} className="input-field" />
             </label>
@@ -567,24 +567,24 @@ export default async function PlatformPage({
                   Live pricing card content
                 </h3>
               </div>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Plan name</span>
                 <input name="pro_plan_name" defaultValue={settings.pro_plan_name} className="input-field mt-2" />
               </label>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Subtitle</span>
                 <textarea name="pro_plan_subtitle" defaultValue={settings.pro_plan_subtitle} className="input-field mt-2 min-h-[88px]" />
               </label>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Included features, one per line</span>
                 <textarea name="pro_plan_features" defaultValue={settings.pro_plan_features.join("\n")} className="input-field mt-2 min-h-[132px]" />
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-sm text-gray-300">
+                <label className="text-sm text-[var(--text-soft)]">
                   <span className="form-label">Badge text</span>
                   <input name="pro_plan_badge" defaultValue={settings.pro_plan_badge || ""} className="input-field mt-2" />
                 </label>
-                <label className="text-sm text-gray-300">
+                <label className="text-sm text-[var(--text-soft)]">
                   <span className="form-label">CTA text</span>
                   <input name="pro_plan_cta" defaultValue={settings.pro_plan_cta} className="input-field mt-2" />
                 </label>
@@ -598,24 +598,24 @@ export default async function PlatformPage({
                   Live pricing card content
                 </h3>
               </div>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Plan name</span>
                 <input name="elite_plan_name" defaultValue={settings.elite_plan_name} className="input-field mt-2" />
               </label>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Subtitle</span>
                 <textarea name="elite_plan_subtitle" defaultValue={settings.elite_plan_subtitle} className="input-field mt-2 min-h-[88px]" />
               </label>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Included features, one per line</span>
                 <textarea name="elite_plan_features" defaultValue={settings.elite_plan_features.join("\n")} className="input-field mt-2 min-h-[132px]" />
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-sm text-gray-300">
+                <label className="text-sm text-[var(--text-soft)]">
                   <span className="form-label">Badge text</span>
                   <input name="elite_plan_badge" defaultValue={settings.elite_plan_badge || ""} className="input-field mt-2" />
                 </label>
-                <label className="text-sm text-gray-300">
+                <label className="text-sm text-[var(--text-soft)]">
                   <span className="form-label">CTA text</span>
                   <input name="elite_plan_cta" defaultValue={settings.elite_plan_cta} className="input-field mt-2" />
                 </label>
@@ -643,7 +643,7 @@ export default async function PlatformPage({
               <p className="text-xs text-[var(--text-muted)]">
                 Current Stripe price: {settings.pro_stripe_price_id || "Will be created on save"}
               </p>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Use existing active Stripe price ID</span>
                 <input
                   name="pro_stripe_price_id_override"
@@ -672,7 +672,7 @@ export default async function PlatformPage({
               <p className="text-xs text-[var(--text-muted)]">
                 Current Stripe price: {settings.elite_stripe_price_id || "Will be created on save"}
               </p>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Use existing active Stripe price ID</span>
                 <input
                   name="elite_stripe_price_id_override"
@@ -683,7 +683,7 @@ export default async function PlatformPage({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4 text-sm text-[var(--text-soft)]">
+          <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
             Saving billing creates or reuses Stripe monthly price objects and updates the active price ids future subscription checkouts will use.
           </div>
 
@@ -740,7 +740,7 @@ export default async function PlatformPage({
               </div>
             </div>
 
-            <div className="mt-5 rounded-2xl border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-4 py-4 text-sm text-[var(--accent-gold-soft)]">
+            <div className="mt-5 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-4 text-sm text-[var(--accent-soft)]">
               Business owners only manage payouts for their own business. Platform billing and pricing are locked to platform admin only.
             </div>
 
@@ -952,11 +952,11 @@ export default async function PlatformPage({
             className="mt-5 space-y-4"
           >
             <input type="hidden" name="action" value="grant_trial" />
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Existing user email</span>
               <input name="email" type="email" required className="input-field" />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Business ID</span>
               <input
                 name="business_id"
@@ -964,7 +964,7 @@ export default async function PlatformPage({
                 placeholder="Optional business scope"
               />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Expires at</span>
               <input
                 name="expires_at"
@@ -986,11 +986,11 @@ export default async function PlatformPage({
             className="mt-8 space-y-4"
           >
             <input type="hidden" name="action" value="create_invite" />
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Invite email</span>
               <input name="email" type="email" required className="input-field" />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Business ID</span>
               <input
                 name="business_id"
@@ -998,7 +998,7 @@ export default async function PlatformPage({
                 placeholder="Optional business scope"
               />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Invite expiry</span>
               <input
                 name="expires_at"
@@ -1030,7 +1030,7 @@ export default async function PlatformPage({
 
           <div className="mt-5 space-y-3">
             {activeGrants.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
                 No active trial grants or invites.
               </div>
             ) : (
@@ -1061,7 +1061,7 @@ export default async function PlatformPage({
                         </p>
                       ) : null}
                       {grant.inviteToken ? (
-                        <p className="mt-2 break-all text-xs text-[var(--accent-gold-soft)]">
+                        <p className="mt-2 break-all text-xs text-[var(--accent-soft)]">
                           Invite link: {grantCreateLinkBase}/signup?invite=
                           {grant.inviteToken}
                           {grant.email
@@ -1099,7 +1099,7 @@ export default async function PlatformPage({
             subscription records. Temporary grants fall back automatically when they expire.
           </p>
 
-          <div className="mt-5 rounded-2xl border border-[var(--border-soft)] bg-[rgba(15,12,12,0.58)] p-4 text-sm text-[var(--text-soft)]">
+          <div className="mt-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
             <p>Preset actions supported in this form:</p>
             <p className="mt-2">Pro permanent, Pro temporary, Elite permanent, Elite temporary.</p>
           </div>
@@ -1110,11 +1110,11 @@ export default async function PlatformPage({
             className="mt-5 space-y-4"
           >
             <input type="hidden" name="action" value="create_plan_grant" />
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Existing user email</span>
               <input name="email" type="email" required className="input-field" />
             </label>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Business ID</span>
               <input
                 name="business_id"
@@ -1123,14 +1123,14 @@ export default async function PlatformPage({
               />
             </label>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Plan</span>
                 <select name="granted_plan" className="input-field" defaultValue="elite">
                   <option value="elite">Elite</option>
                   <option value="pro">Pro</option>
                 </select>
               </label>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Grant type</span>
                 <select name="grant_type" className="input-field" defaultValue="temporary">
                   <option value="temporary">Temporary</option>
@@ -1139,7 +1139,7 @@ export default async function PlatformPage({
               </label>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Duration preset</span>
                 <select name="duration_preset" className="input-field" defaultValue="14d">
                   <option value="7d">7 days</option>
@@ -1148,7 +1148,7 @@ export default async function PlatformPage({
                   <option value="custom">Custom expiration date</option>
                 </select>
               </label>
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Custom expiration</span>
                 <input
                   name="custom_expires_at"
@@ -1157,7 +1157,7 @@ export default async function PlatformPage({
                 />
               </label>
             </div>
-            <label className="text-sm text-gray-300">
+            <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Reason</span>
               <textarea
                 name="reason"
@@ -1189,7 +1189,7 @@ export default async function PlatformPage({
 
           <div className="mt-5 space-y-3">
             {activePlanGrants.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+              <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
                 No active manual plan grants.
               </div>
             ) : (
@@ -1259,7 +1259,7 @@ export default async function PlatformPage({
 
         <div className="mt-5 space-y-3">
           {planGrantHistory.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[rgba(15,12,12,0.62)] px-4 py-8 text-sm text-[var(--text-soft)]">
+            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
               No manual grant history yet.
             </div>
           ) : (
