@@ -78,7 +78,7 @@ export const EXPLORE_CATEGORIES: ExploreCategory[] = [
     shortLabel: "Rentals",
     description: "Reservation-led property and rental inventory presented with a more premium browse flow.",
     strapline: "Reservation-driven inventory",
-    tone: "from-[rgba(232,204,106,0.2)] via-[rgba(232,204,106,0.08)] to-transparent",
+    tone: "from-transparent via-transparent to-transparent",
   },
   {
     id: "products",
@@ -86,7 +86,7 @@ export const EXPLORE_CATEGORIES: ExploreCategory[] = [
     shortLabel: "Store",
     description: "Retail and product-focused storefronts organized for stronger catalog discoverability.",
     strapline: "Commerce storefronts",
-    tone: "from-[rgba(245,245,245,0.16)] via-[rgba(245,245,245,0.06)] to-transparent",
+    tone: "from-transparent via-transparent to-transparent",
   },
   {
     id: "creators",
@@ -94,9 +94,48 @@ export const EXPLORE_CATEGORIES: ExploreCategory[] = [
     shortLabel: "Creators",
     description: "Independent brands and public profiles that sit outside the standard commerce lanes.",
     strapline: "Profiles and creator-led brands",
-    tone: "from-[rgba(143,12,21,0.26)] via-[rgba(143,12,21,0.09)] to-transparent",
+    tone: "from-transparent via-transparent to-transparent",
   },
 ];
+
+const BUSINESS_TYPE_ALIASES: Record<string, string> = {
+  appointment: "service",
+  appointments: "service",
+  booking: "service",
+  bookings: "service",
+  consultant: "service",
+  consulting: "service",
+  services: "service",
+
+  dining: "restaurant",
+  food_order: "restaurant",
+  food_service: "restaurant",
+  hospitality: "restaurant",
+  menu: "restaurant",
+  menus: "restaurant",
+  order: "restaurant",
+  restaurant: "restaurant",
+  restaurants: "restaurant",
+
+  properties: "property",
+  property_rental: "property",
+  rental_property: "property",
+  rentals: "rental",
+
+  commerce: "store",
+  ecommerce: "store",
+  e_commerce: "store",
+  product: "product",
+  products: "product",
+  retail: "store",
+  shop: "store",
+  shops: "store",
+  stores: "store",
+
+  creator: "creator",
+  creators: "creator",
+  profile: "creator",
+};
 
 export const ROUTE_FILTERS: Array<{
   id: ExploreRouteFilterId;
@@ -125,7 +164,12 @@ export function formatBusinessType(type: string | null | undefined) {
 }
 
 export function normalizeBusinessType(type: string | null | undefined) {
-  return String(type || "").trim().toLowerCase();
+  const normalized = String(type || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  return BUSINESS_TYPE_ALIASES[normalized] || normalized;
 }
 
 export function getExploreCategoryId(

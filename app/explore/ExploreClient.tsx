@@ -78,6 +78,37 @@ export default function ExploreClient({
     return filtered;
   }, [businessViews, categoryFilter, deferredSearch, routeFilter, statusFilter, typeFilter]);
 
+  useEffect(() => {
+    if (typeFilter !== "all" && !visibleTypes.includes(typeFilter)) {
+      console.info("[explore] stale type filter reset", {
+        categoryFilter,
+        previousTypeFilter: typeFilter,
+        visibleTypes,
+      });
+      setTypeFilter("all");
+    }
+  }, [categoryFilter, typeFilter, visibleTypes]);
+
+  useEffect(() => {
+    console.info("[explore] filter result counts", {
+      search: deferredSearch,
+      categoryFilter,
+      typeFilter,
+      routeFilter,
+      statusFilter,
+      resultCount: sortedBusinesses.length,
+      totalCount: businessViews.length,
+    });
+  }, [
+    businessViews.length,
+    categoryFilter,
+    deferredSearch,
+    routeFilter,
+    sortedBusinesses.length,
+    statusFilter,
+    typeFilter,
+  ]);
+
   const featuredBusinesses = useMemo(() => {
     return businessViews.filter((business) => business.routeState.isRoutable).slice(0, 3);
   }, [businessViews]);

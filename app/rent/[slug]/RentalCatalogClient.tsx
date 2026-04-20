@@ -123,6 +123,19 @@ export default function RentalCatalogClient({
     }
   }, [refreshAvailability, selectedPropertyId]);
 
+  useEffect(() => {
+    if (!selectedProperty) {
+      return;
+    }
+
+    console.info("[rent/client] selected rental payload", {
+      businessId: business.id,
+      propertyId: selectedProperty.id,
+      hasDescription: Boolean(selectedProperty.description?.trim()),
+      reservationMode: "single-property-date-range",
+    });
+  }, [business.id, selectedProperty]);
+
   async function handleCheckout() {
     setError(null);
 
@@ -287,6 +300,25 @@ export default function RentalCatalogClient({
             <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
               Future dates remain bookable unless they are manually blocked or already reserved.
             </p>
+
+            {selectedProperty ? (
+              <div className="mt-5 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  Selected listing
+                </p>
+                <h3 className="mt-1 font-semibold text-[var(--text-strong)]">
+                  {selectedProperty.name}
+                </h3>
+                {selectedProperty.description ? (
+                  <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+                    {selectedProperty.description}
+                  </p>
+                ) : null}
+                <p className="mt-3 text-sm font-semibold text-[var(--text-main)]">
+                  ${Number(selectedProperty.price || 0).toFixed(2)}
+                </p>
+              </div>
+            ) : null}
 
             <div className="mt-5 space-y-3">
               <input

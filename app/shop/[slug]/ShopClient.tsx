@@ -18,6 +18,7 @@ type CatalogItem = {
 type CartItem = {
   id: string;
   name: string;
+  description?: string | null;
   price: number;
   quantity: number;
 };
@@ -97,6 +98,13 @@ export default function ShopClient({
   }, [deliveryEnabled, fulfillmentType, pickupEnabled]);
 
   function addToCart(item: CatalogItem) {
+    console.info("[shop/client] selected product payload", {
+      businessId,
+      itemId: item.id,
+      hasDescription: Boolean(item.description?.trim()),
+      currentCartCount: cart.length,
+    });
+
     setCart((prev) => {
       const existing = prev.find((entry) => entry.id === item.id);
       if (existing) {
@@ -112,6 +120,7 @@ export default function ShopClient({
         {
           id: item.id,
           name: item.name,
+          description: item.description || null,
           price: item.price,
           quantity: 1,
         },
@@ -296,7 +305,7 @@ export default function ShopClient({
                     <button
                       type="button"
                       onClick={() => addToCart(item)}
-                      className="rounded-md bg-green-600 px-3 py-2 text-sm font-medium hover:bg-green-500"
+                      className="btn-primary inline-flex px-3 py-2 text-sm font-medium"
                     >
                       {t("addToCart")}
                     </button>
@@ -316,6 +325,11 @@ export default function ShopClient({
                   <div key={item.id} className="flex justify-between gap-4">
                     <div>
                       <p>{item.name}</p>
+                      {item.description ? (
+                        <p className="mt-1 text-xs leading-5 text-[var(--text-soft)]">
+                          {item.description}
+                        </p>
+                      ) : null}
                       <p className="text-xs text-[var(--text-soft)]">
                         ${item.price.toFixed(2)} each
                       </p>
@@ -453,7 +467,7 @@ export default function ShopClient({
                 type="button"
                 onClick={handleCheckout}
                 disabled={loading || cart.length === 0 || !hasEnabledFulfillmentMode}
-                className="w-full rounded-md bg-green-600 px-4 py-2 font-medium hover:bg-green-500 disabled:opacity-60"
+                className="btn-primary inline-flex px-4 py-2 font-medium disabled:opacity-60"
               >
                 {loading ? t("checkoutStarting") : t("proceedToPayment")}
               </button>

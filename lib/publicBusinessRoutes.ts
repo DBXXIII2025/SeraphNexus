@@ -22,9 +22,43 @@ const PUBLIC_BUSINESS_TYPE_ROUTE_MAP: Record<string, PublicBusinessRouteId> = {
   product: "shop",
 };
 
+const PUBLIC_BUSINESS_TYPE_ALIASES: Record<string, string> = {
+  appointment: "service",
+  appointments: "service",
+  booking: "service",
+  bookings: "service",
+  services: "service",
+  dining: "restaurant",
+  food_order: "restaurant",
+  food_service: "restaurant",
+  hospitality: "restaurant",
+  menu: "restaurant",
+  menus: "restaurant",
+  order: "restaurant",
+  restaurants: "restaurant",
+  properties: "property",
+  property_rental: "property",
+  rental_property: "property",
+  rentals: "rental",
+  commerce: "store",
+  ecommerce: "store",
+  e_commerce: "store",
+  products: "product",
+  retail: "store",
+  shop: "store",
+  shops: "store",
+  stores: "store",
+  creators: "creator",
+  profile: "creator",
+};
+
 function normalizeBusinessType(value: string | null | undefined) {
-  const normalized = String(value || "").trim().toLowerCase();
-  return normalized || null;
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  return PUBLIC_BUSINESS_TYPE_ALIASES[normalized] || normalized || null;
 }
 
 export function getPublicBusinessRouteId(

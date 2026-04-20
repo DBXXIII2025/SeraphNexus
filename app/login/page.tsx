@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -37,6 +37,10 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [platformBrand, setPlatformBrand] = useState<{
+    siteName: string;
+    logoUrl: string | null;
+  }>({ siteName: "Seraph Nexus", logoUrl: null });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +49,45 @@ export default function LoginPage() {
   const nextPath =
     nextParam && nextParam.startsWith("/") ? nextParam : "/admin";
   const resetStatus = searchParams.get("reset");
+  const platformInitials =
+    platformBrand.siteName
+      .split(/\s+/)
+      .map((part) => part[0]?.toUpperCase() || "")
+      .join("")
+      .slice(0, 2) || "SN";
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/platform-branding", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload) => {
+        console.info("[platform-branding] login page branding payload read", {
+          siteName: payload?.siteName || null,
+          logoUrl: payload?.logoUrl || null,
+          renderDecision: payload?.logoUrl ? "logo" : "fallback",
+        });
+
+        if (!active) {
+          return;
+        }
+
+        setPlatformBrand({
+          siteName: String(payload?.siteName || "").trim() || "Seraph Nexus",
+          logoUrl:
+            typeof payload?.logoUrl === "string" && payload.logoUrl.trim()
+              ? payload.logoUrl.trim()
+              : null,
+        });
+      })
+      .catch((brandingError) => {
+        console.error("[platform-branding] login page branding read failed", brandingError);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -83,6 +126,22 @@ export default function LoginPage() {
         onSubmit={handleLogin}
         className="w-full max-w-sm rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]"
       >
+        <div className="mb-5 flex flex-col items-center gap-2">
+          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-main)]">
+            {platformBrand.logoUrl ? (
+              <img
+                src={platformBrand.logoUrl}
+                alt={`${platformBrand.siteName} logo`}
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              platformInitials
+            )}
+          </div>
+          <p className="text-center text-sm font-medium text-[var(--text-main)]">
+            {platformBrand.siteName}
+          </p>
+        </div>
         <h1 className="text-2xl font-semibold mb-2 text-center">Login</h1>
         <p className="mb-6 text-center text-sm text-[var(--text-soft)]">
           Sign in with your email and password.

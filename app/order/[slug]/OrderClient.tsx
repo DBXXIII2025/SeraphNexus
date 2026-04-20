@@ -56,6 +56,7 @@ type MenuPayload = {
 type CartItem = {
   id: string;
   name: string;
+  description?: string | null;
   price: number;
   qty: number;
 };
@@ -250,6 +251,13 @@ export default function OrderClient({
     const priceNumber = Number(item.price || 0);
     const name = item.name || "Menu item";
 
+    console.info("[order/client] selected menu item payload", {
+      businessId,
+      itemId: item.id,
+      hasDescription: Boolean(item.description?.trim()),
+      currentCartCount: cart.length,
+    });
+
     setCart((prev) => {
       const existing = prev.find((c) => c.id === item.id);
       if (existing) {
@@ -257,7 +265,16 @@ export default function OrderClient({
           c.id === item.id ? { ...c, qty: c.qty + 1 } : c
         );
       }
-      return [...prev, { id: item.id, name, price: priceNumber, qty: 1 }];
+      return [
+        ...prev,
+        {
+          id: item.id,
+          name,
+          description: item.description || null,
+          price: priceNumber,
+          qty: 1,
+        },
+      ];
     });
   }
 
@@ -574,6 +591,11 @@ export default function OrderClient({
                   <div key={item.id} className="flex justify-between items-center">
                     <div>
                       <div>{item.name}</div>
+                      {item.description ? (
+                        <p className="mt-1 max-w-[220px] text-xs leading-5 text-[var(--text-soft)]">
+                          {item.description}
+                        </p>
+                      ) : null}
                       <div className="text-xs text-[var(--text-soft)]">
                         ${item.price.toFixed(2)} each
                       </div>
@@ -704,7 +726,7 @@ export default function OrderClient({
               <button
                 onClick={placeOrder}
                 disabled={placing || cart.length === 0 || !hasEnabledFulfillmentMode}
-                className="w-full bg-green-600 py-2 rounded hover:bg-green-500 disabled:opacity-50"
+                className="btn-primary inline-flex px-4 py-2 font-medium disabled:opacity-50"
               >
                 {placing ? t("checkoutStarting") : t("proceedToPayment")}
               </button>

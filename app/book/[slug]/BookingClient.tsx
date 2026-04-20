@@ -22,6 +22,7 @@ type Slot = {
 type Service = {
   id: string;
   name: string | null;
+  description?: string | null;
   price: number | null;
   duration: number | null;
   images: ServiceImageRecord[];
@@ -378,6 +379,23 @@ export default function BookingClient({
   }, [fetchSlots, selectedDate, selectedServiceIds.length]);
 
   useEffect(() => {
+    if (selectedServices.length === 0) {
+      return;
+    }
+
+    console.info("[book/client] selected service payload", {
+      businessId: business.id,
+      selectedCount: selectedServices.length,
+      serviceIds: selectedServices.map((service) => service.id),
+      descriptionsPresent: selectedServices.map((service) => ({
+        id: service.id,
+        hasDescription: Boolean(service.description?.trim()),
+      })),
+      availabilityAnchorServiceId: selectedServices[0]?.id || null,
+    });
+  }, [business.id, selectedServices]);
+
+  useEffect(() => {
     if (serviceMode === "remote" && !serviceModes.remote && serviceModes.onsite) {
       setServiceMode("onsite");
     }
@@ -435,6 +453,11 @@ export default function BookingClient({
             <div className="min-w-0 flex-1">
               <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Selected service</p>
               <h2 className="mt-1 text-lg font-semibold text-[var(--text-main)]">{selectedService.name || "Service"}</h2>
+              {selectedService.description ? (
+                <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+                  {selectedService.description}
+                </p>
+              ) : null}
               <div className="mt-2 flex flex-wrap gap-2 text-xs">
                 <span className="rounded-full border border-[var(--border-soft)] bg-[var(--accent-muted)] px-2.5 py-1 text-[var(--text-main)]">
                   ${Number(selectedService.price || 0).toFixed(2)}
@@ -516,6 +539,11 @@ export default function BookingClient({
                       <div className="font-medium text-[var(--text-main)]">
                         {service.name || "Service"}
                       </div>
+                      {service.description ? (
+                        <p className="mt-1 text-sm leading-5 text-[var(--text-soft)]">
+                          {service.description}
+                        </p>
+                      ) : null}
                       <div className="mt-1 flex flex-wrap gap-2 text-xs text-[var(--text-soft)]">
                         <span>${Number(service.price || 0).toFixed(2)}</span>
                       </div>
@@ -730,6 +758,23 @@ export default function BookingClient({
                 ? selectedServices.map((service) => service.name || "Service").join(", ")
                 : t("selectService")}
             </div>
+            {selectedServices.length > 0 ? (
+              <div className="space-y-2">
+                {selectedServices.map((service) =>
+                  service.description ? (
+                    <div
+                      key={`review-description-${service.id}`}
+                      className="rounded-lg border border-[var(--border-soft)] bg-[var(--surface)] p-3"
+                    >
+                      <p className="font-medium">{service.name || "Service"}</p>
+                      <p className="mt-1 text-xs leading-5 text-[var(--text-soft)]">
+                        {service.description}
+                      </p>
+                    </div>
+                  ) : null
+                )}
+              </div>
+            ) : null}
             <div>{t("date")}: {selectedDate || t("selectDate")}</div>
             <div>{t("time")}: {selectedSlot ? formatSlotLabel(selectedSlot) : t("selectTime")}</div>
             <div>
