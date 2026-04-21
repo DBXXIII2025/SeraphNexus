@@ -135,6 +135,7 @@ export default async function RentPage({
     propertyCount: mergedProperties.length,
     properties: mergedProperties.map((property) => ({
       propertyId: property.id,
+      hasAmenityDataField: Object.prototype.hasOwnProperty.call(property, "amenity_data"),
       amenityData: normalizePropertyAmenityData(property.amenity_data),
     })),
   });

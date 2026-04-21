@@ -18,12 +18,8 @@ import {
 import type { Database } from "@/types/database";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
-import {
-  PROPERTY_AMENITY_DEFINITIONS,
-  formatAmenityCount,
-  normalizePropertyAmenityData,
-} from "@/lib/propertyAmenities";
-import StructuredIcon from "@/components/icons/StructuredIcon";
+import { formatAmenityCount, normalizePropertyAmenityData } from "@/lib/propertyAmenities";
+import StructuredAmenitiesEditor from "./StructuredAmenitiesEditor";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -54,6 +50,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   "invalid-business-type": "The active business is not a rental or property business.",
   "invalid-listing": "Enter a listing name and a valid price before saving.",
   "listing-save-failed": "The listing could not be saved. Check the server logs for details.",
+  "listing-schema-mismatch":
+    "Property amenities storage is not available in the live database yet. Apply the property amenities migration before saving amenities.",
   "listing-description-save-failed":
     "The listing description could not be saved. The listing data is still available, but description content needs attention.",
   "invalid-block": "Choose a valid listing and a valid date range before blocking dates.",
@@ -228,16 +226,17 @@ export default async function AdminRentalsPage({
   const selectedProperty =
     propertyList.find((property) => String(property.id) === autoSelectedPropertyId) || null;
   const selectedPropertyAmenities = normalizePropertyAmenityData(selectedProperty?.amenity_data);
-  const selectedPropertyCountHighlights = [
-    {
-      label: formatAmenityCount(selectedPropertyAmenities.bedrooms, "bedroom"),
-      icon: "bed" as const,
-    },
-    {
-      label: formatAmenityCount(selectedPropertyAmenities.bathrooms, "bathroom"),
-      icon: "bath" as const,
-    },
-  ].filter((item) => Boolean(item.label));
+  const selectedPropertyHasAmenityColumn = selectedProperty
+    ? Object.prototype.hasOwnProperty.call(selectedProperty, "amenity_data")
+    : true;
+  if (selectedProperty) {
+    console.log("[admin/rentals/page] selected property amenities payload", {
+      businessId: business.id,
+      propertyId: selectedProperty.id,
+      amenityData: selectedPropertyAmenities,
+      hasAmenityDataField: selectedPropertyHasAmenityColumn,
+    });
+  }
   const visibleBlocks = autoSelectedPropertyId
     ? blockRows.filter((block) => String(block.property_id) === autoSelectedPropertyId)
     : blockRows;
@@ -517,128 +516,22 @@ export default async function AdminRentalsPage({
         </div>
 
         {selectedProperty ? (
-          <form action="/api/admin/rentals" method="POST" className="mt-5 space-y-6">
-            <input type="hidden" name="action" value="update_property" />
-            <input type="hidden" name="property_id" value={selectedProperty.id} />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Listing name</p>
-                <input
-                  name="name"
-                  defaultValue={selectedProperty.name || ""}
-                  required
-                  className="input-field"
-                />
+          <>
+            {!selectedPropertyHasAmenityColumn ? (
+              <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                The live database does not currently expose `property.amenity_data`. Apply
+                `sql/migrations/20260420_property_amenities.sql` before amenities can persist.
               </div>
-              <div>
-                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Price</p>
-                <input
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  defaultValue={String(selectedProperty.price || "")}
-                  required
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Bedrooms</p>
-                <select
-                  name="bedrooms"
-                  defaultValue={
-                    selectedPropertyAmenities.bedrooms === null
-                      ? ""
-                      : String(selectedPropertyAmenities.bedrooms)
-                  }
-                  className="input-field"
-                >
-                  <option value="">Not set</option>
-                  {Array.from({ length: 12 }, (_, index) => index + 1).map((count) => (
-                    <option key={count} value={count}>
-                      {count}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Bathrooms</p>
-                <select
-                  name="bathrooms"
-                  defaultValue={
-                    selectedPropertyAmenities.bathrooms === null
-                      ? ""
-                      : String(selectedPropertyAmenities.bathrooms)
-                  }
-                  className="input-field"
-                >
-                  <option value="">Not set</option>
-                  {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6].map((count) => (
-                    <option key={count} value={count}>
-                      {count}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Description</p>
-                <textarea
-                  name="description"
-                  defaultValue={selectedProperty.description || ""}
-                  className="input-field min-h-[132px]"
-                />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-5">
-              <div className="flex flex-wrap gap-3">
-                {selectedPropertyCountHighlights.length > 0 ? (
-                  selectedPropertyCountHighlights.map((item) => (
-                    <span
-                      key={item.label}
-                      className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-sm font-medium text-[var(--accent-soft)]"
-                    >
-                      <StructuredIcon name={item.icon} className="h-4 w-4" />
-                      {item.label}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-[var(--text-soft)]">
-                    Bedroom and bathroom counts are optional, but they improve public scanability.
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-[var(--text-soft)]">Amenity checklist</p>
-              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {PROPERTY_AMENITY_DEFINITIONS.map((amenity) => (
-                  <label
-                    key={amenity.key}
-                    className="flex items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-main)]"
-                  >
-                    <input
-                      type="checkbox"
-                      name={amenity.key}
-                      defaultChecked={selectedPropertyAmenities[amenity.key]}
-                      className="h-4 w-4"
-                    />
-                    <StructuredIcon
-                      name={amenity.icon}
-                      className="h-4 w-4 text-[var(--accent-soft)]"
-                    />
-                    <span>{amenity.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
-              Save Amenities
-            </button>
-          </form>
+            ) : null}
+            <StructuredAmenitiesEditor
+              action="/api/admin/rentals"
+              propertyId={String(selectedProperty.id)}
+              propertyName={selectedProperty.name || ""}
+              price={selectedProperty.price ?? null}
+              description={selectedProperty.description || ""}
+              initialAmenities={selectedPropertyAmenities}
+            />
+          </>
         ) : propertyList.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--text-soft)]">
             Create a listing first, then return here to assign bedrooms, bathrooms, and amenities.

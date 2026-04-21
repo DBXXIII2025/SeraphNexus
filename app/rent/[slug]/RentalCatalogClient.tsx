@@ -171,6 +171,21 @@ export default function RentalCatalogClient({
     });
   }, [business.id, selectedProperty]);
 
+  useEffect(() => {
+    if (!selectedProperty) {
+      return;
+    }
+
+    console.log("[rent/client] final public amenity list rendered", {
+      businessId: business.id,
+      propertyId: selectedProperty.id,
+      amenityPayload: selectedAmenities,
+      enabledAmenityKeys: enabledAmenities.map((amenity) => amenity.key),
+      bedroomLabel: formatAmenityCount(selectedAmenities.bedrooms, "bedroom"),
+      bathroomLabel: formatAmenityCount(selectedAmenities.bathrooms, "bathroom"),
+    });
+  }, [business.id, enabledAmenities, selectedAmenities, selectedProperty]);
+
   async function handleCheckout() {
     setError(null);
 

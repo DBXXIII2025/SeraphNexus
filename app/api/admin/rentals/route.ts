@@ -54,6 +54,20 @@ function toUiErrorMessage(input: string | null | undefined) {
   return normalized.slice(0, 180);
 }
 
+function isMissingAmenityDataColumnError(error: {
+  message?: string | null;
+  details?: string | null;
+  hint?: string | null;
+  code?: string | null;
+} | null | undefined) {
+  if (!error) {
+    return false;
+  }
+
+  const message = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`.toLowerCase();
+  return error.code === "42703" && message.includes("amenity_data");
+}
+
 async function savePropertyContent({
   supabase,
   businessId,
@@ -343,9 +357,41 @@ export async function POST(req: Request) {
           propertyId,
           error: formatSupabaseError(updateError),
         });
+        if (isMissingAmenityDataColumnError(updateError)) {
+          return redirectToRentals(req, {
+            error: "listing-schema-mismatch",
+            message:
+              "The live database is missing property.amenity_data, so amenities cannot persist until the amenity migration is applied.",
+            property: propertyId,
+          });
+        }
         return redirectToRentals(req, {
           error: "listing-save-failed",
           message: toUiErrorMessage(updateError.message) || "The listing could not be updated.",
+        });
+      }
+
+      const { data: storedProperty, error: storedPropertyError } = await supabaseAdmin
+        .from("property")
+        .select("id, amenity_data, description")
+        .eq("id", propertyId)
+        .eq("business_id", business.id)
+        .maybeSingle();
+
+      if (storedPropertyError) {
+        console.warn("[admin/rentals] update_property stored payload read failed", {
+          businessId: business.id,
+          propertyId,
+          error: formatSupabaseError(storedPropertyError),
+        });
+      } else {
+        console.log("[admin/rentals] update_property db result", {
+          table: "property",
+          operation: "update",
+          businessId: business.id,
+          propertyId,
+          storedAmenityData: normalizePropertyAmenityData(storedProperty?.amenity_data),
+          storedDescriptionLength: String(storedProperty?.description || "").length,
         });
       }
 
