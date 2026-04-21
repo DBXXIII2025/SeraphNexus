@@ -19,6 +19,7 @@ import {
   resolvePlatformLogoUrl,
   resolvePlatformName,
 } from "@/lib/platformBranding";
+import { inspectPlatformLogoAsset } from "@/lib/platformLogoAsset";
 import { PLAN_DEFINITIONS, type PlanFeature } from "@/lib/planConfig";
 import {
   getPlatformIncomeAudit,
@@ -88,7 +89,7 @@ function getStatusCopy(
     }
 
     if (value === "platform-logo-updated") {
-      return "Platform logo updated. The newest header asset is now active.";
+      return "Platform logo saved. Render status is verified in the branding panel below.";
     }
 
     if (value === "platform-logo-cleared") {
@@ -404,6 +405,17 @@ export default async function PlatformPage({
   const stripeEnvironment = getPlatformStripeEnvironmentSummary();
   const platformSiteName = resolvePlatformName(settings);
   const platformLogoUrl = resolvePlatformLogoUrl(settings);
+  const platformLogoAsset = await inspectPlatformLogoAsset(platformLogoUrl);
+
+  console.info("[platform-branding] platform page branding payload", {
+    platformName: platformSiteName,
+    rawLogoUrl: settings.logo_url,
+    resolvedLogoUrl: platformLogoUrl,
+    assetReachable: platformLogoAsset.reachable,
+    assetStatusCode: platformLogoAsset.statusCode,
+    assetContentType: platformLogoAsset.contentType,
+    assetReason: platformLogoAsset.reason,
+  });
 
   return (
     <div className="space-y-6 text-[var(--text-main)]">
@@ -697,6 +709,7 @@ export default async function PlatformPage({
             siteName={platformSiteName}
             logoUrl={platformLogoUrl}
             hasStoredLogo={Boolean(settings.logo_url)}
+            logoAssetReachable={platformLogoAsset.reachable}
             maxLogoBytes={MAX_PLATFORM_LOGO_BYTES}
           />
 

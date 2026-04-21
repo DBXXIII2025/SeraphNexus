@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import PlatformBrandMark from "@/components/branding/PlatformBrandMark";
 
 export function PublicSiteShell({
   children,
@@ -30,11 +31,13 @@ export function PublicTopNav({
     <header className="public-topnav">
       <Link href="/explore" className="public-brand">
         <span className="public-brand-mark">
-          {logoUrl ? (
-            <img src={logoUrl} alt={`${brand} logo`} className="public-brand-logo" />
-          ) : (
-            initials
-          )}
+          <PlatformBrandMark
+            src={logoUrl}
+            alt={`${brand} logo`}
+            fallback={initials}
+            logScope="public-topnav"
+            imgClassName="public-brand-logo"
+          />
         </span>
         <span>{brand}</span>
       </Link>

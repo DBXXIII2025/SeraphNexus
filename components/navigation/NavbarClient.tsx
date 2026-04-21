@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import PlatformBrandMark from "@/components/branding/PlatformBrandMark";
 
 type NavbarClientProps = {
   isLoggedIn: boolean;
@@ -122,11 +123,14 @@ export default function NavbarClient({
           className="group inline-flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 pr-4 shadow-[var(--shadow-soft)]"
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">
-            {logoUrl ? (
-              <img src={logoUrl} alt={`${siteName} logo`} className="h-full w-full object-contain" />
-            ) : (
-              "SN"
-            )}
+            <PlatformBrandMark
+              src={logoUrl}
+              alt={`${siteName} logo`}
+              fallback="SN"
+              logScope="global-header"
+              imgClassName="h-full w-full object-contain"
+              fallbackClassName=""
+            />
           </span>
           <span className="truncate text-sm font-semibold text-[var(--text-strong)]">
             {siteName}

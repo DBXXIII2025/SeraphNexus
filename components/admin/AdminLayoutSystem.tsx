@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import PlatformBrandMark from "@/components/branding/PlatformBrandMark";
 
 export type AdminNavGroup = {
   label: string;
@@ -65,11 +66,13 @@ export function AdminTopNav({
     <header className="admin-topnav">
       <div className="admin-topnav-brand-row">
         <span className="admin-brand-mark">
-          {brandLogoUrl ? (
-            <img src={brandLogoUrl} alt={`${brandName || "Seraph Nexus"} logo`} className="admin-brand-logo" />
-          ) : (
-            "SN"
-          )}
+          <PlatformBrandMark
+            src={brandLogoUrl}
+            alt={`${brandName || "Seraph Nexus"} logo`}
+            fallback="SN"
+            logScope="admin-topnav"
+            imgClassName="admin-brand-logo"
+          />
         </span>
         <div>
           <p className="admin-brand-name">{brandName || "Seraph Nexus"}</p>

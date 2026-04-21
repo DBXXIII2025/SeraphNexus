@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import PlatformBrandMark, {
+  type PlatformBrandRenderState,
+} from "@/components/branding/PlatformBrandMark";
 
 function isValidEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email);
@@ -40,7 +43,9 @@ export default function LoginPage() {
   const [platformBrand, setPlatformBrand] = useState<{
     siteName: string;
     logoUrl: string | null;
-  }>({ siteName: "Seraph Nexus", logoUrl: null });
+    logoReachable: boolean;
+  }>({ siteName: "Seraph Nexus", logoUrl: null, logoReachable: false });
+  const [logoRenderState, setLogoRenderState] = useState<PlatformBrandRenderState>("missing");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +83,7 @@ export default function LoginPage() {
             typeof payload?.logoUrl === "string" && payload.logoUrl.trim()
               ? payload.logoUrl.trim()
               : null,
+          logoReachable: Boolean(payload?.logoReachable),
         });
       })
       .catch((brandingError) => {
@@ -129,10 +135,13 @@ export default function LoginPage() {
         <div className="mb-5 flex flex-col items-center gap-2">
           <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-main)]">
             {platformBrand.logoUrl ? (
-              <img
+              <PlatformBrandMark
                 src={platformBrand.logoUrl}
                 alt={`${platformBrand.siteName} logo`}
-                className="h-full w-full object-contain"
+                fallback={platformInitials}
+                logScope="login-page"
+                imgClassName="h-full w-full object-contain"
+                onRenderStateChange={setLogoRenderState}
               />
             ) : (
               platformInitials
@@ -141,6 +150,11 @@ export default function LoginPage() {
           <p className="text-center text-sm font-medium text-[var(--text-main)]">
             {platformBrand.siteName}
           </p>
+          {platformBrand.logoUrl && logoRenderState === "error" ? (
+            <p className="text-center text-xs text-[var(--destructive)]">
+              Platform logo is saved but could not be rendered here.
+            </p>
+          ) : null}
         </div>
         <h1 className="text-2xl font-semibold mb-2 text-center">Login</h1>
         <p className="mb-6 text-center text-sm text-[var(--text-soft)]">

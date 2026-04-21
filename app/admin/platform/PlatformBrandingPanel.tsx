@@ -2,11 +2,15 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import PlatformBrandMark, {
+  type PlatformBrandRenderState,
+} from "@/components/branding/PlatformBrandMark";
 
 type PlatformBrandingPanelProps = {
   siteName: string;
   logoUrl: string | null;
   hasStoredLogo: boolean;
+  logoAssetReachable: boolean;
   maxLogoBytes: number;
 };
 
@@ -56,12 +60,16 @@ export default function PlatformBrandingPanel({
   siteName,
   logoUrl,
   hasStoredLogo,
+  logoAssetReachable,
   maxLogoBytes,
 }: PlatformBrandingPanelProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentLogoUrl, setCurrentLogoUrl] = useState(logoUrl);
   const [logoIsStored, setLogoIsStored] = useState(hasStoredLogo);
+  const [logoRenderState, setLogoRenderState] = useState<PlatformBrandRenderState>(
+    logoUrl ? (logoAssetReachable ? "loaded" : "loading") : "missing"
+  );
   const [statusCode, setStatusCode] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<"success" | "error" | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -141,27 +149,31 @@ export default function PlatformBrandingPanel({
       <div className="mt-5 table-row-panel p-4">
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-[var(--accent-border)] bg-[var(--surface-raised)] p-2">
-            {currentLogoUrl ? (
-              <img
-                src={currentLogoUrl}
-                alt={`${siteName} logo`}
-                className="h-full w-full object-contain"
-              />
-            ) : (
-              <span className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--accent-soft)]">
-                SN
-              </span>
-            )}
+            <PlatformBrandMark
+              src={currentLogoUrl}
+              alt={`${siteName} logo`}
+              fallback="SN"
+              logScope="platform-branding-panel"
+              imgClassName="h-full w-full object-contain"
+              fallbackClassName="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--accent-soft)]"
+              onRenderStateChange={setLogoRenderState}
+            />
           </div>
           <div className="min-w-0">
             <p className="font-medium text-[var(--text-strong)]">{siteName}</p>
             <p className="mt-1 text-sm text-[var(--text-soft)]">
               {logoIsStored
-                ? "Custom platform logo is active."
+                ? logoRenderState === "loaded"
+                  ? "Custom platform logo is active and rendering."
+                  : logoRenderState === "error"
+                    ? "Logo URL is saved, but the image asset is not rendering."
+                    : "Logo URL is saved. Verifying image rendering."
                 : "No custom logo uploaded. Headers use the fallback mark."}
             </p>
             <p className="mt-2 text-xs text-[var(--text-muted)]">
-              Stored on the existing platform_settings row.
+              {logoIsStored
+                ? "Stored on the existing platform_settings row."
+                : "No stored logo_url is present on the platform_settings row."}
             </p>
           </div>
         </div>
