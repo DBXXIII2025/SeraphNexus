@@ -17,5 +17,10 @@ export const PUBLIC_EXPLORE_BUSINESSES_SELECT =
     business_type,
     is_published,
     description,
-    plan
+    plan,
+    logo_url,
+    address,
+    city,
+    state,
+    service_area
   `;

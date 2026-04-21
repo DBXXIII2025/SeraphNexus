@@ -45,6 +45,7 @@ export interface Database {
           delivery_enabled?: boolean;
           onsite_enabled?: boolean;
           remote_enabled?: boolean;
+          logo_url?: string | null;
         };
         Insert: {
           id?: string;
@@ -81,6 +82,7 @@ export interface Database {
           delivery_enabled?: boolean;
           onsite_enabled?: boolean;
           remote_enabled?: boolean;
+          logo_url?: string | null;
         };
         Update: {
           id?: string;
@@ -117,6 +119,7 @@ export interface Database {
           delivery_enabled?: boolean;
           onsite_enabled?: boolean;
           remote_enabled?: boolean;
+          logo_url?: string | null;
         };
       };
 

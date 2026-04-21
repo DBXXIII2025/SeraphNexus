@@ -12,6 +12,11 @@ export type Business = {
   is_published: boolean | null;
   created_at?: string | null;
   plan?: string | null;
+  logo_url?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  service_area?: string | null;
 };
 
 export type PlatformSettings = {
@@ -49,6 +54,8 @@ export type BusinessViewModel = Business & {
   normalizedType: string;
   categoryId: Exclude<ExploreCategoryId, "all">;
   iconName: StructuredIconName;
+  locationLabel: string;
+  thumbnailUrl: string | null;
   routeState: ReturnType<typeof getPublicBusinessHrefState>;
   routeLabel: string;
   routeSummary: string;
@@ -243,6 +250,35 @@ export function getCategoryMeta(categoryId: Exclude<ExploreCategoryId, "all">) {
   return EXPLORE_CATEGORIES.find((category) => category.id === categoryId) || EXPLORE_CATEGORIES[0];
 }
 
+function cleanText(value: string | null | undefined) {
+  const normalized = String(value || "").trim();
+  return normalized || null;
+}
+
+function getBusinessLocationLabel(business: Business) {
+  const cityState = [cleanText(business.city), cleanText(business.state)].filter(Boolean).join(", ");
+  if (cityState) {
+    return cityState;
+  }
+
+  const serviceArea = cleanText(business.service_area);
+  if (serviceArea) {
+    return serviceArea;
+  }
+
+  const address = cleanText(business.address);
+  if (address) {
+    return address;
+  }
+
+  const description = cleanText(business.description);
+  if (description) {
+    return description.length > 44 ? `${description.slice(0, 41).trimEnd()}...` : description;
+  }
+
+  return "Marketplace listing";
+}
+
 function getScore(business: BusinessViewModel) {
   let score = 0;
 
@@ -265,12 +301,15 @@ export function buildBusinessViewModels(businesses: Business[]) {
       });
       const displayName = business.name?.trim() || "Unnamed business";
       const displayDescription = business.description?.trim() || null;
+      const thumbnailUrl = cleanText(business.logo_url);
 
       const viewModel: BusinessViewModel = {
         ...business,
         normalizedType,
         categoryId: getExploreCategoryId(normalizedType),
         iconName: getBusinessTypeIconName(normalizedType),
+        locationLabel: getBusinessLocationLabel(business),
+        thumbnailUrl,
         routeState,
         routeLabel: formatRouteLabel(routeState.routeId),
         routeSummary: formatRouteSummary(routeState.routeId),
