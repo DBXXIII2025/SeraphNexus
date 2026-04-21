@@ -228,6 +228,90 @@ export interface Database {
         };
       };
 
+      notification_broadcasts: {
+        Row: {
+          id: string;
+          sender_user_id: string;
+          title: string;
+          body: string;
+          href?: string | null;
+          content_hash: string;
+          recipient_count: number;
+          email_recipient_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          sender_user_id: string;
+          title: string;
+          body: string;
+          href?: string | null;
+          content_hash: string;
+          recipient_count?: number;
+          email_recipient_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          sender_user_id?: string;
+          title?: string;
+          body?: string;
+          href?: string | null;
+          content_hash?: string;
+          recipient_count?: number;
+          email_recipient_count?: number;
+          created_at?: string;
+        };
+      };
+
+      business_notifications: {
+        Row: {
+          id: string;
+          recipient_user_id: string;
+          business_id?: string | null;
+          type: string;
+          title: string;
+          body: string;
+          href?: string | null;
+          is_read: boolean;
+          read_at?: string | null;
+          broadcast_id?: string | null;
+          event_key?: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipient_user_id: string;
+          business_id?: string | null;
+          type: string;
+          title: string;
+          body: string;
+          href?: string | null;
+          is_read?: boolean;
+          read_at?: string | null;
+          broadcast_id?: string | null;
+          event_key?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipient_user_id?: string;
+          business_id?: string | null;
+          type?: string;
+          title?: string;
+          body?: string;
+          href?: string | null;
+          is_read?: boolean;
+          read_at?: string | null;
+          broadcast_id?: string | null;
+          event_key?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+      };
+
       legal_acceptances: {
         Row: {
           id: string;

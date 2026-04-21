@@ -10,6 +10,7 @@ import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBrand
 import { getPlatformSettings } from "@/lib/platformSettings";
 import BusinessSwitcher from "@/components/BusinessSwitcher";
 import LogoutButton from "@/app/admin/LogoutButton";
+import AdminNotificationBell from "@/components/notifications/AdminNotificationBell";
 import {
   AdminActionLink,
   AdminNavLink,
@@ -133,7 +134,12 @@ export default async function AdminLayout({
             description="Platform operations, support, and owner controls."
             brandName={platformName}
             brandLogoUrl={platformLogoUrl}
-            actions={<LogoutButton />}
+            actions={
+              <>
+                {user?.id ? <AdminNotificationBell userId={user.id} /> : null}
+                <LogoutButton />
+              </>
+            }
           />
         }
         sidebar={
@@ -183,6 +189,7 @@ export default async function AdminLayout({
             brandLogoUrl={platformLogoUrl}
             actions={
               <>
+                {user?.id ? <AdminNotificationBell userId={user.id} /> : null}
                 <AdminActionLink href="/admin">Admin</AdminActionLink>
                 <AdminActionLink href="/admin/settings">Settings</AdminActionLink>
                 {activeBusiness?.slug ? (
@@ -214,6 +221,7 @@ export default async function AdminLayout({
           brandLogoUrl={platformLogoUrl}
           actions={
             <>
+              {user?.id ? <AdminNotificationBell userId={user.id} /> : null}
               {activeBusiness ? (
                 <>
                   <AdminActionLink href={businessModule.primaryAdminHref} tone="primary">

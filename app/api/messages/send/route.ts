@@ -10,6 +10,7 @@ import {
 import { trackLeadEventServer } from "@/lib/leads.server";
 import { getFeatureGate, getUsageLimitResult } from "@/lib/planEnforcement";
 import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
+import { createMessageReceivedNotification } from "@/lib/notifications";
 
 type JsonPayload = {
   conversationId?: string;
@@ -340,6 +341,27 @@ export async function POST(req: Request) {
       is_read: false,
       read_at: null,
     });
+
+    if (access.role === "client") {
+      const metadata = ((user?.user_metadata || {}) as {
+        full_name?: string;
+        name?: string;
+      }) || {};
+      const senderLabel =
+        senderName ||
+        metadata.full_name ||
+        metadata.name ||
+        senderEmail ||
+        user?.email ||
+        "A customer";
+
+      void createMessageReceivedNotification({
+        businessId: access.conversation.business_id,
+        conversationId: access.conversation.id,
+        messageId: message.id,
+        senderLabel,
+      });
+    }
 
     await touchConversationAfterMessage({
       conversationId: access.conversation.id,

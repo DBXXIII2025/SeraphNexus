@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { updateCheckoutIntentSafely } from "@/lib/checkoutIntents";
 import { upsertConversationForBooking } from "@/lib/messages";
+import { createTransactionNotification } from "@/lib/notifications";
 import { sendTransactionConfirmationEmail } from "@/lib/transactionEmails";
 
 type JsonRecord = Record<string, unknown>;
@@ -1942,6 +1943,28 @@ export async function finalizeCheckoutSession({
       writeResult,
       context,
     });
+
+    try {
+      await createTransactionNotification({
+        businessId: resolvedIntent.businessId,
+        businessType: resolvedIntent.businessType,
+        sourceTable: writeResult.sourceTable,
+        recordId: writeResult.recordId,
+        flowType: resolvedIntent.flowType,
+        recordAction: writeResult.recordAction,
+      });
+    } catch (notificationError) {
+      console.error("[checkout/finalize]", {
+        stage: "notification.create",
+        sessionId: session.id,
+        sourceTable: writeResult.sourceTable,
+        recordId: writeResult.recordId,
+        message:
+          notificationError instanceof Error
+            ? notificationError.message
+            : "Unknown notification failure",
+      });
+    }
 
     const result: FinalizationResult = {
       paid: true,

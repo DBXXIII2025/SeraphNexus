@@ -227,7 +227,7 @@ export async function getPlatformAdminData() {
     safeSelect({
       name: "profiles",
       table: "profiles",
-      query: "id,email,role,created_at",
+      query: "id,email,role",
     }),
     safeSelect({
       name: "orders",

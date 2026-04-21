@@ -95,6 +95,10 @@ function getStatusCopy(
     if (value === "platform-logo-cleared") {
       return "Platform logo cleared. Headers now use the fallback platform mark.";
     }
+
+    if (value === "broadcast-sent") {
+      return "Platform notification broadcast sent to business accounts.";
+    }
   }
 
   if (value === "forbidden") {
@@ -211,6 +215,26 @@ function getStatusCopy(
 
   if (value === "platform-logo-upload-failed") {
     return "The logo file could not be uploaded.";
+  }
+
+  if (value === "broadcast-title-required") {
+    return "A broadcast title is required.";
+  }
+
+  if (value === "broadcast-body-required") {
+    return "A broadcast message is required.";
+  }
+
+  if (value === "broadcast-duplicate") {
+    return "An identical platform broadcast was already sent recently.";
+  }
+
+  if (value === "broadcast-send-failed") {
+    return "Platform broadcast delivery failed.";
+  }
+
+  if (value === "broadcast-schema-missing") {
+    return "Notifications storage is unavailable. Apply the business notifications migration first.";
   }
 
   if (value === "platform-branding-settings-unavailable") {
@@ -458,6 +482,52 @@ export default async function PlatformPage({
           {errorMessage}
         </div>
       ) : null}
+
+      <section className="surface-card p-6">
+        <div className="section-header-copy">
+          <p className="section-kicker">Broadcast Notifications</p>
+          <h2 className="section-title">Notify every business account</h2>
+          <p className="section-description">
+            Sends one in-platform notification and one email to each live business account. Duplicate sends are blocked for recently identical broadcasts.
+          </p>
+        </div>
+
+        <form action="/api/admin/platform/notifications" method="POST" className="mt-5 space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm text-[var(--text-soft)]">
+              <span className="form-label">Broadcast title</span>
+              <input name="title" className="input-field mt-2" maxLength={140} required />
+            </label>
+            <label className="text-sm text-[var(--text-soft)]">
+              <span className="form-label">Optional admin link</span>
+              <input
+                name="href"
+                defaultValue="/admin"
+                className="input-field mt-2"
+                placeholder="/admin"
+              />
+            </label>
+          </div>
+
+          <label className="text-sm text-[var(--text-soft)]">
+            <span className="form-label">Message</span>
+            <textarea
+              name="body"
+              className="input-field mt-2 min-h-[132px]"
+              maxLength={4000}
+              required
+            />
+          </label>
+
+          <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
+            This tool targets business accounts only. Public users and customer accounts are excluded.
+          </div>
+
+          <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+            Send platform notification
+          </button>
+        </form>
+      </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr,0.95fr]">
         <form action="/api/admin/platform" method="POST" className="surface-card space-y-5 p-6">
