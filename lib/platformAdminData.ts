@@ -10,6 +10,8 @@ import {
 } from "@/lib/paymentMath";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getPlatformSupportConversationSummaries } from "@/lib/platformSupport";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { requireEnv } from "@/lib/env";
 
 type LooseRow = Record<string, unknown>;
 
@@ -67,6 +69,12 @@ type DatasetReadResult = {
   failed: boolean;
 };
 
+type AuthUserSummary = {
+  id: string;
+  email: string | null;
+  createdAt: string | null;
+};
+
 function asString(value: unknown) {
   if (typeof value !== "string") {
     return null;
@@ -101,6 +109,47 @@ function getPlanMonthlyRevenue(plan: unknown) {
   }
 
   return 0;
+}
+
+function createServiceRoleClient() {
+  return createSupabaseClient(
+    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+}
+
+async function getAuthUsersByIds(userIds: string[]) {
+  if (userIds.length === 0) {
+    return new Map<string, AuthUserSummary>();
+  }
+
+  const supabase = createServiceRoleClient();
+  const rows = await Promise.all(
+    userIds.map(async (userId) => {
+      const { data, error } = await supabase.auth.admin.getUserById(userId);
+      if (error) {
+        console.error("[platform-admin] auth user read failed", {
+          userId,
+          message: error.message,
+        });
+        return null;
+      }
+
+      return {
+        id: userId,
+        email: data.user?.email || null,
+        createdAt: data.user?.created_at || null,
+      } satisfies AuthUserSummary;
+    })
+  );
+
+  return new Map(rows.filter((row): row is AuthUserSummary => Boolean(row)).map((row) => [row.id, row]));
 }
 
 async function safeSelect(args: {
@@ -178,7 +227,7 @@ export async function getPlatformAdminData() {
     safeSelect({
       name: "profiles",
       table: "profiles",
-      query: "id,email,role",
+      query: "id,email,role,created_at",
     }),
     safeSelect({
       name: "orders",
@@ -439,15 +488,31 @@ export async function getPlatformAdminData() {
     }
   });
 
-  const userRows: PlatformUserRow[] = profiles.map((profile) => {
-    const userId = String(profile.id || "");
+  const managedAccountIds = [
+    ...new Set(
+      [
+        ...businessRows.map((business) => business.ownerId).filter((value): value is string => Boolean(value)),
+        ...profiles
+          .filter((profile) => asString(profile.role) === "owner")
+          .map((profile) => asString(profile.id))
+          .filter((value): value is string => Boolean(value)),
+      ].filter(Boolean)
+    ),
+  ];
+  const authUserById = await getAuthUsersByIds(managedAccountIds);
+
+  // Platform account surfaces should reflect business/platform operator accounts,
+  // not every profile row, so customer/guest noise does not inflate production counts.
+  const userRows: PlatformUserRow[] = managedAccountIds.map((userId) => {
+    const profile = profileById.get(userId) || null;
+    const authUser = authUserById.get(userId) || null;
     const ownedBusinessCount = ownedBusinessCountByUserId.get(userId) || 0;
 
     return {
       id: userId,
-      email: asString(profile.email),
-      role: asString(profile.role),
-      createdAt: asString(profile.created_at),
+      email: authUser?.email || asString(profile?.email) || null,
+      role: asString(profile?.role),
+      createdAt: authUser?.createdAt || asString(profile?.created_at),
       ownedBusinessCount,
       linkedBusinessName: firstBusinessNameByUserId.get(userId) || null,
       userType: ownedBusinessCount > 0 ? "business_owner" : "customer_or_guest",
@@ -510,12 +575,10 @@ export async function getPlatformAdminData() {
       tone: "success",
     },
     {
-      label: "Total users",
+      label: "Managed accounts",
       value: String(userRows.length),
-      detail: profilesRead.failed
-        ? "Profile metrics are partially unavailable because the profiles dataset could not be loaded."
-        : "Profiles currently available to the platform.",
-      tone: profilesRead.failed ? "alert" : "neutral",
+      detail: "Platform admin plus owners of the remaining live businesses.",
+      tone: "neutral",
     },
     {
       label: "Paying businesses",

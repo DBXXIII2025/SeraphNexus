@@ -118,9 +118,19 @@ function assertNonLiveMode() {
     throw new Error("SERAPH_NON_LIVE_VERIFY=1 is required for the verification harness.");
   }
 
+  if (process.env.SERAPH_ALLOW_FIXTURE_BUSINESSES !== "1") {
+    throw new Error(
+      "Refusing to create verification businesses without SERAPH_ALLOW_FIXTURE_BUSINESSES=1."
+    );
+  }
+
   const stripeSecretKey = String(process.env.STRIPE_SECRET_KEY || "");
   if (stripeSecretKey.startsWith("sk_live_")) {
     throw new Error("Refusing to run against a live Stripe secret key.");
+  }
+
+  if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(BASE_URL)) {
+    throw new Error(`Refusing to run verification fixtures against non-local base URL: ${BASE_URL}`);
   }
 }
 

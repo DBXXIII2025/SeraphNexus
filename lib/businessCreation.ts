@@ -47,7 +47,14 @@ const BAD_REQUEST_ERRORS = new Set([
   "Business name is required",
   "Invalid business type",
   "Invalid slug or business name",
+  "Reserved fake/test business names are blocked in production flows",
 ]);
+
+function isReservedNonProductionLabel(value: string) {
+  return /\b(verify|test|testing|smoke|demo|sample|placeholder|fake|mock|seed|fixture)\b/i.test(
+    value
+  );
+}
 
 export type CreatedBusiness = {
   id: string;
@@ -116,6 +123,15 @@ export function normalizeBusinessCreationInput(input: {
   const baseSlug = slugify(requestedSlug || name);
   if (!baseSlug) {
     throw new Error("Invalid slug or business name");
+  }
+
+  // Production business creation must not mint fake/demo tenants unless the
+  // operator explicitly opts into that unsafe behavior outside normal flows.
+  if (
+    process.env.SERAPH_ALLOW_FAKE_BUSINESSES !== "1" &&
+    (isReservedNonProductionLabel(name) || isReservedNonProductionLabel(baseSlug))
+  ) {
+    throw new Error("Reserved fake/test business names are blocked in production flows");
   }
 
   return {
