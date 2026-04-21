@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { PublicCard } from "@/components/public/PublicLayoutSystem";
 import { BusinessViewModel, formatBusinessType, getCategoryMeta } from "../exploreData";
+import StructuredIcon from "@/components/icons/StructuredIcon";
 
 export default function ExploreCard({
   business,
@@ -21,7 +22,8 @@ export default function ExploreCard({
           <h3 className="truncate font-semibold">
             {business.displayName}
           </h3>
-          <p>
+          <p className="flex items-center gap-2">
+            <StructuredIcon name={business.iconName} className="h-4 w-4 text-[var(--accent-soft)]" />
             {formatBusinessType(business.business_type)}
           </p>
         </div>

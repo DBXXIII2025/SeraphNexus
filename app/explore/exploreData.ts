@@ -1,5 +1,7 @@
 import { getPublicBusinessHrefState } from "@/lib/publicBusinessRoutes";
 import { normalizeBusinessPlan } from "@/lib/planConfig";
+import { getBusinessTypeIconName } from "@/lib/businessTypeIcons";
+import type { StructuredIconName } from "@/components/icons/StructuredIcon";
 
 export type Business = {
   id: string;
@@ -46,6 +48,7 @@ export type ExploreRouteFilterId = "all" | "book" | "order" | "rent" | "shop" | 
 export type BusinessViewModel = Business & {
   normalizedType: string;
   categoryId: Exclude<ExploreCategoryId, "all">;
+  iconName: StructuredIconName;
   routeState: ReturnType<typeof getPublicBusinessHrefState>;
   routeLabel: string;
   routeSummary: string;
@@ -267,6 +270,7 @@ export function buildBusinessViewModels(businesses: Business[]) {
         ...business,
         normalizedType,
         categoryId: getExploreCategoryId(normalizedType),
+        iconName: getBusinessTypeIconName(normalizedType),
         routeState,
         routeLabel: formatRouteLabel(routeState.routeId),
         routeSummary: formatRouteSummary(routeState.routeId),
@@ -275,6 +279,13 @@ export function buildBusinessViewModels(businesses: Business[]) {
         initials: getInitials(displayName),
         score: 0,
       };
+
+      console.info("[explore] business_type icon mapping", {
+        businessId: business.id,
+        businessType: business.business_type,
+        normalizedType,
+        iconName: viewModel.iconName,
+      });
 
       return {
         ...viewModel,

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { isRentalBusinessType } from "@/lib/businessModules";
+import {
+  PROPERTY_AMENITY_BOOLEAN_KEYS,
+  normalizePropertyAmenityData,
+  toPropertyAmenityJson,
+} from "@/lib/propertyAmenities";
 import { normalizeDate } from "@/lib/rentalAvailability";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
@@ -270,6 +275,113 @@ export async function POST(req: Request) {
         success: "listing-saved",
         warning,
         property: String(property.id),
+      });
+    }
+
+    if (action === "update_property") {
+      const propertyId = String(formData.get("property_id") || "").trim();
+      const name = String(formData.get("name") || "").trim();
+      const description = String(formData.get("description") || "").trim();
+      const price = Number(String(formData.get("price") || "").trim());
+      const amenityInput: Record<string, unknown> = {
+        bedrooms: formData.get("bedrooms"),
+        bathrooms: formData.get("bathrooms"),
+      };
+
+      for (const key of PROPERTY_AMENITY_BOOLEAN_KEYS) {
+        amenityInput[key] = formData.get(key) === "on";
+      }
+
+      const amenityData = normalizePropertyAmenityData(amenityInput);
+
+      console.log("[admin/rentals] update_property payload", {
+        table: "property",
+        operation: "update",
+        businessId: business.id,
+        propertyId,
+        name,
+        price,
+        hasDescription: description.length > 0,
+        amenityData,
+      });
+
+      if (!propertyId || !name || !Number.isFinite(price) || price <= 0) {
+        return redirectToRentals(req, {
+          error: "invalid-listing",
+          message: "Choose a valid listing, name, and positive price.",
+        });
+      }
+
+      const { data: property, error: propertyLookupError } = await supabaseAdmin
+        .from("property")
+        .select("id")
+        .eq("id", propertyId)
+        .eq("business_id", business.id)
+        .maybeSingle();
+
+      if (propertyLookupError || !property?.id) {
+        return redirectToRentals(req, {
+          error: "listing-not-found",
+          message: "The selected listing could not be found for the active business.",
+        });
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("property")
+        .update({
+          name,
+          price,
+          description,
+          amenity_data: toPropertyAmenityJson(amenityData),
+        })
+        .eq("id", propertyId)
+        .eq("business_id", business.id);
+
+      if (updateError) {
+        console.error("[admin/rentals] update_property failed", {
+          businessId: business.id,
+          propertyId,
+          error: formatSupabaseError(updateError),
+        });
+        return redirectToRentals(req, {
+          error: "listing-save-failed",
+          message: toUiErrorMessage(updateError.message) || "The listing could not be updated.",
+        });
+      }
+
+      let warning: string | null = null;
+
+      try {
+        await savePropertyContent({
+          supabase,
+          businessId: business.id,
+          propertyId,
+          title: name,
+          description,
+        });
+
+        await syncPropertyDescriptionColumn({
+          supabase,
+          propertyId,
+          businessId: business.id,
+          description,
+        });
+      } catch (contentError) {
+        console.error("[admin/rentals] update_property content sync failed", {
+          businessId: business.id,
+          propertyId,
+          message:
+            contentError instanceof Error
+              ? contentError.message
+              : "Unknown content sync error",
+        });
+        warning = "listing-description-save-failed";
+      }
+
+      return redirectToRentals(req, {
+        success: "listing-saved",
+        warning,
+        property: propertyId,
       });
     }
 

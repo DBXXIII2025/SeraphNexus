@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BusinessViewModel, formatBusinessType, getCategoryMeta } from "../exploreData";
+import StructuredIcon from "@/components/icons/StructuredIcon";
 
 export default function ExploreBusinessCard({
   business,
@@ -35,7 +36,8 @@ export default function ExploreBusinessCard({
             <h3 className="mt-2 truncate text-[15px] font-semibold text-[var(--text-strong)]">
               {business.displayName}
             </h3>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <p className="mt-1 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <StructuredIcon name={business.iconName} className="h-4 w-4 text-[var(--accent-soft)]" />
               {formatBusinessType(business.business_type)}
             </p>
           </div>

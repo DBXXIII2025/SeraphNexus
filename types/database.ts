@@ -313,6 +313,7 @@ export interface Database {
           price: number;
           business_id: string;
           description?: string | null;
+          amenity_data?: Json | null;
         };
         Insert: {
           id?: string;
@@ -320,6 +321,7 @@ export interface Database {
           price: number;
           business_id: string;
           description?: string | null;
+          amenity_data?: Json | null;
         };
         Update: {
           id?: string;
@@ -327,6 +329,7 @@ export interface Database {
           price?: number;
           business_id?: string;
           description?: string | null;
+          amenity_data?: Json | null;
         };
       };
 

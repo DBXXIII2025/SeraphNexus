@@ -18,6 +18,12 @@ import {
 import type { Database } from "@/types/database";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
+import {
+  PROPERTY_AMENITY_DEFINITIONS,
+  formatAmenityCount,
+  normalizePropertyAmenityData,
+} from "@/lib/propertyAmenities";
+import StructuredIcon from "@/components/icons/StructuredIcon";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -32,6 +38,7 @@ type ConversationLookupRow = Pick<
 >;
 type PropertyListItem = PropertyRow & {
   description?: string | null;
+  amenity_data?: Database["public"]["Tables"]["property"]["Row"]["amenity_data"];
 };
 
 type SearchParams = {
@@ -212,7 +219,7 @@ export default async function AdminRentalsPage({
     return {
       ...property,
       name: property.name || content?.title || "Listing",
-      description: property.description || content?.description || null,
+      description: property.description ?? content?.description ?? null,
     };
   });
 
@@ -220,6 +227,17 @@ export default async function AdminRentalsPage({
     selectedPropertyId || (propertyList.length === 1 ? String(propertyList[0].id) : "");
   const selectedProperty =
     propertyList.find((property) => String(property.id) === autoSelectedPropertyId) || null;
+  const selectedPropertyAmenities = normalizePropertyAmenityData(selectedProperty?.amenity_data);
+  const selectedPropertyCountHighlights = [
+    {
+      label: formatAmenityCount(selectedPropertyAmenities.bedrooms, "bedroom"),
+      icon: "bed" as const,
+    },
+    {
+      label: formatAmenityCount(selectedPropertyAmenities.bathrooms, "bathroom"),
+      icon: "bath" as const,
+    },
+  ].filter((item) => Boolean(item.label));
   const visibleBlocks = autoSelectedPropertyId
     ? blockRows.filter((block) => String(block.property_id) === autoSelectedPropertyId)
     : blockRows;
@@ -490,6 +508,151 @@ export default async function AdminRentalsPage({
       <section className="surface-card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
+            <p className="section-kicker">Amenities</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+              Structured listing details
+            </h2>
+          </div>
+          {selectedProperty ? <span className="status-chip">{selectedProperty.name}</span> : null}
+        </div>
+
+        {selectedProperty ? (
+          <form action="/api/admin/rentals" method="POST" className="mt-5 space-y-6">
+            <input type="hidden" name="action" value="update_property" />
+            <input type="hidden" name="property_id" value={selectedProperty.id} />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Listing name</p>
+                <input
+                  name="name"
+                  defaultValue={selectedProperty.name || ""}
+                  required
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Price</p>
+                <input
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  defaultValue={String(selectedProperty.price || "")}
+                  required
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Bedrooms</p>
+                <select
+                  name="bedrooms"
+                  defaultValue={
+                    selectedPropertyAmenities.bedrooms === null
+                      ? ""
+                      : String(selectedPropertyAmenities.bedrooms)
+                  }
+                  className="input-field"
+                >
+                  <option value="">Not set</option>
+                  {Array.from({ length: 12 }, (_, index) => index + 1).map((count) => (
+                    <option key={count} value={count}>
+                      {count}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Bathrooms</p>
+                <select
+                  name="bathrooms"
+                  defaultValue={
+                    selectedPropertyAmenities.bathrooms === null
+                      ? ""
+                      : String(selectedPropertyAmenities.bathrooms)
+                  }
+                  className="input-field"
+                >
+                  <option value="">Not set</option>
+                  {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6].map((count) => (
+                    <option key={count} value={count}>
+                      {count}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Description</p>
+                <textarea
+                  name="description"
+                  defaultValue={selectedProperty.description || ""}
+                  className="input-field min-h-[132px]"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-5">
+              <div className="flex flex-wrap gap-3">
+                {selectedPropertyCountHighlights.length > 0 ? (
+                  selectedPropertyCountHighlights.map((item) => (
+                    <span
+                      key={item.label}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-sm font-medium text-[var(--accent-soft)]"
+                    >
+                      <StructuredIcon name={item.icon} className="h-4 w-4" />
+                      {item.label}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-[var(--text-soft)]">
+                    Bedroom and bathroom counts are optional, but they improve public scanability.
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-[var(--text-soft)]">Amenity checklist</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {PROPERTY_AMENITY_DEFINITIONS.map((amenity) => (
+                  <label
+                    key={amenity.key}
+                    className="flex items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-main)]"
+                  >
+                    <input
+                      type="checkbox"
+                      name={amenity.key}
+                      defaultChecked={selectedPropertyAmenities[amenity.key]}
+                      className="h-4 w-4"
+                    />
+                    <StructuredIcon
+                      name={amenity.icon}
+                      className="h-4 w-4 text-[var(--accent-soft)]"
+                    />
+                    <span>{amenity.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+              Save Amenities
+            </button>
+          </form>
+        ) : propertyList.length === 0 ? (
+          <p className="mt-4 text-sm text-[var(--text-soft)]">
+            Create a listing first, then return here to assign bedrooms, bathrooms, and amenities.
+          </p>
+        ) : (
+          <p className="mt-4 text-sm text-[var(--text-soft)]">
+            Select a listing from the left to edit its structured amenities.
+          </p>
+        )}
+      </section>
+
+      <section className="surface-card p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
             <p className="section-kicker">{t("inventory")}</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">{t("listings")}</h2>
           </div>
@@ -509,6 +672,23 @@ export default async function AdminRentalsPage({
                     <p className="mt-1 text-sm text-[var(--text-soft)]">
                       ${Number(property.price || 0).toFixed(2)}
                     </p>
+                    {(() => {
+                      const amenityData = normalizePropertyAmenityData(property.amenity_data);
+                      const summary = [
+                        formatAmenityCount(amenityData.bedrooms, "bedroom"),
+                        formatAmenityCount(amenityData.bathrooms, "bathroom"),
+                      ]
+                        .filter(Boolean)
+                        .join(" • ");
+
+                      const normalizedSummary = summary.replace(/\u00e2\u20ac\u00a2/g, "\u2022");
+
+                      return normalizedSummary ? (
+                        <p className="mt-1 text-sm text-[var(--accent-soft)]">
+                          {normalizedSummary}
+                        </p>
+                      ) : null;
+                    })()}
                     {property.description ? (
                       <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
                         {property.description}

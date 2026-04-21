@@ -3,14 +3,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import BusinessProfileShell from "@/components/BusinessProfileShell";
+import StructuredIcon from "@/components/icons/StructuredIcon";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
+import {
+  formatAmenityCount,
+  getEnabledPropertyAmenities,
+  normalizePropertyAmenityData,
+} from "@/lib/propertyAmenities";
 
 type PropertyItem = {
   id: string;
   name: string;
   description?: string | null;
   price?: number | null;
+  amenity_data?: unknown;
 };
 
 type RentalAvailabilityResponse = {
@@ -55,6 +62,7 @@ export default function RentalCatalogClient({
       instagram?: string | null;
       twitter?: string | null;
     };
+    mapQuery?: string | null;
   };
   properties: PropertyItem[];
   isOwner: boolean;
@@ -81,6 +89,33 @@ export default function RentalCatalogClient({
     () => properties.find((item) => item.id === selectedPropertyId) || null,
     [properties, selectedPropertyId]
   );
+  const selectedAmenities = useMemo(
+    () => normalizePropertyAmenityData(selectedProperty?.amenity_data),
+    [selectedProperty]
+  );
+  const enabledAmenities = useMemo(
+    () => getEnabledPropertyAmenities(selectedProperty?.amenity_data),
+    [selectedProperty]
+  );
+  const countHighlights = useMemo(
+    () =>
+      [
+        { label: formatAmenityCount(selectedAmenities.bedrooms, "bedroom"), icon: "bed" as const },
+        {
+          label: formatAmenityCount(selectedAmenities.bathrooms, "bathroom"),
+          icon: "bath" as const,
+        },
+      ].filter((item) => Boolean(item.label)),
+    [selectedAmenities.bathrooms, selectedAmenities.bedrooms]
+  );
+  const mapEmbedUrl = useMemo(() => {
+    const query = business.mapQuery?.trim();
+    return query ? `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed` : null;
+  }, [business.mapQuery]);
+  const mapExternalUrl = useMemo(() => {
+    const query = business.mapQuery?.trim();
+    return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : null;
+  }, [business.mapQuery]);
 
   const selectedRangeUnavailable = useMemo(() => {
     if (!startDate || !endDate || endDate <= startDate) {
@@ -302,13 +337,26 @@ export default function RentalCatalogClient({
             </p>
 
             {selectedProperty ? (
-              <div className="mt-5 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4">
+                <div className="mt-5 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   Selected listing
                 </p>
                 <h3 className="mt-1 font-semibold text-[var(--text-strong)]">
                   {selectedProperty.name}
                 </h3>
+                {countHighlights.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {countHighlights.map((item) => (
+                      <span
+                        key={item.label}
+                        className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-xs font-semibold text-[var(--accent-soft)]"
+                      >
+                        <StructuredIcon name={item.icon} className="h-4 w-4" />
+                        {item.label}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
                 {selectedProperty.description ? (
                   <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
                     {selectedProperty.description}
@@ -317,6 +365,26 @@ export default function RentalCatalogClient({
                 <p className="mt-3 text-sm font-semibold text-[var(--text-main)]">
                   ${Number(selectedProperty.price || 0).toFixed(2)}
                 </p>
+              </div>
+            ) : null}
+
+            {selectedProperty && enabledAmenities.length > 0 ? (
+              <div className="mt-5 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4">
+                <h3 className="text-sm font-semibold text-[var(--text-strong)]">Amenities</h3>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {enabledAmenities.map((amenity) => (
+                    <div
+                      key={amenity.key}
+                      className="flex items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--text-soft)]"
+                    >
+                      <StructuredIcon
+                        name={amenity.icon}
+                        className="h-4 w-4 text-[var(--accent-soft)]"
+                      />
+                      <span>{amenity.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : null}
 
@@ -406,6 +474,42 @@ export default function RentalCatalogClient({
             </div>
           </div>
         </div>
+
+        {mapEmbedUrl ? (
+          <section className="surface-card p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--text-strong)]">Location</h2>
+                <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+                  Explore the area around this {business.business_type === "property" ? "property" : "rental"}.
+                </p>
+              </div>
+              {mapExternalUrl ? (
+                <a
+                  href={mapExternalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="public-action-secondary"
+                >
+                  Open map
+                </a>
+              ) : null}
+            </div>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)]">
+              <iframe
+                title={`${business.name} location map`}
+                src={mapEmbedUrl}
+                className="h-[320px] w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <p className="mt-3 flex items-center gap-2 text-sm text-[var(--text-soft)]">
+              <StructuredIcon name="mapPin" className="h-4 w-4 text-[var(--accent-soft)]" />
+              {business.profileContact?.address || business.profileContact?.serviceArea || "Location available"}
+            </p>
+          </section>
+        ) : null}
         </div>
       </div>
     </div>
