@@ -20,21 +20,31 @@ export default function ExploreDirectoryRow({
 }) {
   const category = getCategoryMeta(business.categoryId);
   const summary = getSummary(business);
+  const fallbackLabel = business.initials.trim() || null;
 
   return (
     <Link href={business.routeState.href} className="group block text-inherit no-underline">
       <article className="flex min-h-[84px] w-full items-center gap-3 rounded-[0.95rem] border border-[rgba(52,56,74,0.64)] bg-[var(--surface)] px-3 py-2 shadow-[0_6px_18px_rgba(6,8,18,0.14)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[rgba(59,63,85,0.9)] group-hover:shadow-[0_10px_24px_rgba(6,8,18,0.18)] sm:min-h-[88px] sm:px-3.5">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[0.8rem] border border-[rgba(52,56,74,0.62)] bg-[var(--surface-raised)] sm:h-16 sm:w-16">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[0.75rem] border border-[rgba(59,63,85,0.74)] bg-[linear-gradient(180deg,rgba(45,49,71,0.96),rgba(31,34,51,0.96))] shadow-[inset_0_1px_0_rgba(229,231,235,0.05)] sm:h-[46px] sm:w-[46px]">
           {business.thumbnailUrl ? (
             <img
               src={business.thumbnailUrl}
               alt={`${business.displayName} logo`}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain p-1.5"
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(209,213,219,0.12),rgba(38,42,61,0.92))] text-xs font-semibold uppercase tracking-[0.08em] text-[var(--accent-soft)]">
-              {business.initials}
+            <div className="flex h-full w-full items-center justify-center">
+              {fallbackLabel ? (
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--accent-soft)]">
+                  {fallbackLabel}
+                </span>
+              ) : (
+                <StructuredIcon
+                  name={business.iconName}
+                  className="h-4 w-4 text-[var(--accent-soft)]"
+                />
+              )}
             </div>
           )}
         </div>
