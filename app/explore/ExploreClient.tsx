@@ -354,7 +354,7 @@ export default function ExploreClient({
       title="Featured businesses"
       description="Routable businesses with live customer paths."
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {featuredBusinesses.map((business) => (
           <ExploreCard key={business.id} business={business} />
         ))}

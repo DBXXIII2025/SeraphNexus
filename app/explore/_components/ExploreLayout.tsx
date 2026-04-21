@@ -18,17 +18,17 @@ export default function ExploreLayout({
   grid: React.ReactNode;
 }) {
   return (
-    <PublicSiteShell>
-      <div className="space-y-4">
+    <PublicSiteShell className="public-system-explore">
+      <div className="space-y-3">
         {header}
         {controlBar}
 
-        <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="grid gap-3 xl:grid-cols-[240px_minmax(0,1fr)]">
           <aside className="hidden xl:block">
             {sidebar}
           </aside>
 
-          <main className="min-w-0 space-y-4">
+          <main className="min-w-0 space-y-3">
             <section className="xl:hidden">{mobileSidebar}</section>
             {featured}
             {grid}

@@ -480,6 +480,12 @@ button:focus {
   padding: 1rem;
 }
 
+.public-system-explore .public-container {
+  max-width: 1680px;
+  width: 100%;
+  padding-inline: 0.75rem;
+}
+
 .public-business-page-compact {
   min-height: auto !important;
 }
@@ -712,6 +718,10 @@ button:focus {
 @media (min-width: 768px) {
   .public-container {
     padding: 1.25rem;
+  }
+
+  .public-system-explore .public-container {
+    padding-inline: 1rem;
   }
 
   .public-topnav,
