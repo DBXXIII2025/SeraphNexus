@@ -5,7 +5,6 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import ExploreLayout from "./_components/ExploreLayout";
 import ExploreSidebar from "./_components/ExploreSidebar";
 import ExploreGrid from "./_components/ExploreGrid";
-import ExploreCard from "./_components/ExploreCard";
 import {
   PublicActionLink,
   PublicHero,
@@ -354,11 +353,7 @@ export default function ExploreClient({
       title="Featured businesses"
       description="Routable businesses with live customer paths."
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {featuredBusinesses.map((business) => (
-          <ExploreCard key={business.id} business={business} />
-        ))}
-      </div>
+      <ExploreGrid businesses={featuredBusinesses} />
     </PublicSection>
   ) : null;
 
@@ -366,7 +361,7 @@ export default function ExploreClient({
     <PublicSection
       eyebrow="Results"
       title={`${sortedBusinesses.length} businesses`}
-      description="Every card links to the business route currently available for that listing."
+      description="Every listing links directly to the business route currently available for that profile."
     >
       <ExploreGrid businesses={sortedBusinesses} />
     </PublicSection>

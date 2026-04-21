@@ -1,7 +1,7 @@
 "use client";
 
 import { BusinessViewModel } from "../exploreData";
-import ExploreCard from "./ExploreCard";
+import ExploreDirectoryRow from "./ExploreDirectoryRow";
 import { PublicEmptyState } from "@/components/public/PublicLayoutSystem";
 
 export default function ExploreGrid({
@@ -18,9 +18,9 @@ export default function ExploreGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="space-y-2">
       {businesses.map((business) => (
-        <ExploreCard key={business.id} business={business} />
+        <ExploreDirectoryRow key={business.id} business={business} />
       ))}
     </div>
   );
