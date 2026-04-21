@@ -1,7 +1,18 @@
 import { getPublicBusinessHrefState } from "@/lib/publicBusinessRoutes";
 import { normalizeBusinessPlan } from "@/lib/planConfig";
-import { getBusinessTypeIconName } from "@/lib/businessTypeIcons";
 import type { StructuredIconName } from "@/components/icons/StructuredIcon";
+import {
+  EXPLORE_CATEGORIES,
+  getExploreBusinessIconName,
+  getExploreCategoryIdFromBusinessType,
+  getExploreCategoryMeta,
+  normalizeExploreBusinessType,
+  type ExploreCategory,
+  type ExploreCategoryId,
+} from "@/lib/exploreBusinessTypes";
+
+export { EXPLORE_CATEGORIES };
+export type { ExploreCategory, ExploreCategoryId };
 
 export type Business = {
   id: string;
@@ -31,28 +42,11 @@ export type PlatformSettings = {
   pricing_note: string;
 };
 
-export type ExploreCategoryId =
-  | "all"
-  | "services"
-  | "food"
-  | "rentals"
-  | "products"
-  | "creators";
-
-export type ExploreCategory = {
-  id: Exclude<ExploreCategoryId, "all">;
-  label: string;
-  shortLabel: string;
-  description: string;
-  strapline: string;
-  tone: string;
-};
-
 export type ExploreRouteFilterId = "all" | "book" | "order" | "rent" | "shop" | "b";
 
 export type BusinessViewModel = Business & {
   normalizedType: string;
-  categoryId: Exclude<ExploreCategoryId, "all">;
+  categoryId: ExploreCategoryId;
   iconName: StructuredIconName;
   locationLabel: string;
   thumbnailUrl: string | null;
@@ -63,88 +57,6 @@ export type BusinessViewModel = Business & {
   displayDescription: string | null;
   initials: string;
   score: number;
-};
-
-export const EXPLORE_CATEGORIES: ExploreCategory[] = [
-  {
-    id: "services",
-    label: "Services",
-    shortLabel: "Service",
-    description: "Appointments, consulting, and service-led operators positioned for direct conversion.",
-    strapline: "Client-ready booking businesses",
-    tone: "from-transparent via-transparent to-transparent",
-  },
-  {
-    id: "food",
-    label: "Restaurants / Food",
-    shortLabel: "Food",
-    description: "Dining, menus, delivery, and food-led storefronts built for immediate ordering.",
-    strapline: "Order-first hospitality",
-    tone: "from-transparent via-transparent to-transparent",
-  },
-  {
-    id: "rentals",
-    label: "Rentals / Properties",
-    shortLabel: "Rentals",
-    description: "Reservation-led property and rental inventory presented with a more premium browse flow.",
-    strapline: "Reservation-driven inventory",
-    tone: "from-transparent via-transparent to-transparent",
-  },
-  {
-    id: "products",
-    label: "Products / Store",
-    shortLabel: "Store",
-    description: "Retail and product-focused storefronts organized for stronger catalog discoverability.",
-    strapline: "Commerce storefronts",
-    tone: "from-transparent via-transparent to-transparent",
-  },
-  {
-    id: "creators",
-    label: "Creators / Other",
-    shortLabel: "Creators",
-    description: "Independent brands and public profiles that sit outside the standard commerce lanes.",
-    strapline: "Profiles and creator-led brands",
-    tone: "from-transparent via-transparent to-transparent",
-  },
-];
-
-const BUSINESS_TYPE_ALIASES: Record<string, string> = {
-  appointment: "service",
-  appointments: "service",
-  booking: "service",
-  bookings: "service",
-  consultant: "service",
-  consulting: "service",
-  services: "service",
-
-  dining: "restaurant",
-  food_order: "restaurant",
-  food_service: "restaurant",
-  hospitality: "restaurant",
-  menu: "restaurant",
-  menus: "restaurant",
-  order: "restaurant",
-  restaurant: "restaurant",
-  restaurants: "restaurant",
-
-  properties: "property",
-  property_rental: "property",
-  rental_property: "property",
-  rentals: "rental",
-
-  commerce: "store",
-  ecommerce: "store",
-  e_commerce: "store",
-  product: "product",
-  products: "product",
-  retail: "store",
-  shop: "store",
-  shops: "store",
-  stores: "store",
-
-  creator: "creator",
-  creators: "creator",
-  profile: "creator",
 };
 
 export const ROUTE_FILTERS: Array<{
@@ -173,37 +85,12 @@ export function formatBusinessType(type: string | null | undefined) {
     .join(" ");
 }
 
-export function normalizeBusinessType(type: string | null | undefined) {
-  const normalized = String(type || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-
-  return BUSINESS_TYPE_ALIASES[normalized] || normalized;
-}
+export const normalizeBusinessType = normalizeExploreBusinessType;
 
 export function getExploreCategoryId(
   businessType: string | null | undefined
-): Exclude<ExploreCategoryId, "all"> {
-  const normalizedType = normalizeBusinessType(businessType);
-
-  if (normalizedType === "service") {
-    return "services";
-  }
-
-  if (normalizedType === "restaurant" || normalizedType === "food") {
-    return "food";
-  }
-
-  if (normalizedType === "rental" || normalizedType === "property") {
-    return "rentals";
-  }
-
-  if (normalizedType === "store" || normalizedType === "product") {
-    return "products";
-  }
-
-  return "creators";
+): ExploreCategoryId {
+  return getExploreCategoryIdFromBusinessType(businessType);
 }
 
 export function getInitials(name: string) {
@@ -246,8 +133,8 @@ export function formatRouteSummary(routeId: string) {
   }
 }
 
-export function getCategoryMeta(categoryId: Exclude<ExploreCategoryId, "all">) {
-  return EXPLORE_CATEGORIES.find((category) => category.id === categoryId) || EXPLORE_CATEGORIES[0];
+export function getCategoryMeta(categoryId: ExploreCategoryId) {
+  return getExploreCategoryMeta(categoryId);
 }
 
 function cleanText(value: string | null | undefined) {
@@ -307,7 +194,7 @@ export function buildBusinessViewModels(businesses: Business[]) {
         ...business,
         normalizedType,
         categoryId: getExploreCategoryId(normalizedType),
-        iconName: getBusinessTypeIconName(normalizedType),
+        iconName: getExploreBusinessIconName(normalizedType),
         locationLabel: getBusinessLocationLabel(business),
         thumbnailUrl,
         routeState,
@@ -323,6 +210,7 @@ export function buildBusinessViewModels(businesses: Business[]) {
         businessId: business.id,
         businessType: business.business_type,
         normalizedType,
+        categoryId: viewModel.categoryId,
         iconName: viewModel.iconName,
       });
 
@@ -355,9 +243,7 @@ export function getActiveFilterSummary({
 }) {
   const parts: string[] = [];
 
-  if (categoryFilter !== "all") {
-    parts.push(getCategoryMeta(categoryFilter).label);
-  }
+  parts.push(getCategoryMeta(categoryFilter).label);
 
   if (typeFilter !== "all") {
     parts.push(formatBusinessType(typeFilter));

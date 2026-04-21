@@ -31,7 +31,7 @@ export default function ExploreClient({
   settings: PlatformSettings;
 }) {
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<ExploreCategoryId>("all");
+  const [categoryFilter, setCategoryFilter] = useState<ExploreCategoryId>("services");
   const [typeFilter, setTypeFilter] = useState("all");
   const [routeFilter, setRouteFilter] = useState<ExploreRouteFilterId>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "public-ready">("all");
@@ -41,10 +41,27 @@ export default function ExploreClient({
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
 
   const businessViews = useMemo(() => buildBusinessViewModels(businesses), [businesses]);
+  const rawBusinessTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          businesses
+            .map((business) => String(business.business_type || "").trim())
+            .filter(Boolean)
+        )
+      ).sort(),
+    [businesses]
+  );
+  const categoryCounts = useMemo(() => {
+    return EXPLORE_CATEGORIES.reduce<Record<ExploreCategoryId, number>>((acc, category) => {
+      acc[category.id] = businessViews.filter((business) => business.categoryId === category.id).length;
+      return acc;
+    }, {} as Record<ExploreCategoryId, number>);
+  }, [businessViews]);
 
   const visibleTypes = useMemo(() => {
     const filtered = businessViews.filter((business) => {
-      return categoryFilter === "all" || business.categoryId === categoryFilter;
+      return business.categoryId === categoryFilter;
     });
 
     return Array.from(new Set(filtered.map((business) => business.normalizedType).filter(Boolean))).sort();
@@ -65,7 +82,7 @@ export default function ExploreClient({
           .includes(deferredSearch);
 
       const matchesCategory =
-        categoryFilter === "all" || business.categoryId === categoryFilter;
+        business.categoryId === categoryFilter;
       const matchesType = typeFilter === "all" || business.normalizedType === typeFilter;
       const matchesRoute = routeFilter === "all" || business.routeState.routeId === routeFilter;
       const matchesStatus =
@@ -97,9 +114,11 @@ export default function ExploreClient({
       statusFilter,
       resultCount: sortedBusinesses.length,
       totalCount: businessViews.length,
+      categoryCounts,
     });
   }, [
     businessViews.length,
+    categoryCounts,
     categoryFilter,
     deferredSearch,
     routeFilter,
@@ -109,8 +128,12 @@ export default function ExploreClient({
   ]);
 
   const featuredBusinesses = useMemo(() => {
-    return businessViews.filter((business) => business.routeState.isRoutable).slice(0, 3);
-  }, [businessViews]);
+    return businessViews
+      .filter(
+        (business) => business.routeState.isRoutable && business.categoryId === categoryFilter
+      )
+      .slice(0, 3);
+  }, [businessViews, categoryFilter]);
   const platformName = resolvePlatformName(settings);
   const platformLogoUrl = resolvePlatformLogoUrl(settings);
   const platformInitials =
@@ -127,18 +150,31 @@ export default function ExploreClient({
   const accountHref = "/admin";
   const hasActiveFilters =
     Boolean(search.trim()) ||
-    categoryFilter !== "all" ||
     typeFilter !== "all" ||
     routeFilter !== "all" ||
     statusFilter !== "all";
 
   const clearFilters = () => {
     setSearch("");
-    setCategoryFilter("all");
+    setCategoryFilter("services");
     setTypeFilter("all");
     setRouteFilter("all");
     setStatusFilter("all");
   };
+
+  useEffect(() => {
+    console.info("[explore] raw business_type values loaded", {
+      rawBusinessTypes,
+    });
+  }, [rawBusinessTypes]);
+
+  useEffect(() => {
+    console.info("[explore] active tab", {
+      activeCategory: categoryFilter,
+      activeCategoryLabel: EXPLORE_CATEGORIES.find((category) => category.id === categoryFilter)?.label,
+      filteredResultCount: sortedBusinesses.length,
+    });
+  }, [categoryFilter, sortedBusinesses.length]);
 
   useEffect(() => {
     if (!actionsOpen) {
@@ -269,13 +305,6 @@ export default function ExploreClient({
         />
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setCategoryFilter("all")}
-            className={categoryFilter === "all" ? "public-action-primary" : "public-action-secondary"}
-          >
-            All
-          </button>
           {EXPLORE_CATEGORIES.map((category) => (
             <button
               key={category.id}
@@ -283,7 +312,7 @@ export default function ExploreClient({
               onClick={() => setCategoryFilter(category.id)}
               className={categoryFilter === category.id ? "public-action-primary" : "public-action-secondary"}
             >
-              {category.shortLabel}
+              {category.label}
             </button>
           ))}
         </div>
@@ -317,7 +346,7 @@ export default function ExploreClient({
   );
 
   const sidebar = (
-    <ExploreSidebar
+      <ExploreSidebar
       typeFilter={typeFilter}
       routeFilter={routeFilter}
       statusFilter={statusFilter}
@@ -353,7 +382,7 @@ export default function ExploreClient({
       title="Featured businesses"
       description="Routable businesses with live customer paths."
     >
-      <ExploreGrid businesses={featuredBusinesses} />
+      <ExploreGrid businesses={featuredBusinesses} activeCategory={categoryFilter} />
     </PublicSection>
   ) : null;
 
@@ -363,7 +392,7 @@ export default function ExploreClient({
       title={`${sortedBusinesses.length} businesses`}
       description="Every listing links directly to the business route currently available for that profile."
     >
-      <ExploreGrid businesses={sortedBusinesses} />
+      <ExploreGrid businesses={sortedBusinesses} activeCategory={categoryFilter} />
     </PublicSection>
   );
 

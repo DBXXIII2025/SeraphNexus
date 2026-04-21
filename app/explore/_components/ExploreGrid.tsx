@@ -1,18 +1,22 @@
 "use client";
 
-import { BusinessViewModel } from "../exploreData";
+import { BusinessViewModel, getCategoryMeta, type ExploreCategoryId } from "../exploreData";
 import ExploreDirectoryRow from "./ExploreDirectoryRow";
 import { PublicEmptyState } from "@/components/public/PublicLayoutSystem";
 
 export default function ExploreGrid({
   businesses,
+  activeCategory,
 }: {
   businesses: BusinessViewModel[];
+  activeCategory: ExploreCategoryId;
 }) {
   if (businesses.length === 0) {
+    const category = getCategoryMeta(activeCategory);
+
     return (
       <PublicEmptyState>
-        <p>No published businesses match these filters.</p>
+        <p>No published {category.label.toLowerCase()} businesses match this view.</p>
       </PublicEmptyState>
     );
   }
