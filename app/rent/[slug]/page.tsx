@@ -13,7 +13,6 @@ import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
 import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
 import { getPlatformSettings } from "@/lib/platformSettings";
-import { normalizePropertyAmenityData } from "@/lib/propertyAmenities";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -128,16 +127,6 @@ export default async function RentPage({
     hasAddress: Boolean(profileFields.address?.trim()),
     hasServiceArea: Boolean(profileFields.service_area?.trim()),
     mapQuery,
-  });
-
-  console.log("[public/rent] amenities payload rendered", {
-    businessId: business.id,
-    propertyCount: mergedProperties.length,
-    properties: mergedProperties.map((property) => ({
-      propertyId: property.id,
-      hasAmenityDataField: Object.prototype.hasOwnProperty.call(property, "amenity_data"),
-      amenityData: normalizePropertyAmenityData(property.amenity_data),
-    })),
   });
 
   return (

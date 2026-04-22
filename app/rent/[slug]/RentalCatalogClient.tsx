@@ -3,21 +3,14 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
-import StructuredIcon from "@/components/icons/StructuredIcon";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
 import { translate, type LanguageCode } from "@/lib/i18n";
-import {
-  formatAmenityCount,
-  getEnabledPropertyAmenities,
-  normalizePropertyAmenityData,
-} from "@/lib/propertyAmenities";
 
 type PropertyItem = {
   id: string;
   name: string;
   description?: string | null;
   price?: number | null;
-  amenity_data?: unknown;
 };
 
 type RentalAvailabilityResponse = {
@@ -107,47 +100,6 @@ export default function RentalCatalogClient({
     () => properties.find((item) => item.id === selectedPropertyId) || null,
     [properties, selectedPropertyId]
   );
-  const selectedAmenities = useMemo(
-    () => normalizePropertyAmenityData(selectedProperty?.amenity_data),
-    [selectedProperty]
-  );
-  const enabledAmenities = useMemo(
-    () => getEnabledPropertyAmenities(selectedProperty?.amenity_data),
-    [selectedProperty]
-  );
-  const countHighlights = useMemo(
-    () =>
-      [
-        { label: formatAmenityCount(selectedAmenities.bedrooms, "bedroom"), icon: "bed" as const },
-        {
-          label: formatAmenityCount(selectedAmenities.bathrooms, "bathroom"),
-          icon: "bath" as const,
-        },
-      ].filter((item) => Boolean(item.label)),
-    [selectedAmenities.bathrooms, selectedAmenities.bedrooms]
-  );
-  const propertyFacts = useMemo(
-    () =>
-      [
-        ...countHighlights,
-        selectedAmenities.petsAllowed
-          ? { label: "Pets allowed", icon: "pets" as const }
-          : null,
-        selectedAmenities.parking
-          ? { label: "Parking", icon: "parking" as const }
-          : null,
-      ].filter((item): item is { label: string; icon: "bed" | "bath" | "pets" | "parking" } =>
-        Boolean(item?.label)
-      ),
-    [countHighlights, selectedAmenities.parking, selectedAmenities.petsAllowed]
-  );
-  const secondaryAmenities = useMemo(
-    () =>
-      enabledAmenities.filter(
-        (amenity) => amenity.key !== "petsAllowed" && amenity.key !== "parking"
-      ),
-    [enabledAmenities]
-  );
   const mapEmbedUrl = useMemo(() => {
     const query = business.mapQuery?.trim();
     return query ? `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed` : null;
@@ -165,10 +117,6 @@ export default function RentalCatalogClient({
         .join("")
         .slice(0, 2) || "BN",
     [business.name]
-  );
-  const approvedAmenityLabels = useMemo(
-    () => enabledAmenities.map((amenity) => amenity.label),
-    [enabledAmenities]
   );
   const hasContactInfo = Boolean(
     business.profileContact?.phone ||
@@ -224,31 +172,6 @@ export default function RentalCatalogClient({
       setActiveImageIndex(Math.max(0, galleryImages.length - 1));
     }
   }, [activeImageIndex, galleryImages.length]);
-
-  useEffect(() => {
-    console.info("[public/rent] approved amenities payload loaded", {
-      businessId: business.id,
-      propertyId: selectedProperty?.id || null,
-      amenityPayload: selectedAmenities,
-      removedWrapperClasses: [
-        "BusinessProfileShell",
-        "public-topnav",
-        "public-hero",
-        "public-section",
-        "surface-card",
-        "circuit-shell",
-      ],
-    });
-  }, [business.id, selectedAmenities, selectedProperty?.id]);
-
-  useEffect(() => {
-    console.info("[public/rent] final rendered approved amenities list", {
-      businessId: business.id,
-      propertyId: selectedProperty?.id || null,
-      approvedAmenityKeys: enabledAmenities.map((amenity) => amenity.key),
-      approvedAmenityLabels,
-    });
-  }, [approvedAmenityLabels, business.id, enabledAmenities, selectedProperty?.id]);
 
   async function handleCheckout() {
     setError(null);
@@ -384,20 +307,6 @@ export default function RentalCatalogClient({
                   {selectedProperty?.description || business.description || "Browse available stays and reserve directly online."}
                 </p>
               </div>
-
-              {propertyFacts.length > 0 ? (
-                <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm text-[var(--text-main)]">
-                  {propertyFacts.map((fact) => (
-                    <div key={fact.label} className="flex items-center gap-2">
-                      <StructuredIcon
-                        name={fact.icon}
-                        className="h-4 w-4 shrink-0 text-[var(--accent-soft)]"
-                      />
-                      <span>{fact.label}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
             </div>
 
             <div className="border-t border-[var(--border-soft)] pt-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
@@ -410,9 +319,7 @@ export default function RentalCatalogClient({
                     {selectedProperty?.name || "Choose a listing"}
                   </h3>
                   <p className="mt-1 text-sm text-[var(--text-soft)]">
-                    {approvedAmenityLabels.length > 0
-                      ? `${approvedAmenityLabels.length} approved amenities published`
-                      : "Approved amenities will appear here once enabled."}
+                    Reserve available dates directly from the public listing page.
                   </p>
                 </div>
                 {selectedProperty ? (
@@ -472,7 +379,7 @@ export default function RentalCatalogClient({
                   </h2>
                 </div>
                 <p className="text-sm text-[var(--text-soft)]">
-                  Select a listing to view approved facts, amenities, and reserve dates.
+                  Select a listing to review details and reserve dates.
                 </p>
               </div>
 
@@ -542,48 +449,6 @@ export default function RentalCatalogClient({
                   </p>
                 ) : null}
 
-                {propertyFacts.length > 0 ? (
-                  <div className="mt-6">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                      Property facts
-                    </p>
-                    <div className="mt-3 grid gap-x-8 gap-y-3 sm:grid-cols-2">
-                      {propertyFacts.map((fact) => (
-                        <div key={fact.label} className="flex items-center gap-2.5 text-sm text-[var(--text-main)]">
-                          <StructuredIcon
-                            name={fact.icon}
-                            className="h-4 w-4 shrink-0 text-[var(--accent-soft)]"
-                          />
-                          <span>{fact.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {secondaryAmenities.length > 0 ? (
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                        Approved amenities
-                      </p>
-                      <span className="text-xs text-[var(--text-muted)]">
-                        {secondaryAmenities.length} shown
-                      </span>
-                    </div>
-                    <div className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
-                      {secondaryAmenities.map((amenity) => (
-                        <div key={amenity.key} className="flex items-center gap-2.5 text-sm text-[var(--text-soft)]">
-                          <StructuredIcon
-                            name={amenity.icon}
-                            className="h-3.5 w-3.5 shrink-0 text-[var(--accent-soft)]"
-                          />
-                          <span>{amenity.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
               </section>
             ) : null}
 
@@ -706,9 +571,7 @@ export default function RentalCatalogClient({
                   <div>
                     <p className="text-sm font-medium text-[var(--text-main)]">{selectedProperty.name}</p>
                     <p className="mt-1 text-xs text-[var(--text-muted)]">
-                      {approvedAmenityLabels.length > 0
-                        ? approvedAmenityLabels.join(" • ")
-                        : "No approved amenities published"}
+                      Complete your guest details to continue to checkout.
                     </p>
                   </div>
                   <p className="text-base font-semibold text-[var(--text-strong)]">

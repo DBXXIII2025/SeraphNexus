@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { isRentalBusinessType } from "@/lib/businessModules";
-import {
-  PROPERTY_AMENITY_BOOLEAN_KEYS,
-  normalizePropertyAmenityData,
-  toPropertyAmenityJson,
-} from "@/lib/propertyAmenities";
 import { normalizeDate } from "@/lib/rentalAvailability";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
@@ -52,20 +47,6 @@ function toUiErrorMessage(input: string | null | undefined) {
   }
 
   return normalized.slice(0, 180);
-}
-
-function isMissingAmenityDataColumnError(error: {
-  message?: string | null;
-  details?: string | null;
-  hint?: string | null;
-  code?: string | null;
-} | null | undefined) {
-  if (!error) {
-    return false;
-  }
-
-  const message = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`.toLowerCase();
-  return error.code === "42703" && message.includes("amenity_data");
 }
 
 async function savePropertyContent({
@@ -297,16 +278,6 @@ export async function POST(req: Request) {
       const name = String(formData.get("name") || "").trim();
       const description = String(formData.get("description") || "").trim();
       const price = Number(String(formData.get("price") || "").trim());
-      const amenityInput: Record<string, unknown> = {
-        bedrooms: formData.get("bedrooms"),
-        bathrooms: formData.get("bathrooms"),
-      };
-
-      for (const key of PROPERTY_AMENITY_BOOLEAN_KEYS) {
-        amenityInput[key] = formData.get(key) === "on";
-      }
-
-      const amenityData = normalizePropertyAmenityData(amenityInput);
 
       console.log("[admin/rentals] update_property payload", {
         table: "property",
@@ -316,7 +287,6 @@ export async function POST(req: Request) {
         name,
         price,
         hasDescription: description.length > 0,
-        amenityData,
       });
 
       if (!propertyId || !name || !Number.isFinite(price) || price <= 0) {
@@ -346,7 +316,6 @@ export async function POST(req: Request) {
           name,
           price,
           description,
-          amenity_data: toPropertyAmenityJson(amenityData),
         })
         .eq("id", propertyId)
         .eq("business_id", business.id);
@@ -357,14 +326,6 @@ export async function POST(req: Request) {
           propertyId,
           error: formatSupabaseError(updateError),
         });
-        if (isMissingAmenityDataColumnError(updateError)) {
-          return redirectToRentals(req, {
-            error: "listing-schema-mismatch",
-            message:
-              "The live database is missing property.amenity_data, so amenities cannot persist until the amenity migration is applied.",
-            property: propertyId,
-          });
-        }
         return redirectToRentals(req, {
           error: "listing-save-failed",
           message: toUiErrorMessage(updateError.message) || "The listing could not be updated.",
@@ -373,7 +334,7 @@ export async function POST(req: Request) {
 
       const { data: storedProperty, error: storedPropertyError } = await supabaseAdmin
         .from("property")
-        .select("id, amenity_data, description")
+        .select("id, description")
         .eq("id", propertyId)
         .eq("business_id", business.id)
         .maybeSingle();
@@ -390,7 +351,6 @@ export async function POST(req: Request) {
           operation: "update",
           businessId: business.id,
           propertyId,
-          storedAmenityData: normalizePropertyAmenityData(storedProperty?.amenity_data),
           storedDescriptionLength: String(storedProperty?.description || "").length,
         });
       }

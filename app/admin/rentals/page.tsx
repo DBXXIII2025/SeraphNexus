@@ -18,8 +18,7 @@ import {
 import type { Database } from "@/types/database";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
-import { formatAmenityCount, normalizePropertyAmenityData } from "@/lib/propertyAmenities";
-import StructuredAmenitiesEditor from "./StructuredAmenitiesEditor";
+import PropertyListingEditor from "./PropertyListingEditor";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -34,7 +33,6 @@ type ConversationLookupRow = Pick<
 >;
 type PropertyListItem = PropertyRow & {
   description?: string | null;
-  amenity_data?: Database["public"]["Tables"]["property"]["Row"]["amenity_data"];
 };
 
 type SearchParams = {
@@ -50,8 +48,6 @@ const ERROR_MESSAGES: Record<string, string> = {
   "invalid-business-type": "The active business is not a rental or property business.",
   "invalid-listing": "Enter a listing name and a valid price before saving.",
   "listing-save-failed": "The listing could not be saved. Check the server logs for details.",
-  "listing-schema-mismatch":
-    "Property amenities storage is not available in the live database yet. Apply the property amenities migration before saving amenities.",
   "listing-description-save-failed":
     "The listing description could not be saved. The listing data is still available, but description content needs attention.",
   "invalid-block": "Choose a valid listing and a valid date range before blocking dates.",
@@ -225,18 +221,6 @@ export default async function AdminRentalsPage({
     selectedPropertyId || (propertyList.length === 1 ? String(propertyList[0].id) : "");
   const selectedProperty =
     propertyList.find((property) => String(property.id) === autoSelectedPropertyId) || null;
-  const selectedPropertyAmenities = normalizePropertyAmenityData(selectedProperty?.amenity_data);
-  const selectedPropertyHasAmenityColumn = selectedProperty
-    ? Object.prototype.hasOwnProperty.call(selectedProperty, "amenity_data")
-    : true;
-  if (selectedProperty) {
-    console.log("[admin/rentals/page] selected property amenities payload", {
-      businessId: business.id,
-      propertyId: selectedProperty.id,
-      amenityData: selectedPropertyAmenities,
-      hasAmenityDataField: selectedPropertyHasAmenityColumn,
-    });
-  }
   const visibleBlocks = autoSelectedPropertyId
     ? blockRows.filter((block) => String(block.property_id) === autoSelectedPropertyId)
     : blockRows;
@@ -348,6 +332,7 @@ export default async function AdminRentalsPage({
           </div>
         </section>
       ) : null}
+
       <section className="grid gap-6 xl:grid-cols-[320px,1fr]">
         <div className="surface-card p-6">
           <div className="flex items-center justify-between gap-3">
@@ -507,38 +492,29 @@ export default async function AdminRentalsPage({
       <section className="surface-card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="section-kicker">Amenities</p>
+            <p className="section-kicker">Listing details</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
-              Structured listing details
+              Edit selected listing
             </h2>
           </div>
           {selectedProperty ? <span className="status-chip">{selectedProperty.name}</span> : null}
         </div>
 
         {selectedProperty ? (
-          <>
-            {!selectedPropertyHasAmenityColumn ? (
-              <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                The live database does not currently expose `property.amenity_data`. Apply
-                `sql/migrations/20260420_property_amenities.sql` before amenities can persist.
-              </div>
-            ) : null}
-            <StructuredAmenitiesEditor
-              action="/api/admin/rentals"
-              propertyId={String(selectedProperty.id)}
-              propertyName={selectedProperty.name || ""}
-              price={selectedProperty.price ?? null}
-              description={selectedProperty.description || ""}
-              initialAmenities={selectedPropertyAmenities}
-            />
-          </>
+          <PropertyListingEditor
+            action="/api/admin/rentals"
+            propertyId={String(selectedProperty.id)}
+            propertyName={selectedProperty.name || ""}
+            price={selectedProperty.price ?? null}
+            description={selectedProperty.description || ""}
+          />
         ) : propertyList.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--text-soft)]">
-            Create a listing first, then return here to assign bedrooms, bathrooms, and amenities.
+            Create a listing first, then return here to edit its details.
           </p>
         ) : (
           <p className="mt-4 text-sm text-[var(--text-soft)]">
-            Select a listing from the left to edit its structured amenities.
+            Select a listing from the left to edit its details.
           </p>
         )}
       </section>
@@ -565,23 +541,6 @@ export default async function AdminRentalsPage({
                     <p className="mt-1 text-sm text-[var(--text-soft)]">
                       ${Number(property.price || 0).toFixed(2)}
                     </p>
-                    {(() => {
-                      const amenityData = normalizePropertyAmenityData(property.amenity_data);
-                      const summary = [
-                        formatAmenityCount(amenityData.bedrooms, "bedroom"),
-                        formatAmenityCount(amenityData.bathrooms, "bathroom"),
-                      ]
-                        .filter(Boolean)
-                        .join(" • ");
-
-                      const normalizedSummary = summary.replace(/\u00e2\u20ac\u00a2/g, "\u2022");
-
-                      return normalizedSummary ? (
-                        <p className="mt-1 text-sm text-[var(--accent-soft)]">
-                          {normalizedSummary}
-                        </p>
-                      ) : null;
-                    })()}
                     {property.description ? (
                       <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
                         {property.description}
@@ -667,7 +626,7 @@ export default async function AdminRentalsPage({
             {visibleReservations.length === 0 ? (
               <p className="text-sm text-[var(--text-soft)]">No reservations yet.</p>
             ) : (
-              visibleReservations.map((reservation) => (
+              visibleReservations.map((reservation) =>
                 (() => {
                   const displayRange = getBookingDisplayRange(reservation);
 
@@ -734,7 +693,7 @@ export default async function AdminRentalsPage({
                     </div>
                   );
                 })()
-              ))
+              )
             )}
           </div>
         </div>
@@ -742,5 +701,3 @@ export default async function AdminRentalsPage({
     </div>
   );
 }
-
-
