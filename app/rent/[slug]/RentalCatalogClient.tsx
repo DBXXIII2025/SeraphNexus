@@ -297,7 +297,7 @@ export default function RentalCatalogClient({
         <div className="grid gap-6 lg:grid-cols-[1.4fr,0.9fr]">
           <div className="space-y-4">
             {!properties || properties.length === 0 ? (
-              <div className="surface-card p-6 text-sm text-[var(--text-soft)]">
+              <div className="border-t border-[var(--border-soft)] pt-4 text-sm text-[var(--text-soft)]">
                 No rental items have been added yet.
               </div>
             ) : (
@@ -312,10 +312,10 @@ export default function RentalCatalogClient({
                       setSelectedPropertyId(property.id);
                       void refreshAvailability(property.id);
                     }}
-                    className={`w-full rounded-2xl border p-5 text-left transition ${
+                    className={`w-full rounded-lg border px-4 py-4 text-left transition ${
                       selected
-                        ? "border-[var(--accent)] bg-[var(--accent-muted)] shadow-[var(--shadow-soft)]"
-                        : "border-[var(--border-soft)] bg-[var(--panel)] hover:border-[var(--accent-soft)]"
+                        ? "border-[var(--accent)] bg-[var(--accent-muted)]"
+                        : "border-[var(--border-soft)] hover:border-[var(--accent-soft)]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -337,7 +337,7 @@ export default function RentalCatalogClient({
             )}
           </div>
 
-          <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel)] p-5">
+          <div className="border-t border-[var(--border-soft)] pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
             <h2 className="text-xl font-semibold text-[var(--text-strong)]">
               {t("reserveDates")}
             </h2>
@@ -510,7 +510,7 @@ export default function RentalCatalogClient({
         </div>
 
         {mapEmbedUrl ? (
-          <section className="surface-card p-6">
+          <section className="border-t border-[var(--border-soft)] pt-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-[var(--text-strong)]">Location</h2>
@@ -529,7 +529,7 @@ export default function RentalCatalogClient({
                 </a>
               ) : null}
             </div>
-            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)]">
+            <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border-soft)]">
               <iframe
                 title={`${business.name} location map`}
                 src={mapEmbedUrl}
