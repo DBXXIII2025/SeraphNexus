@@ -385,18 +385,23 @@ export default function RentalCatalogClient({
 
             {selectedProperty && enabledAmenities.length > 0 ? (
               <div className="mt-5 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4">
-                <h3 className="text-sm font-semibold text-[var(--text-strong)]">Amenities</h3>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-[var(--text-strong)]">Amenities</h3>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {enabledAmenities.length} included
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2">
                   {enabledAmenities.map((amenity) => (
                     <div
                       key={amenity.key}
-                      className="flex items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--panel)] px-3 py-2 text-sm text-[var(--text-soft)]"
+                      className="flex items-center gap-2.5 py-1 text-sm text-[var(--text-soft)]"
                     >
                       <StructuredIcon
                         name={amenity.icon}
-                        className="h-4 w-4 text-[var(--accent-soft)]"
+                        className="h-3.5 w-3.5 shrink-0 text-[var(--accent-soft)]"
                       />
-                      <span>{amenity.label}</span>
+                      <span className="leading-5">{amenity.label}</span>
                     </div>
                   ))}
                 </div>
