@@ -108,6 +108,28 @@ export default function RentalCatalogClient({
       ].filter((item) => Boolean(item.label)),
     [selectedAmenities.bathrooms, selectedAmenities.bedrooms]
   );
+  const propertyFacts = useMemo(
+    () =>
+      [
+        ...countHighlights,
+        selectedAmenities.petsAllowed
+          ? { label: "Pets allowed", icon: "pets" as const }
+          : null,
+        selectedAmenities.parking
+          ? { label: "Parking", icon: "parking" as const }
+          : null,
+      ].filter((item): item is { label: string; icon: "bed" | "bath" | "pets" | "parking" } =>
+        Boolean(item?.label)
+      ),
+    [countHighlights, selectedAmenities.parking, selectedAmenities.petsAllowed]
+  );
+  const secondaryAmenities = useMemo(
+    () =>
+      enabledAmenities.filter(
+        (amenity) => amenity.key !== "petsAllowed" && amenity.key !== "parking"
+      ),
+    [enabledAmenities]
+  );
   const mapEmbedUrl = useMemo(() => {
     const query = business.mapQuery?.trim();
     return query ? `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed` : null;
@@ -383,29 +405,49 @@ export default function RentalCatalogClient({
               </div>
             ) : null}
 
-            {selectedProperty && enabledAmenities.length > 0 ? (
-              <div className="mt-5 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4">
+            {selectedProperty && (propertyFacts.length > 0 || secondaryAmenities.length > 0) ? (
+              <section className="mt-5 border-t border-[var(--border-soft)] pt-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-[var(--text-strong)]">Amenities</h3>
+                  <h3 className="text-sm font-semibold text-[var(--text-strong)]">Property facts</h3>
                   <span className="text-xs text-[var(--text-muted)]">
-                    {enabledAmenities.length} included
+                    {enabledAmenities.length} amenities shown
                   </span>
                 </div>
-                <div className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2">
-                  {enabledAmenities.map((amenity) => (
-                    <div
-                      key={amenity.key}
-                      className="flex items-center gap-2.5 py-1 text-sm text-[var(--text-soft)]"
-                    >
-                      <StructuredIcon
-                        name={amenity.icon}
-                        className="h-3.5 w-3.5 shrink-0 text-[var(--accent-soft)]"
-                      />
-                      <span className="leading-5">{amenity.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
+                {propertyFacts.length > 0 ? (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    {propertyFacts.map((fact) => (
+                      <div
+                        key={fact.label}
+                        className="flex items-center gap-2.5 border-b border-[var(--border-soft)] py-2 text-sm text-[var(--text-main)]"
+                      >
+                        <StructuredIcon
+                          name={fact.icon}
+                          className="h-3.5 w-3.5 shrink-0 text-[var(--accent-soft)]"
+                        />
+                        <span className="font-medium leading-5">{fact.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {secondaryAmenities.length > 0 ? (
+                  <div className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                    {secondaryAmenities.map((amenity) => (
+                      <div
+                        key={amenity.key}
+                        className="flex items-center gap-2.5 py-1 text-sm text-[var(--text-soft)]"
+                      >
+                        <StructuredIcon
+                          name={amenity.icon}
+                          className="h-3.5 w-3.5 shrink-0 text-[var(--accent-soft)]"
+                        />
+                        <span className="leading-5">{amenity.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
             ) : null}
 
             <div className="mt-5 space-y-3">
