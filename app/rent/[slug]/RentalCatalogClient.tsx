@@ -180,34 +180,6 @@ export default function RentalCatalogClient({
     }
   }, [refreshAvailability, selectedPropertyId]);
 
-  useEffect(() => {
-    if (!selectedProperty) {
-      return;
-    }
-
-    console.info("[rent/client] selected rental payload", {
-      businessId: business.id,
-      propertyId: selectedProperty.id,
-      hasDescription: Boolean(selectedProperty.description?.trim()),
-      reservationMode: "single-property-date-range",
-    });
-  }, [business.id, selectedProperty]);
-
-  useEffect(() => {
-    if (!selectedProperty) {
-      return;
-    }
-
-    console.log("[rent/client] final public amenity list rendered", {
-      businessId: business.id,
-      propertyId: selectedProperty.id,
-      amenityPayload: selectedAmenities,
-      enabledAmenityKeys: enabledAmenities.map((amenity) => amenity.key),
-      bedroomLabel: formatAmenityCount(selectedAmenities.bedrooms, "bedroom"),
-      bathroomLabel: formatAmenityCount(selectedAmenities.bathrooms, "bathroom"),
-    });
-  }, [business.id, enabledAmenities, selectedAmenities, selectedProperty]);
-
   async function handleCheckout() {
     setError(null);
 
@@ -314,7 +286,7 @@ export default function RentalCatalogClient({
           }
         />
       </div>
-      <div className="circuit-shell bg-[var(--bg-main)] p-6 text-[var(--text-main)]">
+      <div className="bg-[var(--bg-main)] px-6 py-5 text-[var(--text-main)]">
         <div className="relative mx-auto max-w-6xl space-y-6">
         <p className="section-kicker">
           {business.business_type === "property"
@@ -365,7 +337,7 @@ export default function RentalCatalogClient({
             )}
           </div>
 
-          <div className="surface-card p-6">
+          <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--panel)] p-5">
             <h2 className="text-xl font-semibold text-[var(--text-strong)]">
               {t("reserveDates")}
             </h2>
@@ -374,15 +346,15 @@ export default function RentalCatalogClient({
             </p>
 
             {selectedProperty ? (
-                <div className="mt-5 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4">
+                <div className="mt-5 space-y-3">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   Selected listing
                 </p>
-                <h3 className="mt-1 font-semibold text-[var(--text-strong)]">
+                <h3 className="font-semibold text-[var(--text-strong)]">
                   {selectedProperty.name}
                 </h3>
                 {countHighlights.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {countHighlights.map((item) => (
                       <span
                         key={item.label}
@@ -395,11 +367,11 @@ export default function RentalCatalogClient({
                   </div>
                 ) : null}
                 {selectedProperty.description ? (
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+                  <p className="text-sm leading-6 text-[var(--text-soft)]">
                     {selectedProperty.description}
                   </p>
                 ) : null}
-                <p className="mt-3 text-sm font-semibold text-[var(--text-main)]">
+                <p className="text-sm font-semibold text-[var(--text-main)]">
                   ${Number(selectedProperty.price || 0).toFixed(2)}
                 </p>
               </div>
@@ -508,7 +480,7 @@ export default function RentalCatalogClient({
               </div>
             ) : null}
 
-            <div className="mt-6 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4">
+            <div className="mt-6 border-t border-[var(--border-soft)] pt-4">
               <h3 className="text-sm font-semibold text-[var(--text-strong)]">
                 Unavailable dates
               </h3>
