@@ -267,7 +267,7 @@ export default function RentalCatalogClient({
   }
 
   return (
-    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
+    <div className="rental-public-page rental-public-page-light min-h-screen bg-[var(--page-bg)] text-[var(--text-main)]">
       <div className="px-3 py-5 sm:py-6">
         <BusinessProfileShell
           businessName={business.name}
@@ -297,7 +297,7 @@ export default function RentalCatalogClient({
         <div className="grid gap-6 lg:grid-cols-[1.4fr,0.9fr]">
           <div className="space-y-4">
             {!properties || properties.length === 0 ? (
-              <div className="border-t border-[var(--border-soft)] pt-4 text-sm text-[var(--text-soft)]">
+              <div className="public-divider-section pt-4 text-sm text-[var(--text-soft)]">
                 No rental items have been added yet.
               </div>
             ) : (
@@ -312,10 +312,10 @@ export default function RentalCatalogClient({
                       setSelectedPropertyId(property.id);
                       void refreshAvailability(property.id);
                     }}
-                    className={`w-full rounded-lg border px-4 py-4 text-left transition ${
+                    className={`public-surface-light w-full rounded-lg px-4 py-4 text-left transition ${
                       selected
                         ? "border-[var(--accent)] bg-[var(--accent-muted)]"
-                        : "border-[var(--border-soft)] hover:border-[var(--accent-soft)]"
+                        : "hover:border-[var(--accent-soft)]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -337,7 +337,7 @@ export default function RentalCatalogClient({
             )}
           </div>
 
-          <div className="border-t border-[var(--border-soft)] pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <div className="public-divider-section pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
             <h2 className="text-xl font-semibold text-[var(--text-strong)]">
               {t("reserveDates")}
             </h2>
@@ -378,7 +378,7 @@ export default function RentalCatalogClient({
             ) : null}
 
             {selectedProperty && (propertyFacts.length > 0 || secondaryAmenities.length > 0) ? (
-              <section className="mt-5 border-t border-[var(--border-soft)] pt-4">
+              <section className="public-divider-section mt-5 pt-4">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-semibold text-[var(--text-strong)]">Property facts</h3>
                   <span className="text-xs text-[var(--text-muted)]">
@@ -480,7 +480,7 @@ export default function RentalCatalogClient({
               </div>
             ) : null}
 
-            <div className="mt-6 border-t border-[var(--border-soft)] pt-4">
+            <div className="public-divider-section mt-6 pt-4">
               <h3 className="text-sm font-semibold text-[var(--text-strong)]">
                 Unavailable dates
               </h3>
@@ -510,7 +510,7 @@ export default function RentalCatalogClient({
         </div>
 
         {mapEmbedUrl ? (
-          <section className="border-t border-[var(--border-soft)] pt-6">
+          <section className="public-divider-section pt-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-[var(--text-strong)]">Location</h2>
@@ -529,7 +529,7 @@ export default function RentalCatalogClient({
                 </a>
               ) : null}
             </div>
-            <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border-soft)]">
+            <div className="public-surface-light public-surface-frame mt-4 overflow-hidden rounded-xl">
               <iframe
                 title={`${business.name} location map`}
                 src={mapEmbedUrl}
