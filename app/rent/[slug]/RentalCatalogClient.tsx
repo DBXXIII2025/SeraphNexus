@@ -173,6 +173,20 @@ export default function RentalCatalogClient({
     }
   }, [activeImageIndex, galleryImages.length]);
 
+  function showPreviousImage() {
+    if (galleryImages.length <= 1) {
+      return;
+    }
+    setActiveImageIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1));
+  }
+
+  function showNextImage() {
+    if (galleryImages.length <= 1) {
+      return;
+    }
+    setActiveImageIndex((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1));
+  }
+
   async function handleCheckout() {
     setError(null);
 
@@ -334,21 +348,45 @@ export default function RentalCatalogClient({
 
         {activeImage ? (
           <section className="border-b border-[var(--border-soft)] py-8">
-            <div className="overflow-hidden rounded-2xl">
-              <img
-                src={activeImage.image_url}
-                alt={activeImage.alt_text || `${business.name} photo`}
-                className="h-[320px] w-full object-cover sm:h-[420px]"
-              />
+            <div className="public-gallery-frame max-w-none">
+              <div className="relative aspect-[1.2/1]">
+                <img
+                  src={activeImage.image_url}
+                  alt={activeImage.alt_text || `${business.name} photo`}
+                  className="h-full w-full object-cover"
+                />
+
+                {galleryImages.length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={showPreviousImage}
+                      aria-label="Previous photo"
+                      className="public-gallery-button public-gallery-button-left"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      onClick={showNextImage}
+                      aria-label="Next photo"
+                      className="public-gallery-button public-gallery-button-right"
+                    >
+                      Next
+                    </button>
+                  </>
+                ) : null}
+              </div>
             </div>
             {galleryImages.length > 1 ? (
-              <div className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-6">
+              <div className="mt-4 grid grid-cols-4 gap-1 border-t border-[var(--border-soft)] pt-3 sm:grid-cols-6">
                 {galleryImages.map((image, index) => (
                   <button
                     key={image.id}
                     type="button"
                     onClick={() => setActiveImageIndex(index)}
-                    className={`overflow-hidden rounded-xl border text-left ${
+                    aria-label={`Show photo ${index + 1}`}
+                    className={`aspect-square overflow-hidden border p-0 text-left ${
                       index === activeImageIndex
                         ? "border-[var(--accent)]"
                         : "border-[var(--border-soft)] opacity-80 hover:opacity-100"
@@ -357,7 +395,7 @@ export default function RentalCatalogClient({
                     <img
                       src={image.image_url}
                       alt={image.alt_text || `${business.name} thumbnail ${index + 1}`}
-                      className="aspect-[4/3] w-full object-cover"
+                      className="h-full w-full object-cover"
                     />
                   </button>
                 ))}
