@@ -35,6 +35,28 @@ type NavGroup = {
   items: Array<{ href: string; label: string }>;
 };
 
+const sidebarStackStyle = {
+  height: "100%",
+  minHeight: 0,
+  overflow: "hidden",
+} as const;
+
+const sidebarScrollStyle = {
+  flex: "1 1 auto",
+  minHeight: 0,
+  display: "grid",
+  alignContent: "start",
+  gap: "0.8rem",
+  overflowY: "auto",
+  paddingRight: "0.2rem",
+} as const;
+
+const sidebarFooterStyle = {
+  display: "grid",
+  flex: "0 0 auto",
+  gap: "0.8rem",
+} as const;
+
 function groupOwnerNav(items: Array<{ href: string; label: string }>): NavGroup[] {
   const groups: NavGroup[] = [
     { label: "Workspace", items: [] },
@@ -142,45 +164,47 @@ export default async function AdminLayout({
           />
         }
         sidebar={
-          <div className="admin-sidebar-stack">
-            <AdminSidebarBrand
-              brandName={platformName}
-              brandLogoUrl={platformLogoUrl}
-              eyebrow="Seraph Nexus"
-              title="Platform console"
-            />
-            <AdminSidebarSection title="Platform Navigation">
-              <nav className="admin-sidebar-nav">
-                {PLATFORM_OWNER_NAV.map((item) => (
-                  <AdminNavLink
-                    key={item.href}
-                    href={item.href}
-                    active={currentPath === item.href}
-                  >
-                    {item.label}
+          <div className="admin-sidebar-stack" style={sidebarStackStyle}>
+            <div className="admin-sidebar-scroll" style={sidebarScrollStyle}>
+              <AdminSidebarBrand
+                brandName={platformName}
+                brandLogoUrl={platformLogoUrl}
+                eyebrow="Seraph Nexus"
+                title="Platform console"
+              />
+              <AdminSidebarSection title="Platform Navigation">
+                <nav className="admin-sidebar-nav">
+                  {PLATFORM_OWNER_NAV.map((item) => (
+                    <AdminNavLink
+                      key={item.href}
+                      href={item.href}
+                      active={currentPath === item.href}
+                    >
+                      {item.label}
+                    </AdminNavLink>
+                  ))}
+                </nav>
+              </AdminSidebarSection>
+            </div>
+
+            <div className="admin-sidebar-footer" style={sidebarFooterStyle}>
+              <AdminSidebarSection title="Utilities">
+                <nav className="admin-sidebar-nav">
+                  <AdminNavLink href="/admin/support" active={currentPath === "/admin/support"}>
+                    Support
                   </AdminNavLink>
-                ))}
-              </nav>
-            </AdminSidebarSection>
+                  <AdminNavLink href="/pricing" active={currentPath === "/pricing"}>
+                    Upgrade
+                  </AdminNavLink>
+                </nav>
+              </AdminSidebarSection>
 
-            <div className="admin-sidebar-fill" />
-
-            <AdminSidebarSection title="Utilities">
-              <nav className="admin-sidebar-nav">
-                <AdminNavLink href="/admin/support" active={currentPath === "/admin/support"}>
-                  Support
-                </AdminNavLink>
-                <AdminNavLink href="/pricing" active={currentPath === "/pricing"}>
-                  Upgrade
-                </AdminNavLink>
-              </nav>
-            </AdminSidebarSection>
-
-            <AdminSidebarSection title="Tenant isolation">
-              <p className="admin-muted">
-                Business creation and workspace switching are hidden for this account.
-              </p>
-            </AdminSidebarSection>
+              <AdminSidebarSection title="Tenant isolation">
+                <p className="admin-muted">
+                  Business creation and workspace switching are hidden for this account.
+                </p>
+              </AdminSidebarSection>
+            </div>
           </div>
         }
       >
@@ -259,57 +283,59 @@ export default async function AdminLayout({
         />
       }
       sidebar={
-        <div className="admin-sidebar-stack">
-          <AdminSidebarBrand
-            brandName={platformName}
-            brandLogoUrl={platformLogoUrl}
-            eyebrow={translateAdminLabel(activeBusiness?.language, businessModule.label)}
-            title={activeBusiness?.name || t("noActiveBusiness")}
-          />
-          <AdminSidebarSection title={t("workspaceScope")}>
-            <BusinessSwitcher
-              businesses={switcherBusinesses}
-              activeBusinessId={activeBusiness?.id}
+        <div className="admin-sidebar-stack" style={sidebarStackStyle}>
+          <div className="admin-sidebar-scroll" style={sidebarScrollStyle}>
+            <AdminSidebarBrand
+              brandName={platformName}
+              brandLogoUrl={platformLogoUrl}
+              eyebrow={translateAdminLabel(activeBusiness?.language, businessModule.label)}
+              title={activeBusiness?.name || t("noActiveBusiness")}
             />
-          </AdminSidebarSection>
+            <AdminSidebarSection title={t("workspaceScope")}>
+              <BusinessSwitcher
+                businesses={switcherBusinesses}
+                activeBusinessId={activeBusiness?.id}
+              />
+            </AdminSidebarSection>
 
-          <div>
-            {groupOwnerNav(adminNav).map((group) => (
-              <AdminSidebarSection
-                key={group.label}
-                title={translateAdminLabel(activeBusiness?.language, group.label)}
-              >
-                <nav className="admin-sidebar-nav">
-                  {group.items.map((item) => (
-                    <AdminNavLink
-                      key={item.href}
-                      href={item.href}
-                      active={currentPath === item.href}
-                    >
-                      {translateAdminLabel(activeBusiness?.language, item.label)}
-                    </AdminNavLink>
-                  ))}
-                </nav>
-              </AdminSidebarSection>
-            ))}
+            <div>
+              {groupOwnerNav(adminNav).map((group) => (
+                <AdminSidebarSection
+                  key={group.label}
+                  title={translateAdminLabel(activeBusiness?.language, group.label)}
+                >
+                  <nav className="admin-sidebar-nav">
+                    {group.items.map((item) => (
+                      <AdminNavLink
+                        key={item.href}
+                        href={item.href}
+                        active={currentPath === item.href}
+                      >
+                        {translateAdminLabel(activeBusiness?.language, item.label)}
+                      </AdminNavLink>
+                    ))}
+                  </nav>
+                </AdminSidebarSection>
+              ))}
+            </div>
+
+            {!activeBusiness ? (
+              <AdminPanel>Create or select a business to manage settings.</AdminPanel>
+            ) : null}
           </div>
 
-          <div className="admin-sidebar-fill" />
-
-          <AdminSidebarSection title="Utilities">
-            <nav className="admin-sidebar-nav">
-              <AdminNavLink href="/admin/settings" active={currentPath === "/admin/settings"}>
-                {t("settings")}
-              </AdminNavLink>
-              <AdminNavLink href="/admin/upgrade" active={currentPath === "/admin/upgrade"}>
-                {t("upgrade")}
-              </AdminNavLink>
-            </nav>
-          </AdminSidebarSection>
-
-          {!activeBusiness ? (
-            <AdminPanel>Create or select a business to manage settings.</AdminPanel>
-          ) : null}
+          <div className="admin-sidebar-footer" style={sidebarFooterStyle}>
+            <AdminSidebarSection title="Utilities">
+              <nav className="admin-sidebar-nav">
+                <AdminNavLink href="/admin/settings" active={currentPath === "/admin/settings"}>
+                  {t("settings")}
+                </AdminNavLink>
+                <AdminNavLink href="/admin/upgrade" active={currentPath === "/admin/upgrade"}>
+                  {t("upgrade")}
+                </AdminNavLink>
+              </nav>
+            </AdminSidebarSection>
+          </div>
         </div>
       }
     >

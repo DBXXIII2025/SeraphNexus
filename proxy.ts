@@ -86,6 +86,10 @@ export async function proxy(req: NextRequest) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-current-path", pathname);
 
+  if (pathname === "/dashboard/services" || pathname.startsWith("/dashboard/services/")) {
+    return NextResponse.redirect(new URL("/admin", req.url));
+  }
+
   if (isBypassedPath(pathname)) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
@@ -118,7 +122,7 @@ export async function proxy(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   const nextParam = req.nextUrl.searchParams.get("next");
-  const safeNext = isSafeNextPath(nextParam) ? nextParam! : "/dashboard";
+  const safeNext = isSafeNextPath(nextParam) ? nextParam! : "/admin";
   const isProtected = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
 
   if (!user && isProtected) {

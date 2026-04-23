@@ -15,10 +15,31 @@ import {
 const DASHBOARD_NAV = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/bookings", label: "Transactions" },
-  { href: "/dashboard/services", label: "Services" },
   { href: "/dashboard/settings", label: "Settings" },
   { href: "/dashboard/upgrade", label: "Upgrade" },
 ];
+
+const sidebarStackStyle = {
+  height: "100%",
+  minHeight: 0,
+  overflow: "hidden",
+} as const;
+
+const sidebarScrollStyle = {
+  flex: "1 1 auto",
+  minHeight: 0,
+  display: "grid",
+  alignContent: "start",
+  gap: "0.8rem",
+  overflowY: "auto",
+  paddingRight: "0.2rem",
+} as const;
+
+const sidebarFooterStyle = {
+  display: "grid",
+  flex: "0 0 auto",
+  gap: "0.8rem",
+} as const;
 
 export default async function DashboardLayout({
   children,
@@ -51,33 +72,36 @@ export default async function DashboardLayout({
         />
       }
       sidebar={
-        <div className="admin-sidebar-stack">
-          <AdminSidebarBrand
-            brandName={resolvePlatformName(settings)}
-            brandLogoUrl={resolvePlatformLogoUrl(settings)}
-            eyebrow="Seraph Nexus"
-            title="Legacy dashboard"
-          />
-          <AdminSidebarSection title="Workspace">
-            <nav className="admin-sidebar-nav">
-              {DASHBOARD_NAV.map((item) => (
-                <AdminNavLink key={item.href} href={item.href} active={currentPath === item.href}>
-                  {item.label}
+        <div className="admin-sidebar-stack" style={sidebarStackStyle}>
+          <div className="admin-sidebar-scroll" style={sidebarScrollStyle}>
+            <AdminSidebarBrand
+              brandName={resolvePlatformName(settings)}
+              brandLogoUrl={resolvePlatformLogoUrl(settings)}
+              eyebrow="Seraph Nexus"
+              title="Legacy dashboard"
+            />
+            <AdminSidebarSection title="Workspace">
+              <nav className="admin-sidebar-nav">
+                {DASHBOARD_NAV.map((item) => (
+                  <AdminNavLink key={item.href} href={item.href} active={currentPath === item.href}>
+                    {item.label}
+                  </AdminNavLink>
+                ))}
+              </nav>
+            </AdminSidebarSection>
+          </div>
+          <div className="admin-sidebar-footer" style={sidebarFooterStyle}>
+            <AdminSidebarSection title="Utilities">
+              <nav className="admin-sidebar-nav">
+                <AdminNavLink href="/explore" active={currentPath === "/explore"}>
+                  Explore
                 </AdminNavLink>
-              ))}
-            </nav>
-          </AdminSidebarSection>
-          <div className="admin-sidebar-fill" />
-          <AdminSidebarSection title="Utilities">
-            <nav className="admin-sidebar-nav">
-              <AdminNavLink href="/explore" active={currentPath === "/explore"}>
-                Explore
-              </AdminNavLink>
-              <AdminNavLink href="/admin" active={currentPath === "/admin"}>
-                Admin Panel
-              </AdminNavLink>
-            </nav>
-          </AdminSidebarSection>
+                <AdminNavLink href="/admin" active={currentPath === "/admin"}>
+                  Admin Panel
+                </AdminNavLink>
+              </nav>
+            </AdminSidebarSection>
+          </div>
         </div>
       }
     >

@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const code = url.searchParams.get("code");
   const nextParam = url.searchParams.get("next");
   const safeNext =
-    nextParam && nextParam.startsWith("/") ? nextParam : "/";
+    nextParam && nextParam.startsWith("/") ? nextParam : "/admin";
 
   const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
   const supabaseAnonKey = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
