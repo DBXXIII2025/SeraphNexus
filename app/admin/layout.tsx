@@ -17,6 +17,7 @@ import {
   AdminPageHeader,
   AdminPanel,
   AdminShell,
+  AdminSidebarBrand,
   AdminSidebarSection,
   AdminTopNav,
 } from "@/components/admin/AdminLayoutSystem";
@@ -132,8 +133,6 @@ export default async function AdminLayout({
             eyebrow="Platform Owner"
             title={user?.email || "Platform owner"}
             description="Platform operations, support, and owner controls."
-            brandName={platformName}
-            brandLogoUrl={platformLogoUrl}
             actions={
               <>
                 {user?.id ? <AdminNotificationBell userId={user.id} /> : null}
@@ -144,6 +143,12 @@ export default async function AdminLayout({
         }
         sidebar={
           <div className="admin-sidebar-stack">
+            <AdminSidebarBrand
+              brandName={platformName}
+              brandLogoUrl={platformLogoUrl}
+              eyebrow="Seraph Nexus"
+              title="Platform console"
+            />
             <AdminSidebarSection title="Platform Navigation">
               <nav className="admin-sidebar-nav">
                 {PLATFORM_OWNER_NAV.map((item) => (
@@ -155,6 +160,19 @@ export default async function AdminLayout({
                     {item.label}
                   </AdminNavLink>
                 ))}
+              </nav>
+            </AdminSidebarSection>
+
+            <div className="admin-sidebar-fill" />
+
+            <AdminSidebarSection title="Utilities">
+              <nav className="admin-sidebar-nav">
+                <AdminNavLink href="/admin/support" active={currentPath === "/admin/support"}>
+                  Support
+                </AdminNavLink>
+                <AdminNavLink href="/pricing" active={currentPath === "/pricing"}>
+                  Upgrade
+                </AdminNavLink>
               </nav>
             </AdminSidebarSection>
 
@@ -185,8 +203,6 @@ export default async function AdminLayout({
             eyebrow="Business website builder"
             title={activeBusiness?.name || "Business profile"}
             description="Edit the live business profile, gallery, theme, and public actions."
-            brandName={platformName}
-            brandLogoUrl={platformLogoUrl}
             actions={
               <>
                 {user?.id ? <AdminNotificationBell userId={user.id} /> : null}
@@ -217,8 +233,6 @@ export default async function AdminLayout({
           eyebrow={t("ownerWorkspace")}
           title={activeBusiness?.name || t("noActiveBusiness")}
           description={`${businessModule.label} operations and public business management.`}
-          brandName={platformName}
-          brandLogoUrl={platformLogoUrl}
           actions={
             <>
               {user?.id ? <AdminNotificationBell userId={user.id} /> : null}
@@ -233,7 +247,9 @@ export default async function AdminLayout({
                       {t("openPublicPage")}
                     </AdminActionLink>
                   ) : (
-                    <AdminActionLink href="/admin/settings">{t("publishAndPayoutSettings")}</AdminActionLink>
+                    <AdminActionLink href="/admin/settings">
+                      {t("publishAndPayoutSettings")}
+                    </AdminActionLink>
                   )}
                 </>
               ) : null}
@@ -244,6 +260,12 @@ export default async function AdminLayout({
       }
       sidebar={
         <div className="admin-sidebar-stack">
+          <AdminSidebarBrand
+            brandName={platformName}
+            brandLogoUrl={platformLogoUrl}
+            eyebrow={translateAdminLabel(activeBusiness?.language, businessModule.label)}
+            title={activeBusiness?.name || t("noActiveBusiness")}
+          />
           <AdminSidebarSection title={t("workspaceScope")}>
             <BusinessSwitcher
               businesses={switcherBusinesses}
@@ -271,6 +293,19 @@ export default async function AdminLayout({
               </AdminSidebarSection>
             ))}
           </div>
+
+          <div className="admin-sidebar-fill" />
+
+          <AdminSidebarSection title="Utilities">
+            <nav className="admin-sidebar-nav">
+              <AdminNavLink href="/admin/settings" active={currentPath === "/admin/settings"}>
+                {t("settings")}
+              </AdminNavLink>
+              <AdminNavLink href="/admin/upgrade" active={currentPath === "/admin/upgrade"}>
+                {t("upgrade")}
+              </AdminNavLink>
+            </nav>
+          </AdminSidebarSection>
 
           {!activeBusiness ? (
             <AdminPanel>Create or select a business to manage settings.</AdminPanel>
