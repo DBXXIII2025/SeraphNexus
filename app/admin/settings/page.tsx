@@ -15,6 +15,12 @@ import { createClient } from "@/lib/supabase/server";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import { loadBusinessStaffMembers } from "@/lib/businessStaff";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 type SettingsPageProps = {
   searchParams?: Promise<{
@@ -138,15 +144,22 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const readiness =
     business && user?.id
       ? await getBusinessReadinessState({
-          business,
+          business: {
+            ...business,
+            owner_id: business.owner_id ?? null,
+            slug: business.slug ?? null,
+            description: business.description ?? null,
+            business_type: business.business_type ?? null,
+            plan: business.plan ?? null,
+          },
           userId: user.id,
         })
       : null;
   const staffState = business ? await loadBusinessStaffMembers(business.id) : null;
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card p-6 lg:p-7">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="section-header-copy">
           <p className="section-kicker">{t("settings")}</p>
           <h1 className="section-title">Business identity, payouts, and launch control</h1>
@@ -154,7 +167,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             Manage identity, payout posture, and publish readiness for the active business.
           </p>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
       {setup === "stripe" && paymentReadiness?.status === "not_started" ? (
         <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
@@ -211,6 +224,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           This business is not publish-ready yet. Review the readiness blockers below and complete the next required step.
         </div>
       ) : null}
+      {message === "legal-incomplete" ? (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+          Required legal documents must be accepted before this business can be published.
+        </div>
+      ) : null}
       {message === "publish-plan-locked" ? (
         <div className="rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
           Publishing is locked on the {plan?.label || "current"} plan. Upgrade to Pro or Elite to
@@ -221,9 +239,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {!business ? (
         <div className="empty-state">{t("noActiveBusinessFound")}</div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[1.08fr,0.92fr]">
+        <DashboardGrid className="dashboard-grid-shell xl:grid-cols-[1.08fr,0.92fr]">
           <div className="space-y-6">
-            <section className="surface-card p-6">
+            <DashboardPrimaryPanel>
               <div className="section-header-copy">
                   <p className="section-kicker">{t("settings")}</p>
                 <h2 className="section-title">Business identity</h2>
@@ -250,7 +268,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <div className="form-section mt-5 text-sm text-[var(--text-soft)]">
                 This logo stays compact by design. It reinforces trust and business identity without turning settings or public pages into image-led layouts.
               </div>
-            </section>
+            </DashboardPrimaryPanel>
 
             <PublicBusinessLink
               slug={business.slug}
@@ -264,7 +282,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               }}
             />
 
-            <section className="surface-card p-6">
+            <DashboardPrimaryPanel>
               <div className="section-header">
                 <div className="section-header-copy">
                   <p className="section-kicker">Profile</p>
@@ -297,12 +315,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   {profileCompletion.summary}
                 </div>
               ) : null}
-            </section>
+            </DashboardPrimaryPanel>
           </div>
 
           <div className="space-y-6">
             {readiness ? (
-              <section className="premium-card p-6">
+              <DashboardSecondaryPanel>
                 <div className="section-header-copy">
                   <p className="section-kicker">{t("launchControl")}</p>
                   <h2 className="section-title">Launch readiness</h2>
@@ -346,10 +364,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     </a>
                   </div>
                 ) : null}
-              </section>
+              </DashboardSecondaryPanel>
             ) : null}
 
-            <section className="surface-card p-6">
+            <DashboardSecondaryPanel>
               <div className="section-header-copy">
                 <p className="section-kicker">{t("payments")}</p>
                 <h2 className="section-title">Stripe Connect</h2>
@@ -420,9 +438,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   </a>
                 ) : null}
               </div>
-            </section>
+            </DashboardSecondaryPanel>
 
-            <section className="surface-card p-6">
+            <DashboardSecondaryPanel>
               <div className="section-header-copy">
                 <p className="section-kicker">Publishing</p>
                 <h2 className="section-title">Publish business</h2>
@@ -486,9 +504,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   Upgrade for publishing
                 </a>
               ) : null}
-            </section>
+            </DashboardSecondaryPanel>
 
-            <section className="surface-card p-6">
+            <DashboardSecondaryPanel>
               <div className="section-header-copy">
                 <p className="section-kicker">Premium Controls</p>
                 <h2 className="section-title">Advanced customization and roles</h2>
@@ -520,9 +538,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   workspace controls.
                 </div>
               )}
-            </section>
+            </DashboardSecondaryPanel>
 
-            <section className="surface-card p-6">
+            <DashboardSecondaryPanel>
               <div className="section-header-copy">
                 <p className="section-kicker">Team Roles</p>
                 <h2 className="section-title">Staff access roster</h2>
@@ -594,10 +612,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   </div>
                 </>
               )}
-            </section>
+            </DashboardSecondaryPanel>
           </div>
-        </div>
+        </DashboardGrid>
       )}
-    </div>
+    </AdminPageContainer>
   );
 }

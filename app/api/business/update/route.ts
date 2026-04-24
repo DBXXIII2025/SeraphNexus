@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
+import { getBusinessReadinessState } from "@/lib/businessReadiness";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { normalizeBusinessSlug } from "@/lib/businessProfileCompletion";
+import { getFeatureGate } from "@/lib/planEnforcement";
 import { createClient } from "@/lib/supabase/server";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
 
@@ -201,6 +204,63 @@ export async function POST(req: Request) {
     );
   }
 
+  let nextPublishedState: boolean | undefined;
+  if (hasOwn(bodyRecord, "is_published")) {
+    nextPublishedState = bodyRecord.is_published === true;
+
+    if (nextPublishedState) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || business.owner_id !== user.id) {
+        return NextResponse.json(
+          { error: "Only the business owner can publish this business." },
+          { status: 403 }
+        );
+      }
+
+      const effectivePlan = await resolveAccessPlanForBusiness({
+        business: {
+          id: business.id,
+          owner_id: business.owner_id,
+          plan: business.plan,
+        },
+        userId: user.id,
+        email: user.email || null,
+      });
+      const publishGate = getFeatureGate(
+        effectivePlan,
+        "publish_business",
+        "Publishing is available on Pro and Elite."
+      );
+
+      if (!publishGate.allowed) {
+        return NextResponse.json(
+          { error: publishGate.message || "Publishing is available on Pro and Elite." },
+          { status: 403 }
+        );
+      }
+
+      const readiness = await getBusinessReadinessState({
+        business,
+        userId: user.id,
+      });
+
+      if (!readiness.canPublishLive) {
+        const legalBlocker = readiness.blockers.find((blocker) => blocker.kind === "legal");
+        return NextResponse.json(
+          {
+            error: legalBlocker
+              ? "Required legal documents must be accepted before publishing."
+              : readiness.summary,
+          },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   const error = await updateBusinessSafely({
     businessesTable,
     businessId: business.id,
@@ -221,6 +281,20 @@ export async function POST(req: Request) {
         isServiceBusiness && hasOwn(bodyRecord, "onsite_enabled") ? onsiteEnabled : undefined,
       remote_enabled:
         isServiceBusiness && hasOwn(bodyRecord, "remote_enabled") ? remoteEnabled : undefined,
+      logo_url: hasOwn(bodyRecord, "logo_url") ? String(bodyRecord.logo_url || "").trim() || null : undefined,
+      cover_image_url:
+        hasOwn(bodyRecord, "cover_image_url")
+          ? String(bodyRecord.cover_image_url || "").trim() || null
+          : undefined,
+      font_family:
+        hasOwn(bodyRecord, "font_family")
+          ? String(bodyRecord.font_family || "").trim() || null
+          : undefined,
+      font_color:
+        hasOwn(bodyRecord, "font_color")
+          ? String(bodyRecord.font_color || "").trim() || null
+          : undefined,
+      is_published: nextPublishedState,
     },
   });
 

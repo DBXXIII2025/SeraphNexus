@@ -13,6 +13,11 @@ import {
 import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminTranslator } from "@/lib/adminI18n";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +36,14 @@ export default async function AdminLeadsPage() {
   if (!business) {
     const t = createAdminTranslator(null);
     return (
-      <div className="surface-card p-6 text-[var(--text-main)]">
-        <h1 className="text-2xl font-semibold text-[var(--text-strong)]">{t("leads")}</h1>
-        <p className="mt-3 text-sm text-[var(--text-soft)]">
-          Select or create a business to view lead activity and visitor analytics.
-        </p>
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <h1 className="text-2xl font-semibold text-[var(--text-strong)]">{t("leads")}</h1>
+          <p className="mt-3 text-sm text-[var(--text-soft)]">
+            Select or create a business to view lead activity and visitor analytics.
+          </p>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -46,18 +53,20 @@ export default async function AdminLeadsPage() {
     const plan = getPlanDefinition(business.plan);
 
     return (
-      <div className="premium-card p-6 text-[var(--text-main)]">
-        <h1 className="text-2xl font-semibold text-[var(--text-strong)]">{t("leads")}</h1>
-        <p className="mt-3 text-sm text-[var(--text-soft)]">
-          Lead capture is available on Pro and Elite plans. Your current plan is {plan.label}.
-        </p>
-        <Link
-          href="/admin/upgrade"
-          className="btn-primary mt-5 inline-flex px-4 py-2 text-sm font-medium"
-        >
-          {t("upgrade")}
-        </Link>
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <h1 className="text-2xl font-semibold text-[var(--text-strong)]">{t("leads")}</h1>
+          <p className="mt-3 text-sm text-[var(--text-soft)]">
+            Lead capture is available on Pro and Elite plans. Your current plan is {plan.label}.
+          </p>
+          <Link
+            href="/admin/upgrade"
+            className="btn-primary mt-5 inline-flex px-4 py-2 text-sm font-medium"
+          >
+            {t("upgrade")}
+          </Link>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -70,8 +79,8 @@ export default async function AdminLeadsPage() {
   const emptyStateSuggestions = getLeadEmptyStateSuggestions(business.business_type);
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card overflow-hidden p-6 lg:p-7">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="relative grid gap-6 xl:grid-cols-[1.5fr,0.9fr]">
           <div>
             <p className="section-kicker">{t("leads")}</p>
@@ -109,12 +118,12 @@ export default async function AdminLeadsPage() {
             </div>
           </div>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
       <LeadStatsCards summary={dashboard.summary} />
 
       {dashboard.events.length === 0 ? (
-        <div className="surface-card border-dashed p-8">
+        <DashboardPrimaryPanel className="border-dashed p-8">
           <h2 className="text-xl font-semibold text-[var(--text-strong)]">No lead events yet</h2>
           <p className="mt-3 max-w-2xl text-sm text-[var(--text-soft)]">
             Lead activity will appear here once visitors view pages, click message entry points,
@@ -141,9 +150,9 @@ export default async function AdminLeadsPage() {
               {t("open")} {businessModule.primaryAdminLabel}
             </Link>
           </div>
-        </div>
+        </DashboardPrimaryPanel>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[1.4fr,0.92fr]">
+        <DashboardGrid className="dashboard-grid-shell xl:grid-cols-[1.4fr,0.92fr]">
           <div className="space-y-6">
             <LeadActivityFeed items={dashboard.recentActivity} />
           </div>
@@ -157,8 +166,8 @@ export default async function AdminLeadsPage() {
               sourceTypeBreakdown={dashboard.sourceTypeBreakdown}
             />
           </div>
-        </div>
+        </DashboardGrid>
       )}
-    </div>
+    </AdminPageContainer>
   );
 }

@@ -31,11 +31,11 @@ type InitialMessageRecord = {
 
 function normalizeClientMessage(
   value: Record<string, unknown>,
-  ownerUserId: string | null
+  clientUserId: string | null
 ): InitialMessageRecord {
   const senderUserId = value.sender_user_id ? String(value.sender_user_id) : null;
   const isBusinessSender =
-    senderUserId !== null && ownerUserId !== null && senderUserId === ownerUserId;
+    senderUserId !== null && senderUserId !== clientUserId;
   const readAt = value.read_at ? String(value.read_at) : null;
 
   return {
@@ -136,7 +136,7 @@ export default async function MessagesPage({
           messages.map((message) =>
             normalizeClientMessage(
               message as unknown as Record<string, unknown>,
-              access.conversation!.owner_user_id || access.business!.owner_id
+              access.conversation!.client_user_id
             )
           ),
           "client"
@@ -237,7 +237,7 @@ export default async function MessagesPage({
               messages.map((message) =>
                 normalizeClientMessage(
                   message as unknown as Record<string, unknown>,
-                  access.conversation!.owner_user_id || access.business!.owner_id
+                  access.conversation!.client_user_id
                 )
               ),
               "client"

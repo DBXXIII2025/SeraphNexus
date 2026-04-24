@@ -38,7 +38,8 @@ function normalizeThreadMessage(
 ): NormalizedMessage {
   const senderUserId = value.sender_user_id ? String(value.sender_user_id) : null;
   const isBusinessSender =
-    senderUserId !== null && senderUserId === access.owner_user_id;
+    senderUserId !== null &&
+    senderUserId !== access.client_user_id;
 
   return {
     id: String(value.id || ""),

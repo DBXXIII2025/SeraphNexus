@@ -4,6 +4,13 @@ import type { AnalyticsMetric } from "@/lib/adminAnalytics";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
 import { createAdminTranslator } from "@/lib/adminI18n";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  MetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 function getDefaultMetric(businessType: string | null | undefined): AnalyticsMetric {
   if (
@@ -23,7 +30,13 @@ export default async function AdminAnalyticsPage() {
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="empty-state">{createAdminTranslator(null)("noActiveBusinessFound")}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {createAdminTranslator(null)("noActiveBusinessFound")}
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
+    );
   }
 
   const t = createAdminTranslator(business.language);
@@ -33,8 +46,8 @@ export default async function AdminAnalyticsPage() {
     const plan = getPlanDefinition(business.plan);
 
     return (
-      <div className="space-y-6 text-[var(--text-main)]">
-        <section className="surface-card p-6">
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
           <div className="section-header-copy">
             <p className="section-kicker">{t("analytics")}</p>
             <h1 className="section-title">Performance snapshots</h1>
@@ -42,9 +55,9 @@ export default async function AdminAnalyticsPage() {
               Performance insights for {businessName}.
             </p>
           </div>
-        </section>
+        </DashboardPrimaryPanel>
 
-        <section className="premium-card p-6">
+        <DashboardSecondaryPanel>
           <p className="section-kicker">Plan Gate</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
             Advanced analytics require a higher plan
@@ -55,8 +68,8 @@ export default async function AdminAnalyticsPage() {
           <Link href="/admin/upgrade" className="btn-primary mt-5 px-4 py-2 text-sm font-medium">
             {t("upgrade")}
           </Link>
-        </section>
-      </div>
+        </DashboardSecondaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -66,8 +79,8 @@ export default async function AdminAnalyticsPage() {
   );
 
   return (
-    <main className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card p-6 lg:p-7">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="section-header-copy">
           <p className="section-kicker">{t("analytics")}</p>
           <h1 className="section-title">Performance snapshots for {businessName}</h1>
@@ -76,7 +89,7 @@ export default async function AdminAnalyticsPage() {
             cancellation pressure without leaving the owner workspace.
           </p>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
       <PerformanceAnalyticsClient
         businessId={business.id}
@@ -87,15 +100,15 @@ export default async function AdminAnalyticsPage() {
         defaultRange="30d"
       />
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <p className="section-kicker">{t("analytics")}</p>
         <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
           Customer insights and trend views
         </h2>
 
         {canUseAdvancedAnalytics ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <div className="metric-card p-5">
+          <DashboardGrid className="mt-5 sm:grid-cols-2 xl:grid-cols-3">
+            <MetricCard>
               <p className="section-kicker">Elite ready</p>
               <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
                 Enabled
@@ -104,8 +117,8 @@ export default async function AdminAnalyticsPage() {
                 This workspace can take on future breakdowns like source attribution, cohorts, and
                 conversion analysis without revisiting plan gates.
               </p>
-            </div>
-            <div className="metric-card p-5">
+            </MetricCard>
+            <MetricCard>
               <p className="section-kicker">Next expansion</p>
               <p className="mt-4 text-[1.95rem] font-semibold text-[var(--text-strong)]">
                 Cohorts
@@ -113,8 +126,8 @@ export default async function AdminAnalyticsPage() {
               <p className="mt-2 text-sm text-[var(--text-soft)]">
                 Elite is prepared for deeper retention, customer mix, and trend segmentation later.
               </p>
-            </div>
-            <div className="metric-card p-5">
+            </MetricCard>
+            <MetricCard>
               <p className="section-kicker">Current foundation</p>
               <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
                 Live
@@ -123,8 +136,8 @@ export default async function AdminAnalyticsPage() {
                 The core graph is already normalized across bookings, orders, reservations, and
                 revenue.
               </p>
-            </div>
-          </div>
+            </MetricCard>
+          </DashboardGrid>
         ) : (
           <div className="mt-5 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-4 text-sm text-[var(--accent-soft)]">
             Elite adds advanced analytics, customer insight views, trend reporting, and richer
@@ -134,7 +147,7 @@ export default async function AdminAnalyticsPage() {
             </Link>
           </div>
         )}
-      </section>
-    </main>
+      </DashboardPrimaryPanel>
+    </AdminPageContainer>
   );
 }

@@ -292,6 +292,76 @@ export function AdminPanel({
   return <section className={`admin-panel ${className}`.trim()}>{children}</section>;
 }
 
+export function AdminPageContainer({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`admin-page-stack ${className}`.trim()}>{children}</div>;
+}
+
+export function DashboardSection({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <section className={`dashboard-section ${className}`.trim()}>{children}</section>;
+}
+
+export function DashboardGrid({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`dashboard-grid ${className}`.trim()}>{children}</div>;
+}
+
+export function DashboardPrimaryPanel({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <section className={`dashboard-primary-panel ${className}`.trim()}>{children}</section>;
+}
+
+export function DashboardSecondaryPanel({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <section className={`dashboard-secondary-panel ${className}`.trim()}>{children}</section>;
+}
+
+export function MetricCard({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`dashboard-metric-card ${className}`.trim()}>{children}</div>;
+}
+
+export function InfoCard({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`dashboard-info-card ${className}`.trim()}>{children}</div>;
+}
+
 export function AdminSidebarSection({
   title,
   children,

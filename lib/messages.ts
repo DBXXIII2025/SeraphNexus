@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { getBusinessStaffRole } from "@/lib/businessStaff";
 import { createAdminClient } from "@/lib/supabase/server";
 
 type ConversationContext = {
@@ -182,6 +183,22 @@ async function getBusinessConversationContext(
       typeof business.is_published === "boolean" ? business.is_published : null,
     business_type: business.business_type ? String(business.business_type) : null,
   };
+}
+
+async function hasBusinessConversationAccess(args: {
+  business: BusinessConversationContext;
+  userId: string;
+}) {
+  if (args.business.owner_id && args.business.owner_id === args.userId) {
+    return true;
+  }
+
+  const staffRole = await getBusinessStaffRole({
+    businessId: args.business.id,
+    userId: args.userId,
+  });
+
+  return Boolean(staffRole);
 }
 
 export function filterMessagesForRole<T extends MessageVisibilityRecord>(
@@ -651,17 +668,7 @@ export async function getAuthorizedConversationForUser({
     conversation as Record<string, unknown>
   );
 
-  if (userId && business.owner_id && business.owner_id === userId) {
-    return {
-      conversation: normalizedConversation,
-      business,
-      role: "business",
-    };
-  }
-
-  const ownerUserId = normalizedConversation.owner_user_id || business.owner_id;
-
-  if (userId && ownerUserId && ownerUserId === userId) {
+  if (userId && (await hasBusinessConversationAccess({ business, userId }))) {
     return {
       conversation: normalizedConversation,
       business,
@@ -792,7 +799,7 @@ export async function getAdminConversationSummaries(args: {
       return;
     }
 
-    const ownerUserId = business.owner_id || conversation.owner_user_id;
+    const ownerUserId = conversation.owner_user_id || business.owner_id;
     const clientUserId = conversation.client_user_id;
 
     if (!isRead && recipientUserId && ownerUserId && recipientUserId === ownerUserId) {

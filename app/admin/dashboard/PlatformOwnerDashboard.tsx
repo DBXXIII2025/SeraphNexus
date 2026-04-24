@@ -4,6 +4,13 @@ import {
   getPlatformIncomeAudit,
   getPlatformOwnerBusinessAudits,
 } from "@/lib/platformOwnerCleanup";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  MetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -41,10 +48,10 @@ export default async function PlatformOwnerDashboard({
   );
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardGrid className="md:grid-cols-2 xl:grid-cols-3">
         {platformData.metrics.map((metric) => (
-          <div key={metric.label} className="metric-card p-6">
+          <MetricCard key={metric.label}>
             <p className="section-kicker">{metric.label}</p>
             <p
               className={`mt-5 text-4xl font-semibold ${
@@ -60,12 +67,12 @@ export default async function PlatformOwnerDashboard({
             <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
               {metric.detail}
             </p>
-          </div>
+          </MetricCard>
         ))}
-      </section>
+      </DashboardGrid>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
-        <div className="surface-card p-6">
+      <DashboardGrid className="dashboard-grid-shell">
+        <DashboardPrimaryPanel>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Platform Health</p>
@@ -111,10 +118,10 @@ export default async function PlatformOwnerDashboard({
               </div>
             ) : null}
           </div>
-        </div>
+        </DashboardPrimaryPanel>
 
         <div className="space-y-6">
-          <section className="premium-card p-6">
+          <DashboardSecondaryPanel>
             <p className="section-kicker">Support Queue</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
               Business owner support
@@ -141,11 +148,11 @@ export default async function PlatformOwnerDashboard({
                 <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
                   No platform support threads yet.
                 </div>
-              ) : null}
-            </div>
-          </section>
+            ) : null}
+          </div>
+          </DashboardSecondaryPanel>
 
-          <section className="surface-card p-6">
+          <DashboardSecondaryPanel>
             <p className="section-kicker">Income Audit</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
               Revenue posture
@@ -165,11 +172,11 @@ export default async function PlatformOwnerDashboard({
                 {incomeAudit.hasStoredOrderPlatformFees ? "Yes" : "No"}
               </p>
             </div>
-          </section>
+          </DashboardSecondaryPanel>
         </div>
-      </section>
+      </DashboardGrid>
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="section-kicker">Test Business Audit</p>
@@ -209,7 +216,7 @@ export default async function PlatformOwnerDashboard({
             </div>
           ) : null}
         </div>
-      </section>
-    </div>
+      </DashboardPrimaryPanel>
+    </AdminPageContainer>
   );
 }

@@ -8,6 +8,7 @@ import {
   getBookingDisplayRange,
   getReservationGuestLabel,
 } from "@/lib/rentalAvailability";
+import { DashboardPrimaryPanel } from "@/components/admin/AdminLayoutSystem";
 
 type CalendarProperty = {
   id: string;
@@ -129,7 +130,7 @@ export default function RentalsCalendarPanel({
     : [];
 
   return (
-    <div className="surface-card p-6">
+    <DashboardPrimaryPanel>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="section-kicker">Availability Grid</p>
@@ -294,6 +295,6 @@ export default function RentalsCalendarPanel({
           ) : null}
         </div>
       )}
-    </div>
+    </DashboardPrimaryPanel>
   );
 }

@@ -7,6 +7,15 @@ import type { BusinessReadinessState } from "@/lib/businessReadiness";
 import type { BusinessOnboardingState } from "@/lib/onboarding";
 import type { UpgradeTrigger } from "@/lib/planEnforcement";
 import { createAdminTranslator } from "@/lib/adminI18n";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  DashboardSection,
+  InfoCard,
+  MetricCard as ShellMetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 type DashboardClientProps = {
   business: {
@@ -63,14 +72,14 @@ function MetricCard({
   statusLabel?: string;
 }) {
   return (
-    <div className="metric-card p-4">
+    <ShellMetricCard>
       <p className="text-xs font-medium text-[var(--text-muted)]">{label}</p>
       <div className="mt-3 flex items-start justify-between gap-4">
         <p className={`text-[1.85rem] font-semibold leading-none ${getMetricToneClasses(tone)}`}>{value}</p>
         {statusLabel ? <div className="status-chip">{statusLabel}</div> : null}
       </div>
       <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">{detail}</p>
-    </div>
+    </ShellMetricCard>
   );
 }
 
@@ -84,9 +93,9 @@ export default function DashboardClient({
   const t = createAdminTranslator(business?.language);
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="shell-panel p-6 lg:p-7">
-        <div className="grid gap-5 xl:grid-cols-[1.3fr,1fr]">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
+        <DashboardGrid className="xl:grid-cols-[1.3fr,1fr]">
           <div>
             <p className="section-kicker">{dashboard.businessLabel} {t("dashboard")}</p>
             <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.35rem]">
@@ -97,7 +106,7 @@ export default function DashboardClient({
             </p>
           </div>
 
-          <div className="surface-panel p-5">
+          <InfoCard>
             <p className="section-kicker">{t("operations")}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {dashboard.quickActions.slice(0, 5).map((action, index) => (
@@ -123,12 +132,12 @@ export default function DashboardClient({
                 </p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </InfoCard>
+        </DashboardGrid>
+      </DashboardPrimaryPanel>
 
       {readiness ? (
-        <section className="surface-card p-6">
+        <DashboardPrimaryPanel>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="section-kicker">{t("launchControl")}</p>
@@ -194,11 +203,11 @@ export default function DashboardClient({
               </Link>
             </div>
           ) : null}
-        </section>
+        </DashboardPrimaryPanel>
       ) : null}
 
       {onboarding && !onboarding.isComplete ? (
-        <section className="premium-card p-6">
+        <DashboardSecondaryPanel>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="section-kicker">{t("continueSetup")}</p>
@@ -232,11 +241,11 @@ export default function DashboardClient({
               </Link>
             </div>
           </div>
-        </section>
+        </DashboardSecondaryPanel>
       ) : null}
 
       {upgradeTriggers.length > 0 ? (
-        <section className="surface-card p-6">
+        <DashboardPrimaryPanel>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Upgrade Signals</p>
@@ -268,24 +277,26 @@ export default function DashboardClient({
               </Link>
             ))}
           </div>
-        </section>
+        </DashboardPrimaryPanel>
       ) : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {dashboard.metrics.map((metric) => (
-          <MetricCard
-            key={metric.label}
-            label={metric.label}
-            value={metric.value}
-            detail={metric.detail}
-            tone={metric.tone}
-            statusLabel={readiness?.label}
-          />
-        ))}
-      </section>
+      <DashboardSection>
+        <DashboardGrid className="dashboard-metrics-grid sm:grid-cols-2">
+          {dashboard.metrics.map((metric) => (
+            <MetricCard
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              detail={metric.detail}
+              tone={metric.tone}
+              statusLabel={readiness?.label}
+            />
+          ))}
+        </DashboardGrid>
+      </DashboardSection>
 
-      <section className="grid gap-6 xl:grid-cols-[1.5fr,0.9fr]">
-        <div className="surface-card p-6">
+      <DashboardGrid className="dashboard-grid-shell">
+        <DashboardPrimaryPanel>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">{dashboard.activityTitle}</p>
@@ -336,11 +347,11 @@ export default function DashboardClient({
               ))
             )}
           </div>
-        </div>
+        </DashboardPrimaryPanel>
 
         <div className="space-y-6">
           {dashboard.emptyState ? (
-            <section className="premium-card p-6">
+            <DashboardSecondaryPanel>
               <p className="section-kicker">Empty State</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
                 {dashboard.emptyState.title}
@@ -359,10 +370,10 @@ export default function DashboardClient({
                   </Link>
                 ))}
               </div>
-            </section>
+            </DashboardSecondaryPanel>
           ) : null}
 
-          <section className="surface-card p-6">
+          <DashboardSecondaryPanel>
             <p className="section-kicker">Scope</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
               Active business context
@@ -379,10 +390,10 @@ export default function DashboardClient({
                 {dashboard.businessType}
               </p>
             </div>
-          </section>
+          </DashboardSecondaryPanel>
 
           {dashboard.notes.length > 0 ? (
-            <section className="surface-card p-6">
+            <DashboardSecondaryPanel>
               <p className="section-kicker">Notes</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
                 Data caveats
@@ -392,11 +403,11 @@ export default function DashboardClient({
                   <p key={note}>{note}</p>
                 ))}
               </div>
-            </section>
+            </DashboardSecondaryPanel>
           ) : null}
         </div>
-      </section>
-    </div>
+      </DashboardGrid>
+    </AdminPageContainer>
   );
 }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getBusinessReadinessState } from "@/lib/businessReadiness";
+import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getFeatureGate } from "@/lib/planEnforcement";
 import { createClient } from "@/lib/supabase/server";
 
@@ -57,10 +58,18 @@ export async function POST(req: Request) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
+    const activeBusiness = await getActiveBusiness(businessId);
+
+    if (!activeBusiness?.id || activeBusiness.owner_id !== user.id) {
+      return NextResponse.redirect(
+        new URL("/admin/settings?message=forbidden", req.url)
+      );
+    }
+
     const businessesTable = supabase.from("businesses");
     const { data: business, error: businessError } = await businessesTable
       .select(PUBLISH_ROUTE_SELECT)
-      .eq("id", businessId)
+      .eq("id", activeBusiness.id)
       .eq("owner_id", user.id)
       .maybeSingle();
 
@@ -115,8 +124,14 @@ export async function POST(req: Request) {
       });
 
       if (!readiness.canPublishLive) {
+        const hasLegalBlocker = readiness.blockers.some(
+          (blocker) => blocker.kind === "legal"
+        );
         return NextResponse.redirect(
-          new URL("/admin/settings?message=readiness-incomplete", req.url)
+          new URL(
+            `/admin/settings?message=${hasLegalBlocker ? "legal-incomplete" : "readiness-incomplete"}`,
+            req.url
+          )
         );
       }
     }

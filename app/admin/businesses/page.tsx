@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { getPlatformAdminData } from "@/lib/platformAdminData";
+import {
+  AdminPageContainer,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 type SearchParams = {
   q?: string;
@@ -82,8 +87,8 @@ export default async function AdminBusinessesPage({
   });
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="surface-card p-6">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="section-header">
           <div className="section-header-copy">
             <p className="section-kicker">Businesses</p>
@@ -103,9 +108,9 @@ export default async function AdminBusinessesPage({
             <input name="type" defaultValue={typeFilter} placeholder="Type" className="input-field" />
           </form>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <section className="surface-card overflow-hidden p-0">
+      <DashboardSecondaryPanel className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-[var(--surface-raised)] text-[var(--text-muted)]">
@@ -177,7 +182,7 @@ export default async function AdminBusinessesPage({
             </tbody>
           </table>
         </div>
-      </section>
-    </div>
+      </DashboardSecondaryPanel>
+    </AdminPageContainer>
   );
 }

@@ -19,6 +19,13 @@ import {
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  MetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 type ServiceBookingRecord = {
   id: string;
@@ -215,11 +222,11 @@ function SummaryCard({
         : "text-[var(--text-main)]";
 
   return (
-    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-5">
+    <MetricCard>
       <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
       <p className={`mt-2 text-3xl font-semibold ${valueClass}`}>{value}</p>
       <p className="mt-2 text-sm text-[var(--text-soft)]">{detail}</p>
-    </div>
+    </MetricCard>
   );
 }
 
@@ -393,16 +400,24 @@ export default async function AdminBookingsPage({
   const isDev = process.env.NODE_ENV !== "production";
 
   if (!business) {
-    return <div className="text-[var(--text-main)]">{createAdminTranslator(null)("noActiveBusiness")}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {createAdminTranslator(null)("noActiveBusiness")}
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
+    );
   }
 
   const t = createAdminTranslator(business.language);
 
   if (!isBookingBusinessType(business.business_type)) {
     return (
-      <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-[var(--text-main)]">
-        {t("bookings")} are only available for service, rental, and property businesses.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {t("bookings")} are only available for service, rental, and property businesses.
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -651,7 +666,7 @@ export default async function AdminBookingsPage({
   const rentalPendingCount = rentalRows.filter((row) => row.status === "pending").length;
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
+    <AdminPageContainer className="text-[var(--text-main)]">
       {params?.success === "deleted" ? (
         <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
           Pending unpaid booking deleted.
@@ -676,15 +691,15 @@ export default async function AdminBookingsPage({
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-6">
+      <DashboardPrimaryPanel>
         <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">{pageTitle}</p>
         <h1 className="mt-2 text-2xl font-semibold">{pageTitle} queue</h1>
         <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
           {businessModule.label} operations for {business.name}.
         </p>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <DashboardGrid className="md:grid-cols-3">
         <SummaryCard
           label={isRental ? "Active reservations" : "Live bookings"}
           value={String(isRental ? rentalRows.length : serviceRecords.length)}
@@ -718,14 +733,14 @@ export default async function AdminBookingsPage({
           }
           tone="success"
         />
-      </div>
+      </DashboardGrid>
 
       {(!rows || rows.length === 0) && fallbackRows.length === 0 ? (
-        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-sm text-[var(--text-soft)]">
+        <DashboardSecondaryPanel className="text-sm text-[var(--text-soft)]">
           {isRental
             ? "No reservations yet. When guests book a stay, it will appear here with status actions."
             : "No bookings yet. When customers schedule an appointment, it will appear here with confirmation controls."}
-        </div>
+        </DashboardSecondaryPanel>
       ) : (
         <div className="space-y-4">
           {isRental
@@ -879,6 +894,6 @@ export default async function AdminBookingsPage({
                 )}
         </div>
       )}
-    </div>
+    </AdminPageContainer>
   );
 }

@@ -22,6 +22,11 @@ import type {
   AnalyticsRangePreset,
   AnalyticsResponse,
 } from "@/lib/adminAnalytics";
+import {
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  MetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 type Props = {
   businessId: string;
@@ -209,7 +214,7 @@ export default function PerformanceAnalyticsClient({
 
   return (
     <div className="space-y-6">
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="section-header-copy">
             <p className="section-kicker">Performance Graph</p>
@@ -299,10 +304,10 @@ export default function PerformanceAnalyticsClient({
             </div>
           </div>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="metric-card p-5">
+      <DashboardGrid className="dashboard-metrics-grid md:grid-cols-2">
+        <MetricCard>
           <p className="section-kicker">{METRIC_LABELS[selectedMetric]}</p>
           <p className="mt-4 text-[1.95rem] font-semibold text-[var(--text-strong)]">
             {formatMetricValue(selectedMetric, selectedMetricTotal)}
@@ -310,8 +315,8 @@ export default function PerformanceAnalyticsClient({
           <p className="mt-2 text-sm text-[var(--text-soft)]">
             {rangeLabel || "Current range"} total
           </p>
-        </div>
-        <div className="metric-card p-5">
+        </MetricCard>
+        <MetricCard>
           <p className="section-kicker">Peak day</p>
           <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
             {formatMetricValue(selectedMetric, selectedMetricPeak)}
@@ -319,8 +324,8 @@ export default function PerformanceAnalyticsClient({
           <p className="mt-2 text-sm text-[var(--text-soft)]">
             Highest single-day value in the selected window
           </p>
-        </div>
-        <div className="metric-card p-5">
+        </MetricCard>
+        <MetricCard>
           <p className="section-kicker">Plan</p>
           <p className="mt-4 text-[1.95rem] font-semibold text-[var(--text-strong)]">
             {planLabel}
@@ -328,8 +333,8 @@ export default function PerformanceAnalyticsClient({
           <p className="mt-2 text-sm text-[var(--text-soft)]">
             Core analytics are enabled for this business
           </p>
-        </div>
-        <div className="metric-card p-5">
+        </MetricCard>
+        <MetricCard>
           <p className="section-kicker">Advanced</p>
           <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
             {supportsAdvancedAnalytics ? "Elite ready" : "Pro core"}
@@ -339,10 +344,10 @@ export default function PerformanceAnalyticsClient({
               ? "Expanded breakdowns can layer onto this graph next."
               : "Upgrade to Elite later for richer advanced analytics."}
           </p>
-        </div>
-      </section>
+        </MetricCard>
+      </DashboardGrid>
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="section-kicker">Daily trend</p>
@@ -440,7 +445,7 @@ export default function PerformanceAnalyticsClient({
             </button>
           </div>
         ) : null}
-      </section>
+      </DashboardPrimaryPanel>
     </div>
   );
 }

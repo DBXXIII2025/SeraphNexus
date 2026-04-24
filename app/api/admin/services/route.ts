@@ -30,6 +30,56 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function extractMissingColumnName(message: string) {
+  const patterns = [
+    /column ["']([^"']+)["']/i,
+    /column\s+([a-zA-Z0-9_.]+)\s+does not exist/i,
+    /Could not find the ['"]([^'"]+)['"] column/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match?.[1]) {
+      const rawColumn = match[1];
+      return rawColumn.includes(".") ? rawColumn.split(".").pop() || rawColumn : rawColumn;
+    }
+  }
+
+  return null;
+}
+
+async function runSchemaSafeMutation(args: {
+  payload: Record<string, unknown>;
+  requiredColumns?: string[];
+  runMutation: (payload: Record<string, unknown>) => Promise<{ error: { message?: string } | null }>;
+}) {
+  const candidate = Object.fromEntries(
+    Object.entries(args.payload).filter(([, value]) => value !== undefined)
+  );
+  const requiredColumns = new Set(args.requiredColumns || []);
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const { error } = await args.runMutation(candidate);
+
+    if (!error) {
+      return null;
+    }
+
+    const missingColumn = extractMissingColumnName(error.message || "");
+    if (!missingColumn || !(missingColumn in candidate)) {
+      return error;
+    }
+
+    if (requiredColumns.has(missingColumn)) {
+      return new Error(`Required service column is missing: ${missingColumn}`);
+    }
+
+    delete candidate[missingColumn];
+  }
+
+  return new Error("Failed to save service after schema fallback retries");
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const formData = await req.formData();
@@ -78,17 +128,22 @@ export async function POST(req: Request) {
     }
 
     if (serviceId) {
-      const { error } = await servicesTable
-        .update({
+      const error = await runSchemaSafeMutation({
+        payload: {
           name,
           description,
           category,
           price,
           duration,
           updated_at: nowIso(),
-        })
-        .eq("id", serviceId)
-        .eq("business_id", business.id);
+        },
+        requiredColumns: ["name", "price", "duration"],
+        runMutation: (payload) =>
+          servicesTable
+            .update(payload)
+            .eq("id", serviceId)
+            .eq("business_id", business.id),
+      });
 
       if (error) {
         return buildRedirect(req, { error: "save-failed" });
@@ -125,16 +180,20 @@ export async function POST(req: Request) {
       return buildRedirect(req, { error: "service-limit" });
     }
 
-    const { error } = await servicesTable.insert({
-      business_id: business.id,
-      name,
-      description,
-      category,
-      price,
-      duration,
-      is_active: true,
-      archived_at: null,
-      updated_at: nowIso(),
+    const error = await runSchemaSafeMutation({
+      payload: {
+        business_id: business.id,
+        name,
+        description,
+        category,
+        price,
+        duration,
+        is_active: true,
+        archived_at: null,
+        updated_at: nowIso(),
+      },
+      requiredColumns: ["business_id", "name", "price", "duration"],
+      runMutation: (payload) => servicesTable.insert(payload),
     });
 
     if (error) {
@@ -149,7 +208,7 @@ export async function POST(req: Request) {
   }
 
   const { data: service } = await servicesTable
-    .select("id, business_id, is_active")
+    .select("id, business_id")
     .eq("id", serviceId)
     .eq("business_id", business.id)
     .maybeSingle();
@@ -160,14 +219,19 @@ export async function POST(req: Request) {
 
   if (action === "archive" || action === "restore") {
     const nextActive = action === "restore";
-    const { error } = await servicesTable
-      .update({
+    const error = await runSchemaSafeMutation({
+      payload: {
         is_active: nextActive,
         archived_at: nextActive ? null : nowIso(),
         updated_at: nowIso(),
-      })
-      .eq("id", serviceId)
-      .eq("business_id", business.id);
+      },
+      requiredColumns: ["is_active"],
+      runMutation: (payload) =>
+        servicesTable
+          .update(payload)
+          .eq("id", serviceId)
+          .eq("business_id", business.id),
+    });
 
     if (error) {
       return buildRedirect(req, { error: "service-state-failed" });
@@ -187,14 +251,19 @@ export async function POST(req: Request) {
     }
 
     if (Number(dependencyCount || 0) > 0) {
-      const { error } = await servicesTable
-        .update({
+      const error = await runSchemaSafeMutation({
+        payload: {
           is_active: false,
           archived_at: nowIso(),
           updated_at: nowIso(),
-        })
-        .eq("id", serviceId)
-        .eq("business_id", business.id);
+        },
+        requiredColumns: ["is_active"],
+        runMutation: (payload) =>
+          servicesTable
+            .update(payload)
+            .eq("id", serviceId)
+            .eq("business_id", business.id),
+      });
 
       if (error) {
         return buildRedirect(req, { error: "service-archive-failed" });

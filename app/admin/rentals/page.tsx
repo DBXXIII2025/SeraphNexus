@@ -19,6 +19,12 @@ import type { Database } from "@/types/database";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import PropertyListingEditor from "./PropertyListingEditor";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -110,17 +116,25 @@ export default async function AdminRentalsPage({
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="text-[var(--text-main)]">{createAdminTranslator(null)("noActiveBusiness")}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {createAdminTranslator(null)("noActiveBusiness")}
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
+    );
   }
 
   const t = createAdminTranslator(business.language);
 
   if (!isRentalBusinessType(business.business_type)) {
     return (
-      <div className="surface-card p-6 text-[var(--text-main)]">
-        {t("inventory")} and {t("reservations").toLowerCase()} calendars are only available for rental
-        and property businesses.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {t("inventory")} and {t("reservations").toLowerCase()} calendars are only available for rental
+          and property businesses.
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -249,8 +263,8 @@ export default async function AdminRentalsPage({
   const quickstart = getTenantQuickstart(business.business_type);
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card p-6 lg:p-7">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="grid gap-6 xl:grid-cols-[1.5fr,0.95fr]">
           <div>
             <p className="section-kicker">{t("operationsConsole")}</p>
@@ -288,7 +302,7 @@ export default async function AdminRentalsPage({
             </div>
           </div>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
       {errorMessage ? (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -310,7 +324,7 @@ export default async function AdminRentalsPage({
       ) : null}
 
       {propertyList.length === 0 ? (
-        <section className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-6">
+        <DashboardSecondaryPanel className="border-yellow-500/20 bg-yellow-500/10">
           <p className="text-xs uppercase tracking-[0.18em] text-yellow-200">Quickstart</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--text-main)]">{quickstart.title}</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-yellow-100/90">
@@ -330,11 +344,11 @@ export default async function AdminRentalsPage({
               {quickstart.secondaryLabel}
             </Link>
           </div>
-        </section>
+        </DashboardSecondaryPanel>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[320px,1fr]">
-        <div className="surface-card p-6">
+      <DashboardGrid className="xl:grid-cols-[320px,1fr]">
+        <DashboardSecondaryPanel>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">{t("listings")}</p>
@@ -396,7 +410,7 @@ export default async function AdminRentalsPage({
               ) : null}
             </div>
           )}
-        </div>
+        </DashboardSecondaryPanel>
 
         <RentalsCalendarPanel
           selectedProperty={selectedProperty}
@@ -405,37 +419,39 @@ export default async function AdminRentalsPage({
           blocks={visibleBlocks}
           propertyNameById={propertyNameById}
         />
-      </section>
+      </DashboardGrid>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <div id="create-listing" className="premium-card p-6">
-          <h2 className="text-lg font-semibold text-[var(--text-strong)]">{t("listings")}</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
-            Save rental inventory with structured pricing and optional descriptive copy.
-          </p>
-          <form action="/api/admin/rentals" method="POST" className="mt-5 space-y-4">
-            <input type="hidden" name="action" value="create_property" />
-            <input name="name" placeholder="Listing name" required className="input-field" />
-            <textarea
-              name="description"
-              placeholder="Description"
-              className="input-field min-h-[132px]"
-            />
-            <input
-              name="price"
-              type="number"
-              step="0.01"
-              placeholder="Price per stay or day"
-              required
-              className="input-field"
-            />
-            <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
-              Save Listing
-            </button>
-          </form>
+      <DashboardGrid className="xl:grid-cols-2">
+        <div id="create-listing">
+          <DashboardPrimaryPanel className="p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-strong)]">{t("listings")}</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+              Save rental inventory with structured pricing and optional descriptive copy.
+            </p>
+            <form action="/api/admin/rentals" method="POST" className="mt-5 space-y-4">
+              <input type="hidden" name="action" value="create_property" />
+              <input name="name" placeholder="Listing name" required className="input-field" />
+              <textarea
+                name="description"
+                placeholder="Description"
+                className="input-field min-h-[132px]"
+              />
+              <input
+                name="price"
+                type="number"
+                step="0.01"
+                placeholder="Price per stay or day"
+                required
+                className="input-field"
+              />
+              <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+                Save Listing
+              </button>
+            </form>
+          </DashboardPrimaryPanel>
         </div>
 
-        <div className="surface-card p-6">
+        <DashboardSecondaryPanel>
           <h2 className="text-lg font-semibold text-[var(--text-strong)]">Block dates</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
             Reserve unavailable windows for maintenance, owner stays, or internal holds.
@@ -486,10 +502,10 @@ export default async function AdminRentalsPage({
               </button>
             </form>
           )}
-        </div>
-      </section>
+        </DashboardSecondaryPanel>
+      </DashboardGrid>
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="section-kicker">Listing details</p>
@@ -517,9 +533,9 @@ export default async function AdminRentalsPage({
             Select a listing from the left to edit its details.
           </p>
         )}
-      </section>
+      </DashboardPrimaryPanel>
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="section-kicker">{t("inventory")}</p>
@@ -553,10 +569,10 @@ export default async function AdminRentalsPage({
             ))
           )}
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <div className="surface-card p-6">
+      <DashboardGrid className="xl:grid-cols-2">
+        <DashboardSecondaryPanel>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Blocked Dates</p>
@@ -608,9 +624,9 @@ export default async function AdminRentalsPage({
               ))
             )}
           </div>
-        </div>
+        </DashboardSecondaryPanel>
 
-        <div className="surface-card p-6">
+        <DashboardSecondaryPanel>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">{t("reservations")}</p>
@@ -696,8 +712,8 @@ export default async function AdminRentalsPage({
               )
             )}
           </div>
-        </div>
-      </section>
-    </div>
+        </DashboardSecondaryPanel>
+      </DashboardGrid>
+    </AdminPageContainer>
   );
 }

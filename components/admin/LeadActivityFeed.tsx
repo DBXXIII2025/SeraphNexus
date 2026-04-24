@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { LeadRecentActivityItem } from "@/lib/leads";
 import { formatAdminStatusLabel, getAdminStatusBadgeClass } from "@/lib/adminStatus";
+import { DashboardPrimaryPanel } from "@/components/admin/AdminLayoutSystem";
 
 type Props = {
   items: LeadRecentActivityItem[];
@@ -31,7 +32,7 @@ function getEventTone(eventType: string) {
 
 export default function LeadActivityFeed({ items }: Props) {
   return (
-    <section className="surface-card p-6">
+    <DashboardPrimaryPanel>
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="section-kicker">Recent Activity</p>
@@ -117,6 +118,6 @@ export default function LeadActivityFeed({ items }: Props) {
           ))}
         </div>
       )}
-    </section>
+    </DashboardPrimaryPanel>
   );
 }

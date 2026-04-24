@@ -16,6 +16,12 @@ import {
 import { canAccessPlanFeature, getPlanDefinition, getPlanLimit } from "@/lib/planConfig";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import AdminMessagesClient from "./AdminMessagesClient";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +35,7 @@ type SearchParams = {
 
 function normalizeAdminMessage(
   value: Record<string, unknown>,
-  ownerUserId: string | null
+  clientUserId: string | null
 ): {
   id: string;
   sender_type: "business" | "client";
@@ -40,7 +46,7 @@ function normalizeAdminMessage(
 } {
   const senderUserId = value.sender_user_id ? String(value.sender_user_id) : null;
   const isBusinessSender =
-    senderUserId !== null && ownerUserId !== null && senderUserId === ownerUserId;
+    senderUserId !== null && senderUserId !== clientUserId;
 
   return {
     id: String(value.id || ""),
@@ -98,140 +104,142 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
   const errorMessage = params?.error ? ERROR_MESSAGES[String(params.error)] : null;
 
   return (
-    <div className="grid gap-6 text-[var(--text-main)] lg:grid-cols-[360px,1fr]">
-      <div className="premium-card p-6">
-        <h1 className="text-xl font-semibold">Business-owner support inbox</h1>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
-          Platform support threads from tenant business owners only.
-        </p>
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardGrid className="xl:grid-cols-[360px,1fr]">
+        <DashboardSecondaryPanel>
+          <h1 className="text-xl font-semibold">Business-owner support inbox</h1>
+          <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+            Platform support threads from tenant business owners only.
+          </p>
 
-        {successMessage ? (
-          <div className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-            {successMessage}
-          </div>
-        ) : null}
-        {errorMessage ? (
-          <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {errorMessage}
-          </div>
-        ) : null}
-
-        <div className="mt-5 space-y-3">
-          {conversations.length === 0 ? (
-            <p className="text-sm text-[var(--text-soft)]">No support threads yet.</p>
-          ) : (
-            conversations.map((conversation) => (
-              <Link
-                key={conversation.id}
-                href={`/admin/messages?conversation=${encodeURIComponent(conversation.id)}`}
-                className={`block rounded-2xl border px-4 py-4 text-left transition ${
-                  conversation.id === selectedConversationId
-                    ? "border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
-                    : "border-[var(--border-soft)] bg-[var(--surface-raised)] hover:border-[var(--accent-border)]"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{conversation.businessName || "Business"}</p>
-                    <p className="mt-1 text-sm text-[var(--text-soft)]">
-                      {conversation.ownerEmail || "Owner"} · {conversation.businessType || "business"}
-                    </p>
-                    <p className="mt-2 text-xs text-[var(--text-muted)]">
-                      {conversation.lastMessageExcerpt || "No messages yet"}
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-2 py-1 text-xs text-[var(--text-soft)]">
-                    {conversation.unreadForPlatform > 0
-                      ? `${conversation.unreadForPlatform} unread`
-                      : conversation.status === "awaiting_business"
-                        ? "Awaiting owner"
-                        : "Up to date"}
-                  </span>
-                </div>
-                <p className="mt-3 text-xs text-[var(--text-muted)]">
-                  {formatDateTime(conversation.lastMessageAt)}
-                </p>
-              </Link>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="surface-card p-6">
-        {!selectedConversation || !thread.conversation ? (
-          <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
-            Select a support thread to view business context and reply.
-          </div>
-        ) : (
-          <>
-            <div className="border-b border-[var(--border-soft)] pb-4">
-              <h2 className="text-lg font-semibold">
-                {selectedConversation.businessName || "Business"}
-              </h2>
-              <p className="mt-1 text-sm text-[var(--text-soft)]">
-                Owner: {selectedConversation.ownerName || selectedConversation.ownerEmail || "Unknown"}
-              </p>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
-                  <p>Business type: {selectedConversation.businessType || "business"}</p>
-                  <p>Business ID: {selectedConversation.businessId}</p>
-                </div>
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
-                  <p>Owner email: {selectedConversation.ownerEmail || "Unknown"}</p>
-                  <p>Owner phone: {selectedConversation.ownerPhone || "No phone"}</p>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-[var(--text-muted)]">
-                Last activity: {formatDateTime(selectedConversation.lastMessageAt)}
-              </p>
+          {successMessage ? (
+            <div className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+              {successMessage}
             </div>
+          ) : null}
+          {errorMessage ? (
+            <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {errorMessage}
+            </div>
+          ) : null}
 
-            <div className="mt-5 space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
-              {thread.messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`rounded-xl px-4 py-3 ${
-                    message.senderType === "platform_admin"
-                      ? "ml-auto max-w-[88%] border border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
-                      : "max-w-[88%] border border-[var(--border-soft)] bg-[var(--surface-raised)]"
+          <div className="mt-5 space-y-3">
+            {conversations.length === 0 ? (
+              <p className="text-sm text-[var(--text-soft)]">No support threads yet.</p>
+            ) : (
+              conversations.map((conversation) => (
+                <Link
+                  key={conversation.id}
+                  href={`/admin/messages?conversation=${encodeURIComponent(conversation.id)}`}
+                  className={`block rounded-2xl border px-4 py-4 text-left transition ${
+                    conversation.id === selectedConversationId
+                      ? "border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
+                      : "border-[var(--border-soft)] bg-[var(--surface-raised)] hover:border-[var(--accent-border)]"
                   }`}
                 >
-                  <p className="text-sm leading-6 text-[var(--text-main)]">{message.body}</p>
-                  <p className="mt-2 text-xs text-[var(--text-muted)]">
-                    {formatDateTime(message.createdAt)} · {message.senderType === "platform_admin" ? "Platform owner" : "Business owner"}
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{conversation.businessName || "Business"}</p>
+                      <p className="mt-1 text-sm text-[var(--text-soft)]">
+                        {conversation.ownerEmail || "Owner"} - {conversation.businessType || "business"}
+                      </p>
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
+                        {conversation.lastMessageExcerpt || "No messages yet"}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-raised)] px-2 py-1 text-xs text-[var(--text-soft)]">
+                      {conversation.unreadForPlatform > 0
+                        ? `${conversation.unreadForPlatform} unread`
+                        : conversation.status === "awaiting_business"
+                          ? "Awaiting owner"
+                          : "Up to date"}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-xs text-[var(--text-muted)]">
+                    {formatDateTime(conversation.lastMessageAt)}
                   </p>
-                </div>
-              ))}
-            </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </DashboardSecondaryPanel>
 
-            <form
-              action="/api/admin/messages/platform-support/reply"
-              method="POST"
-              className="mt-5 space-y-3"
-            >
-              <input type="hidden" name="conversation_id" value={selectedConversation.id} />
-              <textarea
-                name="body"
-                required
-                placeholder="Reply to the business owner."
-                className="input-field min-h-[140px]"
-              />
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-[var(--text-muted)]">
-                  Replies stay tied to this business-scoped platform support thread.
+        <DashboardPrimaryPanel>
+          {!selectedConversation || !thread.conversation ? (
+            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
+              Select a support thread to view business context and reply.
+            </div>
+          ) : (
+            <>
+              <div className="border-b border-[var(--border-soft)] pb-4">
+                <h2 className="text-lg font-semibold">
+                  {selectedConversation.businessName || "Business"}
+                </h2>
+                <p className="mt-1 text-sm text-[var(--text-soft)]">
+                  Owner: {selectedConversation.ownerName || selectedConversation.ownerEmail || "Unknown"}
                 </p>
-                <button
-                  type="submit"
-                  className="btn-primary px-4 py-2 text-sm font-medium"
-                >
-                  Reply to business owner
-                </button>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                    <p>Business type: {selectedConversation.businessType || "business"}</p>
+                    <p>Business ID: {selectedConversation.businessId}</p>
+                  </div>
+                  <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
+                    <p>Owner email: {selectedConversation.ownerEmail || "Unknown"}</p>
+                    <p>Owner phone: {selectedConversation.ownerPhone || "No phone"}</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-[var(--text-muted)]">
+                  Last activity: {formatDateTime(selectedConversation.lastMessageAt)}
+                </p>
               </div>
-            </form>
-          </>
-        )}
-      </div>
-    </div>
+
+              <div className="mt-5 space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
+                {thread.messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`rounded-xl px-4 py-3 ${
+                      message.senderType === "platform_admin"
+                        ? "ml-auto max-w-[88%] border border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
+                        : "max-w-[88%] border border-[var(--border-soft)] bg-[var(--surface-raised)]"
+                    }`}
+                  >
+                    <p className="text-sm leading-6 text-[var(--text-main)]">{message.body}</p>
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
+                      {formatDateTime(message.createdAt)} - {message.senderType === "platform_admin" ? "Platform owner" : "Business owner"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <form
+                action="/api/admin/messages/platform-support/reply"
+                method="POST"
+                className="mt-5 space-y-3"
+              >
+                <input type="hidden" name="conversation_id" value={selectedConversation.id} />
+                <textarea
+                  name="body"
+                  required
+                  placeholder="Reply to the business owner."
+                  className="input-field min-h-[140px]"
+                />
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Replies stay tied to this business-scoped platform support thread.
+                  </p>
+                  <button
+                    type="submit"
+                    className="btn-primary px-4 py-2 text-sm font-medium"
+                  >
+                    Reply to business owner
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+        </DashboardPrimaryPanel>
+      </DashboardGrid>
+    </AdminPageContainer>
   );
 }
 
@@ -260,12 +268,14 @@ export default async function AdminMessagesPage({
 
   if (!activeBusiness) {
     return (
-      <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--panel)] p-6 text-[var(--text-main)]">
-        <h1 className="text-xl font-semibold text-[var(--text-strong)]">{t("messages")}</h1>
-        <p className="mt-2 text-sm text-[var(--text-soft)]">
-          No active business is available for this account.
-        </p>
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <h1 className="text-xl font-semibold text-[var(--text-strong)]">{t("messages")}</h1>
+          <p className="mt-2 text-sm text-[var(--text-soft)]">
+            No active business is available for this account.
+          </p>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
   const scopedBusiness = activeBusiness;
@@ -275,8 +285,8 @@ export default async function AdminMessagesPage({
     const plan = getPlanDefinition(scopedBusiness.plan);
 
     return (
-      <div className="space-y-6 text-[var(--text-main)]">
-        <section className="premium-card p-6">
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
           <p className="section-kicker">{t("messages")}</p>
           <h1 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">
             Customer inbox
@@ -291,8 +301,8 @@ export default async function AdminMessagesPage({
           >
             {t("upgrade")}
           </Link>
-        </section>
-      </div>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -359,9 +369,9 @@ export default async function AdminMessagesPage({
   }
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
+    <AdminPageContainer className="text-[var(--text-main)]">
       {messageThreadLimit !== null ? (
-        <section className="surface-card p-5">
+        <DashboardPrimaryPanel>
           <p className="section-kicker">{t("messages")}</p>
           <h2 className="mt-2 text-lg font-semibold text-[var(--text-strong)]">
             Trial inbox is capped at {messageThreadLimit} message threads
@@ -373,7 +383,7 @@ export default async function AdminMessagesPage({
           <Link href="/admin/upgrade" className="btn-secondary mt-4 inline-flex px-4 py-2 text-sm font-medium">
             {t("upgrade")}
           </Link>
-        </section>
+        </DashboardPrimaryPanel>
       ) : null}
 
       <AdminMessagesClient
@@ -393,10 +403,10 @@ export default async function AdminMessagesPage({
         initialMessages={(messages || []).map((message: Record<string, unknown>) =>
           normalizeAdminMessage(
             message,
-            scopedBusiness.owner_id ? String(scopedBusiness.owner_id) : null
+            effectiveAccess?.conversation?.client_user_id || null
           )
         )}
       />
-    </div>
+    </AdminPageContainer>
   );
 }

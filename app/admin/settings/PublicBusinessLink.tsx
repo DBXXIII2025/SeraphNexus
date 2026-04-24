@@ -1,4 +1,5 @@
 "use client";
+import { DashboardSecondaryPanel } from "@/components/admin/AdminLayoutSystem";
 
 type PublicBusinessLinkProps = {
   slug?: string | null;
@@ -22,7 +23,7 @@ export default function PublicBusinessLink({
   }
 
   return (
-    <section className="surface-card p-6">
+    <DashboardSecondaryPanel>
       <div className="section-header-copy">
         <p className="section-kicker">Public Business Link</p>
         <h2 className="section-title">Public share link</h2>
@@ -59,6 +60,6 @@ export default function PublicBusinessLink({
           </div>
         </div>
       )}
-    </section>
+    </DashboardSecondaryPanel>
   );
 }

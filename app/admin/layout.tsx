@@ -291,12 +291,17 @@ export default async function AdminLayout({
               eyebrow={translateAdminLabel(activeBusiness?.language, businessModule.label)}
               title={activeBusiness?.name || t("noActiveBusiness")}
             />
-            <AdminSidebarSection title={t("workspaceScope")}>
-              <BusinessSwitcher
-                businesses={switcherBusinesses}
-                activeBusinessId={activeBusiness?.id}
-              />
-            </AdminSidebarSection>
+              <AdminSidebarSection title={t("workspaceScope")}>
+                <BusinessSwitcher
+                  businesses={switcherBusinesses}
+                  activeBusinessId={activeBusiness?.id}
+                  label={t("activeBusiness")}
+                  emptyStateLabel={t("noActiveBusinessFound")}
+                  savingLabel={`${t("saving")} ${t("workspace").toLowerCase()}...`}
+                  helperLabel="All admin data stays scoped to this business."
+                  switchErrorLabel="Failed to switch business"
+                />
+              </AdminSidebarSection>
 
             <div>
               {groupOwnerNav(adminNav).map((group) => (

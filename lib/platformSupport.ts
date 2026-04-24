@@ -74,7 +74,7 @@ export async function findOrCreatePlatformSupportConversation(args: {
     client_name: args.ownerName || args.businessName || "Business owner",
     client_email: args.ownerEmail,
     client_phone: args.ownerPhone,
-    owner_user_id: null,
+    owner_user_id: args.ownerUserId,
     subject: PLATFORM_SUPPORT_SUBJECT,
     context_type: PLATFORM_SUPPORT_SOURCE,
     context_id: args.businessId,

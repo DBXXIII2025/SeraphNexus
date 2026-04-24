@@ -12,6 +12,7 @@ export async function POST(req: Request) {
   try {
     const supabase = await createClient();
     const body = await req.json();
+    const requestedBusinessId = String(body?.businessId || body?.id || "").trim() || undefined;
 
     const name = String(body?.name || "").trim();
     const description = String(body?.description || "").trim();
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const activeBusiness = await getActiveBusiness();
+    const activeBusiness = await getActiveBusiness(requestedBusinessId);
     if (!activeBusiness || activeBusiness.owner_id !== user.id) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }

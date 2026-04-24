@@ -17,6 +17,94 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function extractMissingColumnName(message: string) {
+  const patterns = [
+    /column ["']([^"']+)["']/i,
+    /column\s+([a-zA-Z0-9_.]+)\s+does not exist/i,
+    /Could not find the ['"]([^'"]+)['"] column/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match?.[1]) {
+      const rawColumn = match[1];
+      return rawColumn.includes(".") ? rawColumn.split(".").pop() || rawColumn : rawColumn;
+    }
+  }
+
+  return null;
+}
+
+async function runSchemaSafeMutation(args: {
+  payload: Record<string, unknown>;
+  requiredColumns?: string[];
+  runMutation: (payload: Record<string, unknown>) => Promise<{ error: { message?: string } | null; data?: unknown }>;
+}) {
+  const candidate = Object.fromEntries(
+    Object.entries(args.payload).filter(([, value]) => value !== undefined)
+  );
+  const requiredColumns = new Set(args.requiredColumns || []);
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const result = await args.runMutation(candidate);
+
+    if (!result.error) {
+      return result;
+    }
+
+    const missingColumn = extractMissingColumnName(result.error.message || "");
+    if (!missingColumn || !(missingColumn in candidate)) {
+      return result;
+    }
+
+    if (requiredColumns.has(missingColumn)) {
+      return {
+        data: null,
+        error: new Error(`Required product column is missing: ${missingColumn}`),
+      };
+    }
+
+    delete candidate[missingColumn];
+  }
+
+  return {
+    data: null,
+    error: new Error("Failed to save product after schema fallback retries"),
+  };
+}
+
+async function selectCheckoutIntentRowsSafely(checkoutIntentsTable: any, businessId: string) {
+  const columns = ["id", "order_items", "items_json", "metadata", "meta_json"];
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const { data, error } = await checkoutIntentsTable
+      .select(columns.join(","))
+      .eq("business_id", businessId)
+      .eq("kind", "order");
+
+    if (!error) {
+      return { data: data || [], error: null };
+    }
+
+    const missingColumn = extractMissingColumnName(error.message || "");
+    if (!missingColumn) {
+      return { data: null, error };
+    }
+
+    const index = columns.indexOf(missingColumn);
+    if (index === -1) {
+      return { data: null, error };
+    }
+
+    columns.splice(index, 1);
+  }
+
+  return {
+    data: null,
+    error: new Error("Failed to load checkout intents after schema fallback retries"),
+  };
+}
+
 function itemIdsFromIntent(intent: Record<string, unknown>) {
   const metadata =
     intent.metadata && typeof intent.metadata === "object" && !Array.isArray(intent.metadata)
@@ -125,12 +213,17 @@ export async function POST(req: Request) {
       let result;
 
       if (productId) {
-        result = await productsTable
-          .update(payload)
-          .eq("id", productId)
-          .eq("business_id", business.id)
-          .select()
-          .single();
+        result = await runSchemaSafeMutation({
+          payload,
+          requiredColumns: ["business_id", "name", "price"],
+          runMutation: (nextPayload) =>
+            productsTable
+              .update(nextPayload)
+              .eq("id", productId)
+              .eq("business_id", business.id)
+              .select()
+              .single(),
+        });
       } else {
         const effectivePlan = await resolveAccessPlanForBusiness({
           business: {
@@ -166,7 +259,11 @@ export async function POST(req: Request) {
           );
         }
 
-        result = await productsTable.insert(payload).select().single();
+        result = await runSchemaSafeMutation({
+          payload,
+          requiredColumns: ["business_id", "name", "price"],
+          runMutation: (nextPayload) => productsTable.insert(nextPayload).select().single(),
+        });
       }
 
       if (result.error) {
@@ -195,16 +292,21 @@ export async function POST(req: Request) {
 
     if (normalizedAction === "archive" || normalizedAction === "restore") {
       const nextActive = normalizedAction === "restore";
-      const result = await productsTable
-        .update({
+      const result = await runSchemaSafeMutation({
+        payload: {
           is_active: nextActive,
           archived_at: nextActive ? null : nowIso(),
           updated_at: nowIso(),
-        })
-        .eq("id", productId)
-        .eq("business_id", business.id)
-        .select()
-        .single();
+        },
+        requiredColumns: ["is_active"],
+        runMutation: (nextPayload) =>
+          productsTable
+            .update(nextPayload)
+            .eq("id", productId)
+            .eq("business_id", business.id)
+            .select()
+            .single(),
+      });
 
       if (result.error) {
         return NextResponse.json(
@@ -217,10 +319,10 @@ export async function POST(req: Request) {
     }
 
     if (normalizedAction === "delete") {
-      const { data: intentRows, error: dependencyError } = await checkoutIntentsTable
-        .select("id, order_items, items_json, metadata, meta_json")
-        .eq("business_id", business.id)
-        .eq("kind", "order");
+      const { data: intentRows, error: dependencyError } = await selectCheckoutIntentRowsSafely(
+        checkoutIntentsTable,
+        business.id
+      );
 
       if (dependencyError) {
         return NextResponse.json(
@@ -234,16 +336,21 @@ export async function POST(req: Request) {
       );
 
       if (hasDependencies) {
-        const result = await productsTable
-          .update({
+        const result = await runSchemaSafeMutation({
+          payload: {
             is_active: false,
             archived_at: nowIso(),
             updated_at: nowIso(),
-          })
-          .eq("id", productId)
-          .eq("business_id", business.id)
-          .select()
-          .single();
+          },
+          requiredColumns: ["is_active"],
+          runMutation: (nextPayload) =>
+            productsTable
+              .update(nextPayload)
+              .eq("id", productId)
+              .eq("business_id", business.id)
+              .select()
+              .single(),
+        });
 
         if (result.error) {
           return NextResponse.json(

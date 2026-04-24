@@ -9,6 +9,13 @@ import {
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  MetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 type NormalizedItem = {
   name: string;
@@ -226,11 +233,11 @@ function SummaryCard({
         : "text-[var(--text-strong)]";
 
   return (
-    <div className="metric-card p-4">
+    <MetricCard>
       <p className="section-kicker">{label}</p>
       <p className={`mt-3 text-[1.85rem] font-semibold leading-none ${valueClass}`}>{value}</p>
       <p className="mt-2 text-sm text-[var(--text-soft)]">{detail}</p>
-    </div>
+    </MetricCard>
   );
 }
 
@@ -246,13 +253,9 @@ function renderOrderCard(
     : `Cancel ${record.customerName}'s order and remove it from active operational views?`;
 
   return (
-    <div
+    <DashboardSecondaryPanel
       key={record.id}
-      className={`surface-card p-5 ${
-        record.isFallback
-          ? "border-yellow-500/20 bg-yellow-500/10"
-          : ""
-      }`}
+      className={`p-5 ${record.isFallback ? "border-yellow-500/20 bg-yellow-500/10" : ""}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -419,7 +422,7 @@ function renderOrderCard(
           </form>
         </div>
       ) : null}
-    </div>
+    </DashboardSecondaryPanel>
   );
 }
 
@@ -438,16 +441,24 @@ export default async function AdminOrdersPage({
   const isStoreBusiness = isStoreBusinessType(business?.business_type);
 
   if (!business) {
-    return <div className="empty-state">{createAdminTranslator(null)("noActiveBusinessFound")}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {createAdminTranslator(null)("noActiveBusinessFound")}
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
+    );
   }
 
   const t = createAdminTranslator(business.language);
 
   if (!isOrderBusinessType(business.business_type)) {
     return (
-      <div className="surface-card p-6 text-[var(--text-main)]">
-        {t("orders")} are not enabled for this business type.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {t("orders")} are not enabled for this business type.
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -697,7 +708,7 @@ export default async function AdminOrdersPage({
   ).length;
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
+    <AdminPageContainer className="text-[var(--text-main)]">
       {params?.success === "deleted" ? (
         <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
           Pending unpaid order deleted.
@@ -716,7 +727,7 @@ export default async function AdminOrdersPage({
         </div>
       ) : null}
 
-      <section className="premium-card p-6 lg:p-7">
+      <DashboardPrimaryPanel>
         <p className="section-kicker">{t("orders")}</p>
         <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.2rem]">{t("orders")} queue</h1>
         <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
@@ -724,9 +735,9 @@ export default async function AdminOrdersPage({
             ? `Manage incoming product orders for ${business.name}.`
             : `Manage incoming orders for ${business.name}.`}
         </p>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <DashboardGrid className="md:grid-cols-3">
         <SummaryCard
           label="Live queue"
           value={String(normalizedOrders.length)}
@@ -748,7 +759,7 @@ export default async function AdminOrdersPage({
           }
           tone="success"
         />
-      </div>
+      </DashboardGrid>
 
       {normalizedOrders.length === 0 && fallbackRows.length === 0 ? (
         <div className="empty-state">
@@ -762,6 +773,6 @@ export default async function AdminOrdersPage({
           {fallbackRows.map((record) => renderOrderCard(record, isStoreBusiness))}
         </div>
       )}
-    </div>
+    </AdminPageContainer>
   );
 }

@@ -11,7 +11,7 @@ export default async function AdminNotificationBell({
   return (
     <Link
       href="/admin/notifications"
-      className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-strong)] transition hover:border-[var(--border-strong)] hover:bg-[var(--accent-muted)]"
+      className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[rgba(212,175,55,0.2)] bg-[rgba(255,255,255,0.04)] text-[var(--text-strong)] shadow-[0_16px_28px_rgba(0,0,0,0.28)] transition hover:border-[rgba(212,175,55,0.38)] hover:bg-[rgba(212,175,55,0.14)]"
       aria-label={
         schemaMissing
           ? "Notifications unavailable"

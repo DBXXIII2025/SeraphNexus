@@ -8,6 +8,13 @@ import { createAdminTranslator } from "@/lib/adminI18n";
 import ServiceImagesManager from "./ServiceImagesManager";
 import { sortServiceImages, type ServiceImageRecord } from "@/lib/serviceImages";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  InfoCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 type ServiceRow = {
   id: string;
@@ -52,16 +59,24 @@ export default async function AdminServicesPage({
   const maxServices = business ? getPlanLimit(business.plan, "max_services") : null;
 
   if (!business) {
-    return <div className="empty-state">{createAdminTranslator(null)("noActiveBusinessFound")}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {createAdminTranslator(null)("noActiveBusinessFound")}
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
+    );
   }
 
   const t = createAdminTranslator(business.language);
 
   if (business.business_type !== "service") {
     return (
-      <div className="surface-card p-6 text-[var(--text-main)]">
-        {t("services")} are only available for service businesses.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {t("services")} are only available for service businesses.
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -104,7 +119,7 @@ export default async function AdminServicesPage({
   });
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
+    <AdminPageContainer className="text-[var(--text-main)]">
       {params?.success === "created" ? <StatusMessage tone="success">Service created.</StatusMessage> : null}
       {params?.success === "updated" ? <StatusMessage tone="success">Service updated.</StatusMessage> : null}
       {params?.success === "deleted" ? <StatusMessage tone="success">Service deleted.</StatusMessage> : null}
@@ -145,8 +160,8 @@ export default async function AdminServicesPage({
         </StatusMessage>
       ) : null}
 
-      <section className="premium-card p-6 lg:p-7">
-        <div className="grid gap-6 xl:grid-cols-[1.35fr,0.95fr]">
+      <DashboardPrimaryPanel>
+        <DashboardGrid className="xl:grid-cols-[1.35fr,0.95fr]">
           <div>
             <p className="section-kicker">{t("services")}</p>
             <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.2rem]">
@@ -157,7 +172,7 @@ export default async function AdminServicesPage({
             </p>
           </div>
 
-          <div className="surface-panel p-5">
+          <InfoCard>
             <p className="section-kicker">{t("operations")}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <a href="#create-service" className="btn-primary px-4 py-2 text-sm font-medium">
@@ -176,9 +191,9 @@ export default async function AdminServicesPage({
                 {quickstart.secondaryLabel}
               </Link>
             </div>
-          </div>
-        </div>
-      </section>
+          </InfoCard>
+        </DashboardGrid>
+      </DashboardPrimaryPanel>
 
       {serviceImagesError ? (
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
@@ -189,7 +204,7 @@ export default async function AdminServicesPage({
       ) : null}
 
       {hasNoServices ? (
-        <section className="surface-card p-6">
+        <DashboardSecondaryPanel>
           <p className="section-kicker">{t("continueSetup")}</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
             {quickstart.title}
@@ -205,60 +220,62 @@ export default async function AdminServicesPage({
               {quickstart.secondaryLabel}
             </Link>
           </div>
-        </section>
+        </DashboardSecondaryPanel>
       ) : null}
 
-      <section id="create-service" className="surface-card p-6">
-        <div className="section-header">
-          <div className="section-header-copy">
-            <p className="section-kicker">{t("operations")}</p>
-            <h2 className="section-title">{t("addService")}</h2>
-            <p className="section-description">
-              Add a new bookable offer and keep the list operationally tight.
-            </p>
+      <div id="create-service">
+        <DashboardPrimaryPanel className="p-6">
+          <div className="section-header">
+            <div className="section-header-copy">
+              <p className="section-kicker">{t("operations")}</p>
+              <h2 className="section-title">{t("addService")}</h2>
+              <p className="section-description">
+                Add a new bookable offer and keep the list operationally tight.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <form action="/api/admin/services" method="POST" className="mt-5 space-y-4">
-          <input type="hidden" name="business_id" value={business.id} />
-          <input type="hidden" name="action" value="save" />
-          <div className="grid gap-3 md:grid-cols-3">
-            <input name="name" placeholder="Service name" required className="input-field" />
-            <input
-              name="price"
-              type="number"
-              step="0.01"
-              min="0.01"
-              placeholder="Price"
-              required
-              className="input-field"
-            />
-            <input
-              name="duration"
-              type="number"
-              min="1"
-              placeholder="Duration in minutes"
-              className="input-field"
-            />
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <input name="category" placeholder="Category (optional)" className="input-field" />
-            <textarea
-              name="description"
-              placeholder="Description (optional)"
-              className="input-field min-h-[110px]"
-            />
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-[var(--text-muted)]">
-              Service image uploads appear after the service is saved and shows up below.
-            </p>
-            <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
-              Add service
-            </button>
-          </div>
-        </form>
-      </section>
+          <form action="/api/admin/services" method="POST" className="mt-5 space-y-4">
+            <input type="hidden" name="business_id" value={business.id} />
+            <input type="hidden" name="action" value="save" />
+            <div className="grid gap-3 md:grid-cols-3">
+              <input name="name" placeholder="Service name" required className="input-field" />
+              <input
+                name="price"
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="Price"
+                required
+                className="input-field"
+              />
+              <input
+                name="duration"
+                type="number"
+                min="1"
+                placeholder="Duration in minutes"
+                className="input-field"
+              />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input name="category" placeholder="Category (optional)" className="input-field" />
+              <textarea
+                name="description"
+                placeholder="Description (optional)"
+                className="input-field min-h-[110px]"
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-[var(--text-muted)]">
+                Service image uploads appear after the service is saved and shows up below.
+              </p>
+              <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+                Add service
+              </button>
+            </div>
+          </form>
+        </DashboardPrimaryPanel>
+      </div>
 
       {hasNoServices ? (
         <div className="empty-state">
@@ -275,7 +292,7 @@ export default async function AdminServicesPage({
               .slice(0, 3);
 
             return (
-              <section key={service.id} className="surface-card p-5">
+              <DashboardSecondaryPanel key={service.id} className="p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex items-start gap-4">
                     <div className="space-y-2">
@@ -447,11 +464,11 @@ export default async function AdminServicesPage({
                     <span className="font-mono text-amber-50">service_images</span> migration is applied.
                   </div>
                 )}
-              </section>
+              </DashboardSecondaryPanel>
             );
           })}
         </div>
       )}
-    </div>
+    </AdminPageContainer>
   );
 }

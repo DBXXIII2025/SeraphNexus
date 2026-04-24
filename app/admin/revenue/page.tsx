@@ -12,6 +12,13 @@ import {
   resolveRentalPlatformFee,
 } from "@/lib/paymentMath";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  MetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 type OrderRow = {
   total_amount?: number | null;
@@ -66,8 +73,8 @@ async function PlatformOwnerRevenuePage() {
   });
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="surface-card p-6">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="section-header">
           <div className="section-header-copy">
             <p className="section-kicker">Revenue</p>
@@ -77,10 +84,10 @@ async function PlatformOwnerRevenuePage() {
             </p>
           </div>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="metric-card p-6">
+      <DashboardGrid className="dashboard-metrics-grid md:grid-cols-2">
+        <MetricCard>
           <p className="section-kicker">Projected MRR</p>
           <p className="mt-5 text-4xl font-semibold text-[var(--accent-soft)]">
             {formatCurrency(data.totalMRR)}
@@ -88,8 +95,8 @@ async function PlatformOwnerRevenuePage() {
           <p className="mt-3 text-sm text-[var(--text-soft)]">
             Derived from current paid business plans.
           </p>
-        </div>
-        <div className="metric-card p-6">
+        </MetricCard>
+        <MetricCard>
           <p className="section-kicker">Gross Volume</p>
           <p className="mt-5 text-4xl font-semibold text-[var(--text-strong)]">
             {formatCurrency(data.transactionGrossRevenue)}
@@ -97,8 +104,8 @@ async function PlatformOwnerRevenuePage() {
           <p className="mt-3 text-sm text-[var(--text-soft)]">
             Paid transaction volume across orders, bookings, and reservations.
           </p>
-        </div>
-        <div className="metric-card p-6">
+        </MetricCard>
+        <MetricCard>
           <p className="section-kicker">Platform Revenue</p>
           <p className="mt-5 text-4xl font-semibold text-[var(--accent-soft)]">
             {formatCurrency(data.transactionPlatformRevenue)}
@@ -106,8 +113,8 @@ async function PlatformOwnerRevenuePage() {
           <p className="mt-3 text-sm text-[var(--text-soft)]">
             Transaction-fee revenue from paid platform activity.
           </p>
-        </div>
-        <div className="metric-card p-6">
+        </MetricCard>
+        <MetricCard>
           <p className="section-kicker">Plan Distribution</p>
           <p className="mt-5 text-4xl font-semibold text-[var(--text-strong)]">
             {data.planDistribution.reduce((sum, plan) => sum + plan.count, 0)}
@@ -115,11 +122,11 @@ async function PlatformOwnerRevenuePage() {
           <p className="mt-3 text-sm text-[var(--text-soft)]">
             Businesses currently assigned to plan tiers.
           </p>
-        </div>
-      </section>
+        </MetricCard>
+      </DashboardGrid>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr,1fr]">
-        <div className="surface-card p-6">
+      <DashboardGrid className="dashboard-grid-shell xl:grid-cols-[1.2fr,1fr]">
+        <DashboardPrimaryPanel>
           <p className="section-kicker">Recent Payments</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
             Paid transaction feed
@@ -144,10 +151,10 @@ async function PlatformOwnerRevenuePage() {
               </div>
             ))}
           </div>
-        </div>
+        </DashboardPrimaryPanel>
 
         <div className="space-y-6">
-          <section className="premium-card p-6">
+          <DashboardSecondaryPanel>
             <p className="section-kicker">Top Grossing</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
               Top businesses
@@ -168,9 +175,9 @@ async function PlatformOwnerRevenuePage() {
                 </div>
               ))}
             </div>
-          </section>
+          </DashboardSecondaryPanel>
 
-          <section className="surface-card p-6">
+          <DashboardSecondaryPanel>
             <p className="section-kicker">Plan Mix</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
               Distribution
@@ -183,10 +190,10 @@ async function PlatformOwnerRevenuePage() {
                 </div>
               ))}
             </div>
-          </section>
+          </DashboardSecondaryPanel>
         </div>
-      </section>
-    </div>
+      </DashboardGrid>
+    </AdminPageContainer>
   );
 }
 
@@ -201,7 +208,11 @@ export default async function RevenuePage() {
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="empty-state">No active business.</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>No active business.</DashboardPrimaryPanel>
+      </AdminPageContainer>
+    );
   }
 
   const isRental = isRentalBusinessType(business.business_type);
@@ -290,8 +301,8 @@ export default async function RevenuePage() {
     .slice(0, 10);
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card p-6 lg:p-7">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <p className="section-kicker">Revenue</p>
         <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.2rem]">
           Revenue dashboard
@@ -299,32 +310,32 @@ export default async function RevenuePage() {
         <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
           Paid transaction volume, platform fees, and net earnings for the active business.
         </p>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="metric-card p-5">
+      <DashboardGrid className="md:grid-cols-3">
+        <MetricCard>
           <p className="section-kicker">Total sales</p>
           <p className="mt-4 text-[1.95rem] font-semibold text-[var(--text-strong)]">
             {formatCurrency(totalRevenue)}
           </p>
-        </div>
+        </MetricCard>
 
-        <div className="metric-card p-5">
+        <MetricCard>
           <p className="section-kicker">Platform fees</p>
           <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
             {formatCurrency(platformRevenue)}
           </p>
-        </div>
+        </MetricCard>
 
-        <div className="metric-card p-5">
+        <MetricCard>
           <p className="section-kicker">Net earnings</p>
           <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
             {formatCurrency(netRevenue)}
           </p>
-        </div>
-      </div>
+        </MetricCard>
+      </DashboardGrid>
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <p className="section-kicker">Recent paid activity</p>
         <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
           Settlement ledger
@@ -356,7 +367,7 @@ export default async function RevenuePage() {
             ))
           )}
         </div>
-      </section>
-    </div>
+      </DashboardPrimaryPanel>
+    </AdminPageContainer>
   );
 }

@@ -6,22 +6,22 @@
   color-scheme: dark;
   --font-body: Arial, Helvetica, sans-serif;
   --font-heading: Arial, Helvetica, sans-serif;
-  --page-bg: #181a2a;
-  --section-bg: #1f2233;
-  --surface: #262a3d;
-  --surface-muted: #1f2233;
-  --surface-raised: #2d3147;
-  --panel: #262a3d;
-  --panel-strong: #2d3147;
-  --bg-card: #262a3d;
-  --border: #34384a;
-  --border-soft: #34384a;
-  --border-strong: #4b5068;
-  --accent: #d1d5db;
-  --accent-strong: #9ca3af;
-  --accent-soft: #e5e7eb;
-  --accent-muted: rgba(209, 213, 219, 0.08);
-  --accent-border: #3b3f55;
+  --page-bg: #0c1017;
+  --section-bg: #10161f;
+  --surface: #161d27;
+  --surface-muted: #10161f;
+  --surface-raised: #1b2430;
+  --panel: #161d27;
+  --panel-strong: #1e2834;
+  --bg-card: #161d27;
+  --border: #243041;
+  --border-soft: #243041;
+  --border-strong: #334155;
+  --accent: #d8dee8;
+  --accent-strong: #b4bdc9;
+  --accent-soft: #edf2f7;
+  --accent-muted: rgba(216, 222, 232, 0.08);
+  --accent-border: #3a4758;
   --accent-contrast: #111827;
   --active-bg: rgba(209, 213, 219, 0.12);
   --muted-bg: #1f2233;
@@ -39,12 +39,12 @@
   --info-border: rgba(147, 197, 253, 0.24);
   --text-main: #e6e8eb;
   --text-strong: #f5f7fb;
-  --text-soft: #a1a1aa;
-  --text-muted: #7f8496;
-  --shadow-soft: 0 14px 36px rgba(6, 8, 18, 0.32);
-  --shadow-card: 0 22px 56px rgba(6, 8, 18, 0.42);
-  --shadow-premium: 0 30px 82px rgba(6, 8, 18, 0.5);
-  --focus-ring: 0 0 0 3px rgba(209, 213, 219, 0.24);
+  --text-soft: #9eabbc;
+  --text-muted: #6d7a8d;
+  --shadow-soft: 0 18px 42px rgba(2, 6, 12, 0.34);
+  --shadow-card: 0 24px 64px rgba(2, 6, 12, 0.44);
+  --shadow-premium: 0 32px 86px rgba(2, 6, 12, 0.56);
+  --focus-ring: 0 0 0 3px rgba(216, 222, 232, 0.16);
   --bg-main: var(--page-bg);
   --surface-dark-undertone: var(--section-bg);
   --surface-dark-soft: var(--surface-muted);
@@ -254,7 +254,10 @@ button:focus {
 
 .admin-system {
   min-height: 100vh;
-  background: var(--page-bg) !important;
+  background:
+    radial-gradient(circle at top left, rgba(212, 175, 55, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.06), transparent 24%),
+    linear-gradient(180deg, #090d13 0%, #0b1118 45%, #0c1017 100%) !important;
   color: var(--text-main) !important;
 }
 
@@ -266,7 +269,7 @@ button:focus {
   display: grid;
   min-height: 100vh;
   gap: 1rem;
-  padding: 1rem;
+  padding: 1.25rem;
 }
 
 .admin-shell-grid-wide {
@@ -276,7 +279,7 @@ button:focus {
 .admin-shell-column {
   min-width: 0;
   display: grid;
-  gap: 1rem;
+  gap: 0.9rem;
   align-content: start;
 }
 
@@ -287,10 +290,10 @@ button:focus {
 .admin-sidebar-section {
   position: relative;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent) !important;
-  background: linear-gradient(180deg, rgba(20, 24, 33, 0.96), rgba(13, 16, 24, 0.96)) !important;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent) !important;
+  background: linear-gradient(180deg, rgba(18, 24, 34, 0.97), rgba(10, 15, 22, 0.98)) !important;
   color: var(--text-main) !important;
-  box-shadow: 0 28px 60px -48px rgba(0, 0, 0, 0.9) !important;
+  box-shadow: 0 26px 56px -44px rgba(0, 0, 0, 0.9) !important;
 }
 
 .admin-system-sidebar::before,
@@ -307,7 +310,8 @@ button:focus {
 
 .admin-system-sidebar {
   align-self: start;
-  border-radius: 1.15rem;
+  min-height: 0;
+  border-radius: 1.05rem;
   padding: 0.9rem;
 }
 
@@ -315,10 +319,10 @@ button:focus {
   display: flex;
   min-height: 4.25rem;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.55rem;
   justify-content: space-between;
-  border-radius: 1rem;
-  padding: 0.95rem 1rem;
+  border-radius: 1.05rem;
+  padding: 0.95rem 1.1rem;
 }
 
 .admin-topnav-copy {
@@ -329,7 +333,7 @@ button:focus {
 .admin-page-header,
 .admin-panel,
 .admin-sidebar-section {
-  border-radius: 1rem;
+  border-radius: 1.05rem;
   padding: 1rem 1.05rem;
 }
 
@@ -343,8 +347,8 @@ button:focus {
 .admin-sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.2rem 0.1rem 0.35rem;
+  gap: 0.8rem;
+  padding: 0.15rem 0.05rem 0.3rem;
 }
 
 .admin-brand-mark {
@@ -356,8 +360,8 @@ button:focus {
   justify-content: center;
   overflow: hidden;
   border-radius: 0.95rem;
-  border: 1px solid rgba(132, 141, 244, 0.22) !important;
-  background: linear-gradient(180deg, rgba(86, 98, 255, 0.22), rgba(54, 63, 145, 0.16)) !important;
+  border: 1px solid rgba(216, 222, 232, 0.14) !important;
+  background: linear-gradient(180deg, rgba(216, 222, 232, 0.12), rgba(130, 144, 164, 0.08)) !important;
   color: var(--accent) !important;
 }
 
@@ -378,7 +382,7 @@ button:focus {
 .admin-eyebrow,
 .admin-sidebar-title,
 .section-kicker {
-  color: #8ea3ff !important;
+  color: #92a4bb !important;
   font-size: 0.67rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -422,22 +426,38 @@ button:focus {
   flex-wrap: wrap;
   gap: 0.55rem;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .admin-sidebar-stack {
   display: flex;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   flex-direction: column;
   gap: 0.8rem;
+  overflow: hidden;
 }
 
-.admin-sidebar-fill {
+.admin-sidebar-scroll {
   flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.admin-sidebar-footer {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 0.8rem;
 }
 
 .admin-sidebar-nav {
   display: grid;
   gap: 0.35rem;
+  min-width: 0;
 }
 
 .admin-nav-link,
@@ -445,18 +465,19 @@ button:focus {
 .admin-action-primary {
   position: relative;
   display: inline-flex;
-  min-height: 2.55rem;
+  min-height: 2.45rem;
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
   border-radius: 0.9rem;
   border: 1px solid color-mix(in srgb, var(--border-soft) 76%, transparent) !important;
-  padding: 0.55rem 0.8rem;
+  padding: 0.52rem 0.82rem;
   text-decoration: none;
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .admin-nav-link {
+  width: 100%;
   justify-content: flex-start;
   color: var(--text-soft) !important;
   background: rgba(255, 255, 255, 0.01) !important;
@@ -470,8 +491,8 @@ button:focus {
 
 .admin-nav-glyph {
   display: inline-flex;
-  height: 1.9rem;
-  width: 1.9rem;
+  height: 1.75rem;
+  width: 1.75rem;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -483,26 +504,27 @@ button:focus {
 .admin-nav-label {
   min-width: 0;
   flex: 1;
-  font-size: 0.92rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .admin-nav-link-active {
-  background: linear-gradient(180deg, rgba(102, 118, 255, 0.9), rgba(69, 82, 217, 0.92)) !important;
-  color: var(--accent-contrast) !important;
-  border-color: rgba(121, 136, 255, 0.9) !important;
-  box-shadow: 0 18px 36px -28px rgba(88, 98, 255, 0.88) !important;
+  background: linear-gradient(180deg, rgba(216, 222, 232, 0.16), rgba(216, 222, 232, 0.1)) !important;
+  color: var(--text-strong) !important;
+  border-color: rgba(216, 222, 232, 0.18) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 18px 36px -30px rgba(2, 6, 12, 0.9) !important;
 }
 
 .admin-nav-link-active .admin-nav-glyph {
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .admin-action-primary {
-  background: linear-gradient(180deg, rgba(102, 118, 255, 0.95), rgba(69, 82, 217, 0.92)) !important;
+  background: linear-gradient(180deg, rgba(216, 222, 232, 0.95), rgba(184, 194, 207, 0.92)) !important;
   color: var(--accent-contrast) !important;
-  border-color: rgba(121, 136, 255, 0.9) !important;
+  border-color: rgba(216, 222, 232, 0.85) !important;
 }
 
 .admin-action-secondary {
@@ -513,12 +535,49 @@ button:focus {
 .admin-system-content {
   min-width: 0;
   display: grid;
-  gap: 1rem;
+  gap: 0.95rem;
   align-content: start;
 }
 
 .admin-system-content-wide {
   max-width: 1240px;
+}
+
+.admin-page-stack {
+  display: grid;
+  gap: 0.95rem;
+  align-content: start;
+}
+
+.dashboard-section {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-primary-panel,
+.dashboard-secondary-panel,
+.dashboard-info-card,
+.dashboard-metric-card {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent);
+  background: linear-gradient(180deg, rgba(18, 24, 34, 0.97), rgba(10, 15, 22, 0.98));
+  box-shadow: 0 26px 56px -44px rgba(0, 0, 0, 0.9);
+}
+
+.dashboard-primary-panel,
+.dashboard-secondary-panel,
+.dashboard-info-card {
+  padding: 1rem 1.05rem;
+}
+
+.dashboard-metric-card {
+  padding: 0.95rem 1rem;
+  min-height: 7.6rem;
 }
 
 .admin-system .surface-card,
@@ -531,20 +590,20 @@ button:focus {
 .admin-system .form-section {
   border-radius: 1rem !important;
   border: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent) !important;
-  background: linear-gradient(180deg, rgba(22, 26, 36, 0.98), rgba(14, 18, 26, 0.98)) !important;
-  box-shadow: 0 28px 60px -48px rgba(0, 0, 0, 0.9) !important;
+  background: linear-gradient(180deg, rgba(18, 24, 34, 0.97), rgba(10, 15, 22, 0.98)) !important;
+  box-shadow: 0 26px 56px -44px rgba(0, 0, 0, 0.9) !important;
 }
 
 .admin-system .surface-card,
 .admin-system .premium-card,
 .admin-system .shell-panel,
 .admin-system .surface-panel {
-  padding: 1rem !important;
+  padding: 1rem 1.05rem !important;
 }
 
 .admin-system .metric-card {
-  padding: 1rem !important;
-  min-height: 9.4rem;
+  padding: 0.95rem 1rem !important;
+  min-height: 7.6rem;
 }
 
 .admin-system .table-row-panel {
@@ -587,15 +646,21 @@ button:focus {
   .admin-shell-grid {
     grid-template-columns: 264px minmax(0, 1fr);
     gap: 1rem;
-    padding: 1rem;
+    padding: 1.35rem;
   }
 
   .admin-system-sidebar {
     position: sticky;
-    top: 1rem;
-    height: calc(100vh - 2rem);
+    top: 1.35rem;
+    height: calc(100vh - 2.7rem);
     display: flex;
     flex-direction: column;
+  }
+
+  .admin-topnav {
+    position: sticky;
+    top: 1.35rem;
+    z-index: 20;
   }
 
   .admin-topnav,
@@ -603,12 +668,20 @@ button:focus {
     flex-direction: row;
     align-items: center;
   }
+
+  .dashboard-grid-shell {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+  }
+
+  .dashboard-metrics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1440px) {
   .admin-shell-grid {
     grid-template-columns: 268px minmax(0, 1fr);
-    padding: 1.15rem;
+    padding: 1.45rem;
   }
 }
 

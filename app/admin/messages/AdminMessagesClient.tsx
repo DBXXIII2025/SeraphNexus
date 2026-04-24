@@ -4,6 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getAdminStatusBadgeClass } from "@/lib/adminStatus";
+import {
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 type ConversationItem = {
   id: string;
@@ -556,8 +561,8 @@ export default function AdminMessagesClient({
   }
 
   return (
-    <div className="grid gap-6 text-[var(--text-main)] lg:grid-cols-[360px,1fr]">
-      <div className="premium-card p-6">
+    <DashboardGrid className="text-[var(--text-main)] xl:grid-cols-[360px,1fr]">
+      <DashboardSecondaryPanel>
         <h1 className="text-xl font-semibold">Messages</h1>
         <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
           Inbox for {scopedBusinessName}. Conversations do not cross the active business
@@ -629,9 +634,9 @@ export default function AdminMessagesClient({
             })
           )}
         </div>
-      </div>
+      </DashboardSecondaryPanel>
 
-      <div className="surface-card p-6">
+      <DashboardPrimaryPanel>
         {conversations.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
             No conversations yet. New client messages for this business will appear here.
@@ -766,7 +771,7 @@ export default function AdminMessagesClient({
             </div>
           </>
         )}
-      </div>
-    </div>
+      </DashboardPrimaryPanel>
+    </DashboardGrid>
   );
 }

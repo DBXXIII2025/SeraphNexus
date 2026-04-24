@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
+import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getAdminConversationSummaries } from "@/lib/messages";
 import { canAccessPlanFeature } from "@/lib/planConfig";
 
@@ -21,13 +22,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabaseAdmin = createAdminClient();
-    const { data: business } = await supabaseAdmin
-      .from("businesses")
-      .select("id, owner_id, business_type, plan")
-      .eq("id", businessId)
-      .eq("owner_id", user.id)
-      .maybeSingle();
+    const business = await getActiveBusiness(businessId);
 
     if (!business?.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

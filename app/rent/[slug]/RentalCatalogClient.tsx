@@ -348,7 +348,7 @@ export default function RentalCatalogClient({
 
         {activeImage ? (
           <section className="border-b border-[var(--border-soft)] py-8">
-            <div className="public-gallery-frame max-w-none">
+            <div className="public-gallery-frame">
               <div className="relative aspect-[1.2/1]">
                 <img
                   src={activeImage.image_url}
@@ -364,7 +364,7 @@ export default function RentalCatalogClient({
                       aria-label="Previous photo"
                       className="public-gallery-button public-gallery-button-left"
                     >
-                      Previous
+                      &#8249;
                     </button>
                     <button
                       type="button"
@@ -372,14 +372,14 @@ export default function RentalCatalogClient({
                       aria-label="Next photo"
                       className="public-gallery-button public-gallery-button-right"
                     >
-                      Next
+                      &#8250;
                     </button>
                   </>
                 ) : null}
               </div>
             </div>
             {galleryImages.length > 1 ? (
-              <div className="mt-4 grid grid-cols-4 gap-1 border-t border-[var(--border-soft)] pt-3 sm:grid-cols-6">
+              <div className="mt-4 grid grid-cols-5 gap-1 border-t border-[var(--border-soft)] p-1 sm:grid-cols-8">
                 {galleryImages.map((image, index) => (
                   <button
                     key={image.id}
@@ -595,7 +595,7 @@ export default function RentalCatalogClient({
           <aside className="min-w-0">
             <div className="border-t border-[var(--border-soft)] pt-5 lg:sticky lg:top-6">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                Reserve dates
+                {t("reserveDates")}
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">
                 Book this stay

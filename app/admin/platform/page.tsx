@@ -26,6 +26,13 @@ import {
   getPlatformOwnerBusinessAudits,
 } from "@/lib/platformOwnerCleanup";
 import PlatformBrandingPanel from "./PlatformBrandingPanel";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  MetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 type PlatformPageProps = {
   searchParams?: Promise<{
@@ -322,8 +329,8 @@ export default async function PlatformPage({
 
   if (!isPlatformAdmin) {
     return (
-      <div className="space-y-6 text-[var(--text-main)]">
-        <section className="surface-card p-6">
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
           <div className="section-header-copy">
             <p className="section-kicker">Platform</p>
             <h1 className="section-title">Platform settings</h1>
@@ -331,17 +338,17 @@ export default async function PlatformPage({
               Editable SaaS copy and support information used across the app.
             </p>
           </div>
-        </section>
+        </DashboardPrimaryPanel>
 
-        <div className="surface-panel border-yellow-500/20 px-4 py-3 text-sm text-yellow-100">
+        <DashboardSecondaryPanel className="border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
           Platform editing is restricted to accounts whose profile is marked as
           a platform admin.
-        </div>
+        </DashboardSecondaryPanel>
 
         <form
           action="/api/admin/platform"
           method="POST"
-          className="surface-card space-y-5 p-6"
+          className="dashboard-primary-panel space-y-5 p-6"
         >
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm text-[var(--text-soft)]">
@@ -409,7 +416,7 @@ export default async function PlatformPage({
             Save Platform Settings
           </button>
         </form>
-      </div>
+      </AdminPageContainer>
     );
   }
 
@@ -442,8 +449,8 @@ export default async function PlatformPage({
   });
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card p-6 lg:p-7">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="section-header-copy">
           <p className="section-kicker">Platform Control</p>
           <h1 className="section-title">
@@ -455,11 +462,11 @@ export default async function PlatformPage({
             account.
           </p>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <DashboardGrid className="md:grid-cols-2 xl:grid-cols-3">
         {platformData.metrics.map((metric) => (
-          <div key={metric.label} className="metric-card p-5">
+          <MetricCard key={metric.label}>
             <p className="section-kicker">{metric.label}</p>
             <p className="mt-3 text-3xl font-semibold text-[var(--text-strong)]">
               {metric.value}
@@ -467,23 +474,23 @@ export default async function PlatformPage({
             <p className="mt-2 text-sm text-[var(--text-soft)]">
               {metric.detail}
             </p>
-          </div>
+          </MetricCard>
         ))}
-      </section>
+      </DashboardGrid>
 
       {successMessage ? (
-        <div className="surface-panel border-emerald-500/30 px-4 py-3 text-sm text-emerald-200">
+        <DashboardSecondaryPanel className="border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
           {successMessage}
-        </div>
+        </DashboardSecondaryPanel>
       ) : null}
 
       {errorMessage ? (
-        <div className="surface-panel border-red-500/30 px-4 py-3 text-sm text-red-200">
+        <DashboardSecondaryPanel className="border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {errorMessage}
-        </div>
+        </DashboardSecondaryPanel>
       ) : null}
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <div className="section-header-copy">
           <p className="section-kicker">Broadcast Notifications</p>
           <h2 className="section-title">Notify every business account</h2>
@@ -527,10 +534,10 @@ export default async function PlatformPage({
             Send platform notification
           </button>
         </form>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <section className="grid gap-6 xl:grid-cols-[1.05fr,0.95fr]">
-        <form action="/api/admin/platform" method="POST" className="surface-card space-y-5 p-6">
+      <DashboardGrid className="xl:grid-cols-[1.05fr,0.95fr]">
+        <form action="/api/admin/platform" method="POST" className="dashboard-primary-panel space-y-5 p-6">
           <input type="hidden" name="id" value={settings.id || ""} />
           <div className="section-header-copy">
             <p className="section-kicker">Platform Settings</p>
@@ -783,7 +790,7 @@ export default async function PlatformPage({
             maxLogoBytes={MAX_PLATFORM_LOGO_BYTES}
           />
 
-          <section className="premium-card p-6">
+          <section className="dashboard-secondary-panel p-6">
             <div className="section-header-copy">
               <p className="section-kicker">Platform Stripe</p>
               <h2 className="section-title">Platform payout and billing account</h2>
@@ -840,7 +847,7 @@ export default async function PlatformPage({
             </div>
           </section>
 
-          <section className="surface-card p-6">
+          <section className="dashboard-secondary-panel p-6">
             <p className="section-kicker">Current Prices</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
               Managed plan billing state
@@ -877,7 +884,7 @@ export default async function PlatformPage({
             </div>
           </section>
 
-          <section className="surface-card p-6">
+          <section className="dashboard-secondary-panel p-6">
             <p className="section-kicker">Elite Enforcement</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
               Included feature status
@@ -902,10 +909,10 @@ export default async function PlatformPage({
             </div>
           </section>
         </div>
-      </section>
+      </DashboardGrid>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
-        <div className="surface-card p-6">
+      <DashboardGrid className="xl:grid-cols-[1.2fr,0.8fr]">
+        <div className="dashboard-primary-panel p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Insights</p>
@@ -953,7 +960,7 @@ export default async function PlatformPage({
         </div>
 
         <div className="space-y-6">
-          <section className="surface-card p-6">
+          <section className="dashboard-secondary-panel p-6">
             <p className="section-kicker">Income Audit</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
               Real revenue posture
@@ -983,7 +990,7 @@ export default async function PlatformPage({
             </div>
           </section>
 
-          <section className="premium-card p-6">
+          <section className="dashboard-secondary-panel p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="section-kicker">Support</p>
@@ -1016,10 +1023,10 @@ export default async function PlatformPage({
             </div>
           </section>
         </div>
-      </section>
+      </DashboardGrid>
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
-        <div className="surface-card p-6">
+      <DashboardGrid className="xl:grid-cols-[0.95fr,1.05fr]">
+        <div className="dashboard-primary-panel p-6">
           <p className="section-kicker">Trial Grants</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
             Grant private trial access
@@ -1098,7 +1105,7 @@ export default async function PlatformPage({
           </form>
         </div>
 
-        <div className="surface-card p-6">
+        <div className="dashboard-secondary-panel p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Active Grants</p>
@@ -1169,10 +1176,10 @@ export default async function PlatformPage({
             )}
           </div>
         </div>
-      </section>
+      </DashboardGrid>
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
-        <div className="surface-card p-6">
+      <DashboardGrid className="xl:grid-cols-[0.95fr,1.05fr]">
+        <div className="dashboard-primary-panel p-6">
           <p className="section-kicker">Manual Plan Grants</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
             Grant temporary or permanent Pro and Elite access
@@ -1257,7 +1264,7 @@ export default async function PlatformPage({
           </form>
         </div>
 
-        <div className="surface-card p-6">
+        <div className="dashboard-secondary-panel p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Active Manual Grants</p>
@@ -1325,9 +1332,9 @@ export default async function PlatformPage({
             )}
           </div>
         </div>
-      </section>
+      </DashboardGrid>
 
-      <section className="surface-card p-6">
+      <section className="dashboard-primary-panel p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="section-kicker">Grant History</p>
@@ -1381,6 +1388,6 @@ export default async function PlatformPage({
           )}
         </div>
       </section>
-    </div>
+    </AdminPageContainer>
   );
 }

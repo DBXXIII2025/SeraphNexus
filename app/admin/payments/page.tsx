@@ -12,6 +12,13 @@ import {
 import { formatReservationRange } from "@/lib/rentalAvailability";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+  MetricCard,
+} from "@/components/admin/AdminLayoutSystem";
 
 type OrderRow = {
   id: string;
@@ -107,7 +114,13 @@ export default async function AdminPaymentsPage() {
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="p-6 text-[var(--text-main)]">{createAdminTranslator(null)("noActiveBusiness")}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          {createAdminTranslator(null)("noActiveBusiness")}
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
+    );
   }
 
   const t = createAdminTranslator(business.language);
@@ -190,9 +203,9 @@ export default async function AdminPaymentsPage() {
               reservation.check_in_date,
               reservation.check_out_date
             ),
-            createdAt: reservation.created_at,
-            status: reservation.status,
-            paymentStatus: reservation.payment_status,
+            createdAt: reservation.created_at || null,
+            status: reservation.status || null,
+            paymentStatus: reservation.payment_status || null,
             grossAmount,
             platformFee,
             netAmount: grossAmount - platformFee,
@@ -313,8 +326,8 @@ export default async function AdminPaymentsPage() {
   }
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card p-6 lg:p-7">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="grid gap-6 xl:grid-cols-[1.5fr,0.95fr]">
           <div>
             <p className="section-kicker">{t("payments")}</p>
@@ -328,61 +341,61 @@ export default async function AdminPaymentsPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-5">
+          <DashboardSecondaryPanel className="p-5">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
               Settlement posture
             </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                {isRental ? "Reservations" : "Transactions"}
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
-                {paymentRows.length}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                Gross Paid
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
-                {formatCurrency(grossPaidVolume)}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[var(--destructive-border)] bg-[var(--destructive-bg)] p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                Platform Fees
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
-                {formatCurrency(totalPlatformFees)}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                {isRental ? "Paid / Pending" : "Net To Business"}
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
-                {isRental
-                  ? `${paidTransactions.length} / ${pendingTransactions.length}`
-                  : formatCurrency(netToBusiness)}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                {isRental ? "Cancelled / Blocks" : "Paid / Pending"}
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
-                {isRental
-                  ? `${cancelledTransactions.length} / ${blockRows.length}`
-                  : `${paidTransactions.length} / ${pendingTransactions.length}`}
-              </p>
-            </div>
-            </div>
-          </div>
+            <DashboardGrid className="mt-4 sm:grid-cols-2">
+              <MetricCard>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  {isRental ? "Reservations" : "Transactions"}
+                </p>
+                <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
+                  {paymentRows.length}
+                </p>
+              </MetricCard>
+              <MetricCard className="border-[var(--accent-border)] bg-[var(--accent-muted)]">
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  Gross Paid
+                </p>
+                <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
+                  {formatCurrency(grossPaidVolume)}
+                </p>
+              </MetricCard>
+              <MetricCard className="border-[var(--destructive-border)] bg-[var(--destructive-bg)]">
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  Platform Fees
+                </p>
+                <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
+                  {formatCurrency(totalPlatformFees)}
+                </p>
+              </MetricCard>
+              <MetricCard>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  {isRental ? "Paid / Pending" : "Net To Business"}
+                </p>
+                <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
+                  {isRental
+                    ? `${paidTransactions.length} / ${pendingTransactions.length}`
+                    : formatCurrency(netToBusiness)}
+                </p>
+              </MetricCard>
+              <MetricCard className="sm:col-span-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  {isRental ? "Cancelled / Blocks" : "Paid / Pending"}
+                </p>
+                <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
+                  {isRental
+                    ? `${cancelledTransactions.length} / ${blockRows.length}`
+                    : `${paidTransactions.length} / ${pendingTransactions.length}`}
+                </p>
+              </MetricCard>
+            </DashboardGrid>
+          </DashboardSecondaryPanel>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="section-kicker">Recent Transactions</p>
@@ -444,7 +457,7 @@ export default async function AdminPaymentsPage() {
             ))
           )}
         </div>
-      </section>
-    </div>
+      </DashboardPrimaryPanel>
+    </AdminPageContainer>
   );
 }

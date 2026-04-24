@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { listNotificationsForUser } from "@/lib/notifications";
+import {
+  AdminPageContainer,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
@@ -41,17 +46,17 @@ export default async function AdminNotificationsPage() {
 
   if (!user) {
     return (
-      <div className="surface-card p-6 text-[var(--text-main)]">
-        Sign in to review notifications.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>Sign in to review notifications.</DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
   const { notifications, unreadCount, schemaMissing } = await listNotificationsForUser(user.id);
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="surface-card p-6">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="section-kicker">Notifications</p>
@@ -75,19 +80,23 @@ export default async function AdminNotificationsPage() {
             </form>
           </div>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
       {schemaMissing ? (
-        <div className="surface-panel border-amber-500/30 px-4 py-3 text-sm text-amber-100">
-          Notifications storage is unavailable until
+        <DashboardSecondaryPanel className="border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Notifications are unavailable because the live Supabase API cannot resolve
+          {" "}
+          <span className="font-mono">public.business_notifications</span>
+          {" "}
+          in the schema cache. Apply or refresh
           {" "}
           <span className="font-mono">sql/migrations/20260421_business_notifications.sql</span>
           {" "}
-          is applied.
-        </div>
+          and then refresh the database API schema cache.
+        </DashboardSecondaryPanel>
       ) : null}
 
-      <section className="surface-card p-6">
+      <DashboardPrimaryPanel>
         <div className="space-y-3">
           {notifications.map((notification) => (
             <div
@@ -153,7 +162,7 @@ export default async function AdminNotificationsPage() {
             </div>
           ) : null}
         </div>
-      </section>
-    </div>
+      </DashboardPrimaryPanel>
+    </AdminPageContainer>
   );
 }

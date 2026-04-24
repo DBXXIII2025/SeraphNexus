@@ -1,4 +1,5 @@
 import type { LeadSummaryMetrics } from "@/lib/leads";
+import { DashboardGrid, MetricCard } from "@/components/admin/AdminLayoutSystem";
 
 type Props = {
   summary: LeadSummaryMetrics;
@@ -50,7 +51,7 @@ const STAT_ITEMS: Array<{
 
 export default function LeadStatsCards({ summary }: Props) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <DashboardGrid className="sm:grid-cols-2 xl:grid-cols-3">
       {STAT_ITEMS.map((item) => {
         const value = summary[item.key];
         const accentClass =
@@ -61,7 +62,7 @@ export default function LeadStatsCards({ summary }: Props) {
               : "text-[var(--text-strong)]";
 
         return (
-          <div key={item.key} className="metric-card p-6">
+          <MetricCard key={item.key}>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="section-kicker">{item.label}</p>
@@ -70,9 +71,9 @@ export default function LeadStatsCards({ summary }: Props) {
               <div className="status-chip">Live</div>
             </div>
             <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">{item.detail}</p>
-          </div>
+          </MetricCard>
         );
       })}
-    </div>
+    </DashboardGrid>
   );
 }

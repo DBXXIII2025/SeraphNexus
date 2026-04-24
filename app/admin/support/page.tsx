@@ -7,6 +7,12 @@ import {
   markPlatformSupportRead,
 } from "@/lib/platformSupport";
 import { createAdminTranslator } from "@/lib/adminI18n";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 export const dynamic = "force-dynamic";
 
@@ -47,23 +53,25 @@ export default async function AdminSupportPage({
 
   if (!user) {
     return (
-      <div className="surface-card p-6 text-[var(--text-main)]">
-        <div className="empty-state">Sign in to contact platform support.</div>
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <div className="empty-state">Sign in to contact platform support.</div>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
   if (isPlatformAdmin) {
     return (
-      <div className="space-y-4 text-[var(--text-main)]">
-        <section className="surface-card p-6">
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
           <p className="section-kicker">Support</p>
           <h1 className="section-title">Platform support</h1>
           <div className="mt-4 rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
             The platform-owner account uses <Link href="/admin/messages" className="underline">/admin/messages</Link> for business-owner support threads and does not open tenant support requests.
           </div>
-        </section>
-      </div>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -72,16 +80,16 @@ export default async function AdminSupportPage({
 
   if (!business) {
     return (
-      <div className="space-y-4 text-[var(--text-main)]">
-        <section className="surface-card p-6">
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
           <p className="section-kicker">{t("support")}</p>
           <h1 className="section-title">{t("support")}</h1>
           <div className="mt-4 empty-state">
             Select or create an active business before contacting platform support. Support requests
             must be tied to a real business context.
           </div>
-        </section>
-      </div>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -108,8 +116,8 @@ export default async function AdminSupportPage({
   const errorMessage = params?.error ? ERROR_MESSAGES[String(params.error)] : null;
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card p-6">
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
         <div className="section-header-copy">
           <p className="section-kicker">{t("support")}</p>
           <h1 className="section-title">{t("support")}</h1>
@@ -117,7 +125,7 @@ export default async function AdminSupportPage({
             Contact Seraph Nexus support for issues tied to {business.name}.
           </p>
         </div>
-      </section>
+      </DashboardPrimaryPanel>
 
       {successMessage ? (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
@@ -130,8 +138,8 @@ export default async function AdminSupportPage({
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[340px,1fr]">
-        <section className="surface-card p-5">
+      <DashboardGrid className="xl:grid-cols-[340px,1fr]">
+        <DashboardSecondaryPanel>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">{t("messages")}</p>
@@ -178,9 +186,9 @@ export default async function AdminSupportPage({
               ))
             )}
           </div>
-        </section>
+        </DashboardSecondaryPanel>
 
-        <section className="surface-card p-5">
+        <DashboardPrimaryPanel>
           <div className="border-b border-[var(--border-soft)] pb-4">
             <p className="section-kicker">Support context</p>
             <h2 className="mt-2 text-lg font-semibold">
@@ -241,8 +249,8 @@ export default async function AdminSupportPage({
               </button>
             </div>
           </form>
-        </section>
-      </div>
-    </div>
+        </DashboardPrimaryPanel>
+      </DashboardGrid>
+    </AdminPageContainer>
   );
 }
