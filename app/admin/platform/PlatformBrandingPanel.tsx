@@ -8,10 +8,12 @@ import PlatformBrandMark, {
 
 type PlatformBrandingPanelProps = {
   siteName: string;
-  logoUrl: string | null;
+  previewLogoUrl: string | null;
+  storedLogoUrl: string | null;
   hasStoredLogo: boolean;
   logoAssetReachable: boolean;
   maxLogoBytes: number;
+  formId?: string;
 };
 
 type BrandingResponse = {
@@ -58,17 +60,20 @@ function withCacheBuster(logoUrl: string | null, updatedAt?: string) {
 
 export default function PlatformBrandingPanel({
   siteName,
-  logoUrl,
+  previewLogoUrl,
+  storedLogoUrl,
   hasStoredLogo,
   logoAssetReachable,
   maxLogoBytes,
+  formId,
 }: PlatformBrandingPanelProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [currentLogoUrl, setCurrentLogoUrl] = useState(logoUrl);
+  const [currentLogoUrl, setCurrentLogoUrl] = useState(previewLogoUrl);
+  const [currentStoredLogoUrl, setCurrentStoredLogoUrl] = useState(storedLogoUrl);
   const [logoIsStored, setLogoIsStored] = useState(hasStoredLogo);
   const [logoRenderState, setLogoRenderState] = useState<PlatformBrandRenderState>(
-    logoUrl ? (logoAssetReachable ? "loaded" : "loading") : "missing"
+    previewLogoUrl ? (logoAssetReachable ? "loaded" : "loading") : "missing"
   );
   const [statusCode, setStatusCode] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<"success" | "error" | null>(null);
@@ -120,6 +125,7 @@ export default function PlatformBrandingPanel({
 
       const nextLogoUrl = withCacheBuster(payload.logoUrl ?? null, payload.updatedAt);
       setCurrentLogoUrl(nextLogoUrl);
+      setCurrentStoredLogoUrl(payload.logoUrl ?? null);
       setLogoIsStored(Boolean(payload.logoUrl));
       setStatusTone("success");
       setStatusCode(payload.code || "platform-logo-updated");
@@ -180,6 +186,14 @@ export default function PlatformBrandingPanel({
       </div>
 
       <div className="mt-5 space-y-4">
+        {formId ? (
+          <input
+            type="hidden"
+            name="logo_url"
+            form={formId}
+            value={currentStoredLogoUrl || ""}
+          />
+        ) : null}
         <label className="text-sm text-[var(--text-soft)]">
           <span className="form-label">Replace logo</span>
           <input

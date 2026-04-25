@@ -119,6 +119,8 @@ export async function POST(req: Request) {
     const selectedElitePriceId = normalizeOptionalString(
       formData.get("elite_stripe_price_id_override")
     );
+    const hasLogoUrlField = formData.has("logo_url");
+    const submittedLogoUrl = normalizeOptionalString(formData.get("logo_url"));
     const trialFeeBps = parseFeeBasisPoints(formData.get("trial_transaction_fee_percent"), 1000);
     const proFeeBps = parseFeeBasisPoints(formData.get("pro_transaction_fee_percent"), 500);
     const eliteFeeBps = parseFeeBasisPoints(formData.get("elite_transaction_fee_percent"), 200);
@@ -174,7 +176,7 @@ export async function POST(req: Request) {
     const { data: existing, error: existingError } = await supabaseAdmin
       .from("platform_settings")
       .select(
-        "id, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
+        "id, logo_url, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
       )
       .limit(1)
       .maybeSingle();
@@ -190,6 +192,10 @@ export async function POST(req: Request) {
       ...payload,
       updated_at: new Date().toISOString(),
     };
+
+    if (hasLogoUrlField) {
+      nextPayload.logo_url = submittedLogoUrl;
+    }
 
     if (payload.pro_price_active) {
       const proPrice = await ensureManagedPlanStripePrice({

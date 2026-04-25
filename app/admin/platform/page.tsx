@@ -537,7 +537,12 @@ export default async function PlatformPage({
       </DashboardPrimaryPanel>
 
       <DashboardGrid className="xl:grid-cols-[1.05fr,0.95fr]">
-        <form action="/api/admin/platform" method="POST" className="dashboard-primary-panel space-y-5 p-6">
+        <form
+          id="platform-settings-form"
+          action="/api/admin/platform"
+          method="POST"
+          className="dashboard-primary-panel space-y-5 p-6"
+        >
           <input type="hidden" name="id" value={settings.id || ""} />
           <div className="section-header-copy">
             <p className="section-kicker">Platform Settings</p>
@@ -784,10 +789,12 @@ export default async function PlatformPage({
         <div className="space-y-6">
           <PlatformBrandingPanel
             siteName={platformSiteName}
-            logoUrl={platformLogoUrl}
+            previewLogoUrl={platformLogoUrl}
+            storedLogoUrl={settings.logo_url}
             hasStoredLogo={Boolean(settings.logo_url)}
             logoAssetReachable={platformLogoAsset.reachable}
             maxLogoBytes={MAX_PLATFORM_LOGO_BYTES}
+            formId="platform-settings-form"
           />
 
           <section className="dashboard-secondary-panel p-6">

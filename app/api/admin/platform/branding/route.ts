@@ -42,7 +42,7 @@ function respondWith(
 
 function isMissingBrandingColumnError(error: { code?: string | null; message?: string | null } | null) {
   const message = error?.message || "";
-  return error?.code === "42703" || message.includes("logo_url");
+  return message.includes("logo_url");
 }
 
 type PersistedBrandingRow = {
