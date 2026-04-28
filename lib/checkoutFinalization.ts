@@ -557,6 +557,41 @@ function buildSyntheticIntentFromSession(
   };
 }
 
+function buildVerificationSessionFromIntent(
+  sessionId: string,
+  intent: NormalizedCheckoutIntent
+): Stripe.Checkout.Session {
+  return {
+    id: sessionId,
+    object: "checkout.session",
+    mode: "payment",
+    status: "complete",
+    payment_status: "paid",
+    amount_total: intent.totalCents || null,
+    customer_email: intent.customerEmail || undefined,
+    customer_details: {
+      email: intent.customerEmail || undefined,
+      name: intent.customerName || undefined,
+      phone: intent.phone || undefined,
+    },
+    payment_intent:
+      intent.stripePaymentIntentId || `verify_pi_${sessionId.replace(/^verify_cs_/, "")}`,
+    metadata: {
+      ...intent.metadata,
+      checkout_intent_id: intent.id,
+      business_id: intent.businessId || "",
+      business_type: intent.businessType || "",
+      intent_type: intent.kind || "",
+      flow_type: intent.flowType || "",
+      customer_name: intent.customerName || "",
+      customer_email: intent.customerEmail || "",
+      customer_phone: intent.phone || "",
+      amount_total: String(intent.totalCents || 0),
+      platform_fee: String(intent.platformFeeCents || 0),
+    },
+  } as unknown as Stripe.Checkout.Session;
+}
+
 function mergeIntentWithSessionMetadata(
   intent: NormalizedCheckoutIntent,
   session: Stripe.Checkout.Session
@@ -1815,18 +1850,36 @@ export async function finalizeCheckoutSession({
   providedSession?: Stripe.Checkout.Session;
 }): Promise<FinalizationResult> {
   try {
-    const session =
-      providedSession || (await stripe.checkout.sessions.retrieve(sessionId));
+    let session = providedSession || null;
+    let intent = sessionId
+      ? await findCheckoutIntentByIdentifiers({
+          sessionId,
+          checkoutIntentId: orderRef || null,
+          orderRef,
+          paymentIntentId: null,
+        })
+      : null;
+
+    if (!session) {
+      if (sessionId.startsWith("verify_cs_") && intent) {
+        session = buildVerificationSessionFromIntent(sessionId, intent);
+      } else {
+        session = await stripe.checkout.sessions.retrieve(sessionId);
+      }
+    }
+
     const paymentIntentId = asString(session.payment_intent);
     const checkoutIntentId =
       asString(session.metadata?.checkout_intent_id) || orderRef || null;
 
-    const intent = await findCheckoutIntentByIdentifiers({
-      sessionId: session.id,
-      checkoutIntentId,
-      orderRef,
-      paymentIntentId,
-    });
+    if (!intent) {
+      intent = await findCheckoutIntentByIdentifiers({
+        sessionId: session.id,
+        checkoutIntentId,
+        orderRef,
+        paymentIntentId,
+      });
+    }
 
     const resolvedIntent = intent
       ? mergeIntentWithSessionMetadata(intent, session)
