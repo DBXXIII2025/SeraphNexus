@@ -6,45 +6,45 @@
   color-scheme: dark;
   --font-body: Arial, Helvetica, sans-serif;
   --font-heading: Arial, Helvetica, sans-serif;
-  --page-bg: #0c1017;
-  --section-bg: #10161f;
-  --surface: #161d27;
-  --surface-muted: #10161f;
-  --surface-raised: #1b2430;
-  --panel: #161d27;
-  --panel-strong: #1e2834;
-  --bg-card: #161d27;
-  --border: #243041;
-  --border-soft: #243041;
-  --border-strong: #334155;
-  --accent: #d8dee8;
-  --accent-strong: #b4bdc9;
-  --accent-soft: #edf2f7;
-  --accent-muted: rgba(216, 222, 232, 0.08);
-  --accent-border: #3a4758;
-  --accent-contrast: #111827;
-  --active-bg: rgba(209, 213, 219, 0.12);
-  --muted-bg: #1f2233;
+  --page-bg: #0b0c0e;
+  --section-bg: #111317;
+  --surface: #111317;
+  --surface-muted: #0f1114;
+  --surface-raised: #16191e;
+  --panel: #111317;
+  --panel-strong: #16191e;
+  --bg-card: #16191e;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-soft: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(212, 175, 55, 0.18);
+  --accent: #d4af37;
+  --accent-strong: #b08968;
+  --accent-soft: #e6c76a;
+  --accent-muted: rgba(212, 175, 55, 0.08);
+  --accent-border: rgba(212, 175, 55, 0.18);
+  --accent-contrast: #0b0c0e;
+  --active-bg: rgba(212, 175, 55, 0.12);
+  --muted-bg: #16191e;
   --destructive: #f87171;
   --destructive-bg: rgba(248, 113, 113, 0.12);
   --destructive-border: rgba(248, 113, 113, 0.26);
-  --success: #6ee7b7;
-  --success-bg: rgba(110, 231, 183, 0.12);
-  --success-border: rgba(110, 231, 183, 0.24);
-  --warning: #facc15;
-  --warning-bg: rgba(250, 204, 21, 0.12);
-  --warning-border: rgba(250, 204, 21, 0.24);
-  --info: #93c5fd;
-  --info-bg: rgba(147, 197, 253, 0.12);
-  --info-border: rgba(147, 197, 253, 0.24);
-  --text-main: #e6e8eb;
-  --text-strong: #f5f7fb;
-  --text-soft: #9eabbc;
-  --text-muted: #6d7a8d;
-  --shadow-soft: 0 18px 42px rgba(2, 6, 12, 0.34);
-  --shadow-card: 0 24px 64px rgba(2, 6, 12, 0.44);
-  --shadow-premium: 0 32px 86px rgba(2, 6, 12, 0.56);
-  --focus-ring: 0 0 0 3px rgba(216, 222, 232, 0.16);
+  --success: #c2a96a;
+  --success-bg: rgba(212, 175, 55, 0.12);
+  --success-border: rgba(212, 175, 55, 0.24);
+  --warning: #e6c76a;
+  --warning-bg: rgba(230, 199, 106, 0.14);
+  --warning-border: rgba(230, 199, 106, 0.24);
+  --info: #b08968;
+  --info-bg: rgba(176, 137, 104, 0.14);
+  --info-border: rgba(176, 137, 104, 0.26);
+  --text-main: #cfc8bb;
+  --text-strong: #f3efe7;
+  --text-soft: #8a8376;
+  --text-muted: #8a8376;
+  --shadow-soft: 0 16px 34px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 18px 42px rgba(0, 0, 0, 0.38);
+  --shadow-premium: 0 24px 56px rgba(0, 0, 0, 0.46);
+  --focus-ring: 0 0 0 3px rgba(212, 175, 55, 0.18);
   --bg-main: var(--page-bg);
   --surface-dark-undertone: var(--section-bg);
   --surface-dark-soft: var(--surface-muted);
@@ -156,9 +156,9 @@ button,
 
 .btn-secondary:hover,
 .btn-ghost:hover {
-  background: rgba(209, 213, 219, 0.08) !important;
-  border-color: var(--accent-border) !important;
-  color: var(--accent) !important;
+  background: rgba(212, 175, 55, 0.08) !important;
+  border-color: rgba(212, 175, 55, 0.32) !important;
+  color: var(--text-strong) !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
@@ -255,9 +255,9 @@ button:focus {
 .admin-system {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(212, 175, 55, 0.08), transparent 30%),
-    radial-gradient(circle at top right, rgba(45, 212, 191, 0.06), transparent 24%),
-    linear-gradient(180deg, #090d13 0%, #0b1118 45%, #0c1017 100%) !important;
+    radial-gradient(circle at top left, rgba(212, 175, 55, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(176, 137, 104, 0.06), transparent 24%),
+    linear-gradient(180deg, #0b0c0e 0%, #0d0f12 52%, #0b0c0e 100%) !important;
   color: var(--text-main) !important;
 }
 
@@ -291,9 +291,9 @@ button:focus {
   position: relative;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent) !important;
-  background: linear-gradient(180deg, rgba(18, 24, 34, 0.97), rgba(10, 15, 22, 0.98)) !important;
+  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(17, 19, 23, 0.98)) !important;
   color: var(--text-main) !important;
-  box-shadow: 0 26px 56px -44px rgba(0, 0, 0, 0.9) !important;
+  box-shadow: 0 22px 40px -34px rgba(0, 0, 0, 0.68) !important;
 }
 
 .admin-system-sidebar::before,
@@ -305,7 +305,7 @@ button:focus {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 45%);
+  background: linear-gradient(180deg, rgba(230, 199, 106, 0.045), transparent 45%);
 }
 
 .admin-system-sidebar {
@@ -360,8 +360,8 @@ button:focus {
   justify-content: center;
   overflow: hidden;
   border-radius: 0.95rem;
-  border: 1px solid rgba(216, 222, 232, 0.14) !important;
-  background: linear-gradient(180deg, rgba(216, 222, 232, 0.12), rgba(130, 144, 164, 0.08)) !important;
+  border: 1px solid rgba(212, 175, 55, 0.18) !important;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.14), rgba(176, 137, 104, 0.08)) !important;
   color: var(--accent) !important;
 }
 
@@ -382,7 +382,7 @@ button:focus {
 .admin-eyebrow,
 .admin-sidebar-title,
 .section-kicker {
-  color: #92a4bb !important;
+  color: var(--accent-soft) !important;
   font-size: 0.67rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -480,7 +480,7 @@ button:focus {
   width: 100%;
   justify-content: flex-start;
   color: var(--text-soft) !important;
-  background: rgba(255, 255, 255, 0.01) !important;
+  background: rgba(255, 255, 255, 0.015) !important;
 }
 
 .admin-nav-link:hover,
@@ -498,7 +498,7 @@ button:focus {
   justify-content: center;
   border-radius: 0.7rem;
   border: 1px solid color-mix(in srgb, var(--border-soft) 68%, transparent) !important;
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: rgba(212, 175, 55, 0.06) !important;
 }
 
 .admin-nav-label {
@@ -510,25 +510,25 @@ button:focus {
 }
 
 .admin-nav-link-active {
-  background: linear-gradient(180deg, rgba(216, 222, 232, 0.16), rgba(216, 222, 232, 0.1)) !important;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.18), rgba(176, 137, 104, 0.12)) !important;
   color: var(--text-strong) !important;
-  border-color: rgba(216, 222, 232, 0.18) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 18px 36px -30px rgba(2, 6, 12, 0.9) !important;
+  border-color: rgba(212, 175, 55, 0.32) !important;
+  box-shadow: inset 0 0 0 1px rgba(230, 199, 106, 0.05), 0 16px 28px -24px rgba(0, 0, 0, 0.7) !important;
 }
 
 .admin-nav-link-active .admin-nav-glyph {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(212, 175, 55, 0.14) !important;
+  border-color: rgba(212, 175, 55, 0.24) !important;
 }
 
 .admin-action-primary {
-  background: linear-gradient(180deg, rgba(216, 222, 232, 0.95), rgba(184, 194, 207, 0.92)) !important;
+  background: linear-gradient(180deg, #e6c76a, #d4af37) !important;
   color: var(--accent-contrast) !important;
-  border-color: rgba(216, 222, 232, 0.85) !important;
+  border-color: rgba(212, 175, 55, 0.42) !important;
 }
 
 .admin-action-secondary {
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: rgba(255, 255, 255, 0.025) !important;
   color: var(--text-strong) !important;
 }
 
@@ -565,8 +565,8 @@ button:focus {
 .dashboard-metric-card {
   border-radius: 1rem;
   border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent);
-  background: linear-gradient(180deg, rgba(18, 24, 34, 0.97), rgba(10, 15, 22, 0.98));
-  box-shadow: 0 26px 56px -44px rgba(0, 0, 0, 0.9);
+  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(17, 19, 23, 0.98));
+  box-shadow: 0 22px 40px -34px rgba(0, 0, 0, 0.68);
 }
 
 .dashboard-primary-panel,
@@ -590,8 +590,8 @@ button:focus {
 .admin-system .form-section {
   border-radius: 1rem !important;
   border: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent) !important;
-  background: linear-gradient(180deg, rgba(18, 24, 34, 0.97), rgba(10, 15, 22, 0.98)) !important;
-  box-shadow: 0 26px 56px -44px rgba(0, 0, 0, 0.9) !important;
+  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(17, 19, 23, 0.98)) !important;
+  box-shadow: 0 22px 40px -34px rgba(0, 0, 0, 0.68) !important;
 }
 
 .admin-system .surface-card,
@@ -616,9 +616,9 @@ button:focus {
   min-height: 1.8rem;
   border-radius: 999px !important;
   border: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
+  background: rgba(212, 175, 55, 0.08) !important;
   padding: 0.18rem 0.7rem !important;
-  color: var(--text-soft) !important;
+  color: var(--text-main) !important;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -637,7 +637,7 @@ button:focus {
 .admin-system .input-field {
   min-height: 2.7rem;
   border-radius: 0.85rem !important;
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
   color: var(--text-main) !important;
   border-color: color-mix(in srgb, var(--border-soft) 82%, transparent) !important;
 }
@@ -756,7 +756,7 @@ button:focus {
   width: 2.5rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(91, 62, 150, 0.24) !important;
+  border: 1px solid rgba(212, 175, 55, 0.18) !important;
   background: var(--accent-muted) !important;
   color: var(--accent) !important;
 }
@@ -863,7 +863,7 @@ button:focus {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(91, 62, 150, 0.22) !important;
+  border: 1px solid rgba(212, 175, 55, 0.18) !important;
   background: var(--accent-muted) !important;
   color: var(--accent) !important;
   font-weight: 700;
@@ -872,7 +872,7 @@ button:focus {
 .public-chip {
   display: inline-flex;
   width: fit-content;
-  border: 1px solid rgba(91, 62, 150, 0.2) !important;
+  border: 1px solid rgba(212, 175, 55, 0.18) !important;
   padding: 0.25rem 0.5rem;
   background: var(--accent-muted) !important;
   color: var(--accent) !important;
