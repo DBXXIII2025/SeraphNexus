@@ -197,27 +197,29 @@ export default function ShopClient({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          intentType: "order",
-          businessId,
-          businessType,
-          customer: {
-            name: customerName,
-            email: customerEmail,
-            phone: customerPhone,
+          type: "product",
+          business_id: businessId,
+          item_id: cart[0]?.id,
+          metadata: {
+            customer: {
+              name: customerName,
+              email: customerEmail,
+              phone: customerPhone,
+            },
+            fulfillment_type: fulfillmentType,
+            address: {
+              line1: addressLine1,
+              line2: addressLine2,
+              city: addressCity,
+              state: addressState,
+              postalCode: addressPostal,
+            },
+            notes,
+            items: cart.map((item) => ({
+              item_id: item.id,
+              quantity: item.quantity,
+            })),
           },
-          fulfillmentType,
-          address: {
-            line1: addressLine1,
-            line2: addressLine2,
-            city: addressCity,
-            state: addressState,
-            postalCode: addressPostal,
-          },
-          notes,
-          orderItems: cart.map((item) => ({
-            id: item.id,
-            quantity: item.quantity,
-          })),
         }),
       });
 

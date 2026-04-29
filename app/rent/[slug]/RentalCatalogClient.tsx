@@ -239,22 +239,20 @@ export default function RentalCatalogClient({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          intentType: "booking",
-          businessId: business.id,
-          customer: {
-            name: customerName,
-            email,
-            phone,
+          type: "rental",
+          business_id: business.id,
+          item_id: selectedPropertyId,
+          price: Number(selectedProperty?.price || 0),
+          metadata: {
+            customer: {
+              name: customerName,
+              email,
+              phone,
+            },
+            check_in: startDate,
+            check_out: endDate,
+            timezone: timeZone,
           },
-          serviceMode: "onsite",
-          propertyId: selectedPropertyId,
-          slot: {
-            date: startDate,
-            endDate,
-            startTime: "00:00",
-            endTime: "23:59",
-          },
-          timezone: timeZone,
         }),
       });
 

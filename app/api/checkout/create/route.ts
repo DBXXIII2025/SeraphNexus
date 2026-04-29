@@ -73,6 +73,47 @@ type NormalizedOrderItem = {
   name: string;
   price: number;
   quantity: number;
+  options?: unknown;
+};
+
+type UniversalCheckoutType = "service" | "rental" | "food" | "product";
+
+type UniversalCheckoutLineItem = {
+  item_id?: string;
+  id?: string;
+  quantity?: number | string;
+  qty?: number | string;
+  options?: unknown;
+};
+
+type UniversalCheckoutPayload = {
+  type?: UniversalCheckoutType;
+  business_id?: string;
+  item_id?: string;
+  price?: number | string;
+  verificationMode?: "draft" | "paid";
+  metadata?: {
+    customer?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+    };
+    quantity?: number | string;
+    options?: unknown;
+    items?: UniversalCheckoutLineItem[];
+    service_ids?: string[];
+    date?: string;
+    start_time?: string;
+    end_time?: string;
+    check_in?: string;
+    check_out?: string;
+    timezone?: string;
+    fulfillment_type?: "pickup" | "delivery";
+    service_mode?: "onsite" | "remote";
+    address?: AddressInput;
+    notes?: string;
+    verification_mode?: "draft" | "paid";
+  } & Record<string, unknown>;
 };
 
 type CheckoutPayload = {
@@ -102,6 +143,9 @@ type CheckoutPayload = {
   };
   timezone?: string;
   verificationMode?: "draft" | "paid";
+  universalType?: UniversalCheckoutType;
+  universalPrice?: number | null;
+  universalMetadata?: Record<string, unknown>;
 };
 
 type StripeLikeError = Error & {
@@ -161,7 +205,6 @@ type ServiceRow = {
   is_active?: boolean | null;
 };
 
-type BookingInsertRow = Database["public"]["Tables"]["bookings"]["Insert"];
 type CheckoutIntentRow = {
   id: string;
   status?: string | null;
@@ -177,14 +220,6 @@ type CheckoutIntentRow = {
   stripe_checkout_session_id?: string | null;
   metadata?: Record<string, unknown> | string | null;
   created_at?: string | null;
-};
-type PendingBookingLookupRow = {
-  id: string;
-  status?: string | null;
-  payment_status?: string | null;
-  stripe_session_id?: string | null;
-  payment_intent_id?: string | null;
-  metadata?: Record<string, unknown> | null;
 };
 
 function getBaseUrl(req: Request) {
@@ -204,9 +239,128 @@ function normalizeOrderItems(rawOrderItems: unknown): NormalizedOrderItem[] {
           name: String(raw.name ?? raw.title ?? "").trim(),
           price: Number(raw.price ?? raw.unit_price ?? raw.amount ?? 0),
           quantity: Number(raw.quantity ?? raw.qty ?? 1),
+          options:
+            typeof (raw as { options?: unknown }).options === "undefined"
+              ? undefined
+              : (raw as { options?: unknown }).options,
         };
       })
     : [];
+}
+
+function asObjectRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function asUniversalLineItems(value: unknown): UniversalCheckoutLineItem[] {
+  return Array.isArray(value)
+    ? value.map((item) => asObjectRecord(item) as UniversalCheckoutLineItem)
+    : [];
+}
+
+function isUniversalCheckoutPayload(value: unknown): value is UniversalCheckoutPayload {
+  const record = asObjectRecord(value);
+  return (
+    record.type === "service" ||
+    record.type === "rental" ||
+    record.type === "food" ||
+    record.type === "product"
+  );
+}
+
+function normalizeUniversalCheckoutPayload(payload: UniversalCheckoutPayload): CheckoutPayload {
+  const metadata = asObjectRecord(payload.metadata);
+  const customer = asObjectRecord(metadata.customer);
+  const baseLineItems = asUniversalLineItems(metadata.items);
+  const fallbackQuantity = Number(metadata.quantity ?? 1);
+  const itemId = String(payload.item_id || "").trim();
+  const universalItems =
+    baseLineItems.length > 0
+      ? baseLineItems.map((item) => ({
+          id: String(item.item_id ?? item.id ?? "").trim(),
+          quantity: Number(item.quantity ?? item.qty ?? 1),
+          options: item.options,
+        }))
+      : itemId
+        ? [
+            {
+              id: itemId,
+              quantity: Number.isFinite(fallbackQuantity) && fallbackQuantity > 0 ? fallbackQuantity : 1,
+              options: metadata.options,
+            },
+          ]
+        : [];
+
+  const normalized: CheckoutPayload = {
+    businessId: String(payload.business_id || "").trim(),
+    customer: {
+      name: String(customer.name || "").trim(),
+      email: String(customer.email || "").trim(),
+      phone: String(customer.phone || "").trim(),
+    },
+    address: asObjectRecord(metadata.address) as AddressInput,
+    notes: typeof metadata.notes === "string" ? metadata.notes : "",
+    verificationMode:
+      payload.verificationMode === "draft" || payload.verificationMode === "paid"
+        ? payload.verificationMode
+        : metadata.verification_mode === "draft" || metadata.verification_mode === "paid"
+          ? metadata.verification_mode
+        : undefined,
+    universalType: payload.type,
+    universalPrice: Number(payload.price ?? 0) || null,
+    universalMetadata: metadata,
+  };
+
+  if (payload.type === "service") {
+    const serviceIds = Array.isArray(metadata.service_ids)
+      ? metadata.service_ids.map((id) => String(id || "").trim()).filter(Boolean)
+      : itemId
+        ? [itemId]
+        : [];
+    normalized.intentType = "booking";
+    normalized.businessType = "service";
+    normalized.serviceId = serviceIds[0] || "";
+    normalized.serviceIds = serviceIds;
+    normalized.serviceMode =
+      metadata.service_mode === "onsite" || metadata.service_mode === "remote"
+        ? metadata.service_mode
+        : undefined;
+    normalized.slot = {
+      date: typeof metadata.date === "string" ? metadata.date : undefined,
+      startTime: typeof metadata.start_time === "string" ? metadata.start_time : undefined,
+      endTime: typeof metadata.end_time === "string" ? metadata.end_time : undefined,
+    };
+    return normalized;
+  }
+
+  if (payload.type === "rental") {
+    normalized.intentType = "booking";
+    normalized.businessType = "rental";
+    normalized.propertyId = itemId;
+    normalized.timezone = typeof metadata.timezone === "string" ? metadata.timezone : undefined;
+    normalized.slot = {
+      date: typeof metadata.check_in === "string" ? metadata.check_in : undefined,
+      endDate: typeof metadata.check_out === "string" ? metadata.check_out : undefined,
+      startTime: "00:00",
+      endTime: "23:59",
+    };
+    return normalized;
+  }
+
+  normalized.intentType = "order";
+  normalized.businessType = payload.type === "product" ? "product" : "food";
+  normalized.fulfillmentType =
+    metadata.fulfillment_type === "pickup" || metadata.fulfillment_type === "delivery"
+      ? metadata.fulfillment_type
+      : undefined;
+  normalized.orderItems = universalItems.map((item) => ({
+    id: item.id,
+    quantity: item.quantity,
+    options: item.options,
+  }));
+  return normalized;
 }
 
 function timeToMinutes(time: string) {
@@ -257,10 +411,6 @@ function summarizePayload(payload: CheckoutPayload) {
     hasCustomerEmail: isNonEmpty(payload.customer?.email),
     hasCustomerPhone: isNonEmpty(payload.customer?.phone),
   };
-}
-
-function toBookingPlatformFeeValue(applicationFeeCents: number) {
-  return Math.max(0, Math.round(applicationFeeCents / 100));
 }
 
 function normalizeUsdAmountToCents(value: number) {
@@ -520,67 +670,15 @@ async function maybeReuseOpenCheckoutSession(args: {
   return null;
 }
 
-async function findExistingPendingServiceBooking(args: {
-  supabaseAdmin: ReturnType<typeof createAdminClient>;
-  businessId: string;
-  bookingId?: string | null;
-  date: string;
-  startTime: string;
-  endTime: string;
-  customerEmail: string;
-  requestFingerprint: string;
-}) {
-  if (args.bookingId) {
-    const { data, error } = await args.supabaseAdmin
-      .from("bookings")
-      .select("id, status, payment_status, stripe_session_id, payment_intent_id, metadata")
-      .eq("id", args.bookingId)
-      .eq("business_id", args.businessId)
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (data) {
-      return data as PendingBookingLookupRow;
-    }
-  }
-
-  const { data, error } = await args.supabaseAdmin
-    .from("bookings")
-    .select("id, status, payment_status, stripe_session_id, payment_intent_id, metadata")
-    .eq("business_id", args.businessId)
-    .eq("date", args.date)
-    .eq("start_time", args.startTime)
-    .eq("end_time", args.endTime)
-    .eq("guest_email", args.customerEmail)
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (
-    ((data || []) as PendingBookingLookupRow[]).find((row) => {
-      const status = String(row.status || "").toLowerCase();
-      const paymentStatus = String(row.payment_status || "").toLowerCase();
-      return (
-        (status === "pending" || paymentStatus === "pending") &&
-        getMetadataValue(row.metadata || null, "request_fingerprint") ===
-          args.requestFingerprint
-      );
-    }) || null
-  );
-}
-
 export async function POST(req: Request) {
   const isDev = process.env.NODE_ENV !== "production";
   let step = "request.parse";
 
   try {
-    const payload = (await req.json()) as CheckoutPayload;
+    const rawPayload = (await req.json()) as unknown;
+    const payload = isUniversalCheckoutPayload(rawPayload)
+      ? normalizeUniversalCheckoutPayload(rawPayload)
+      : (rawPayload as CheckoutPayload);
     logCheckoutStage("request_received", summarizePayload(payload));
 
     const intentType = payload.intentType;
@@ -963,6 +1061,8 @@ export async function POST(req: Request) {
           id: item.id,
           quantity: item.quantity,
           price: item.price,
+          options:
+            normalizedOrderItems.find((rawItem) => rawItem.id === item.id)?.options ?? null,
         })),
       });
       logCheckoutStage("fee_resolved", {
@@ -1020,6 +1120,11 @@ export async function POST(req: Request) {
           customer_phone: customerPhone,
           phone: customerPhone,
           order_items: pricedOrderItems,
+          order_request_items: normalizedOrderItems.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            options: item.options ?? null,
+          })),
           item_count: pricedOrderItems.length,
           fulfillment_type: fulfillmentType,
           has_delivery_address: hasDeliveryAddress,
@@ -1034,6 +1139,9 @@ export async function POST(req: Request) {
           net_to_business_cents: netToBusinessCents,
           request_fingerprint: requestFingerprint,
           notes: payload.notes || "",
+          checkout_type: payload.universalType || orderFlowType,
+          requested_price: payload.universalPrice,
+          checkout_metadata: payload.universalMetadata || null,
         },
         amount_subtotal: subtotalCents,
         amount_tax: amountTax,
@@ -1133,6 +1241,13 @@ export async function POST(req: Request) {
         customer_phone: customerPhone,
         fulfillment_type: fulfillmentType,
         order_items: JSON.stringify(pricedOrderItems),
+        order_request_items: JSON.stringify(
+          normalizedOrderItems.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            options: item.options ?? null,
+          }))
+        ),
         address_json: JSON.stringify(addressInput),
         notes: payload.notes || "",
         amount_total: String(totalCents),
@@ -1142,6 +1257,9 @@ export async function POST(req: Request) {
         platform_fee_source: platformFee.source,
         net_to_business_cents: String(netToBusinessCents),
         request_fingerprint: requestFingerprint,
+        checkout_type: payload.universalType || orderFlowType,
+        requested_price: payload.universalPrice ? String(payload.universalPrice) : "",
+        checkout_metadata: JSON.stringify(payload.universalMetadata || {}),
       };
       const session =
         verificationMode
@@ -2062,6 +2180,7 @@ export async function POST(req: Request) {
       order_items: null,
       metadata: {
         intent_type: "booking",
+        flow_type: "service_booking",
         business_type: business.business_type,
         customer_name: customerName,
         customer_email: customerEmail,
@@ -2093,6 +2212,9 @@ export async function POST(req: Request) {
         demand_score: demandScore,
         price_adjustment: priceAdjustment,
         service_mode: serviceMode,
+        checkout_type: payload.universalType || "service",
+        requested_price: payload.universalPrice,
+        checkout_metadata: payload.universalMetadata || null,
       },
       amount_subtotal: subtotalCents,
       amount_tax: amountTax,
@@ -2109,7 +2231,6 @@ export async function POST(req: Request) {
     };
 
     let intentId: string | null = null;
-    let linkedBookingId: string | null = null;
     const existingIntent = await findMatchingPendingCheckoutIntent({
       supabaseAdmin,
       businessId: safeBusinessId,
@@ -2128,7 +2249,6 @@ export async function POST(req: Request) {
         businessId: safeBusinessId,
         serviceId: selectedService?.id || null,
         checkoutIntentId: existingIntent?.id || null,
-        bookingId: existingIntent?.booking_id || null,
         sessionId: reusableSession.sessionId,
       });
       return NextResponse.json({
@@ -2140,10 +2260,6 @@ export async function POST(req: Request) {
 
     if (existingIntent?.id && !existingIntent.stripe_checkout_session_id) {
       intentId = existingIntent.id;
-      linkedBookingId =
-        typeof existingIntent.booking_id === "string" && existingIntent.booking_id.trim()
-          ? existingIntent.booking_id.trim()
-          : null;
     } else {
       logCheckoutStage("db_write_start", {
         branch: "service_booking",
@@ -2176,143 +2292,10 @@ export async function POST(req: Request) {
       });
     }
 
-    const bookingPlatformFee = toBookingPlatformFeeValue(applicationFee);
-    step = "booking.insert_pending";
-    const pendingBookingPayload: BookingInsertRow = {
-      business_id: safeBusinessId,
-      guest_name: customerName,
-      guest_email: customerEmail,
-      guest_phone: customerPhone,
-      reminder_sent: false,
-      date: slot.date || null,
-      start_time: slot.startTime || null,
-      end_time: slot.endTime || null,
-      booking_time: `${slot.date || ""}T${slot.startTime || "00:00"}:00`,
-      duration_minutes: null,
-      status: "pending",
-      payment_status: "pending",
-      customer_email: customerEmail,
-      customer_name: customerName,
-      phone: customerPhone,
-      client_address:
-        serviceMode === "onsite"
-          ? [
-              addressInput.line1,
-              addressInput.line2,
-              addressInput.city,
-              addressInput.state,
-              addressInput.postalCode,
-            ]
-              .filter(Boolean)
-              .join(", ")
-          : null,
-      amount_total: totalCents,
-      total_amount: totalCents,
-      platform_fee: bookingPlatformFee,
-      metadata: {
-        service_id: selectedService?.id || null,
-        service_ids: selectedServices.map((service) => service.id),
-        service_name: selectedService?.name || null,
-        service_names: selectedServices.map((service) => service.name || "Service"),
-        service_mode: serviceMode || null,
-        checkout_intent_id: intentId || null,
-        application_fee_cents: applicationFee,
-        platform_fee_percent: feePercent,
-        platform_fee_bps: feeBasisPoints,
-        platform_fee_source: platformFee.source,
-        net_to_business_cents: netToBusinessCents,
-        request_fingerprint: requestFingerprint,
-      },
-    };
-
-    logCheckoutStage("db_write_start", {
-      branch: "service_booking",
-      target: "bookings",
-      action: "insert_pending",
-      businessId: safeBusinessId,
-      serviceId: selectedService?.id || null,
-      serviceIds: selectedServices.map((service) => service.id),
-      amountTotal: totalCents,
-      applicationFeeCents: applicationFee,
-      persistedBookingPlatformFee: bookingPlatformFee,
-    });
-    const reusableBooking = await findExistingPendingServiceBooking({
-      supabaseAdmin,
-      businessId: safeBusinessId,
-      bookingId: linkedBookingId,
-      date: String(slot.date || ""),
-      startTime: String(slot.startTime || ""),
-      endTime: String(slot.endTime || ""),
-      customerEmail,
-      requestFingerprint,
-    });
-
-    let pendingBookingId = reusableBooking?.id || null;
-
-    if (pendingBookingId) {
-      const { error: pendingBookingError } = await supabaseAdmin
-        .from("bookings")
-        .update(pendingBookingPayload)
-        .eq("id", pendingBookingId)
-        .eq("business_id", safeBusinessId);
-
-      if (pendingBookingError) {
-        logCheckoutStage("db_write_error", {
-          branch: "service_booking",
-          target: "bookings",
-          action: "update_pending",
-          businessId: safeBusinessId,
-          serviceId: selectedService?.id || null,
-          serviceIds: selectedServices.map((service) => service.id),
-          bookingId: pendingBookingId,
-          message: pendingBookingError.message,
-          applicationFeeCents: applicationFee,
-          persistedBookingPlatformFee: bookingPlatformFee,
-        });
-        throw new Error(pendingBookingError.message);
-      }
-    } else {
-      const { data: pendingBooking, error: pendingBookingError } = await supabaseAdmin
-        .from("bookings")
-        .insert(pendingBookingPayload)
-        .select("id")
-        .maybeSingle();
-
-      if (pendingBookingError || !pendingBooking?.id) {
-        logCheckoutStage("db_write_error", {
-          branch: "service_booking",
-          target: "bookings",
-          action: "insert_pending",
-          businessId: safeBusinessId,
-          serviceId: selectedService?.id || null,
-          message: pendingBookingError?.message || "Failed to create pending booking",
-          applicationFeeCents: applicationFee,
-          persistedBookingPlatformFee: bookingPlatformFee,
-        });
-        throw new Error(
-          pendingBookingError?.message || "Failed to create pending booking"
-        );
-      }
-
-      pendingBookingId = String(pendingBooking.id);
-    }
-
-    logCheckoutStage("db_write_success", {
-      branch: "service_booking",
-      target: "bookings",
-      action: reusableBooking?.id ? "update_pending" : "insert_pending",
-      businessId: safeBusinessId,
-      serviceId: selectedService?.id || null,
-      serviceIds: selectedServices.map((service) => service.id),
-      bookingId: pendingBookingId,
-      amountTotal: totalCents,
-    });
-
     logCheckoutStage("stripe_session_create_start", {
       branch: "service_booking",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
-      bookingId: pendingBookingId,
       amountTotal: totalCents,
     });
     step = "stripe.session.create";
@@ -2320,7 +2303,6 @@ export async function POST(req: Request) {
       kind: "checkout_intent",
       intent_type: "booking",
       checkout_intent_id: intentId || "",
-      booking_id: pendingBookingId,
       flow_type: "service_booking",
       business_id: safeBusinessId,
       business_type: business.business_type || "",
@@ -2344,6 +2326,9 @@ export async function POST(req: Request) {
       platform_fee_source: platformFee.source,
       net_to_business_cents: String(netToBusinessCents),
       request_fingerprint: requestFingerprint,
+      checkout_type: payload.universalType || "service",
+      requested_price: payload.universalPrice ? String(payload.universalPrice) : "",
+      checkout_metadata: JSON.stringify(payload.universalMetadata || {}),
     };
     const session =
       verificationMode
@@ -2394,64 +2379,6 @@ export async function POST(req: Request) {
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
       serviceIds: selectedServices.map((service) => service.id),
-      bookingId: pendingBookingId,
-      sessionId: session.id,
-    });
-
-    logCheckoutStage("db_write_start", {
-      branch: "service_booking",
-      target: "bookings",
-      action: "attach_session",
-      businessId: safeBusinessId,
-      serviceId: selectedService?.id || null,
-      serviceIds: selectedServices.map((service) => service.id),
-      bookingId: pendingBookingId,
-      sessionId: session.id,
-      paymentIntentId:
-        typeof session.payment_intent === "string" ? session.payment_intent : null,
-    });
-
-    const pendingBookingMetadata = {
-      ...((pendingBookingPayload.metadata || {}) as Record<string, unknown>),
-      checkout_intent_id: intentId || null,
-      stripe_session_id: session.id,
-      payment_intent_id:
-        typeof session.payment_intent === "string" ? session.payment_intent : null,
-    };
-
-    const { error: pendingBookingSessionError } = await supabaseAdmin
-      .from("bookings")
-      .update({
-        stripe_session_id: session.id,
-        payment_intent_id:
-          typeof session.payment_intent === "string" ? session.payment_intent : null,
-        metadata: pendingBookingMetadata,
-      })
-      .eq("id", pendingBookingId)
-      .eq("business_id", safeBusinessId);
-
-    if (pendingBookingSessionError) {
-      logCheckoutStage("db_write_error", {
-        branch: "service_booking",
-        target: "bookings",
-        action: "attach_session",
-        businessId: safeBusinessId,
-        serviceId: selectedService?.id || null,
-        bookingId: pendingBookingId,
-        sessionId: session.id,
-        message: pendingBookingSessionError.message,
-      });
-      throw new Error(pendingBookingSessionError.message);
-    }
-
-    logCheckoutStage("db_write_success", {
-      branch: "service_booking",
-      target: "bookings",
-      action: "attach_session",
-      businessId: safeBusinessId,
-      serviceId: selectedService?.id || null,
-      serviceIds: selectedServices.map((service) => service.id),
-      bookingId: pendingBookingId,
       sessionId: session.id,
     });
 
@@ -2463,18 +2390,12 @@ export async function POST(req: Request) {
           stripe_checkout_session_id: session.id,
           stripe_payment_intent_id:
             typeof session.payment_intent === "string" ? session.payment_intent : null,
-          booking_id: pendingBookingId,
-          metadata: {
-            ...intentInsertPayload.metadata,
-            booking_id: pendingBookingId,
-          },
         },
         context: {
           businessId: safeBusinessId,
           intentType: "booking",
           flowType: "service_booking",
           businessType: business.business_type || null,
-          bookingId: pendingBookingId,
           sessionId: session.id,
         },
       });
@@ -2485,7 +2406,6 @@ export async function POST(req: Request) {
           intentType: "booking",
           flowType: "service_booking",
           checkoutIntentId: intentId,
-          bookingId: pendingBookingId,
           sessionId: session.id,
           removedColumns: sessionUpdateResult.removedColumns,
           message: sessionUpdateResult.message,
@@ -2493,26 +2413,10 @@ export async function POST(req: Request) {
       }
     }
 
-    const { error: bookingSessionUpdateError } = await supabaseAdmin
-      .from("bookings")
-      .update({
-        stripe_session_id: session.id,
-      })
-      .eq("id", pendingBookingId);
-
-    if (bookingSessionUpdateError) {
-      step = "booking.update_session";
-      throw new Error(
-        bookingSessionUpdateError.message ||
-          "Failed to attach Stripe checkout session to booking"
-      );
-    }
-
     logCheckoutStage("checkout_ready", {
       branch: "service_booking",
       businessId: safeBusinessId,
       serviceId: selectedService?.id || null,
-      bookingId: pendingBookingId,
       sessionId: session.id,
     });
 

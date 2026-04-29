@@ -134,17 +134,20 @@ export async function POST(req: Request) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          intentType: "order",
-          businessId,
-          customer: {
-            name: body.customerName,
-            email: body.customerEmail,
-            phone: body.customerPhone,
+          type: "product",
+          business_id: businessId,
+          item_id: productId,
+          metadata: {
+            customer: {
+              name: body.customerName,
+              email: body.customerEmail,
+              phone: body.customerPhone,
+            },
+            fulfillment_type: fulfillmentType,
+            address: body.address,
+            notes: body.notes,
+            quantity,
           },
-          fulfillmentType,
-          address: body.address,
-          notes: body.notes,
-          orderItems: [{ id: productId, quantity }],
         }),
       })
     );

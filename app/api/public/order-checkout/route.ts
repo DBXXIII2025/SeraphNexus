@@ -22,23 +22,30 @@ type LegacyOrderCheckoutPayload = {
 export async function POST(req: Request) {
   const body = (await req.json()) as LegacyOrderCheckoutPayload;
   const forwardedBody = {
-    intentType: "order",
-    businessId: body.businessId,
-    customer: {
-      name: body.customerName,
-      email: body.customerEmail,
-      phone: body.customerPhone,
+    type: "food",
+    business_id: body.businessId,
+    item_id: String(
+      ((body.orderItems ?? body.items ?? body.cart ?? [])[0] as { id?: string } | undefined)?.id || ""
+    ),
+    metadata: {
+      customer: {
+        name: body.customerName,
+        email: body.customerEmail,
+        phone: body.customerPhone,
+      },
+      fulfillment_type: body.fulfillmentType,
+      address: body.address,
+      notes: body.notes,
+      items: body.orderItems ?? body.items ?? body.cart ?? [],
     },
-    fulfillmentType: body.fulfillmentType,
-    address: body.address,
-    notes: body.notes,
-    items: body.orderItems ?? body.items ?? body.cart ?? [],
   };
 
   if (process.env.NODE_ENV !== "production") {
     console.log("[public/order-checkout] forwarding to shared checkout route:", {
       businessId: body.businessId || null,
-      itemCount: Array.isArray(forwardedBody.items) ? forwardedBody.items.length : 0,
+      itemCount: Array.isArray(forwardedBody.metadata.items)
+        ? forwardedBody.metadata.items.length
+        : 0,
       fulfillmentType: body.fulfillmentType || null,
     });
   }

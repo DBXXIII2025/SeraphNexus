@@ -1315,70 +1315,72 @@ function auditBookingClientSource() {
 
 function getServicePayload(seed, slot) {
   return {
-    intentType: "booking",
-    businessId: seed.business.id,
-    businessType: seed.business.business_type,
-    serviceId: seed.services[0].id,
-    customer: {
-      name: REQUEST_NAME,
-      email: REQUEST_EMAIL,
-      phone: REQUEST_PHONE,
-    },
-    serviceMode: "remote",
-    slot: {
+    type: "service",
+    business_id: seed.business.id,
+    item_id: seed.services[0].id,
+    price: seed.services[0].price,
+    metadata: {
+      customer: {
+        name: REQUEST_NAME,
+        email: REQUEST_EMAIL,
+        phone: REQUEST_PHONE,
+      },
+      service_mode: "remote",
       date: slot.date,
-      startTime: slot.start,
-      endTime: slot.end,
+      start_time: slot.start,
+      end_time: slot.end,
     },
   };
 }
 
 function getRentalPayload(seed, stay) {
   return {
-    intentType: "booking",
-    businessId: seed.business.id,
-    businessType: seed.business.business_type,
-    propertyId: seed.property.id,
-    customer: {
-      name: REQUEST_NAME,
-      email: REQUEST_EMAIL,
-      phone: REQUEST_PHONE,
-    },
-    slot: {
-      date: stay.startDate,
-      endDate: stay.endDate,
+    type: "rental",
+    business_id: seed.business.id,
+    item_id: seed.property.id,
+    price: seed.property.price,
+    metadata: {
+      customer: {
+        name: REQUEST_NAME,
+        email: REQUEST_EMAIL,
+        phone: REQUEST_PHONE,
+      },
+      check_in: stay.startDate,
+      check_out: stay.endDate,
     },
   };
 }
 
 function getOrderPayload(seed) {
+  const checkoutType =
+    seed.business.business_type === "restaurant" || seed.business.business_type === "food"
+      ? "food"
+      : "product";
   return {
-    intentType: "order",
-    businessId: seed.business.id,
-    businessType: seed.business.business_type,
-    fulfillmentType:
-      seed.business.business_type === "restaurant" || seed.business.business_type === "food"
-        ? "pickup"
-        : "delivery",
-    customer: {
-      name: REQUEST_NAME,
-      email: REQUEST_EMAIL,
-      phone: REQUEST_PHONE,
-    },
-    address: {
-      line1: "123 Verify St",
-      city: "Dallas",
-      state: "TX",
-      postalCode: "75001",
-    },
-    orderItems: [
-      {
-        id: seed.products[0].id,
-        name: seed.products[0].name,
-        price: seed.products[0].price,
-        quantity: 1,
+    type: checkoutType,
+    business_id: seed.business.id,
+    item_id: seed.products[0].id,
+    price: seed.products[0].price,
+    metadata: {
+      fulfillment_type: checkoutType === "food" ? "pickup" : "delivery",
+      customer: {
+        name: REQUEST_NAME,
+        email: REQUEST_EMAIL,
+        phone: REQUEST_PHONE,
       },
-    ],
+      address: {
+        line1: "123 Verify St",
+        city: "Dallas",
+        state: "TX",
+        postalCode: "75001",
+      },
+      items: [
+        {
+          item_id: seed.products[0].id,
+          quantity: 1,
+        },
+      ],
+    },
   };
 }
 
@@ -1609,7 +1611,14 @@ async function verifyServiceModeToggles(supabase, seed, results) {
         start: "09:00",
         end: "09:30",
       }),
-      serviceMode: "remote",
+      metadata: {
+        ...getServicePayload(seed, {
+          date: formatDate(addDays(new Date(), 7)),
+          start: "09:00",
+          end: "09:30",
+        }).metadata,
+        service_mode: "remote",
+      },
       verificationMode: "draft",
     },
     "CHECKOUT_REMOTE_DISABLED",
@@ -1631,7 +1640,14 @@ async function verifyServiceModeToggles(supabase, seed, results) {
         start: "09:00",
         end: "09:30",
       }),
-      serviceMode: "onsite",
+      metadata: {
+        ...getServicePayload(seed, {
+          date: formatDate(addDays(new Date(), 8)),
+          start: "09:00",
+          end: "09:30",
+        }).metadata,
+        service_mode: "onsite",
+      },
       verificationMode: "draft",
     },
     "CHECKOUT_ONSITE_DISABLED",
@@ -1658,7 +1674,10 @@ async function verifyOrderModeToggles(supabase, seed, results) {
     "/api/checkout/create",
     {
       ...getOrderPayload(seed),
-      fulfillmentType: "delivery",
+      metadata: {
+        ...getOrderPayload(seed).metadata,
+        fulfillment_type: "delivery",
+      },
       verificationMode: "draft",
     },
     "CHECKOUT_DELIVERY_DISABLED",
@@ -1676,7 +1695,10 @@ async function verifyOrderModeToggles(supabase, seed, results) {
     "/api/checkout/create",
     {
       ...getOrderPayload(seed),
-      fulfillmentType: "pickup",
+      metadata: {
+        ...getOrderPayload(seed).metadata,
+        fulfillment_type: "pickup",
+      },
       verificationMode: "draft",
     },
     "CHECKOUT_PICKUP_DISABLED",
@@ -1737,19 +1759,28 @@ async function exerciseServiceFlow(supabase, seed, session, results) {
     start: thirdSlot.start,
     end: thirdSlot.end,
   });
+  const beforeDraftIntents = await countRows(supabase, "checkout_intents", {
+    business_id: seed.business.id,
+    customer_email: REQUEST_EMAIL,
+  });
   const beforePending = await countRows(supabase, "bookings", {
     business_id: seed.business.id,
     guest_email: REQUEST_EMAIL,
   });
   const draftOne = await postJson("/api/checkout/create", { ...serviceDraftPayload, verificationMode: "draft" });
   const draftTwo = await postJson("/api/checkout/create", { ...serviceDraftPayload, verificationMode: "draft" });
+  const afterDraftIntents = await countRows(supabase, "checkout_intents", {
+    business_id: seed.business.id,
+    customer_email: REQUEST_EMAIL,
+  });
   const afterPending = await countRows(supabase, "bookings", {
     business_id: seed.business.id,
     guest_email: REQUEST_EMAIL,
   });
 
   assert(draftOne.sessionId === draftTwo.sessionId, "Service draft checkout did not reuse the canonical session.");
-  assert(afterPending === beforePending + 1, "Service draft checkout created duplicate local bookings.");
+  assert(afterDraftIntents === beforeDraftIntents + 1, "Service draft checkout created duplicate intents.");
+  assert(afterPending === beforePending, "Service draft checkout should not create a booking before payment.");
 
   const paidPayload = getServicePayload(seed, {
     date: targetDate,
@@ -1915,19 +1946,14 @@ async function runSmoke(supabase) {
     await exerciseOrderFlow(supabase, seeded.restaurant, restaurantSession, results);
     await exerciseOrderFlow(supabase, seeded.food, foodSession, results);
     await exerciseOrderFlow(supabase, seeded.store, storeSession, results);
+    await exerciseOrderFlow(supabase, seeded.product, productSession, results);
 
     await verifyOrderModeToggles(supabase, seeded.creator, results);
     await expectOk(seeded.creator.fixture.publicPath, null, "creator-public-page");
     for (const adminPath of seeded.creator.fixture.adminPaths) {
       await expectOk(adminPath, creatorSession, `creator-admin:${adminPath}`);
     }
-    await verifyOrderModeToggles(supabase, seeded.product, results);
-    await expectOk(seeded.product.fixture.publicPath, null, "product-public-page");
-    for (const adminPath of seeded.product.fixture.adminPaths) {
-      await expectOk(adminPath, productSession, `product-admin:${adminPath}`);
-    }
     results.exercised.push("creator public/admin route loads");
-    results.exercised.push("product public/admin route loads");
 
     console.log(JSON.stringify(results, null, 2));
     return results;
