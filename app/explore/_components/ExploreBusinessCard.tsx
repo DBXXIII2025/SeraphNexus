@@ -1,67 +1,80 @@
 "use client";
 
 import Link from "next/link";
-import { BusinessViewModel, formatBusinessType, getCategoryMeta } from "../exploreData";
-import StructuredIcon from "@/components/icons/StructuredIcon";
+import { formatBusinessType, type BusinessViewModel } from "../exploreData";
+
+function getSummary(business: BusinessViewModel) {
+  const summary = business.displayDescription?.trim() || business.routeSummary;
+  return summary.length > 118 ? `${summary.slice(0, 115).trimEnd()}...` : summary;
+}
+
+function getActionLabel(business: BusinessViewModel) {
+  switch (business.routeState.routeId) {
+    case "book":
+      return "Book";
+    case "rent":
+      return "Rent";
+    case "order":
+      return "Order";
+    case "shop":
+      return "Shop";
+    default:
+      return "View";
+  }
+}
 
 export default function ExploreBusinessCard({
   business,
-  featured = false,
 }: {
   business: BusinessViewModel;
-  featured?: boolean;
 }) {
-  const category = getCategoryMeta(business.categoryId);
+  const summary = getSummary(business);
+  const actionLabel = getActionLabel(business);
 
   return (
-    <Link href={business.routeState.href} className="group block h-full text-inherit no-underline">
-      <article className="h-full">
-        <div className="flex h-full min-h-[218px] w-full flex-col overflow-hidden rounded-[1rem] border border-[rgba(52,56,74,0.72)] bg-[var(--surface)] shadow-[0_10px_22px_rgba(6,8,18,0.18)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[rgba(59,63,85,0.95)] group-hover:shadow-[0_14px_26px_rgba(6,8,18,0.24)]">
-          <div className="relative aspect-[16/9] overflow-hidden border-b border-[rgba(52,56,74,0.68)] bg-[var(--surface-raised)]">
-            {business.thumbnailUrl ? (
-              <img
-                src={business.thumbnailUrl}
-                alt={`${business.displayName} thumbnail`}
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(209,213,219,0.12),rgba(38,42,61,0.92))]">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] text-sm font-semibold uppercase tracking-[0.1em] text-[var(--accent-soft)]">
-                  {business.initials}
-                </div>
-              </div>
-            )}
-            <div className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-[var(--accent-border)] bg-[rgba(24,26,42,0.78)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--accent-soft)]">
-              <StructuredIcon name={business.iconName} className="h-3 w-3" />
-              <span>{category.shortLabel}</span>
-            </div>
-            {featured ? (
-              <div className="absolute right-2.5 top-2.5 rounded-full border border-[rgba(52,56,74,0.68)] bg-[rgba(24,26,42,0.78)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--text-strong)]">
-                Featured
-              </div>
-            ) : null}
+    <article className="group flex h-full flex-col overflow-hidden rounded-[1rem] border border-[var(--border-soft)] bg-[linear-gradient(180deg,rgba(22,25,30,0.98),rgba(17,19,23,0.98))] shadow-[0_14px_28px_rgba(0,0,0,0.28)] transition duration-200 hover:-translate-y-0.5 hover:border-[rgba(212,175,55,0.18)] hover:shadow-[0_18px_34px_rgba(0,0,0,0.34)]">
+      <div className="relative aspect-[16/10] overflow-hidden border-b border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)]">
+        {business.thumbnailUrl ? (
+          <img
+            src={business.thumbnailUrl}
+            alt={`${business.displayName} logo`}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(212,175,55,0.08),rgba(255,255,255,0.02))]">
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(255,255,255,0.03)] text-base font-semibold uppercase tracking-[0.08em] text-[var(--accent-soft)]">
+              {business.initials}
+            </span>
           </div>
+        )}
 
-          <div className="flex flex-1 flex-col gap-1.5 px-3 py-2.5">
-            <div className="min-w-0">
-              <h3 className="truncate text-[0.875rem] font-semibold leading-5 text-[var(--text-strong)]">
-                {business.displayName}
-              </h3>
-              <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.08em] text-[var(--text-muted)]">
-                {formatBusinessType(business.business_type)}
-              </p>
-            </div>
-
-            <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-[var(--text-soft)]">
-              <p className="truncate leading-4">{business.locationLabel}</p>
-              <span className="shrink-0 rounded-full border border-[rgba(52,56,74,0.68)] bg-[var(--surface-raised)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--text-strong)]">
-                {business.routeLabel}
-              </span>
-            </div>
-          </div>
+        <div className="absolute left-3 top-3 inline-flex items-center rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(11,12,14,0.78)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--accent-soft)]">
+          {formatBusinessType(business.business_type)}
         </div>
-      </article>
-    </Link>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="space-y-2">
+          <h3 className="line-clamp-1 text-[1rem] font-semibold text-[var(--text-strong)]">
+            {business.displayName}
+          </h3>
+          <p className="line-clamp-3 text-sm leading-6 text-[var(--text-soft)]">{summary}</p>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-3">
+          <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--text-muted)]">
+            {actionLabel}
+          </span>
+
+          <Link
+            href={business.routeState.href}
+            className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[rgba(212,175,55,0.32)] bg-[linear-gradient(180deg,#e6c76a,#d4af37)] px-4 text-sm font-semibold text-[var(--accent-contrast)] no-underline"
+          >
+            {actionLabel}
+          </Link>
+        </div>
+      </div>
+    </article>
   );
 }

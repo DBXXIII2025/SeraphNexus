@@ -1,25 +1,48 @@
 "use client";
 
-import Link from "next/link";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import ExploreLayout from "./_components/ExploreLayout";
-import ExploreSidebar from "./_components/ExploreSidebar";
-import ExploreGrid from "./_components/ExploreGrid";
+import { useDeferredValue, useMemo, useState } from "react";
 import {
   PublicActionLink,
-  PublicHero,
-  PublicSection,
+  PublicSiteShell,
   PublicTopNav,
+  PublicEmptyState,
 } from "@/components/public/PublicLayoutSystem";
 import {
   buildBusinessViewModels,
-  Business,
-  ExploreCategoryId,
-  ExploreRouteFilterId,
-  EXPLORE_CATEGORIES,
-  PlatformSettings,
+  type Business,
+  type BusinessViewModel,
+  type PlatformSettings,
 } from "./exploreData";
+import ExploreGrid from "./_components/ExploreGrid";
 import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
+
+type MarketplaceCategory = "all" | "services" | "rentals" | "food" | "shops";
+
+const CATEGORY_PILLS: Array<{
+  id: MarketplaceCategory;
+  label: string;
+}> = [
+  { id: "all", label: "All" },
+  { id: "services", label: "Services" },
+  { id: "rentals", label: "Rentals" },
+  { id: "food", label: "Food" },
+  { id: "shops", label: "Shops" },
+];
+
+function matchesMarketplaceCategory(
+  business: BusinessViewModel,
+  category: MarketplaceCategory
+) {
+  if (category === "all") {
+    return true;
+  }
+
+  if (category === "shops") {
+    return business.categoryId === "store" || business.categoryId === "creators";
+  }
+
+  return business.categoryId === category;
+}
 
 export default function ExploreClient({
   businesses,
@@ -31,109 +54,30 @@ export default function ExploreClient({
   settings: PlatformSettings;
 }) {
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<ExploreCategoryId>("services");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [routeFilter, setRouteFilter] = useState<ExploreRouteFilterId>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "public-ready">("all");
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const [category, setCategory] = useState<MarketplaceCategory>("all");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
-  const actionsMenuRef = useRef<HTMLDivElement | null>(null);
 
   const businessViews = useMemo(() => buildBusinessViewModels(businesses), [businesses]);
-  const rawBusinessTypes = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          businesses
-            .map((business) => String(business.business_type || "").trim())
-            .filter(Boolean)
-        )
-      ).sort(),
-    [businesses]
-  );
+
+  const filteredBusinesses = useMemo(() => {
+    return businessViews.filter((business) => {
+      const matchesCategory = matchesMarketplaceCategory(business, category);
+      const matchesSearch =
+        !deferredSearch || business.displayName.toLowerCase().includes(deferredSearch);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [businessViews, category, deferredSearch]);
+
   const categoryCounts = useMemo(() => {
-    return EXPLORE_CATEGORIES.reduce<Record<ExploreCategoryId, number>>((acc, category) => {
-      acc[category.id] = businessViews.filter((business) => business.categoryId === category.id).length;
+    return CATEGORY_PILLS.reduce<Record<MarketplaceCategory, number>>((acc, pill) => {
+      acc[pill.id] = businessViews.filter((business) =>
+        matchesMarketplaceCategory(business, pill.id)
+      ).length;
       return acc;
-    }, {} as Record<ExploreCategoryId, number>);
+    }, {} as Record<MarketplaceCategory, number>);
   }, [businessViews]);
 
-  const visibleTypes = useMemo(() => {
-    const filtered = businessViews.filter((business) => {
-      return business.categoryId === categoryFilter;
-    });
-
-    return Array.from(new Set(filtered.map((business) => business.normalizedType).filter(Boolean))).sort();
-  }, [businessViews, categoryFilter]);
-
-  const sortedBusinesses = useMemo(() => {
-    const filtered = businessViews.filter((business) => {
-      const matchesSearch =
-        !deferredSearch ||
-        [
-          business.displayName,
-          business.displayDescription,
-          business.normalizedType,
-          business.routeLabel,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(deferredSearch);
-
-      const matchesCategory =
-        business.categoryId === categoryFilter;
-      const matchesType = typeFilter === "all" || business.normalizedType === typeFilter;
-      const matchesRoute = routeFilter === "all" || business.routeState.routeId === routeFilter;
-      const matchesStatus =
-        statusFilter === "all" || business.routeState.isRoutable;
-
-      return matchesSearch && matchesCategory && matchesType && matchesRoute && matchesStatus;
-    });
-
-    return filtered;
-  }, [businessViews, categoryFilter, deferredSearch, routeFilter, statusFilter, typeFilter]);
-
-  useEffect(() => {
-    if (typeFilter !== "all" && !visibleTypes.includes(typeFilter)) {
-      console.info("[explore] stale type filter reset", {
-        categoryFilter,
-        previousTypeFilter: typeFilter,
-        visibleTypes,
-      });
-      setTypeFilter("all");
-    }
-  }, [categoryFilter, typeFilter, visibleTypes]);
-
-  useEffect(() => {
-    console.info("[explore] filter result counts", {
-      search: deferredSearch,
-      categoryFilter,
-      typeFilter,
-      routeFilter,
-      statusFilter,
-      resultCount: sortedBusinesses.length,
-      totalCount: businessViews.length,
-      categoryCounts,
-    });
-  }, [
-    businessViews.length,
-    categoryCounts,
-    categoryFilter,
-    deferredSearch,
-    routeFilter,
-    sortedBusinesses.length,
-    statusFilter,
-    typeFilter,
-  ]);
-
-  const featuredBusinesses = useMemo(() => {
-    return businessViews
-      .filter(
-        (business) => business.routeState.isRoutable && business.categoryId === categoryFilter
-      )
-      .slice(0, 3);
-  }, [businessViews, categoryFilter]);
   const platformName = resolvePlatformName(settings);
   const platformLogoUrl = resolvePlatformLogoUrl(settings);
   const platformInitials =
@@ -147,263 +91,101 @@ export default function ExploreClient({
     ? "/onboarding/create-business"
     : "/login?next=/onboarding/create-business";
 
-  const accountHref = "/admin";
-  const hasActiveFilters =
-    Boolean(search.trim()) ||
-    typeFilter !== "all" ||
-    routeFilter !== "all" ||
-    statusFilter !== "all";
-
-  const clearFilters = () => {
-    setSearch("");
-    setCategoryFilter("services");
-    setTypeFilter("all");
-    setRouteFilter("all");
-    setStatusFilter("all");
-  };
-
-  useEffect(() => {
-    console.info("[explore] raw business_type values loaded", {
-      rawBusinessTypes,
-    });
-  }, [rawBusinessTypes]);
-
-  useEffect(() => {
-    console.info("[explore] active tab", {
-      activeCategory: categoryFilter,
-      activeCategoryLabel: EXPLORE_CATEGORIES.find((category) => category.id === categoryFilter)?.label,
-      filteredResultCount: sortedBusinesses.length,
-    });
-  }, [categoryFilter, sortedBusinesses.length]);
-
-  useEffect(() => {
-    if (!actionsOpen) {
-      return;
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!actionsMenuRef.current?.contains(event.target as Node)) {
-        setActionsOpen(false);
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setActionsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [actionsOpen]);
-
-  const header = (
-    <>
-      <PublicTopNav
-        brand={platformName}
-        initials={platformInitials}
-        logoUrl={platformLogoUrl}
-        actions={
-          <>
-            <PublicActionLink href="/explore" tone="primary">Explore</PublicActionLink>
-
-            <div ref={actionsMenuRef} className="relative">
-              <button
-                type="button"
-                aria-expanded={actionsOpen}
-                aria-haspopup="menu"
-                onClick={() => setActionsOpen((value) => !value)}
-                className="public-action-secondary gap-2"
-              >
-                <span>{isLoggedIn ? "Actions" : "Account"}</span>
-                <span>{actionsOpen ? "Close" : "Open"}</span>
-              </button>
-
-            {actionsOpen ? (
-              <div className="public-card absolute right-0 top-full z-20 mt-3 w-[240px] p-3">
-                <div className="mb-3 px-2">
-                  <p>
-                    {isLoggedIn ? "Workspace Actions" : "Public Actions"}
-                  </p>
-                </div>
-
-                <div className="grid gap-2">
-                  {!isLoggedIn ? (
-                    <>
-                      <Link
-                        href="/login"
-                        onClick={() => setActionsOpen(false)}
-                        className="public-action-secondary justify-start"
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        href="/signup"
-                        onClick={() => setActionsOpen(false)}
-                        className="public-action-secondary justify-start"
-                      >
-                        Sign Up
-                      </Link>
-                    </>
-                  ) : (
-                    <Link
-                      href={accountHref}
-                      onClick={() => setActionsOpen(false)}
-                      className="public-action-secondary justify-start"
-                    >
-                      My Account
-                    </Link>
-                  )}
-
-                  <Link
-                    href={createBusinessHref}
-                    onClick={() => setActionsOpen(false)}
-                    className="public-action-primary justify-start"
-                  >
-                    Create Business
-                  </Link>
-                </div>
-              </div>
-            ) : null}
-            </div>
-          </>
-        }
-      />
-      <PublicHero
-        eyebrow="Business discovery"
-        title="Find businesses ready for action."
-        description={settings.marketing_subheadline || "Browse published businesses, then book, order, rent, shop, or message directly from their public page."}
-        meta={
-          <>
-            <span className="public-chip">{businessViews.length} published</span>
-            <span className="public-chip">{featuredBusinesses.length} featured</span>
-          </>
-        }
-      />
-    </>
-  );
-
-  const controlBar = (
-    <PublicSection
-      eyebrow="Browse"
-      title="Search and filter"
-      description="Use real public categories and customer action paths to narrow the marketplace."
-    >
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
-        <input
-          type="text"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search businesses"
-          className="input-field"
-          aria-label="Search businesses"
+  return (
+    <PublicSiteShell className="public-system-explore">
+      <div className="space-y-4">
+        <PublicTopNav
+          brand={platformName}
+          initials={platformInitials}
+          logoUrl={platformLogoUrl}
+          actions={
+            <>
+              <PublicActionLink href="/explore" tone="primary">
+                Explore
+              </PublicActionLink>
+              <PublicActionLink href={isLoggedIn ? "/admin" : "/login"}>
+                {isLoggedIn ? "Account" : "Login"}
+              </PublicActionLink>
+              <PublicActionLink href={createBusinessHref}>Create Business</PublicActionLink>
+            </>
+          }
         />
 
-        <div className="flex flex-wrap items-center gap-2">
-          {EXPLORE_CATEGORIES.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() => setCategoryFilter(category.id)}
-              className={categoryFilter === category.id ? "public-action-primary" : "public-action-secondary"}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
+        <section className="rounded-[1.15rem] border border-[var(--border-soft)] bg-[linear-gradient(180deg,rgba(22,25,30,0.98),rgba(17,19,23,0.98))] px-4 py-5 shadow-[0_18px_34px_rgba(0,0,0,0.34)] sm:px-6 sm:py-6">
+          <div className="mx-auto max-w-4xl space-y-5 text-center">
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-soft)]">
+                Premium Marketplace
+              </p>
+              <h1 className="text-3xl font-semibold leading-tight text-[var(--text-strong)] sm:text-4xl">
+                Explore businesses built for direct action.
+              </h1>
+              <p className="mx-auto max-w-2xl text-sm leading-6 text-[var(--text-soft)] sm:text-[0.95rem]">
+                Search by name, switch categories instantly, and jump straight into booking,
+                renting, ordering, or shopping.
+              </p>
+            </div>
 
-        <select
-          value={routeFilter}
-          onChange={(event) => setRouteFilter(event.target.value as ExploreRouteFilterId)}
-          aria-label="Filter by customer action"
-        >
-          <option value="all">All actions</option>
-          <option value="book">Book</option>
-          <option value="order">Order</option>
-          <option value="rent">Rent</option>
-          <option value="shop">Shop</option>
-          <option value="b">View</option>
-        </select>
+            <div className="mx-auto w-full max-w-2xl">
+              <label className="sr-only" htmlFor="explore-search">
+                Search businesses
+              </label>
+              <input
+                id="explore-search"
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search business name"
+                className="h-12 w-full rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(255,255,255,0.02)] px-5 text-center text-[0.96rem] text-[var(--text-strong)] outline-none transition focus:border-[rgba(212,175,55,0.32)] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.12)]"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {CATEGORY_PILLS.map((pill) => {
+                const active = category === pill.id;
+                return (
+                  <button
+                    key={pill.id}
+                    type="button"
+                    onClick={() => setCategory(pill.id)}
+                    className={
+                      active
+                        ? "inline-flex min-h-[38px] items-center gap-2 rounded-full border border-[rgba(212,175,55,0.32)] bg-[linear-gradient(180deg,rgba(212,175,55,0.18),rgba(176,137,104,0.12))] px-4 text-sm font-semibold text-[var(--text-strong)]"
+                        : "inline-flex min-h-[38px] items-center gap-2 rounded-full border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] px-4 text-sm font-semibold text-[var(--text-soft)] hover:border-[rgba(212,175,55,0.18)] hover:text-[var(--text-strong)]"
+                    }
+                  >
+                    <span>{pill.label}</span>
+                    <span className="rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.16)] px-1.5 py-0.5 text-[11px] text-[var(--text-muted)]">
+                      {categoryCounts[pill.id]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--text-strong)]">
+                {filteredBusinesses.length} results
+              </h2>
+              <p className="text-sm text-[var(--text-soft)]">
+                Compact marketplace discovery with direct business actions.
+              </p>
+            </div>
+          </div>
+
+          {filteredBusinesses.length === 0 ? (
+            <PublicEmptyState>
+              <p>No businesses match this search right now.</p>
+            </PublicEmptyState>
+          ) : (
+            <ExploreGrid businesses={filteredBusinesses} />
+          )}
+        </section>
       </div>
-
-      {hasActiveFilters ? (
-        <div className="mt-3 flex justify-end">
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="public-action-secondary"
-          >
-            Clear filters
-          </button>
-        </div>
-      ) : null}
-    </PublicSection>
-  );
-
-  const sidebar = (
-      <ExploreSidebar
-      typeFilter={typeFilter}
-      routeFilter={routeFilter}
-      statusFilter={statusFilter}
-      visibleTypes={visibleTypes}
-      createBusinessHref={createBusinessHref}
-      onTypeChange={setTypeFilter}
-        onRouteChange={setRouteFilter}
-        onStatusChange={setStatusFilter}
-        onClear={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-      />
-  );
-
-  const mobileSidebar = (
-    <PublicSection>
-      <button
-        type="button"
-        onClick={() => setMobileFiltersOpen((value) => !value)}
-        className="public-action-secondary flex w-full items-center justify-between text-left"
-      >
-        <span>Filters</span>
-        <span>
-          {mobileFiltersOpen ? "Close" : "Open"}
-        </span>
-      </button>
-      {mobileFiltersOpen ? <div className="mt-4">{sidebar}</div> : null}
-    </PublicSection>
-  );
-
-  const featured = featuredBusinesses.length > 0 ? (
-    <PublicSection
-      eyebrow="Featured"
-      title="Featured businesses"
-      description="Routable businesses with live customer paths."
-    >
-      <ExploreGrid businesses={featuredBusinesses} activeCategory={categoryFilter} />
-    </PublicSection>
-  ) : null;
-
-  const grid = (
-    <PublicSection
-      eyebrow="Results"
-      title={`${sortedBusinesses.length} businesses`}
-      description="Every listing links directly to the business route currently available for that profile."
-    >
-      <ExploreGrid businesses={sortedBusinesses} activeCategory={categoryFilter} />
-    </PublicSection>
-  );
-
-  return (
-    <ExploreLayout
-      header={header}
-      controlBar={controlBar}
-      sidebar={sidebar}
-      mobileSidebar={mobileSidebar}
-      featured={featured}
-      grid={grid}
-    />
+    </PublicSiteShell>
   );
 }
