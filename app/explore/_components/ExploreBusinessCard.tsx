@@ -32,8 +32,8 @@ export default function ExploreBusinessCard({
   const actionLabel = getActionLabel(business);
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[1rem] border border-[var(--border-soft)] bg-[linear-gradient(180deg,rgba(22,25,30,0.98),rgba(17,19,23,0.98))] shadow-[0_14px_28px_rgba(0,0,0,0.28)] transition duration-200 hover:-translate-y-0.5 hover:border-[rgba(212,175,55,0.18)] hover:shadow-[0_18px_34px_rgba(0,0,0,0.34)]">
-      <div className="relative aspect-[16/10] overflow-hidden border-b border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)]">
+    <article className="group flex h-full flex-col overflow-hidden rounded-[0.95rem] border border-[var(--border-soft)] bg-[linear-gradient(180deg,rgba(22,25,30,0.98),rgba(17,19,23,0.98))] shadow-[0_10px_20px_rgba(0,0,0,0.24)] transition duration-200 hover:-translate-y-0.5 hover:border-[rgba(212,175,55,0.18)] hover:shadow-[0_14px_26px_rgba(0,0,0,0.3)]">
+      <div className="relative h-[124px] overflow-hidden border-b border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)]">
         {business.thumbnailUrl ? (
           <img
             src={business.thumbnailUrl}
@@ -43,33 +43,33 @@ export default function ExploreBusinessCard({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(212,175,55,0.08),rgba(255,255,255,0.02))]">
-            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(255,255,255,0.03)] text-base font-semibold uppercase tracking-[0.08em] text-[var(--accent-soft)]">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(255,255,255,0.03)] text-sm font-semibold uppercase tracking-[0.08em] text-[var(--accent-soft)]">
               {business.initials}
             </span>
           </div>
         )}
 
-        <div className="absolute left-3 top-3 inline-flex items-center rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(11,12,14,0.78)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--accent-soft)]">
+        <div className="absolute left-2.5 top-2.5 inline-flex items-center rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(11,12,14,0.8)] px-2 py-[5px] text-[10px] font-semibold uppercase tracking-[0.11em] text-[var(--accent-soft)]">
           {formatBusinessType(business.business_type)}
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="space-y-2">
-          <h3 className="line-clamp-1 text-[1rem] font-semibold text-[var(--text-strong)]">
+      <div className="flex flex-1 flex-col gap-2.5 p-[13px]">
+        <div className="space-y-1.5">
+          <h3 className="line-clamp-1 text-[0.95rem] font-semibold leading-5 text-[var(--text-strong)]">
             {business.displayName}
           </h3>
-          <p className="line-clamp-3 text-sm leading-6 text-[var(--text-soft)]">{summary}</p>
+          <p className="line-clamp-1 text-[13px] leading-5 text-[var(--text-soft)]">{summary}</p>
         </div>
 
-        <div className="mt-auto flex items-center justify-between gap-3">
-          <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--text-muted)]">
+        <div className="mt-auto flex items-center justify-between gap-2">
+          <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] px-2 py-[5px] text-[10px] font-medium uppercase tracking-[0.1em] text-[var(--text-muted)]">
             {actionLabel}
           </span>
 
           <Link
             href={business.routeState.href}
-            className="inline-flex min-h-[38px] items-center justify-center rounded-full border border-[rgba(212,175,55,0.32)] bg-[linear-gradient(180deg,#e6c76a,#d4af37)] px-4 text-sm font-semibold text-[var(--accent-contrast)] no-underline"
+            className="inline-flex min-h-[34px] items-center justify-center rounded-full border border-[rgba(212,175,55,0.32)] bg-[linear-gradient(180deg,#e6c76a,#d4af37)] px-3 text-[13px] font-semibold text-[var(--accent-contrast)] no-underline"
           >
             {actionLabel}
           </Link>
