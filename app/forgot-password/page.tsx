@@ -2,18 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { getBrowserAppUrl } from "@/lib/appUrl";
 import { createClient } from "@/lib/supabase/client";
 
 function isValidEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email);
-}
-
-function getOrigin() {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  return window.location.origin;
 }
 
 export default function ForgotPasswordPage() {
@@ -33,7 +26,7 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    const origin = getOrigin();
+    const origin = getBrowserAppUrl() || "";
     if (!origin) {
       setError("We couldn't prepare password recovery right now.");
       return;

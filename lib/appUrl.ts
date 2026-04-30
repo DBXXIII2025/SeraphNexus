@@ -21,10 +21,27 @@ function getExplicitConfiguredAppUrl() {
   );
 }
 
+function isLocalOrigin(value: string) {
+  try {
+    const url = new URL(value);
+    return (
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "0.0.0.0"
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function getConfiguredAppUrl() {
   const explicitUrl = getExplicitConfiguredAppUrl();
   if (explicitUrl) {
     return explicitUrl;
+  }
+
+  if (isStripeLiveMode()) {
+    return null;
   }
 
   const vercelProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
@@ -62,15 +79,23 @@ export function isStripeLiveMode() {
   return (process.env.STRIPE_SECRET_KEY || "").startsWith("sk_live_");
 }
 
-export function getStripeConnectAppUrl(req?: Request) {
-  const vercelProductionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (isStripeLiveMode() && vercelProductionUrl) {
-    return normalizeAbsoluteUrl(
-      `https://${vercelProductionUrl}`,
-      "VERCEL_PROJECT_PRODUCTION_URL"
-    );
+export function getBrowserAppUrl() {
+  const configuredUrl = getExplicitConfiguredAppUrl();
+
+  if (typeof window !== "undefined") {
+    const browserOrigin = window.location.origin;
+
+    if (isLocalOrigin(browserOrigin)) {
+      return browserOrigin;
+    }
+
+    return configuredUrl || browserOrigin;
   }
 
+  return configuredUrl;
+}
+
+export function getStripeConnectAppUrl(req?: Request) {
   const configuredUrl = getExplicitConfiguredAppUrl() || getConfiguredAppUrl();
 
   if (isStripeLiveMode()) {

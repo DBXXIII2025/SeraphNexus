@@ -1,18 +1,18 @@
 "use client";
 import { DashboardSecondaryPanel } from "@/components/admin/AdminLayoutSystem";
+import { getBrowserAppUrl } from "@/lib/appUrl";
 
 type PublicBusinessLinkProps = {
   slug?: string | null;
   isPublished?: boolean | null;
 };
 
-const PUBLIC_BASE_URL = "https://seraph-nexus.vercel.app";
-
 export default function PublicBusinessLink({
   slug,
   isPublished,
 }: PublicBusinessLinkProps) {
-  const publicUrl = slug ? `${PUBLIC_BASE_URL}/b/${slug}` : "";
+  const resolvedBaseUrl = getBrowserAppUrl() || "";
+  const publicUrl = slug && resolvedBaseUrl ? `${resolvedBaseUrl}/b/${slug}` : "";
 
   async function copyLink() {
     if (!publicUrl) {
