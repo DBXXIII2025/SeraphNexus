@@ -12,6 +12,47 @@ function isSafeNextPath(value: string | null) {
   return Boolean(value && value.startsWith("/"));
 }
 
+const CANONICAL_HOST = "seraphnexus.com";
+const CANONICAL_ORIGIN = `https://${CANONICAL_HOST}`;
+
+function getRequestHost(req: NextRequest) {
+  return (req.headers.get("x-forwarded-host") || req.headers.get("host") || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+}
+
+function getHostname(host: string) {
+  return host.split(":")[0];
+}
+
+function shouldEnforceCanonicalHost(req: NextRequest) {
+  const host = getRequestHost(req);
+  const hostname = getHostname(host);
+
+  if (!hostname) {
+    return false;
+  }
+
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0"
+  ) {
+    return false;
+  }
+
+  if (
+    process.env.NODE_ENV !== "production" ||
+    process.env.VERCEL_ENV === "preview" ||
+    hostname.endsWith(".vercel.app")
+  ) {
+    return false;
+  }
+
+  return hostname !== CANONICAL_HOST;
+}
+
 function isAdminProtectedPath(pathname: string) {
   return (
     pathname.startsWith("/dashboard") ||
@@ -85,6 +126,11 @@ export async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-current-path", pathname);
+
+  if (shouldEnforceCanonicalHost(req)) {
+    const canonicalUrl = new URL(req.nextUrl.pathname + req.nextUrl.search, CANONICAL_ORIGIN);
+    return NextResponse.redirect(canonicalUrl, 308);
+  }
 
   if (pathname === "/dashboard/services" || pathname.startsWith("/dashboard/services/")) {
     return NextResponse.redirect(new URL("/admin", req.url));
