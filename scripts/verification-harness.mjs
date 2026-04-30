@@ -12,6 +12,7 @@ const REQUEST_PHONE = "555-0100";
 const REQUEST_NAME = "Smoke Customer";
 const TIME_ZONE = "America/Chicago";
 const REQUIRED_ENV_KEYS = ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
+const REMOTE_FIXTURE_PROJECT_ALLOW_ENV = "SERAPH_ALLOW_REMOTE_FIXTURE_PROJECT";
 
 const FIXTURES = [
   {
@@ -113,6 +114,31 @@ function loadEnvLocal() {
   }
 }
 
+function getSupabaseProjectDetails() {
+  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(supabaseUrl);
+  } catch {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL must be a valid absolute URL.");
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const projectRef = hostname.split(".")[0] || null;
+  const isLocalHost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0";
+
+  return {
+    hostname,
+    isLocalHost,
+    projectRef,
+    url: supabaseUrl,
+  };
+}
+
 function assertNonLiveMode() {
   if (process.env.SERAPH_NON_LIVE_VERIFY !== "1") {
     throw new Error("SERAPH_NON_LIVE_VERIFY=1 is required for the verification harness.");
@@ -131,6 +157,22 @@ function assertNonLiveMode() {
 
   if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(BASE_URL)) {
     throw new Error(`Refusing to run verification fixtures against non-local base URL: ${BASE_URL}`);
+  }
+
+  const supabaseProject = getSupabaseProjectDetails();
+  if (!supabaseProject.isLocalHost) {
+    const allowedProjectRef = (process.env[REMOTE_FIXTURE_PROJECT_ALLOW_ENV] || "").trim();
+    if (!allowedProjectRef) {
+      throw new Error(
+        `Refusing to seed verification fixtures into remote Supabase project ${supabaseProject.projectRef}. Set ${REMOTE_FIXTURE_PROJECT_ALLOW_ENV}=${supabaseProject.projectRef} only when you intentionally want to reseed that remote database.`
+      );
+    }
+
+    if (allowedProjectRef !== supabaseProject.projectRef) {
+      throw new Error(
+        `${REMOTE_FIXTURE_PROJECT_ALLOW_ENV}=${allowedProjectRef} does not match remote Supabase project ${supabaseProject.projectRef}. Refusing fixture seeding.`
+      );
+    }
   }
 }
 
