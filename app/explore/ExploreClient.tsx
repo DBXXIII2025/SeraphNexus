@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   PublicActionLink,
   PublicSiteShell,
@@ -15,6 +15,7 @@ import {
 } from "./exploreData";
 import ExploreGrid from "./_components/ExploreGrid";
 import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
+import { trackLeadEvents } from "@/lib/leadTracker";
 
 type MarketplaceCategory = "all" | "services" | "rentals" | "food" | "shops";
 
@@ -56,6 +57,7 @@ export default function ExploreClient({
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<MarketplaceCategory>("all");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
+  const trackedPageViewRef = useRef(false);
 
   const businessViews = useMemo(() => buildBusinessViewModels(businesses), [businesses]);
 
@@ -90,6 +92,26 @@ export default function ExploreClient({
   const createBusinessHref = isLoggedIn
     ? "/onboarding/create-business"
     : "/login?next=/onboarding/create-business";
+
+  useEffect(() => {
+    if (trackedPageViewRef.current || businessViews.length === 0) {
+      return;
+    }
+
+    trackedPageViewRef.current = true;
+
+    void trackLeadEvents(
+      businessViews.map((business) => ({
+        businessId: business.id,
+        eventType: "page_view",
+        source: "explore",
+        metadata: {
+          page: "/explore",
+          placement: "marketplace_grid",
+        },
+      }))
+    );
+  }, [businessViews]);
 
   return (
     <PublicSiteShell className="public-system-explore">

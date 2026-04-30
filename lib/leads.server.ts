@@ -58,6 +58,34 @@ async function getOrCreateServerVisitorToken() {
   return token;
 }
 
+async function resolveVisitorToken(args: LeadEventArgs) {
+  let visitorToken = normalizeString(args.visitorToken);
+  let visitorTokenSource: "request" | "cookie" | "generated" | "unavailable" = "request";
+
+  if (!visitorToken) {
+    try {
+      const resolvedToken = await getOrCreateServerVisitorToken();
+      visitorToken = normalizeString(resolvedToken);
+      visitorTokenSource = visitorToken ? "generated" : "unavailable";
+    } catch (tokenError) {
+      visitorTokenSource = "unavailable";
+      console.warn("[leads.server] visitor token unavailable", {
+        businessId: normalizeString(args.businessId),
+        eventType: normalizeString(args.eventType),
+        message: tokenError instanceof Error ? tokenError.message : "Unknown token error",
+      });
+    }
+  }
+
+  if (normalizeString(args.visitorToken)) {
+    visitorTokenSource = "request";
+  } else if (visitorToken && visitorTokenSource !== "request") {
+    visitorTokenSource = "cookie";
+  }
+
+  return { visitorToken, visitorTokenSource };
+}
+
 function createLeadTrackingError(
   message: string,
   options?: {
@@ -116,29 +144,7 @@ export async function trackLeadEventServer(args: LeadEventArgs) {
     });
   }
 
-  let visitorToken = normalizeString(args.visitorToken);
-  let visitorTokenSource: "request" | "cookie" | "generated" | "unavailable" = "request";
-
-  if (!visitorToken) {
-    try {
-      const resolvedToken = await getOrCreateServerVisitorToken();
-      visitorToken = normalizeString(resolvedToken);
-      visitorTokenSource = visitorToken ? "generated" : "unavailable";
-    } catch (tokenError) {
-      visitorTokenSource = "unavailable";
-      console.warn("[leads.server] visitor token unavailable", {
-        businessId,
-        eventType,
-        message: tokenError instanceof Error ? tokenError.message : "Unknown token error",
-      });
-    }
-  }
-
-  if (normalizeString(args.visitorToken)) {
-    visitorTokenSource = "request";
-  } else if (visitorToken && visitorTokenSource !== "request") {
-    visitorTokenSource = "cookie";
-  }
+  const { visitorToken, visitorTokenSource } = await resolveVisitorToken(args);
 
   const insertPayload: LeadEventInsert = {
     business_id: businessId,
@@ -168,5 +174,86 @@ export async function trackLeadEventServer(args: LeadEventArgs) {
     visitorToken,
     visitorTokenSource,
     insertPayload,
+  };
+}
+
+export async function trackLeadEventsServer(argsList: LeadEventArgs[]) {
+  const events = argsList.filter((entry) => normalizeString(entry.businessId) && normalizeString(entry.eventType));
+
+  if (events.length === 0) {
+    return {
+      ok: true,
+      count: 0,
+      visitorToken: null,
+      visitorTokenSource: "unavailable" as const,
+    };
+  }
+
+  const supabase = createAdminClient();
+  const businessIds = [...new Set(events.map((entry) => normalizeString(entry.businessId)).filter(Boolean))] as string[];
+
+  const { data: businesses, error: businessError } = await supabase
+    .from("businesses")
+    .select("id")
+    .in("id", businessIds);
+
+  if (businessError) {
+    throw createLeadTrackingError("Failed to verify businesses", {
+      status: 500,
+      code: businessError.code,
+      details: businessError.details,
+      hint: businessError.hint,
+    });
+  }
+
+  const validBusinessIds = new Set((businesses || []).map((business) => business.id));
+  const invalidBusinessId = businessIds.find((businessId) => !validBusinessIds.has(businessId));
+  if (invalidBusinessId) {
+    throw createLeadTrackingError("Business not found", {
+      status: 404,
+      code: "business_not_found",
+      details: invalidBusinessId,
+    });
+  }
+
+  for (const event of events) {
+    if (!isLeadEventType(normalizeString(event.eventType))) {
+      throw createLeadTrackingError("Invalid eventType", {
+        status: 400,
+        code: "invalid_event_type",
+      });
+    }
+  }
+
+  const tokenSeed = await resolveVisitorToken(events[0]);
+  const insertPayloads: LeadEventInsert[] = events.map((event) => ({
+    business_id: normalizeString(event.businessId)!,
+    event_type: normalizeString(event.eventType)!,
+    source: normalizeString(event.source),
+    conversation_id: normalizeString(event.conversationId),
+    visitor_token: normalizeString(event.visitorToken) || tokenSeed.visitorToken,
+    visitor_name: normalizeString(event.visitor_name),
+    visitor_email: normalizeString(event.visitor_email),
+    visitor_phone: normalizeString(event.visitor_phone),
+    metadata: normalizeMetadata(event.metadata),
+  }));
+
+  const { error } = await supabase.from("lead_events").insert(insertPayloads);
+
+  if (error) {
+    throw createLeadTrackingError("Failed to insert lead events", {
+      status: 500,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+  }
+
+  return {
+    ok: true,
+    count: insertPayloads.length,
+    visitorToken: tokenSeed.visitorToken,
+    visitorTokenSource: tokenSeed.visitorTokenSource,
+    insertPayloads,
   };
 }

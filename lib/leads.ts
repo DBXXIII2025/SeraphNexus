@@ -133,6 +133,8 @@ type LeadEventsClient = {
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   page_view: "Page viewed",
+  business_click: "Business clicked",
+  cta_click: "CTA clicked",
   message_click: "Message intent",
   message_sent: "Message sent",
   booking_started: "Booking started",
@@ -241,6 +243,10 @@ function getLeadSourceType(
     return "message";
   }
 
+  if (event.event_type === "business_click" || event.event_type === "cta_click") {
+    return "page_view";
+  }
+
   if (event.event_type === "booking_started") {
     return isRentalBusinessType(businessType) ? "reservation" : "booking";
   }
@@ -294,6 +300,15 @@ function getEventContextLabel(
 
   if (event.event_type === "message_click") {
     return "Lead opened message entry";
+  }
+
+  if (event.event_type === "business_click") {
+    return page ? `Clicked business from ${page}` : "Clicked business listing";
+  }
+
+  if (event.event_type === "cta_click") {
+    const action = readMetadataValue(event.metadata, ["action"]);
+    return action ? `CTA clicked: ${action}` : "CTA clicked";
   }
 
   if (event.event_type === "page_view") {

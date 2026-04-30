@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { trackLeadEventServer } from "@/lib/leads.server";
+import { trackLeadEventServer, trackLeadEventsServer } from "@/lib/leads.server";
 import {
   isLeadEventType,
   type LeadEventType,
@@ -15,6 +15,10 @@ type LeadEventPayload = {
   visitor_phone?: string;
   visitorToken?: string;
   metadata?: Record<string, unknown> | null;
+};
+
+type LeadEventBulkPayload = {
+  events?: LeadEventPayload[];
 };
 
 type RouteError = Error & {
@@ -60,7 +64,37 @@ function jsonError(
 
 export async function POST(req: Request) {
   try {
-    const payload = (await req.json().catch(() => ({}))) as LeadEventPayload;
+    const payload = (await req.json().catch(() => ({}))) as LeadEventPayload | LeadEventBulkPayload;
+
+    if (Array.isArray((payload as LeadEventBulkPayload).events)) {
+      const events = ((payload as LeadEventBulkPayload).events || []).map((entry) => ({
+        businessId: normalizeString(entry.businessId) || undefined,
+        eventType: normalizeString(entry.eventType) as LeadEventType | undefined,
+        source: normalizeString(entry.source) || undefined,
+        conversationId: normalizeString(entry.conversationId) || undefined,
+        visitor_name: normalizeString(entry.visitor_name) || undefined,
+        visitor_email: normalizeString(entry.visitor_email) || undefined,
+        visitor_phone: normalizeString(entry.visitor_phone) || undefined,
+        visitorToken: normalizeString(entry.visitorToken) || undefined,
+        metadata: sanitizeMetadata(entry.metadata),
+      }));
+
+      if (events.length === 0) {
+        return jsonError("Missing events", 400, {
+          code: "missing_required_fields",
+        });
+      }
+
+      const result = await trackLeadEventsServer(events);
+
+      return NextResponse.json({
+        ok: true,
+        count: result.count || 0,
+        visitorToken: result.visitorToken || null,
+        visitorTokenSource: result.visitorTokenSource || null,
+      });
+    }
+
     const businessId = normalizeString(payload.businessId);
     const eventType = normalizeString(payload.eventType) as LeadEventType | null;
     const source = normalizeString(payload.source);
@@ -92,7 +126,7 @@ export async function POST(req: Request) {
     if (!isLeadEventType(eventType)) {
       return jsonError("Invalid eventType", 400, {
         code: "invalid_event_type",
-        details: `Supported types: page_view, message_click, message_sent, booking_started, checkout_started`,
+        details: `Supported types: page_view, business_click, cta_click, message_click, message_sent, booking_started, checkout_started`,
       });
     }
 

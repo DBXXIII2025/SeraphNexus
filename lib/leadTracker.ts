@@ -1,5 +1,7 @@
 export type LeadEventType =
   | "page_view"
+  | "business_click"
+  | "cta_click"
   | "message_click"
   | "message_sent"
   | "booking_started"
@@ -7,6 +9,8 @@ export type LeadEventType =
 
 const LEAD_EVENT_TYPES: LeadEventType[] = [
   "page_view",
+  "business_click",
+  "cta_click",
   "message_click",
   "message_sent",
   "booking_started",
@@ -31,6 +35,10 @@ export type LeadTrackingResult = {
   error?: string;
   details?: string | null;
   code?: string | null;
+};
+
+export type BulkLeadTrackingResult = LeadTrackingResult & {
+  count?: number;
 };
 
 const VISITOR_TOKEN_COOKIE = "sn_visitor_token";
@@ -156,5 +164,99 @@ export async function trackLeadEvent(args: LeadEventArgs) {
       details: null,
       code: null,
     } satisfies LeadTrackingResult;
+  }
+}
+
+export async function trackLeadEvents(args: LeadEventArgs[]) {
+  const visitorToken =
+    typeof window !== "undefined" ? getOrCreateClientVisitorToken() : null;
+
+  const payload = {
+    events: args
+      .map((entry) => ({
+        businessId: normalizeString(entry.businessId),
+        eventType: entry.eventType,
+        source: normalizeString(entry.source),
+        conversationId: normalizeString(entry.conversationId),
+        visitor_name: normalizeString(entry.visitor_name),
+        visitor_email: normalizeString(entry.visitor_email),
+        visitor_phone: normalizeString(entry.visitor_phone),
+        metadata:
+          entry.metadata && typeof entry.metadata === "object" && !Array.isArray(entry.metadata)
+            ? entry.metadata
+            : {},
+        visitorToken: normalizeString(entry.visitorToken) || visitorToken,
+      }))
+      .filter((entry) => entry.businessId && entry.eventType),
+  };
+
+  if (payload.events.length === 0) {
+    return {
+      ok: true,
+      visitorToken,
+      count: 0,
+    } satisfies BulkLeadTrackingResult;
+  }
+
+  try {
+    const response = await fetch("/api/leads/event", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const errorPayload =
+        data && typeof data === "object"
+          ? (data as {
+              error?: string;
+              details?: string | null;
+              code?: string | null;
+            })
+          : null;
+
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[leadTracker] bulk API request failed", {
+          status: response.status,
+          statusText: response.statusText,
+          payload,
+          response: data,
+        });
+      }
+
+      return {
+        ok: false,
+        visitorToken,
+        error: errorPayload?.error || "Lead tracking failed",
+        details: errorPayload?.details || null,
+        code: errorPayload?.code || null,
+      } satisfies BulkLeadTrackingResult;
+    }
+
+    return (data || {
+      ok: true,
+      visitorToken,
+      count: payload.events.length,
+    }) as BulkLeadTrackingResult;
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[leadTracker] bulk request error", {
+        payload,
+        message: error instanceof Error ? error.message : "Unknown lead tracking error",
+      });
+    }
+
+    return {
+      ok: false,
+      visitorToken,
+      error: error instanceof Error ? error.message : "Lead tracking request failed",
+      details: null,
+      code: null,
+    } satisfies BulkLeadTrackingResult;
   }
 }
