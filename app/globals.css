@@ -549,6 +549,11 @@ button:focus {
   align-content: start;
 }
 
+.customize-editor-grid {
+  display: grid;
+  gap: 1rem;
+}
+
 .dashboard-section {
   display: grid;
   gap: 0.95rem;
@@ -649,6 +654,10 @@ button:focus {
     padding: 1.35rem;
   }
 
+  .admin-shell-grid-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .admin-system-sidebar {
     position: sticky;
     top: 1.35rem;
@@ -676,12 +685,26 @@ button:focus {
   .dashboard-metrics-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .customize-editor-grid {
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+  }
 }
 
 @media (min-width: 1440px) {
   .admin-shell-grid {
     grid-template-columns: 268px minmax(0, 1fr);
     padding: 1.45rem;
+  }
+
+  .admin-shell-grid-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .customize-editor-grid {
+    gap: 1.25rem;
   }
 }
 

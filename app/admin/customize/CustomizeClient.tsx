@@ -604,7 +604,7 @@ export default function CustomizeClient({
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-3 text-[var(--text-strong)] sm:p-4">
+    <div className="w-full space-y-4 px-1 text-[var(--text-strong)] sm:px-2">
       <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] px-4 py-4 shadow-[var(--shadow-soft)]">
         <h1 className="font-heading text-2xl text-[var(--text-strong)]">Business Profile</h1>
         <p className="mt-1.5 text-sm text-[var(--text-soft)]">
@@ -624,8 +624,8 @@ export default function CustomizeClient({
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[410px_minmax(0,1fr)] lg:items-start">
-        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-3 shadow-[var(--shadow-card)] lg:sticky lg:top-4">
+      <div className="customize-editor-grid">
+        <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-3 shadow-[var(--shadow-card)] xl:sticky xl:top-4">
           <div className="mb-3 flex items-center justify-between border-b border-[var(--border-soft)] pb-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
@@ -638,10 +638,9 @@ export default function CustomizeClient({
             </span>
           </div>
           <div
-            className="overflow-hidden rounded-lg border border-[var(--border-soft)] p-2"
+            className="mx-auto w-full max-w-[320px] overflow-hidden rounded-lg border border-[var(--border-soft)] p-2 xl:mx-0"
             style={{
               width: "100%",
-              maxWidth: "384px",
             }}
           >
             <BusinessProfileShell
@@ -673,103 +672,104 @@ export default function CustomizeClient({
           </div>
         </div>
 
-        <div className="space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
-        <div
-          className={`rounded-lg border px-3.5 py-2.5 text-sm ${
-            planNotice.tone === "warning"
-              ? "border-amber-200 bg-[var(--warning-bg)] text-[var(--warning)]"
-              : "border-emerald-200 bg-[var(--success-bg)] text-[var(--success)]"
-          }`}
-        >
-          {planNotice.message}
-        </div>
-        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-[var(--text-strong)]">Profile completion</p>
-              <p className="mt-1 text-sm text-[var(--text-soft)]">{completion.summary}</p>
-            </div>
-            <div className="rounded-full border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-1 text-sm font-medium text-[var(--text-strong)]">
-              {completion.progressPercent}% complete
-            </div>
+        <div className="min-w-0 space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
+          <div
+            className={`rounded-lg border px-3.5 py-2.5 text-sm ${
+              planNotice.tone === "warning"
+                ? "border-amber-200 bg-[var(--warning-bg)] text-[var(--warning)]"
+                : "border-emerald-200 bg-[var(--success-bg)] text-[var(--success)]"
+            }`}
+          >
+            {planNotice.message}
           </div>
 
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--border-soft)]">
-            <div
-              className="h-full rounded-full bg-[var(--success-bg)]0"
-              style={{ width: `${completion.progressPercent}%` }}
-            />
-          </div>
-
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {completion.fields.map((field) => (
-              <div
-                key={field.key}
-                className="rounded-lg border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 text-sm"
-              >
-                <span className="font-medium text-[var(--text-strong)]">{field.label}</span>
-                <span
-                  className={`ml-2 ${
-                    field.missing ? "text-yellow-300" : "text-emerald-300"
-                  }`}
-                >
-                  {field.missing ? (field.required ? "Required" : "Recommended") : "Ready"}
-                </span>
+          <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-[var(--text-strong)]">Profile completion</p>
+                <p className="mt-1 text-sm text-[var(--text-soft)]">{completion.summary}</p>
               </div>
-            ))}
+              <div className="rounded-full border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-1 text-sm font-medium text-[var(--text-strong)]">
+                {completion.progressPercent}% complete
+              </div>
+            </div>
+
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--border-soft)]">
+              <div
+                className="h-full rounded-full bg-[var(--success-bg)]0"
+                style={{ width: `${completion.progressPercent}%` }}
+              />
+            </div>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {completion.fields.map((field) => (
+                <div
+                  key={field.key}
+                  className="rounded-lg border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 text-sm"
+                >
+                  <span className="font-medium text-[var(--text-strong)]">{field.label}</span>
+                  <span
+                    className={`ml-2 ${
+                      field.missing ? "text-yellow-300" : "text-emerald-300"
+                    }`}
+                  >
+                    {field.missing ? (field.required ? "Required" : "Recommended") : "Ready"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {savedCompletion.canPublishProfile && !completion.canPublishProfile ? (
+              <p className="mt-4 text-xs text-[var(--text-muted)]">
+                Saving incomplete changes will make the business profile no longer publish-ready.
+              </p>
+            ) : null}
           </div>
 
-          {savedCompletion.canPublishProfile && !completion.canPublishProfile ? (
-            <p className="mt-4 text-xs text-[var(--text-muted)]">
-              Saving incomplete changes will make the business profile no longer publish-ready.
-            </p>
-          ) : null}
-        </div>
+          <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
+            <div className="mb-3">
+              <h2 className="text-lg font-semibold text-[var(--text-strong)]">Business Info</h2>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">
+                These fields feed the compact public header and the detail block below the gallery.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Business name</p>
+                <input
+                  placeholder="Business name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
+                />
+              </div>
 
-        <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
-          <div className="mb-3">
-            <h2 className="text-lg font-semibold text-[var(--text-strong)]">Business Info</h2>
-            <p className="mt-1 text-sm text-[var(--text-soft)]">
-              These fields feed the compact public header and the detail block below the gallery.
-            </p>
+              <div>
+                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Public slug</p>
+                <input
+                  placeholder="public-business-slug"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
+                />
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
+                  Preview: /{publicRoutePrefix}/{slugPreview || "your-business"}
+                </p>
+              </div>
+
+              <div>
+                <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Business description</p>
+                <textarea
+                  placeholder="Describe what customers should know before they visit, book, order, or inquire."
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="min-h-32 w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
+                />
+              </div>
+            </div>
           </div>
-          <div className="space-y-3">
-        <div>
-          <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Business name</p>
-          <input
-            placeholder="Business name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
-          />
-        </div>
 
-        <div>
-          <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Public slug</p>
-          <input
-            placeholder="public-business-slug"
-            value={form.slug}
-            onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
-          />
-          <p className="mt-2 text-xs text-[var(--text-muted)]">
-            Preview: /{publicRoutePrefix}/{slugPreview || "your-business"}
-          </p>
-        </div>
-
-        <div>
-          <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">Business description</p>
-          <textarea
-            placeholder="Describe what customers should know before they visit, book, order, or inquire."
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="min-h-32 w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
-          />
-        </div>
-          </div>
-        </div>
-
-        {profileFieldsSchemaReady ? (
+          {profileFieldsSchemaReady ? (
         <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--section-bg)] p-3.5">
           <div className="mb-3">
             <h2 className="text-lg font-semibold text-[var(--text-strong)]">Contact Info</h2>
