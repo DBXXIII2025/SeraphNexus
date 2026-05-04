@@ -218,49 +218,38 @@ export default async function AdminLayout({
     );
   }
 
-  if (isCustomizeRoute) {
-    return (
-      <AdminShell
-        wide
-        topbar={
-          <AdminTopNav
-            eyebrow="Business website builder"
-            title={activeBusiness?.name || "Business profile"}
-            description="Edit the live business profile, gallery, theme, and public actions."
-            actions={
-              <>
-                {user?.id ? <AdminNotificationBell userId={user.id} /> : null}
-                <AdminActionLink href="/admin">Admin</AdminActionLink>
-                <AdminActionLink href="/admin/settings">Settings</AdminActionLink>
-                {activeBusiness?.slug ? (
-                  <AdminActionLink
-                    href={getPublicPath(activeBusiness.business_type, activeBusiness.slug)}
-                    tone="primary"
-                  >
-                    Public page
-                  </AdminActionLink>
-                ) : null}
-              </>
-            }
-          />
-        }
-      >
-        {children}
-      </AdminShell>
-    );
-  }
-
   return (
     <AdminShell
       topbar={
         <AdminTopNav
-          eyebrow={t("ownerWorkspace")}
-          title={activeBusiness?.name || t("noActiveBusiness")}
-          description={`${businessModule.label} operations and public business management.`}
+          eyebrow={isCustomizeRoute ? "Business website builder" : t("ownerWorkspace")}
+          title={
+            isCustomizeRoute
+              ? activeBusiness?.name || "Business profile"
+              : activeBusiness?.name || t("noActiveBusiness")
+          }
+          description={
+            isCustomizeRoute
+              ? "Edit the live business profile, gallery, theme, and public actions."
+              : `${businessModule.label} operations and public business management.`
+          }
           actions={
             <>
               {user?.id ? <AdminNotificationBell userId={user.id} /> : null}
-              {activeBusiness ? (
+              {isCustomizeRoute ? (
+                <>
+                  <AdminActionLink href="/admin">Admin</AdminActionLink>
+                  <AdminActionLink href="/admin/settings">Settings</AdminActionLink>
+                  {activeBusiness?.slug ? (
+                    <AdminActionLink
+                      href={getPublicPath(activeBusiness.business_type, activeBusiness.slug)}
+                      tone="primary"
+                    >
+                      Public page
+                    </AdminActionLink>
+                  ) : null}
+                </>
+              ) : activeBusiness ? (
                 <>
                   <AdminActionLink href={businessModule.primaryAdminHref} tone="primary">
                     {t("open")}{" "}
