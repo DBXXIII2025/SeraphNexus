@@ -48,13 +48,8 @@ const sidebarScrollStyle = {
   alignContent: "start",
   gap: "0.8rem",
   overflowY: "auto",
+  overflowX: "hidden",
   paddingRight: "0.2rem",
-} as const;
-
-const sidebarFooterStyle = {
-  display: "grid",
-  flex: "0 0 auto",
-  gap: "0.8rem",
 } as const;
 
 function groupOwnerNav(items: Array<{ href: string; label: string }>): NavGroup[] {
@@ -185,9 +180,6 @@ export default async function AdminLayout({
                   ))}
                 </nav>
               </AdminSidebarSection>
-            </div>
-
-            <div className="admin-sidebar-footer" style={sidebarFooterStyle}>
               <AdminSidebarSection title="Utilities">
                 <nav className="admin-sidebar-nav">
                   <AdminNavLink href="/admin/support" active={currentPath === "/admin/support"}>
@@ -316,9 +308,7 @@ export default async function AdminLayout({
             {!activeBusiness ? (
               <AdminPanel>Create or select a business to manage settings.</AdminPanel>
             ) : null}
-          </div>
 
-          <div className="admin-sidebar-footer" style={sidebarFooterStyle}>
             <AdminSidebarSection title="Utilities">
               <nav className="admin-sidebar-nav">
                 <AdminNavLink href="/admin/settings" active={currentPath === "/admin/settings"}>

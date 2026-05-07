@@ -445,13 +445,37 @@ button:focus {
   align-content: start;
   gap: 0.8rem;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   padding-right: 0.2rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.24) transparent;
 }
 
-.admin-sidebar-footer {
-  display: grid;
-  flex: 0 0 auto;
-  gap: 0.8rem;
+.admin-sidebar-scroll::-webkit-scrollbar {
+  width: 0.55rem;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(212, 175, 55, 0.22),
+    rgba(176, 137, 104, 0.18)
+  );
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(212, 175, 55, 0.32),
+    rgba(176, 137, 104, 0.26)
+  );
 }
 
 .admin-sidebar-nav {
