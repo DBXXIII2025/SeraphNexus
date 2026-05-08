@@ -3,6 +3,7 @@ import { getManagedPricingSnapshot } from "@/lib/platformBilling";
 import { getPlanDefinition, getPlatformFeeLabel } from "@/lib/planConfig";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import { getConfiguredPlatformFee } from "@/lib/platformFees";
+import { getVisiblePlatformPlans } from "@/lib/platformPlans";
 import UpgradeClient from "./UpgradeClient";
 
 type UpgradePageProps = {
@@ -25,6 +26,7 @@ export default async function AdminUpgradePage({
   const plan = getPlanDefinition(business.plan);
   const platformFee = await getConfiguredPlatformFee(business.plan);
   const pricing = await getManagedPricingSnapshot();
+  const visiblePlans = getVisiblePlatformPlans(pricing.settings.plans);
   const currentPriceLabel =
     plan.tier === "pro"
       ? pricing.pro.monthlyPriceLabel
@@ -78,37 +80,8 @@ export default async function AdminUpgradePage({
       <UpgradeClient
         businessId={business.id}
         currentPlan={plan.tier}
-        pricing={{
-          trial: {
-            feeLabel: (await getConfiguredPlatformFee("trial")).label,
-          },
-          pro: {
-            label: pricing.pro.monthlyPriceLabel,
-            active: pricing.pro.active,
-            feeLabel: (await getConfiguredPlatformFee("pro")).label,
-          },
-          elite: {
-            label: pricing.elite.monthlyPriceLabel,
-            active: pricing.elite.active,
-            feeLabel: (await getConfiguredPlatformFee("elite")).label,
-          },
-        }}
-        planCopy={{
-          pro: {
-            name: pricing.settings.pro_plan_name,
-            subtitle: pricing.settings.pro_plan_subtitle,
-            features: pricing.settings.pro_plan_features,
-            badge: pricing.settings.pro_plan_badge,
-            cta: pricing.settings.pro_plan_cta,
-          },
-          elite: {
-            name: pricing.settings.elite_plan_name,
-            subtitle: pricing.settings.elite_plan_subtitle,
-            features: pricing.settings.elite_plan_features,
-            badge: pricing.settings.elite_plan_badge,
-            cta: pricing.settings.elite_plan_cta,
-          },
-        }}
+        pricingNote={pricing.settings.pricing_note}
+        plans={visiblePlans}
       />
     </div>
   );

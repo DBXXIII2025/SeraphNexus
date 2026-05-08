@@ -3,47 +3,29 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ensureManagedPlanStripePrice } from "@/lib/platformBilling";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
-import { serializePlanCopyPricingNote } from "@/lib/platformSettings";
-
-function parsePriceCents(value: FormDataEntryValue | null, fallback: number) {
-  const raw = String(value || "").trim();
-  const amount = Number(raw);
-
-  if (!Number.isFinite(amount) || amount < 0) {
-    return fallback;
-  }
-
-  return Math.round(amount * 100);
-}
+import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platformSettings";
+import {
+  normalizePlatformPlans,
+  serializePlatformPlanConfig,
+  type PlatformPlanCard,
+} from "@/lib/platformPlans";
 
 function normalizeOptionalString(value: FormDataEntryValue | null) {
   const normalized = String(value || "").trim();
   return normalized || null;
 }
 
-function normalizeRequiredString(value: FormDataEntryValue | null, fallback: string) {
-  return String(value || "").trim() || fallback;
-}
-
-function normalizeFeatureList(value: FormDataEntryValue | null, fallback: string[]) {
-  const features = String(value || "")
-    .split(/\r?\n/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, 10);
-
-  return features.length > 0 ? features : fallback;
-}
-
-function parseFeeBasisPoints(value: FormDataEntryValue | null, fallback: number) {
+function parseJsonField(value: FormDataEntryValue | null) {
   const raw = String(value || "").trim();
-  const percent = Number(raw);
-
-  if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
-    return fallback;
+  if (!raw) {
+    return null;
   }
 
-  return Math.round(percent * 100);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 function isMissingPlanCopyColumnError(error: { code?: string | null; message?: string | null } | null) {
@@ -61,33 +43,7 @@ function isMissingOptionalPlatformColumnError(error: { code?: string | null; mes
 
 function withoutPlanCopyColumns(payload: Record<string, unknown>, visiblePricingNote: string) {
   const next = { ...payload };
-  next.pricing_note = serializePlanCopyPricingNote({
-    pricingNote: visiblePricingNote,
-    pro: {
-      name: String(payload.pro_plan_name || "Pro"),
-      subtitle: String(
-        payload.pro_plan_subtitle ||
-          "Enable payments, full messaging, basic analytics, and standard owner controls."
-      ),
-      features: Array.isArray(payload.pro_plan_features)
-        ? payload.pro_plan_features.map((item) => String(item))
-        : [],
-      badge: typeof payload.pro_plan_badge === "string" ? payload.pro_plan_badge : null,
-      cta: String(payload.pro_plan_cta || "Choose Pro"),
-    },
-    elite: {
-      name: String(payload.elite_plan_name || "Elite"),
-      subtitle: String(
-        payload.elite_plan_subtitle ||
-          "Best economics and the full premium operating stack for scaling businesses."
-      ),
-      features: Array.isArray(payload.elite_plan_features)
-        ? payload.elite_plan_features.map((item) => String(item))
-        : [],
-      badge: typeof payload.elite_plan_badge === "string" ? payload.elite_plan_badge : null,
-      cta: String(payload.elite_plan_cta || "Choose Elite"),
-    },
-  });
+  next.pricing_note = String(payload.pricing_note || visiblePricingNote);
 
   delete next.pro_plan_name;
   delete next.pro_plan_subtitle;
@@ -115,24 +71,11 @@ export async function POST(req: Request) {
     }
 
     const formData = await req.formData();
-    const selectedProPriceId = normalizeOptionalString(formData.get("pro_stripe_price_id_override"));
-    const selectedProProductId = normalizeOptionalString(
-      formData.get("pro_stripe_product_id_override")
-    );
-    const selectedElitePriceId = normalizeOptionalString(
-      formData.get("elite_stripe_price_id_override")
-    );
-    const selectedEliteProductId = normalizeOptionalString(
-      formData.get("elite_stripe_product_id_override")
-    );
     const hasLogoUrlField = formData.has("logo_url");
     const submittedLogoUrl = normalizeOptionalString(formData.get("logo_url"));
-    const trialFeeBps = parseFeeBasisPoints(formData.get("trial_transaction_fee_percent"), 1000);
-    const proFeeBps = parseFeeBasisPoints(formData.get("pro_transaction_fee_percent"), 500);
-    const eliteFeeBps = parseFeeBasisPoints(formData.get("elite_transaction_fee_percent"), 200);
     const visiblePricingNote =
       String(formData.get("pricing_note") || "").trim() ||
-      "Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.";
+      DEFAULT_PLATFORM_SETTINGS.pricing_note;
     const payload = {
       platform_name: String(formData.get("platform_name") || "").trim() || "Seraph Nexus",
       marketing_headline:
@@ -145,44 +88,13 @@ export async function POST(req: Request) {
         String(formData.get("support_email") || "").trim() || "support@seraphnexus.com",
       support_phone: String(formData.get("support_phone") || "").trim() || "(800) 555-0100",
       pricing_note: visiblePricingNote,
-      pro_monthly_price_cents: parsePriceCents(formData.get("pro_monthly_price"), 1900),
-      elite_monthly_price_cents: parsePriceCents(formData.get("elite_monthly_price"), 4900),
-      trial_transaction_fee_bps: trialFeeBps,
-      pro_transaction_fee_bps: proFeeBps,
-      elite_transaction_fee_bps: eliteFeeBps,
-      pro_plan_name: normalizeRequiredString(formData.get("pro_plan_name"), "Pro"),
-      pro_plan_subtitle: normalizeRequiredString(
-        formData.get("pro_plan_subtitle"),
-        "Enable payments, full messaging, basic analytics, and standard owner controls."
-      ),
-      pro_plan_features: normalizeFeatureList(formData.get("pro_plan_features"), [
-        "5% platform fee",
-        "Stripe payments, full messaging, and standard customization",
-        "Up to 2 businesses with unlimited services and products",
-      ]),
-      pro_plan_badge: normalizeOptionalString(formData.get("pro_plan_badge")),
-      pro_plan_cta: normalizeRequiredString(formData.get("pro_plan_cta"), "Choose Pro"),
-      elite_plan_name: normalizeRequiredString(formData.get("elite_plan_name"), "Elite"),
-      elite_plan_subtitle: normalizeRequiredString(
-        formData.get("elite_plan_subtitle"),
-        "Best economics and the full premium operating stack for scaling businesses."
-      ),
-      elite_plan_features: normalizeFeatureList(formData.get("elite_plan_features"), [
-        "2% platform fee",
-        "Automation, advanced analytics, and advanced messaging",
-        "Priority explore boost with unlimited businesses",
-      ]),
-      elite_plan_badge: normalizeOptionalString(formData.get("elite_plan_badge")),
-      elite_plan_cta: normalizeRequiredString(formData.get("elite_plan_cta"), "Choose Elite"),
-      pro_price_active: formData.get("pro_price_active") === "on",
-      elite_price_active: formData.get("elite_price_active") === "on",
     };
 
     const supabaseAdmin = createAdminClient();
     const { data: existing, error: existingError } = await supabaseAdmin
       .from("platform_settings")
       .select(
-        "id, logo_url, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
+        "id, logo_url, trial_transaction_fee_bps, pro_stripe_price_id, elite_stripe_price_id, pro_stripe_product_id, elite_stripe_product_id"
       )
       .limit(1)
       .maybeSingle();
@@ -194,8 +106,40 @@ export async function POST(req: Request) {
       );
     }
 
+    const submittedPlans = normalizePlatformPlans(
+      parseJsonField(formData.get("managed_plan_cards_json"))
+    );
+    const proPlan = submittedPlans.find((plan) => plan.id === "pro");
+    const elitePlan = submittedPlans.find((plan) => plan.id === "elite");
+
+    if (!proPlan || !elitePlan) {
+      return NextResponse.redirect(
+        new URL("/admin/platform?error=platform-settings-save-failed", req.url)
+      );
+    }
+
     const nextPayload: Record<string, unknown> = {
       ...payload,
+      trial_transaction_fee_bps:
+        typeof existing?.trial_transaction_fee_bps === "number"
+          ? existing.trial_transaction_fee_bps
+          : DEFAULT_PLATFORM_SETTINGS.trial_transaction_fee_bps,
+      pro_monthly_price_cents: proPlan.monthly_price_cents,
+      elite_monthly_price_cents: elitePlan.monthly_price_cents,
+      pro_transaction_fee_bps: proPlan.transaction_fee_bps,
+      elite_transaction_fee_bps: elitePlan.transaction_fee_bps,
+      pro_plan_name: proPlan.name,
+      pro_plan_subtitle: proPlan.subtitle,
+      pro_plan_features: proPlan.feature_bullets,
+      pro_plan_badge: proPlan.badge_text,
+      pro_plan_cta: proPlan.cta_text,
+      elite_plan_name: elitePlan.name,
+      elite_plan_subtitle: elitePlan.subtitle,
+      elite_plan_features: elitePlan.feature_bullets,
+      elite_plan_badge: elitePlan.badge_text,
+      elite_plan_cta: elitePlan.cta_text,
+      pro_price_active: proPlan.is_active,
+      elite_price_active: elitePlan.is_active,
       updated_at: new Date().toISOString(),
     };
 
@@ -203,33 +147,48 @@ export async function POST(req: Request) {
       nextPayload.logo_url = submittedLogoUrl;
     }
 
-    if (payload.pro_price_active) {
+    const syncedPlans = submittedPlans.map((plan) => ({ ...plan }));
+    const syncedProPlan = syncedPlans.find((plan) => plan.id === "pro") as PlatformPlanCard;
+    const syncedElitePlan = syncedPlans.find((plan) => plan.id === "elite") as PlatformPlanCard;
+
+    if (proPlan.is_active) {
       const proPrice = await ensureManagedPlanStripePrice({
         plan: "pro",
-        amountCents: payload.pro_monthly_price_cents,
+        amountCents: proPlan.monthly_price_cents,
         existingPriceId: existing?.pro_stripe_price_id || null,
         existingProductId: existing?.pro_stripe_product_id || null,
-        selectedPriceId: selectedProPriceId,
-        selectedProductId: selectedProProductId,
+        selectedPriceId: proPlan.stripe_price_id,
+        selectedProductId: proPlan.stripe_product_id,
       });
       nextPayload.pro_stripe_price_id = proPrice.stripePriceId;
       nextPayload.pro_stripe_product_id = proPrice.stripeProductId;
       nextPayload.pro_monthly_price_cents = proPrice.amountCents;
+      syncedProPlan.stripe_price_id = proPrice.stripePriceId;
+      syncedProPlan.stripe_product_id = proPrice.stripeProductId;
+      syncedProPlan.monthly_price_cents = proPrice.amountCents;
     }
 
-    if (payload.elite_price_active) {
+    if (elitePlan.is_active) {
       const elitePrice = await ensureManagedPlanStripePrice({
         plan: "elite",
-        amountCents: payload.elite_monthly_price_cents,
+        amountCents: elitePlan.monthly_price_cents,
         existingPriceId: existing?.elite_stripe_price_id || null,
         existingProductId: existing?.elite_stripe_product_id || null,
-        selectedPriceId: selectedElitePriceId,
-        selectedProductId: selectedEliteProductId,
+        selectedPriceId: elitePlan.stripe_price_id,
+        selectedProductId: elitePlan.stripe_product_id,
       });
       nextPayload.elite_stripe_price_id = elitePrice.stripePriceId;
       nextPayload.elite_stripe_product_id = elitePrice.stripeProductId;
       nextPayload.elite_monthly_price_cents = elitePrice.amountCents;
+      syncedElitePlan.stripe_price_id = elitePrice.stripePriceId;
+      syncedElitePlan.stripe_product_id = elitePrice.stripeProductId;
+      syncedElitePlan.monthly_price_cents = elitePrice.amountCents;
     }
+
+    nextPayload.pricing_note = serializePlatformPlanConfig({
+      pricingNote: visiblePricingNote,
+      plans: syncedPlans,
+    });
 
     let mutationError = null;
 

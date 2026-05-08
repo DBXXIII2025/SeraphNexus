@@ -2,77 +2,27 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import {
+  formatPlatformPlanPriceLabel,
+  type PlatformPlanCard,
+} from "@/lib/platformPlans";
 
 type PricingClientProps = {
   activeBusinessId: string | null;
   isLoggedIn: boolean;
   isPlatformAdmin: boolean;
   currentPlan: string;
-  pricing: {
-    pro: { label: string; active: boolean };
-    elite: { label: string; active: boolean };
-  };
-  planCopy: {
-    pro: {
-      name: string;
-      subtitle: string;
-      features: string[];
-      badge: string | null;
-      cta: string;
-    };
-    elite: {
-      name: string;
-      subtitle: string;
-      features: string[];
-      badge: string | null;
-      cta: string;
-    };
-  };
+  pricingNote: string;
+  plans: PlatformPlanCard[];
 };
-
-const PLANS = [
-  {
-    tier: "trial",
-    label: "Trial",
-    priceLabel: "$0/mo",
-    summary: "Private invite-only access for the restricted launch tier.",
-    highlights: [
-      "Invite-only free access",
-      "One business and capped catalog setup",
-      "Upgrade for payments, messaging, and analytics",
-    ],
-  },
-  {
-    tier: "pro",
-    label: "Pro",
-    priceLabel: "$19/mo",
-    summary: "Enable payments, full messaging, basic analytics, and standard owner controls.",
-    highlights: [
-      "5% platform fee",
-      "Stripe payments, full messaging, and standard customization",
-      "Up to 2 businesses with unlimited services and products",
-    ],
-  },
-  {
-    tier: "elite",
-    label: "Elite",
-    priceLabel: "$49/mo",
-    summary: "Best economics and the full premium operating stack for scaling businesses.",
-    highlights: [
-      "2% platform fee",
-      "Automation, advanced analytics, and advanced messaging",
-      "Priority explore boost with unlimited businesses",
-    ],
-  },
-] as const;
 
 export default function PricingClient({
   activeBusinessId,
   isLoggedIn,
   isPlatformAdmin,
   currentPlan,
-  pricing,
-  planCopy,
+  pricingNote,
+  plans,
 }: PricingClientProps) {
   const [billingPlan, setBillingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -132,6 +82,9 @@ export default function PricingClient({
             Billing now uses the active business context instead of local browser state, which
             prevents upgrades from targeting the wrong workspace.
           </p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
+            {pricingNote}
+          </p>
 
           <div className="mt-5 flex flex-wrap gap-3 text-sm text-[var(--text-soft)]">
             <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1">
@@ -149,56 +102,34 @@ export default function PricingClient({
           </div>
         ) : null}
 
-        <section className="grid gap-4 lg:grid-cols-3">
-          {PLANS.map((plan) => {
-            const isCurrentPlan = currentPlan === plan.tier;
-            const isPaidPlan = plan.tier === "pro" || plan.tier === "elite";
-            const billingActive =
-              plan.tier === "pro"
-                ? pricing.pro.active
-                : plan.tier === "elite"
-                  ? pricing.elite.active
-                  : true;
+        <section className={`grid gap-4 ${plans.length >= 3 ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+          {plans.map((plan) => {
+            const isCurrentPlan = Boolean(plan.checkout_tier) && currentPlan === plan.checkout_tier;
+            const isSelfServePlan = plan.checkout_tier === "pro" || plan.checkout_tier === "elite";
             const disabled =
-              !isPaidPlan ||
+              !isSelfServePlan ||
               isCurrentPlan ||
               isPlatformAdmin ||
               !isLoggedIn ||
-              !activeBusinessId ||
-              !billingActive;
-            const priceLabel =
-              plan.tier === "pro"
-                ? pricing.pro.label
-                : plan.tier === "elite"
-                  ? pricing.elite.label
-                  : plan.priceLabel;
-            const liveCopy =
-              plan.tier === "pro"
-                ? planCopy.pro
-                : plan.tier === "elite"
-                  ? planCopy.elite
-                  : null;
-            const planLabel = liveCopy?.name || plan.label;
-            const planSummary = liveCopy?.subtitle || plan.summary;
-            const highlights = liveCopy?.features || plan.highlights;
+              !activeBusinessId;
 
             return (
               <article
-                key={plan.tier}
+                key={plan.id}
                 className="surface-card flex h-full flex-col border-[var(--accent-border)] p-5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-2xl font-semibold text-[var(--text-strong)]">
-                      {planLabel}
+                      {plan.name}
                     </h2>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
-                      {planSummary}
+                      {plan.subtitle}
                     </p>
                   </div>
-                  {liveCopy?.badge ? (
+                  {plan.badge_text ? (
                     <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-soft)]">
-                      {liveCopy.badge}
+                      {plan.badge_text}
                     </span>
                   ) : isCurrentPlan ? (
                     <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-soft)]">
@@ -208,16 +139,12 @@ export default function PricingClient({
                 </div>
 
                 <p className="mt-6 text-3xl font-semibold text-[var(--text-strong)]">
-                  {priceLabel}
+                  {formatPlatformPlanPriceLabel(plan.monthly_price_cents)}
                 </p>
-                {!billingActive && isPaidPlan ? (
-                  <p className="mt-2 text-sm text-amber-300">
-                    Temporarily unavailable for new subscriptions
-                  </p>
-                ) : null}
+                <p className="mt-2 text-sm text-[var(--text-soft)]">{plan.billing_note}</p>
 
                 <div className="mt-6 space-y-3">
-                  {highlights.map((highlight) => (
+                  {plan.feature_bullets.map((highlight) => (
                     <div
                       key={highlight}
                       className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]"
@@ -246,26 +173,20 @@ export default function PricingClient({
                     >
                       Create business first
                     </Link>
-                  ) : isPaidPlan ? (
+                  ) : isSelfServePlan ? (
                     <button
                       type="button"
-                      onClick={() => startCheckout(plan.tier)}
+                      onClick={() => startCheckout(plan.checkout_tier!)}
                       disabled={disabled}
                       className="btn-primary inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {billingPlan === plan.tier
+                      {billingPlan === plan.checkout_tier
                         ? "Starting checkout..."
-                        : !billingActive
-                          ? `${planLabel} unavailable`
-                          : liveCopy?.cta || `Choose ${planLabel}`}
+                        : plan.cta_text}
                     </button>
-                  ) : plan.tier === "trial" ? (
-                    <span className="btn-secondary inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium text-[var(--text-soft)]">
-                      Trial granted privately
-                    </span>
                   ) : (
                     <span className="btn-secondary inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium text-[var(--text-soft)]">
-                      Included by default
+                      {plan.cta_text}
                     </span>
                   )}
                 </div>

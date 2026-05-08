@@ -1,4 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import {
+  DEFAULT_PLATFORM_PRICING_NOTE,
+  getDefaultPlatformPlans,
+  normalizePlatformPlans,
+  parsePlatformPlanConfig,
+  type PlatformPlanCard,
+} from "@/lib/platformPlans";
 
 export type PlatformSettings = {
   id?: string;
@@ -32,6 +39,7 @@ export type PlatformSettings = {
   elite_stripe_price_id: string | null;
   pro_stripe_product_id: string | null;
   elite_stripe_product_id: string | null;
+  plans: PlatformPlanCard[];
 };
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
@@ -44,8 +52,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
     "Launch-ready business tools with Stripe Connect payouts, admin operations, and polished customer flows.",
   support_email: "support@seraphnexus.com",
   support_phone: "(800) 555-0100",
-  pricing_note:
-    "Choose the fee tier that matches your growth stage: Free 10%, Pro 5%, Elite 2%.",
+  pricing_note: DEFAULT_PLATFORM_PRICING_NOTE,
   pro_monthly_price_cents: 1900,
   elite_monthly_price_cents: 4900,
   trial_transaction_fee_bps: 1000,
@@ -77,9 +84,8 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   elite_stripe_price_id: null,
   pro_stripe_product_id: null,
   elite_stripe_product_id: null,
+  plans: getDefaultPlatformPlans(),
 };
-
-const PLAN_COPY_NOTE_PREFIX = "__SERAPH_PLAN_COPY_V1__";
 
 type PlanCopyPayload = {
   pricing_note?: string;
@@ -103,6 +109,7 @@ type PlanCopyPayload = {
 
 function parsePlanCopyPricingNote(value: unknown): PlanCopyPayload {
   const raw = String(value || "").trim();
+  const PLAN_COPY_NOTE_PREFIX = "__SERAPH_PLAN_COPY_V1__";
   if (!raw.startsWith(PLAN_COPY_NOTE_PREFIX)) {
     return { pricing_note: raw };
   }
@@ -132,6 +139,7 @@ export function serializePlanCopyPricingNote(args: {
     cta: string;
   };
 }) {
+  const PLAN_COPY_NOTE_PREFIX = "__SERAPH_PLAN_COPY_V1__";
   return `${PLAN_COPY_NOTE_PREFIX}${JSON.stringify({
     pricing_note: args.pricingNote,
     pro: {
@@ -166,7 +174,9 @@ function isMissingBrandingColumnError(error: { code?: string | null; message?: s
 }
 
 function normalizePlatformSettingsRow(data: Record<string, any>) {
+  const defaultPlans = getDefaultPlatformPlans();
   const storedPlanCopy = parsePlanCopyPricingNote(data.pricing_note);
+  const storedPlanConfig = parsePlatformPlanConfig(data.pricing_note);
   const normalizeFeatures = (value: unknown, fallback: string[]) => {
     if (!Array.isArray(value)) {
       return fallback;
@@ -177,6 +187,102 @@ function normalizePlatformSettingsRow(data: Record<string, any>) {
       .slice(0, 10);
     return features.length > 0 ? features : fallback;
   };
+
+  const fallbackProPlan = {
+    id: "pro",
+    name:
+      String(data.pro_plan_name || storedPlanCopy.pro?.pro_plan_name || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.pro_plan_name,
+    subtitle:
+      String(data.pro_plan_subtitle || storedPlanCopy.pro?.pro_plan_subtitle || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.pro_plan_subtitle,
+    monthly_price_cents:
+      typeof data.pro_monthly_price_cents === "number"
+        ? data.pro_monthly_price_cents
+        : DEFAULT_PLATFORM_SETTINGS.pro_monthly_price_cents,
+    billing_note:
+      String(data.pro_plan_subtitle || storedPlanCopy.pro?.pro_plan_subtitle || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.pro_plan_subtitle,
+    transaction_fee_bps:
+      typeof data.pro_transaction_fee_bps === "number"
+        ? data.pro_transaction_fee_bps
+        : DEFAULT_PLATFORM_SETTINGS.pro_transaction_fee_bps,
+    feature_bullets: normalizeFeatures(
+      data.pro_plan_features || storedPlanCopy.pro?.pro_plan_features,
+      DEFAULT_PLATFORM_SETTINGS.pro_plan_features
+    ),
+    badge_text:
+      String(data.pro_plan_badge || storedPlanCopy.pro?.pro_plan_badge || "").trim() || null,
+    cta_text:
+      String(data.pro_plan_cta || storedPlanCopy.pro?.pro_plan_cta || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.pro_plan_cta,
+    is_active:
+      typeof data.pro_price_active === "boolean"
+        ? data.pro_price_active
+        : DEFAULT_PLATFORM_SETTINGS.pro_price_active,
+    stripe_price_id:
+      typeof data.pro_stripe_price_id === "string" && data.pro_stripe_price_id.trim()
+        ? data.pro_stripe_price_id.trim()
+        : DEFAULT_PLATFORM_SETTINGS.pro_stripe_price_id,
+    stripe_product_id:
+      typeof data.pro_stripe_product_id === "string" && data.pro_stripe_product_id.trim()
+        ? data.pro_stripe_product_id.trim()
+        : DEFAULT_PLATFORM_SETTINGS.pro_stripe_product_id,
+    checkout_tier: "pro" as const,
+    is_default: true,
+  };
+
+  const fallbackElitePlan = {
+    id: "elite",
+    name:
+      String(data.elite_plan_name || storedPlanCopy.elite?.elite_plan_name || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.elite_plan_name,
+    subtitle:
+      String(data.elite_plan_subtitle || storedPlanCopy.elite?.elite_plan_subtitle || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.elite_plan_subtitle,
+    monthly_price_cents:
+      typeof data.elite_monthly_price_cents === "number"
+        ? data.elite_monthly_price_cents
+        : DEFAULT_PLATFORM_SETTINGS.elite_monthly_price_cents,
+    billing_note:
+      String(data.elite_plan_subtitle || storedPlanCopy.elite?.elite_plan_subtitle || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.elite_plan_subtitle,
+    transaction_fee_bps:
+      typeof data.elite_transaction_fee_bps === "number"
+        ? data.elite_transaction_fee_bps
+        : DEFAULT_PLATFORM_SETTINGS.elite_transaction_fee_bps,
+    feature_bullets: normalizeFeatures(
+      data.elite_plan_features || storedPlanCopy.elite?.elite_plan_features,
+      DEFAULT_PLATFORM_SETTINGS.elite_plan_features
+    ),
+    badge_text:
+      String(data.elite_plan_badge || storedPlanCopy.elite?.elite_plan_badge || "").trim() ||
+      null,
+    cta_text:
+      String(data.elite_plan_cta || storedPlanCopy.elite?.elite_plan_cta || "").trim() ||
+      DEFAULT_PLATFORM_SETTINGS.elite_plan_cta,
+    is_active:
+      typeof data.elite_price_active === "boolean"
+        ? data.elite_price_active
+        : DEFAULT_PLATFORM_SETTINGS.elite_price_active,
+    stripe_price_id:
+      typeof data.elite_stripe_price_id === "string" && data.elite_stripe_price_id.trim()
+        ? data.elite_stripe_price_id.trim()
+        : DEFAULT_PLATFORM_SETTINGS.elite_stripe_price_id,
+    stripe_product_id:
+      typeof data.elite_stripe_product_id === "string" && data.elite_stripe_product_id.trim()
+        ? data.elite_stripe_product_id.trim()
+        : DEFAULT_PLATFORM_SETTINGS.elite_stripe_product_id,
+    checkout_tier: "elite" as const,
+    is_default: true,
+  };
+
+  const plans = normalizePlatformPlans(storedPlanConfig?.plans, [
+    { ...defaultPlans.find((plan) => plan.id === "pro")!, ...fallbackProPlan },
+    { ...defaultPlans.find((plan) => plan.id === "elite")!, ...fallbackElitePlan },
+  ]);
+  const proPlan = plans.find((plan) => plan.id === "pro") || fallbackProPlan;
+  const elitePlan = plans.find((plan) => plan.id === "elite") || fallbackElitePlan;
 
   return {
     id: data.id || undefined,
@@ -200,7 +306,7 @@ function normalizePlatformSettingsRow(data: Record<string, any>) {
     support_email: data.support_email || DEFAULT_PLATFORM_SETTINGS.support_email,
     support_phone: data.support_phone || DEFAULT_PLATFORM_SETTINGS.support_phone,
     pricing_note:
-      String(storedPlanCopy.pricing_note || "").trim() ||
+      String(storedPlanConfig?.pricing_note || storedPlanCopy.pricing_note || "").trim() ||
       DEFAULT_PLATFORM_SETTINGS.pricing_note,
     pro_monthly_price_cents:
       typeof data.pro_monthly_price_cents === "number"
@@ -214,69 +320,25 @@ function normalizePlatformSettingsRow(data: Record<string, any>) {
       typeof data.trial_transaction_fee_bps === "number"
         ? data.trial_transaction_fee_bps
         : DEFAULT_PLATFORM_SETTINGS.trial_transaction_fee_bps,
-    pro_transaction_fee_bps:
-      typeof data.pro_transaction_fee_bps === "number"
-        ? data.pro_transaction_fee_bps
-        : DEFAULT_PLATFORM_SETTINGS.pro_transaction_fee_bps,
-    elite_transaction_fee_bps:
-      typeof data.elite_transaction_fee_bps === "number"
-        ? data.elite_transaction_fee_bps
-        : DEFAULT_PLATFORM_SETTINGS.elite_transaction_fee_bps,
-    pro_plan_name:
-      String(data.pro_plan_name || storedPlanCopy.pro?.pro_plan_name || "").trim() ||
-      DEFAULT_PLATFORM_SETTINGS.pro_plan_name,
-    pro_plan_subtitle:
-      String(data.pro_plan_subtitle || storedPlanCopy.pro?.pro_plan_subtitle || "").trim() ||
-      DEFAULT_PLATFORM_SETTINGS.pro_plan_subtitle,
-    pro_plan_features: normalizeFeatures(
-      data.pro_plan_features || storedPlanCopy.pro?.pro_plan_features,
-      DEFAULT_PLATFORM_SETTINGS.pro_plan_features
-    ),
-    pro_plan_badge:
-      String(data.pro_plan_badge || storedPlanCopy.pro?.pro_plan_badge || "").trim() || null,
-    pro_plan_cta:
-      String(data.pro_plan_cta || storedPlanCopy.pro?.pro_plan_cta || "").trim() ||
-      DEFAULT_PLATFORM_SETTINGS.pro_plan_cta,
-    elite_plan_name:
-      String(data.elite_plan_name || storedPlanCopy.elite?.elite_plan_name || "").trim() ||
-      DEFAULT_PLATFORM_SETTINGS.elite_plan_name,
-    elite_plan_subtitle:
-      String(data.elite_plan_subtitle || storedPlanCopy.elite?.elite_plan_subtitle || "").trim() ||
-      DEFAULT_PLATFORM_SETTINGS.elite_plan_subtitle,
-    elite_plan_features: normalizeFeatures(
-      data.elite_plan_features || storedPlanCopy.elite?.elite_plan_features,
-      DEFAULT_PLATFORM_SETTINGS.elite_plan_features
-    ),
-    elite_plan_badge:
-      String(data.elite_plan_badge || storedPlanCopy.elite?.elite_plan_badge || "").trim() ||
-      null,
-    elite_plan_cta:
-      String(data.elite_plan_cta || storedPlanCopy.elite?.elite_plan_cta || "").trim() ||
-      DEFAULT_PLATFORM_SETTINGS.elite_plan_cta,
-    pro_price_active:
-      typeof data.pro_price_active === "boolean"
-        ? data.pro_price_active
-        : DEFAULT_PLATFORM_SETTINGS.pro_price_active,
-    elite_price_active:
-      typeof data.elite_price_active === "boolean"
-        ? data.elite_price_active
-        : DEFAULT_PLATFORM_SETTINGS.elite_price_active,
-    pro_stripe_price_id:
-      typeof data.pro_stripe_price_id === "string" && data.pro_stripe_price_id.trim()
-        ? data.pro_stripe_price_id.trim()
-        : DEFAULT_PLATFORM_SETTINGS.pro_stripe_price_id,
-    elite_stripe_price_id:
-      typeof data.elite_stripe_price_id === "string" && data.elite_stripe_price_id.trim()
-        ? data.elite_stripe_price_id.trim()
-        : DEFAULT_PLATFORM_SETTINGS.elite_stripe_price_id,
-    pro_stripe_product_id:
-      typeof data.pro_stripe_product_id === "string" && data.pro_stripe_product_id.trim()
-        ? data.pro_stripe_product_id.trim()
-        : DEFAULT_PLATFORM_SETTINGS.pro_stripe_product_id,
-    elite_stripe_product_id:
-      typeof data.elite_stripe_product_id === "string" && data.elite_stripe_product_id.trim()
-        ? data.elite_stripe_product_id.trim()
-        : DEFAULT_PLATFORM_SETTINGS.elite_stripe_product_id,
+    pro_transaction_fee_bps: proPlan.transaction_fee_bps,
+    elite_transaction_fee_bps: elitePlan.transaction_fee_bps,
+    pro_plan_name: proPlan.name,
+    pro_plan_subtitle: proPlan.subtitle,
+    pro_plan_features: proPlan.feature_bullets,
+    pro_plan_badge: proPlan.badge_text,
+    pro_plan_cta: proPlan.cta_text,
+    elite_plan_name: elitePlan.name,
+    elite_plan_subtitle: elitePlan.subtitle,
+    elite_plan_features: elitePlan.feature_bullets,
+    elite_plan_badge: elitePlan.badge_text,
+    elite_plan_cta: elitePlan.cta_text,
+    pro_price_active: proPlan.is_active,
+    elite_price_active: elitePlan.is_active,
+    pro_stripe_price_id: proPlan.stripe_price_id,
+    elite_stripe_price_id: elitePlan.stripe_price_id,
+    pro_stripe_product_id: proPlan.stripe_product_id,
+    elite_stripe_product_id: elitePlan.stripe_product_id,
+    plans,
   };
 }
 
@@ -304,13 +366,10 @@ function buildDefaultPlatformSettingsInsertPayload(args: { includeLogo: boolean 
     elite_transaction_fee_bps: DEFAULT_PLATFORM_SETTINGS.elite_transaction_fee_bps,
     pro_price_active: DEFAULT_PLATFORM_SETTINGS.pro_price_active,
     elite_price_active: DEFAULT_PLATFORM_SETTINGS.elite_price_active,
+    logo_url: args.includeLogo ? null : undefined,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-
-  if (args.includeLogo) {
-    payload.logo_url = null;
-  }
 
   return payload;
 }

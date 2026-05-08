@@ -21,11 +21,13 @@ import {
 } from "@/lib/platformBranding";
 import { inspectPlatformLogoAsset } from "@/lib/platformLogoAsset";
 import { PLAN_DEFINITIONS, type PlanFeature } from "@/lib/planConfig";
+import { getVisiblePlatformPlans } from "@/lib/platformPlans";
 import {
   getPlatformIncomeAudit,
   getPlatformOwnerBusinessAudits,
 } from "@/lib/platformOwnerCleanup";
 import PlatformBrandingPanel from "./PlatformBrandingPanel";
+import PlatformPlansEditor from "./PlatformPlansEditor";
 import {
   AdminPageContainer,
   DashboardGrid,
@@ -437,6 +439,7 @@ export default async function PlatformPage({
   const platformSiteName = resolvePlatformName(settings);
   const platformLogoUrl = resolvePlatformLogoUrl(settings);
   const platformLogoAsset = await inspectPlatformLogoAsset(platformLogoUrl);
+  const visiblePlans = getVisiblePlatformPlans(settings.plans);
 
   console.info("[platform-branding] platform page branding payload", {
     platformName: platformSiteName,
@@ -548,69 +551,8 @@ export default async function PlatformPage({
             <p className="section-kicker">Platform Settings</p>
             <h2 className="section-title">Brand, support, and plan billing</h2>
             <p className="section-description">
-              Manage public platform copy and the active Pro and Elite Stripe prices used for future subscriptions.
+              Manage public platform copy and the plan cards shown across pricing and upgrade surfaces.
             </p>
-          </div>
-
-          <div className="form-section space-y-4">
-            <div className="section-header-copy">
-              <p className="section-kicker">Live Transaction Fees</p>
-              <h3 className="text-lg font-semibold text-[var(--text-strong)]">
-                Platform fee percentages by effective plan
-              </h3>
-              <p className="section-description">
-                These percentages are the canonical source used by future Stripe Checkout payments.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Trial / inactive fee %</span>
-                <input
-                  name="trial_transaction_fee_percent"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  defaultValue={(settings.trial_transaction_fee_bps / 100).toFixed(2)}
-                  className="input-field mt-2"
-                />
-              </label>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Pro fee %</span>
-                <input
-                  name="pro_transaction_fee_percent"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  defaultValue={(settings.pro_transaction_fee_bps / 100).toFixed(2)}
-                  className="input-field mt-2"
-                />
-              </label>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Elite fee %</span>
-                <input
-                  name="elite_transaction_fee_percent"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  defaultValue={(settings.elite_transaction_fee_bps / 100).toFixed(2)}
-                  className="input-field mt-2"
-                />
-              </label>
-            </div>
-            <div className="grid gap-3 text-sm md:grid-cols-3">
-              <div className="table-row-panel p-3">
-                Trial live fee: {formatPlatformFeeBpsLabel(settings.trial_transaction_fee_bps)}
-              </div>
-              <div className="table-row-panel p-3">
-                Pro live fee: {formatPlatformFeeBpsLabel(settings.pro_transaction_fee_bps)}
-              </div>
-              <div className="table-row-panel p-3">
-                Elite live fee: {formatPlatformFeeBpsLabel(settings.elite_transaction_fee_bps)}
-              </div>
-            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -653,154 +595,10 @@ export default async function PlatformPage({
             </label>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="form-section space-y-4">
-              <div className="section-header-copy">
-                <p className="section-kicker">Public Pro Copy</p>
-                <h3 className="text-lg font-semibold text-[var(--text-strong)]">
-                  Live pricing card content
-                </h3>
-              </div>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Plan name</span>
-                <input name="pro_plan_name" defaultValue={settings.pro_plan_name} className="input-field mt-2" />
-              </label>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Subtitle</span>
-                <textarea name="pro_plan_subtitle" defaultValue={settings.pro_plan_subtitle} className="input-field mt-2 min-h-[88px]" />
-              </label>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Included features, one per line</span>
-                <textarea name="pro_plan_features" defaultValue={settings.pro_plan_features.join("\n")} className="input-field mt-2 min-h-[132px]" />
-              </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-sm text-[var(--text-soft)]">
-                  <span className="form-label">Badge text</span>
-                  <input name="pro_plan_badge" defaultValue={settings.pro_plan_badge || ""} className="input-field mt-2" />
-                </label>
-                <label className="text-sm text-[var(--text-soft)]">
-                  <span className="form-label">CTA text</span>
-                  <input name="pro_plan_cta" defaultValue={settings.pro_plan_cta} className="input-field mt-2" />
-                </label>
-              </div>
-            </div>
-
-            <div className="form-section space-y-4">
-              <div className="section-header-copy">
-                <p className="section-kicker">Public Elite Copy</p>
-                <h3 className="text-lg font-semibold text-[var(--text-strong)]">
-                  Live pricing card content
-                </h3>
-              </div>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Plan name</span>
-                <input name="elite_plan_name" defaultValue={settings.elite_plan_name} className="input-field mt-2" />
-              </label>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Subtitle</span>
-                <textarea name="elite_plan_subtitle" defaultValue={settings.elite_plan_subtitle} className="input-field mt-2 min-h-[88px]" />
-              </label>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Included features, one per line</span>
-                <textarea name="elite_plan_features" defaultValue={settings.elite_plan_features.join("\n")} className="input-field mt-2 min-h-[132px]" />
-              </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-sm text-[var(--text-soft)]">
-                  <span className="form-label">Badge text</span>
-                  <input name="elite_plan_badge" defaultValue={settings.elite_plan_badge || ""} className="input-field mt-2" />
-                </label>
-                <label className="text-sm text-[var(--text-soft)]">
-                  <span className="form-label">CTA text</span>
-                  <input name="elite_plan_cta" defaultValue={settings.elite_plan_cta} className="input-field mt-2" />
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="form-section space-y-4">
-              <div>
-                <p className="form-label">Pro monthly price</p>
-                <input
-                  name="pro_monthly_price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  defaultValue={(settings.pro_monthly_price_cents / 100).toFixed(2)}
-                  className="input-field mt-2"
-                />
-              </div>
-              <label className="flex items-center gap-3 text-sm text-[var(--text-soft)]">
-                <input type="checkbox" name="pro_price_active" defaultChecked={settings.pro_price_active} />
-                <span>Pro billing active</span>
-              </label>
-              <p className="text-xs text-[var(--text-muted)]">
-                Current Stripe price: {settings.pro_stripe_price_id || "Will be created on save"}
-              </p>
-              <p className="text-xs text-[var(--text-muted)]">
-                Current Stripe product: {settings.pro_stripe_product_id || "Will be created on save"}
-              </p>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Use existing active Stripe price ID</span>
-                <input
-                  name="pro_stripe_price_id_override"
-                  placeholder={settings.pro_stripe_price_id || "price_..."}
-                  className="input-field mt-2"
-                />
-              </label>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Use existing Stripe product ID</span>
-                <input
-                  name="pro_stripe_product_id_override"
-                  placeholder={settings.pro_stripe_product_id || "prod_..."}
-                  className="input-field mt-2"
-                />
-              </label>
-            </div>
-
-            <div className="form-section space-y-4">
-              <div>
-                <p className="form-label">Elite monthly price</p>
-                <input
-                  name="elite_monthly_price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  defaultValue={(settings.elite_monthly_price_cents / 100).toFixed(2)}
-                  className="input-field mt-2"
-                />
-              </div>
-              <label className="flex items-center gap-3 text-sm text-[var(--text-soft)]">
-                <input type="checkbox" name="elite_price_active" defaultChecked={settings.elite_price_active} />
-                <span>Elite billing active</span>
-              </label>
-              <p className="text-xs text-[var(--text-muted)]">
-                Current Stripe price: {settings.elite_stripe_price_id || "Will be created on save"}
-              </p>
-              <p className="text-xs text-[var(--text-muted)]">
-                Current Stripe product: {settings.elite_stripe_product_id || "Will be created on save"}
-              </p>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Use existing active Stripe price ID</span>
-                <input
-                  name="elite_stripe_price_id_override"
-                  placeholder={settings.elite_stripe_price_id || "price_..."}
-                  className="input-field mt-2"
-                />
-              </label>
-              <label className="text-sm text-[var(--text-soft)]">
-                <span className="form-label">Use existing Stripe product ID</span>
-                <input
-                  name="elite_stripe_product_id_override"
-                  placeholder={settings.elite_stripe_product_id || "prod_..."}
-                  className="input-field mt-2"
-                />
-              </label>
-            </div>
-          </div>
+          <PlatformPlansEditor initialPlans={settings.plans} />
 
           <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
-            Saving billing creates or reuses Stripe monthly price objects and updates the active price ids future subscription checkouts will use.
+            Saving plan settings keeps Pro and Elite Stripe billing in sync while allowing extra display-only plans to be added or removed without changing core checkout logic.
           </div>
 
           <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
@@ -820,6 +618,39 @@ export default async function PlatformPage({
           />
 
           <section className="dashboard-secondary-panel p-6">
+            <div className="section-header-copy">
+              <p className="section-kicker">Visible Plans</p>
+              <h2 className="section-title">Current pricing cards</h2>
+              <p className="section-description">
+                Only active plans appear on public pricing and upgrade surfaces.
+              </p>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {visiblePlans.map((plan) => (
+                <div key={plan.id} className="table-row-panel p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-[var(--text-strong)]">{plan.name}</p>
+                      <p className="mt-1 text-sm text-[var(--text-soft)]">{plan.subtitle}</p>
+                      <p className="mt-2 text-xs text-[var(--text-muted)]">
+                        {plan.billing_note}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-[var(--text-strong)]">
+                        {formatMonthlyPriceLabel(plan.monthly_price_cents)}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--text-muted)]">
+                        Fee {(plan.transaction_fee_bps / 100).toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 border-t border-[var(--border-soft)] pt-6">
             <div className="section-header-copy">
               <p className="section-kicker">Platform Stripe</p>
               <h2 className="section-title">Platform payout and billing account</h2>
@@ -874,6 +705,7 @@ export default async function PlatformPage({
                 {stripeEnvironment.dashboardUrl.replace("https://", "")}
               </span>
             </div>
+          </div>
           </section>
 
           <section className="dashboard-secondary-panel p-6">
