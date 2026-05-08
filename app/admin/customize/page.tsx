@@ -59,6 +59,7 @@ export default async function CustomizePage() {
           page_text_color: customization.theme.textColor,
           heading_font_size: customization.theme.headingFontSize,
           body_font_size: customization.theme.bodyFontSize,
+          service_category: business.service_category || "",
           phone: profileFields.phone || "",
           email: profileFields.email || "",
           website: profileFields.website || "",

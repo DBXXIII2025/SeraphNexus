@@ -1,5 +1,5 @@
 ﻿import { createAdminClient, createClient } from "@/lib/supabase/server";
-import { PUBLIC_BUSINESS_ROUTE_SELECT } from "@/lib/publicBusinessQueries";
+import { PUBLIC_BUSINESS_ROUTE_SELECT_LEGACY } from "@/lib/publicBusinessQueries";
 import {
   getCanonicalPublicBusinessRoute,
   isRentalPublicBusinessType,
@@ -45,7 +45,7 @@ export default async function RentPage({
 
   const { data: business, error } = await supabase
     .from("businesses")
-    .select(PUBLIC_BUSINESS_ROUTE_SELECT)
+    .select(PUBLIC_BUSINESS_ROUTE_SELECT_LEGACY)
     .eq("slug", slug)
     .maybeSingle();
 

@@ -1,5 +1,8 @@
 import { cookies } from "next/headers";
-import { BUSINESS_RUNTIME_SELECT } from "@/lib/businessFields";
+import {
+  BUSINESS_RUNTIME_SELECT_LEGACY,
+  BUSINESS_RUNTIME_SELECT_WITH_SERVICE_CATEGORY,
+} from "@/lib/businessFields";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import {
   getBusinessStaffRole,
@@ -9,6 +12,7 @@ import {
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { normalizeBusinessPlanRecord } from "@/lib/businessPlan";
 import type { PlanTier } from "@/lib/planConfig";
+import { isMissingServiceCategoryColumnError } from "@/lib/serviceCategories";
 
 type ActiveBusinessRow = {
   id: string;
@@ -29,6 +33,7 @@ type ActiveBusinessRow = {
   delivery_enabled?: boolean | null;
   onsite_enabled?: boolean | null;
   remote_enabled?: boolean | null;
+  service_category?: string | null;
   plan: unknown;
 };
 
@@ -50,6 +55,22 @@ export async function getActiveBusiness(
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  async function selectBusinessRows(
+    tableClient: any,
+    apply: (query: any) => Promise<{
+      data: Record<string, unknown> | Record<string, unknown>[] | null;
+      error: { message?: string; code?: string | null } | null;
+    }>
+  ) {
+    let result = await apply(tableClient.select(BUSINESS_RUNTIME_SELECT_WITH_SERVICE_CATEGORY));
+
+    if (result.error && isMissingServiceCategoryColumnError(result.error)) {
+      result = await apply(tableClient.select(BUSINESS_RUNTIME_SELECT_LEGACY));
+    }
+
+    return result;
+  }
 
   async function normalizeBusiness(
     data: ActiveBusinessRow | null,
@@ -78,12 +99,9 @@ export async function getActiveBusiness(
   }
 
   if (requestedBusinessId) {
-    const { data } = await supabase
-      .from("businesses")
-      .select(BUSINESS_RUNTIME_SELECT)
-      .eq("id", requestedBusinessId)
-      .eq("owner_id", user.id)
-      .maybeSingle();
+    const { data } = await selectBusinessRows(supabase.from("businesses"), (query) =>
+      query.eq("id", requestedBusinessId).eq("owner_id", user.id).maybeSingle()
+    );
 
     if (data) return normalizeBusiness(data as unknown as ActiveBusinessRow, "owner");
 
@@ -93,11 +111,10 @@ export async function getActiveBusiness(
     });
 
     if (staffRole) {
-      const { data: staffBusiness } = await createAdminClient()
-        .from("businesses")
-        .select(BUSINESS_RUNTIME_SELECT)
-        .eq("id", requestedBusinessId)
-        .maybeSingle();
+      const { data: staffBusiness } = await selectBusinessRows(
+        createAdminClient().from("businesses"),
+        (query) => query.eq("id", requestedBusinessId).maybeSingle()
+      );
 
       if (staffBusiness) {
         return normalizeBusiness(staffBusiness as unknown as ActiveBusinessRow, staffRole);
@@ -106,12 +123,9 @@ export async function getActiveBusiness(
   }
 
   if (activeId) {
-    const { data } = await supabase
-      .from("businesses")
-      .select(BUSINESS_RUNTIME_SELECT)
-      .eq("id", activeId)
-      .eq("owner_id", user.id)
-      .maybeSingle();
+    const { data } = await selectBusinessRows(supabase.from("businesses"), (query) =>
+      query.eq("id", activeId).eq("owner_id", user.id).maybeSingle()
+    );
 
     if (data) return normalizeBusiness(data as unknown as ActiveBusinessRow, "owner");
 
@@ -121,11 +135,10 @@ export async function getActiveBusiness(
     });
 
     if (staffRole) {
-      const { data: staffBusiness } = await createAdminClient()
-        .from("businesses")
-        .select(BUSINESS_RUNTIME_SELECT)
-        .eq("id", activeId)
-        .maybeSingle();
+      const { data: staffBusiness } = await selectBusinessRows(
+        createAdminClient().from("businesses"),
+        (query) => query.eq("id", activeId).maybeSingle()
+      );
 
       if (staffBusiness) {
         return normalizeBusiness(staffBusiness as unknown as ActiveBusinessRow, staffRole);
@@ -133,11 +146,10 @@ export async function getActiveBusiness(
     }
   }
 
-  const { data: ownedBusinesses, error } = await supabase
-    .from("businesses")
-    .select(BUSINESS_RUNTIME_SELECT)
-    .eq("owner_id", user.id)
-    .limit(2);
+  const { data: ownedBusinesses, error } = await selectBusinessRows(
+    supabase.from("businesses"),
+    (query) => query.eq("owner_id", user.id).limit(2)
+  );
 
   if (error) {
     console.error("[getActiveBusiness] owner lookup failed", {
@@ -178,11 +190,10 @@ export async function getActiveBusiness(
       userId: user.id,
     });
     if (staffRole) {
-      const { data: staffBusiness } = await createAdminClient()
-        .from("businesses")
-        .select(BUSINESS_RUNTIME_SELECT)
-        .eq("id", firstStaffBusinessId)
-        .maybeSingle();
+      const { data: staffBusiness } = await selectBusinessRows(
+        createAdminClient().from("businesses"),
+        (query) => query.eq("id", firstStaffBusinessId).maybeSingle()
+      );
 
       if (staffBusiness) {
         return normalizeBusiness(staffBusiness as unknown as ActiveBusinessRow, staffRole);

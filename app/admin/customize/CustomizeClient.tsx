@@ -13,6 +13,11 @@ import {
   normalizeBusinessPageTheme,
   type BusinessPageImage,
 } from "@/lib/businessPageCustomization";
+import {
+  formatServiceCategory,
+  SERVICE_CATEGORY_OPTIONS,
+  type ServiceCategory,
+} from "@/lib/serviceCategories";
 
 const CLIENT_MAX_ORIGINAL_IMAGE_BYTES = 40 * 1024 * 1024;
 const CLIENT_MAX_UPLOAD_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -31,6 +36,7 @@ type CustomizeClientProps = {
     page_text_color: string;
     heading_font_size: number;
     body_font_size: number;
+    service_category: string;
     phone: string;
     email: string;
     website: string;
@@ -235,6 +241,7 @@ export default function CustomizeClient({
       page_text_color: data.business?.page_text_color || form.page_text_color,
       heading_font_size: data.business?.heading_font_size || form.heading_font_size,
       body_font_size: data.business?.body_font_size || form.body_font_size,
+      service_category: data.business?.service_category ?? form.service_category,
       phone: data.business?.phone ?? form.phone,
       email: data.business?.email ?? form.email,
       website: data.business?.website ?? form.website,
@@ -647,6 +654,11 @@ export default function CustomizeClient({
               businessName={form.name || "Business"}
               businessDescription={form.description}
               businessType={form.business_type}
+              businessCategory={
+                form.business_type === "service"
+                  ? formatServiceCategory(form.service_category)
+                  : null
+              }
               logoUrl={logoUrl}
               images={galleryImages}
               theme={previewTheme}
@@ -766,6 +778,31 @@ export default function CustomizeClient({
                   className="min-h-32 w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
                 />
               </div>
+
+              {form.business_type === "service" ? (
+                <div>
+                  <p className="mb-1 text-sm font-medium text-[var(--text-soft)]">
+                    Service category
+                  </p>
+                  <select
+                    value={form.service_category}
+                    onChange={(e) =>
+                      setForm({ ...form, service_category: e.target.value as ServiceCategory | "" })
+                    }
+                    className="w-full rounded border border-[var(--border-strong)] bg-[var(--surface)] p-2 text-[var(--text-strong)]"
+                  >
+                    <option value="">Not set</option>
+                    {SERVICE_CATEGORY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-[var(--text-muted)]">
+                    Public label: {formatServiceCategory(form.service_category) || "Not set"}
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
 

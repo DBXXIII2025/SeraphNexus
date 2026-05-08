@@ -10,6 +10,7 @@ import {
   type ExploreCategory,
   type ExploreCategoryId,
 } from "@/lib/exploreBusinessTypes";
+import { formatServiceCategory } from "@/lib/serviceCategories";
 
 export { EXPLORE_CATEGORIES };
 export type { ExploreCategory, ExploreCategoryId };
@@ -20,6 +21,7 @@ export type Business = {
   slug: string | null;
   description?: string | null;
   business_type: string | null;
+  service_category?: string | null;
   is_published: boolean | null;
   created_at?: string | null;
   plan?: string | null;
@@ -57,6 +59,7 @@ export type BusinessViewModel = Business & {
   displayDescription: string | null;
   initials: string;
   score: number;
+  serviceCategoryLabel: string | null;
 };
 
 export const ROUTE_FILTERS: Array<{
@@ -189,6 +192,8 @@ export function buildBusinessViewModels(businesses: Business[]) {
       const displayName = business.name?.trim() || "Unnamed business";
       const displayDescription = business.description?.trim() || null;
       const thumbnailUrl = cleanText(business.logo_url);
+      const serviceCategoryLabel =
+        normalizedType === "service" ? formatServiceCategory(business.service_category) : null;
 
       const viewModel: BusinessViewModel = {
         ...business,
@@ -204,6 +209,7 @@ export function buildBusinessViewModels(businesses: Business[]) {
         displayDescription,
         initials: getInitials(displayName),
         score: 0,
+        serviceCategoryLabel,
       };
 
       console.info("[explore] business_type icon mapping", {

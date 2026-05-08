@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { PUBLIC_BUSINESS_ROUTE_SELECT } from "@/lib/publicBusinessQueries";
+import {
+  PUBLIC_BUSINESS_ROUTE_SELECT,
+  PUBLIC_BUSINESS_ROUTE_SELECT_LEGACY,
+} from "@/lib/publicBusinessQueries";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getPublicBusinessHrefState } from "@/lib/publicBusinessRoutes";
 import { loadBusinessLogoById } from "@/lib/businessLogos";
@@ -11,6 +14,10 @@ import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { formatBusinessAddress, loadBusinessProfileFields } from "@/lib/businessProfileFields";
 import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
 import { getPlatformSettings } from "@/lib/platformSettings";
+import {
+  formatServiceCategory,
+  isMissingServiceCategoryColumnError,
+} from "@/lib/serviceCategories";
 
 type Params = {
   slug: string;
@@ -28,11 +35,21 @@ export default async function PublicRouterPage({
   const supabaseAdmin = createAdminClient();
   const isDev = process.env.NODE_ENV !== "production";
 
-  const { data: business, error } = await supabase
+  let businessQuery = await supabase
     .from("businesses")
     .select(PUBLIC_BUSINESS_ROUTE_SELECT)
     .eq("slug", slug)
     .maybeSingle();
+
+  if (businessQuery.error && isMissingServiceCategoryColumnError(businessQuery.error)) {
+    businessQuery = await supabase
+      .from("businesses")
+      .select(PUBLIC_BUSINESS_ROUTE_SELECT_LEGACY)
+      .eq("slug", slug)
+      .maybeSingle();
+  }
+
+  const { data: business, error } = businessQuery;
 
   if (error || !business) {
     console.log("BUSINESS QUERY FAILED", error);
@@ -82,6 +99,11 @@ export default async function PublicRouterPage({
           businessName={business.name || "Business"}
           businessDescription={business.description || ""}
           businessType={business.business_type || "General"}
+          businessCategory={
+            business.business_type === "service"
+              ? formatServiceCategory((business as { service_category?: string | null }).service_category)
+              : null
+          }
           logoUrl={logoUrl}
           images={customization.images}
           theme={customization.theme}

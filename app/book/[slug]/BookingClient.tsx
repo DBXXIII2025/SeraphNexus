@@ -33,6 +33,8 @@ type BookingBusiness = {
   name: string | null;
   description?: string | null;
   business_type?: string | null;
+  service_category?: string | null;
+  service_category_label?: string | null;
   logo_url?: string | null;
   language?: "en" | "es" | null;
   onsite_enabled?: boolean | null;
@@ -416,6 +418,7 @@ export default function BookingClient({
           businessName={business.name || "Business"}
           businessDescription={business.description || ""}
           businessType={business.business_type || "Service"}
+          businessCategory={business.service_category_label || null}
           logoUrl={business.logo_url}
           images={business.galleryImages}
           theme={business.pageTheme}

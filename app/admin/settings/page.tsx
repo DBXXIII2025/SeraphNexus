@@ -49,6 +49,7 @@ type SettingsBusiness = {
   delivery_enabled?: boolean | null;
   onsite_enabled?: boolean | null;
   remote_enabled?: boolean | null;
+  service_category?: string | null;
   access_role?: "owner" | "admin" | "manager" | "staff";
 };
 

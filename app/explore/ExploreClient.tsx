@@ -16,6 +16,7 @@ import {
 import ExploreGrid from "./_components/ExploreGrid";
 import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
 import { trackLeadEvents } from "@/lib/leadTracker";
+import { SERVICE_CATEGORY_OPTIONS, type ServiceCategory } from "@/lib/serviceCategories";
 
 type MarketplaceCategory = "all" | "services" | "rentals" | "food" | "shops";
 
@@ -56,6 +57,7 @@ export default function ExploreClient({
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<MarketplaceCategory>("all");
+  const [serviceCategory, setServiceCategory] = useState<ServiceCategory | "all">("all");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const trackedPageViewRef = useRef(false);
 
@@ -66,10 +68,14 @@ export default function ExploreClient({
       const matchesCategory = matchesMarketplaceCategory(business, category);
       const matchesSearch =
         !deferredSearch || business.displayName.toLowerCase().includes(deferredSearch);
+      const matchesServiceCategory =
+        category !== "services" ||
+        serviceCategory === "all" ||
+        (business.normalizedType === "service" && business.service_category === serviceCategory);
 
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesSearch && matchesServiceCategory;
     });
-  }, [businessViews, category, deferredSearch]);
+  }, [businessViews, category, deferredSearch, serviceCategory]);
 
   const categoryCounts = useMemo(() => {
     return CATEGORY_PILLS.reduce<Record<MarketplaceCategory, number>>((acc, pill) => {
@@ -184,6 +190,29 @@ export default function ExploreClient({
                 );
               })}
             </div>
+
+            {category === "services" ? (
+              <div className="mx-auto w-full max-w-sm">
+                <label className="sr-only" htmlFor="service-category-filter">
+                  Filter by service category
+                </label>
+                <select
+                  id="service-category-filter"
+                  value={serviceCategory}
+                  onChange={(event) =>
+                    setServiceCategory(event.target.value as ServiceCategory | "all")
+                  }
+                  className="h-11 w-full rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(255,255,255,0.02)] px-4 text-sm text-[var(--text-strong)] outline-none transition focus:border-[rgba(212,175,55,0.32)]"
+                >
+                  <option value="all">All service categories</option>
+                  {SERVICE_CATEGORY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
         </section>
 

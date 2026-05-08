@@ -7,6 +7,7 @@ import {
   buildBusinessProfileUpdate,
   isMissingBusinessProfileColumns,
 } from "@/lib/businessProfileFields";
+import { resolveServiceCategoryForBusiness } from "@/lib/serviceCategories";
 
 export async function POST(req: Request) {
   try {
@@ -38,6 +39,15 @@ export async function POST(req: Request) {
     if (!activeBusiness || activeBusiness.owner_id !== user.id) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
+
+    const serviceCategory = resolveServiceCategoryForBusiness({
+      businessType: String(body?.business_type || activeBusiness.business_type || "").trim(),
+      value: body?.service_category,
+    });
+    const extendedProfileUpdate = {
+      ...profileUpdate,
+      service_category: serviceCategory,
+    };
 
     const nextSlug = normalizeBusinessSlug(requestedSlug || name);
     if (!nextSlug) {
@@ -86,7 +96,7 @@ export async function POST(req: Request) {
     let updateQuery = await businessesTable
       .update({
         ...baseUpdate,
-        ...profileUpdate,
+        ...extendedProfileUpdate,
       })
       .eq("id", activeBusiness.id)
       .eq("owner_id", user.id)

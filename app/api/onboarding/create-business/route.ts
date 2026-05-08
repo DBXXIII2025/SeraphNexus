@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       name,
       businessType,
       baseSlug,
+      serviceCategory,
     } = normalizeBusinessCreationInput(body || {});
 
     const {
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
       name,
       businessType,
       baseSlug,
+      serviceCategory,
     });
 
     const cookieStore = await cookies();

@@ -1,5 +1,9 @@
 import { isBusinessType } from "@/lib/businessModules";
 import { normalizeBusinessPlan, type PlanTier } from "@/lib/planConfig";
+import {
+  isMissingServiceCategoryColumnError,
+  resolveServiceCategoryForBusiness,
+} from "@/lib/serviceCategories";
 import { ensureUniqueSlug, slugify } from "@/lib/slug";
 
 type BusinessesTable = {
@@ -22,6 +26,7 @@ type BusinessesTable = {
     name: string;
     slug: string;
     business_type: string;
+    service_category?: string | null;
     plan: string;
     is_published: boolean;
   }) => {
@@ -107,10 +112,16 @@ export function normalizeBusinessCreationInput(input: {
   name?: unknown;
   business_type?: unknown;
   slug?: unknown;
+  service_category?: unknown;
 }) {
   const name = asString(input.name);
   const businessType = asString(input.business_type);
   const requestedSlug = asString(input.slug);
+  const serviceCategory = resolveServiceCategoryForBusiness({
+    businessType,
+    value: input.service_category,
+    defaultToOther: true,
+  });
 
   if (!name) {
     throw new Error("Business name is required");
@@ -138,6 +149,7 @@ export function normalizeBusinessCreationInput(input: {
     name,
     businessType,
     baseSlug,
+    serviceCategory,
   };
 }
 
@@ -147,22 +159,37 @@ export async function createBusinessRecord(args: {
   name: string;
   businessType: string;
   baseSlug: string;
+  serviceCategory?: string | null;
 }) {
   const businessesTable = args.supabase.from("businesses") as BusinessesTable;
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const slug = await ensureUniqueSlug(businessesTable, args.baseSlug);
-    const { data, error } = await businessesTable
-      .insert({
-        owner_id: args.ownerUserId,
-        name: args.name,
-        slug,
-        business_type: args.businessType,
-        plan: "inactive",
-        is_published: false,
-      })
+    const insertPayload = {
+      owner_id: args.ownerUserId,
+      name: args.name,
+      slug,
+      business_type: args.businessType,
+      service_category: args.serviceCategory || null,
+      plan: "inactive",
+      is_published: false,
+    };
+
+    let insertQuery = businessesTable
+      .insert(insertPayload)
       .select("id,owner_id,name,slug,business_type,plan,is_published")
       .single();
+
+    let { data, error } = await insertQuery;
+
+    if (error && isMissingServiceCategoryColumnError(error)) {
+      delete insertPayload.service_category;
+      insertQuery = businessesTable
+        .insert(insertPayload)
+        .select("id,owner_id,name,slug,business_type,plan,is_published")
+        .single();
+      ({ data, error } = await insertQuery);
+    }
 
     if (!error && data) {
       return {

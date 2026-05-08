@@ -1,4 +1,4 @@
-export const BUSINESS_RUNTIME_SELECT = [
+export const BUSINESS_RUNTIME_SELECT_LEGACY = [
   "id",
   "created_at",
   "owner_id",
@@ -19,3 +19,10 @@ export const BUSINESS_RUNTIME_SELECT = [
   "remote_enabled",
   "plan",
 ].join(", ");
+
+export const BUSINESS_RUNTIME_SELECT_WITH_SERVICE_CATEGORY = [
+  BUSINESS_RUNTIME_SELECT_LEGACY,
+  "service_category",
+].join(", ");
+
+export const BUSINESS_RUNTIME_SELECT = BUSINESS_RUNTIME_SELECT_LEGACY;

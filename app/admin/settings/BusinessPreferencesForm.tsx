@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import { translate } from "@/lib/i18n";
+import {
+  formatServiceCategory,
+  SERVICE_CATEGORY_OPTIONS,
+  type ServiceCategory,
+} from "@/lib/serviceCategories";
 
 type BusinessPreferences = {
   id: string;
@@ -12,6 +17,7 @@ type BusinessPreferences = {
   delivery_enabled?: boolean | null;
   onsite_enabled?: boolean | null;
   remote_enabled?: boolean | null;
+  service_category?: string | null;
 };
 
 function isFoodBusiness(type?: string | null) {
@@ -52,6 +58,9 @@ export default function BusinessPreferencesForm({
   const [remoteEnabled, setRemoteEnabled] = useState(
     business.remote_enabled !== false
   );
+  const [serviceCategory, setServiceCategory] = useState<ServiceCategory | "">(
+    (business.service_category as ServiceCategory | null) || ""
+  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +85,7 @@ export default function BusinessPreferencesForm({
         delivery_enabled: deliveryEnabled,
         onsite_enabled: onsiteEnabled,
         remote_enabled: remoteEnabled,
+        service_category: serviceCategory || null,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -179,6 +189,26 @@ export default function BusinessPreferencesForm({
                 {label("remote")}
               </label>
             </div>
+            <label className="mt-4 block">
+              <span className="mb-2 block text-sm text-[var(--text-soft)]">Service category</span>
+              <select
+                value={serviceCategory}
+                onChange={(event) =>
+                  setServiceCategory(event.target.value as ServiceCategory | "")
+                }
+                className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-strong)]"
+              >
+                <option value="">Not set</option>
+                {SERVICE_CATEGORY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
+              Current public label: {formatServiceCategory(serviceCategory) || "Not set"}
+            </p>
           </div>
         ) : null}
 

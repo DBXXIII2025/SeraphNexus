@@ -93,6 +93,11 @@ export default function ExploreBusinessCard({
             <h3 className="line-clamp-1 text-[0.93rem] font-semibold leading-5 text-[var(--text-strong)]">
               {business.displayName}
             </h3>
+            {business.serviceCategoryLabel ? (
+              <span className="inline-flex rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(255,255,255,0.02)] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--accent-soft)]">
+                {business.serviceCategoryLabel}
+              </span>
+            ) : null}
             <p className="line-clamp-2 text-[12px] leading-[1.35] text-[var(--text-soft)]">
               {summary}
             </p>

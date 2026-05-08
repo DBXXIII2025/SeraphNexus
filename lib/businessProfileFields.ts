@@ -97,7 +97,8 @@ export function isMissingBusinessProfileColumns(error: { code?: string | null; m
     message.includes("website") ||
     message.includes("social_") ||
     message.includes("hours_json") ||
-    message.includes("service_area")
+    message.includes("service_area") ||
+    message.includes("service_category")
   );
 }
 

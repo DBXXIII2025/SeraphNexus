@@ -6,6 +6,7 @@ import { normalizeBusinessSlug } from "@/lib/businessProfileCompletion";
 import { getFeatureGate } from "@/lib/planEnforcement";
 import { createClient } from "@/lib/supabase/server";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
+import { resolveServiceCategoryForBusiness } from "@/lib/serviceCategories";
 
 const VALID_LANGUAGES = new Set(["en", "es"]);
 
@@ -153,6 +154,12 @@ export async function POST(req: Request) {
     business.business_type === "product" ||
     business.business_type === "creator";
   const isServiceBusiness = business.business_type === "service";
+  const serviceCategory = hasOwn(bodyRecord, "service_category")
+    ? resolveServiceCategoryForBusiness({
+        businessType: business.business_type || "",
+        value: bodyRecord.service_category,
+      })
+    : undefined;
 
   if (!VALID_LANGUAGES.has(language)) {
     return NextResponse.json(
@@ -281,6 +288,10 @@ export async function POST(req: Request) {
         isServiceBusiness && hasOwn(bodyRecord, "onsite_enabled") ? onsiteEnabled : undefined,
       remote_enabled:
         isServiceBusiness && hasOwn(bodyRecord, "remote_enabled") ? remoteEnabled : undefined,
+      service_category:
+        isServiceBusiness && hasOwn(bodyRecord, "service_category")
+          ? serviceCategory
+          : undefined,
       logo_url: hasOwn(bodyRecord, "logo_url") ? String(bodyRecord.logo_url || "").trim() || null : undefined,
       cover_image_url:
         hasOwn(bodyRecord, "cover_image_url")

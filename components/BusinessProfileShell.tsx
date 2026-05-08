@@ -18,6 +18,7 @@ type BusinessProfileShellProps = {
   businessName: string;
   businessDescription?: string | null;
   businessType?: string | null;
+  businessCategory?: string | null;
   logoUrl?: string | null;
   images: BusinessPageImage[];
   theme: BusinessPageTheme;
@@ -68,6 +69,7 @@ export default function BusinessProfileShell({
   businessName,
   businessDescription,
   businessType,
+  businessCategory,
   logoUrl,
   images: incomingImages,
   theme,
@@ -142,12 +144,15 @@ export default function BusinessProfileShell({
           <>
             <Link href="/explore" className="public-action-secondary">Explore</Link>
             <span className="public-chip">{businessType || "Business"}</span>
+            {businessCategory ? <span className="public-chip">{businessCategory}</span> : null}
           </>
         }
       />
 
       <PublicHero
-        eyebrow={businessType || "Business"}
+        eyebrow={
+          businessCategory ? `${businessType || "Business"} / ${businessCategory}` : businessType || "Business"
+        }
         title={businessName}
         description={businessDescription || null}
         meta={

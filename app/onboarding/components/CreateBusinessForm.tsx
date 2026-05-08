@@ -6,6 +6,10 @@ import {
   CREATE_BUSINESS_TYPE_OPTIONS,
   type BusinessType,
 } from "@/lib/businessModules";
+import {
+  SERVICE_CATEGORY_OPTIONS,
+  type ServiceCategory,
+} from "@/lib/serviceCategories";
 
 type CreateBusinessResponse = {
   business?: {
@@ -19,6 +23,7 @@ type CreateBusinessResponse = {
 export default function CreateBusinessForm() {
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState<BusinessType>("service");
+  const [serviceCategory, setServiceCategory] = useState<ServiceCategory>("other");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +56,7 @@ export default function CreateBusinessForm() {
         body: JSON.stringify({
           name: businessName.trim(),
           business_type: businessType,
+          service_category: businessType === "service" ? serviceCategory : null,
         }),
       });
 
@@ -160,6 +166,23 @@ export default function CreateBusinessForm() {
           })}
         </div>
       </fieldset>
+
+      {businessType === "service" ? (
+        <div>
+          <label className="block text-sm text-[var(--text-soft)]">Service Category</label>
+          <select
+            value={serviceCategory}
+            onChange={(event) => setServiceCategory(event.target.value as ServiceCategory)}
+            className="mt-2 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          >
+            {SERVICE_CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
 
       {error && <div className="text-sm text-[var(--destructive)]">{error}</div>}
       {message && <div className="text-sm text-[var(--success)]">{message}</div>}
