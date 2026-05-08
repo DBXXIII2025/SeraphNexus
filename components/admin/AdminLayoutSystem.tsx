@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode, SVGProps } from "react";
 import PlatformBrandMark from "@/components/branding/PlatformBrandMark";
+import LegalBrandingNotice from "@/components/legal/LegalBrandingNotice";
 
 type AdminGlyphName =
   | "overview"
@@ -197,6 +198,9 @@ export function AdminShell({
           >
             {children}
           </main>
+          <footer className="admin-shell-footer">
+            <LegalBrandingNotice compact />
+          </footer>
         </div>
       </div>
     </div>

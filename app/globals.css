@@ -563,6 +563,10 @@ button:focus {
   align-content: start;
 }
 
+.admin-shell-footer {
+  padding: 0 0.2rem 0.35rem;
+}
+
 .admin-system-content-wide {
   max-width: 1240px;
 }
@@ -940,6 +944,27 @@ button:focus {
   background: var(--surface) !important;
   color: var(--text-main) !important;
   border-color: var(--border-soft) !important;
+}
+
+.site-legal-footer {
+  padding: 0.15rem 0 1rem;
+}
+
+.legal-branding-notice {
+  display: grid;
+  gap: 0.18rem;
+  color: var(--text-soft);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.legal-branding-notice p {
+  margin: 0;
+}
+
+.legal-branding-notice-compact {
+  gap: 0.14rem;
+  font-size: 0.71rem;
 }
 
 .public-profile-shell {
