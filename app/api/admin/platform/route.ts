@@ -116,8 +116,14 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const selectedProPriceId = normalizeOptionalString(formData.get("pro_stripe_price_id_override"));
+    const selectedProProductId = normalizeOptionalString(
+      formData.get("pro_stripe_product_id_override")
+    );
     const selectedElitePriceId = normalizeOptionalString(
       formData.get("elite_stripe_price_id_override")
+    );
+    const selectedEliteProductId = normalizeOptionalString(
+      formData.get("elite_stripe_product_id_override")
     );
     const hasLogoUrlField = formData.has("logo_url");
     const submittedLogoUrl = normalizeOptionalString(formData.get("logo_url"));
@@ -204,6 +210,7 @@ export async function POST(req: Request) {
         existingPriceId: existing?.pro_stripe_price_id || null,
         existingProductId: existing?.pro_stripe_product_id || null,
         selectedPriceId: selectedProPriceId,
+        selectedProductId: selectedProProductId,
       });
       nextPayload.pro_stripe_price_id = proPrice.stripePriceId;
       nextPayload.pro_stripe_product_id = proPrice.stripeProductId;
@@ -217,6 +224,7 @@ export async function POST(req: Request) {
         existingPriceId: existing?.elite_stripe_price_id || null,
         existingProductId: existing?.elite_stripe_product_id || null,
         selectedPriceId: selectedElitePriceId,
+        selectedProductId: selectedEliteProductId,
       });
       nextPayload.elite_stripe_price_id = elitePrice.stripePriceId;
       nextPayload.elite_stripe_product_id = elitePrice.stripeProductId;

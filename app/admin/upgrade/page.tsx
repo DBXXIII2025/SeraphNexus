@@ -93,6 +93,22 @@ export default async function AdminUpgradePage({
             feeLabel: (await getConfiguredPlatformFee("elite")).label,
           },
         }}
+        planCopy={{
+          pro: {
+            name: pricing.settings.pro_plan_name,
+            subtitle: pricing.settings.pro_plan_subtitle,
+            features: pricing.settings.pro_plan_features,
+            badge: pricing.settings.pro_plan_badge,
+            cta: pricing.settings.pro_plan_cta,
+          },
+          elite: {
+            name: pricing.settings.elite_plan_name,
+            subtitle: pricing.settings.elite_plan_subtitle,
+            features: pricing.settings.elite_plan_features,
+            badge: pricing.settings.elite_plan_badge,
+            cta: pricing.settings.elite_plan_cta,
+          },
+        }}
       />
     </div>
   );

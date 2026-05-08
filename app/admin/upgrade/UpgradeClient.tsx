@@ -27,6 +27,7 @@ export default function UpgradeClient({
   businessId,
   currentPlan,
   pricing,
+  planCopy,
 }: {
   businessId: string;
   currentPlan: PlanTier;
@@ -34,6 +35,22 @@ export default function UpgradeClient({
     trial: { feeLabel: string };
     pro: { label: string; active: boolean; feeLabel: string };
     elite: { label: string; active: boolean; feeLabel: string };
+  };
+  planCopy: {
+    pro: {
+      name: string;
+      subtitle: string;
+      features: string[];
+      badge: string | null;
+      cta: string;
+    };
+    elite: {
+      name: string;
+      subtitle: string;
+      features: string[];
+      badge: string | null;
+      cta: string;
+    };
   };
 }) {
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
@@ -79,6 +96,12 @@ export default function UpgradeClient({
       <div className="grid gap-4 lg:grid-cols-3">
         {(["trial", "pro", "elite"] as PlanTier[]).map((tier) => {
           const plan = PLAN_DEFINITIONS[tier];
+          const liveCopy =
+            tier === "pro"
+              ? planCopy.pro
+              : tier === "elite"
+                ? planCopy.elite
+                : null;
           const isCurrent = tier === currentPlan;
           const priceLabel =
             tier === "pro"
@@ -98,6 +121,13 @@ export default function UpgradeClient({
               : tier === "elite"
                 ? pricing.elite.feeLabel
                 : pricing.trial.feeLabel;
+          const planLabel = liveCopy?.name || plan.label;
+          const planDescription = liveCopy?.subtitle || plan.description;
+          const highlights = liveCopy?.features?.length ? liveCopy.features : plan.highlights;
+          const ctaText =
+            tier === "pro" || tier === "elite"
+              ? liveCopy?.cta || `Upgrade to ${planLabel}`
+              : "Trial managed by platform admin";
 
           return (
             <div
@@ -110,10 +140,14 @@ export default function UpgradeClient({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-semibold">{plan.label}</h2>
-                  <p className="mt-1 text-sm text-[var(--text-soft)]">{plan.description}</p>
+                  <h2 className="text-xl font-semibold">{planLabel}</h2>
+                  <p className="mt-1 text-sm text-[var(--text-soft)]">{planDescription}</p>
                 </div>
-                {isCurrent ? (
+                {liveCopy?.badge ? (
+                  <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-muted)] px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-[var(--accent)]">
+                    {liveCopy.badge}
+                  </span>
+                ) : isCurrent ? (
                   <span className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-200">
                     Current
                   </span>
@@ -133,7 +167,7 @@ export default function UpgradeClient({
               </div>
 
               <ul className="mt-5 space-y-2 text-sm text-[var(--text-soft)]">
-                {plan.highlights.map((highlight) => (
+                {highlights.map((highlight) => (
                   <li key={highlight} className="rounded-lg bg-[var(--surface-muted)] px-3 py-2">
                     {highlight}
                   </li>
@@ -176,10 +210,8 @@ export default function UpgradeClient({
                   : loadingPlan === tier
                     ? "Starting checkout..."
                     : !billingActive && tier !== "trial"
-                      ? `${plan.label} temporarily unavailable`
-                    : tier === "trial"
-                      ? "Trial managed by platform admin"
-                      : `Upgrade to ${plan.label}`}
+                      ? `${planLabel} temporarily unavailable`
+                      : ctaText}
               </button>
             </div>
           );

@@ -138,8 +138,22 @@ export function getPlatformStripeEnvironmentSummary() {
 
 async function ensurePlanProduct(
   plan: ManagedBillingPlan,
-  existingProductId: string | null
+  existingProductId: string | null,
+  selectedProductId?: string | null
 ) {
+  const normalizedSelectedProductId = selectedProductId?.trim() || null;
+
+  if (normalizedSelectedProductId) {
+    const selectedProduct = await stripe.products.retrieve(normalizedSelectedProductId);
+    if ("deleted" in selectedProduct && selectedProduct.deleted) {
+      throw new Error(
+        `${plan === "pro" ? "Pro" : "Elite"} selected Stripe product must be an active product.`
+      );
+    }
+
+    return selectedProduct.id;
+  }
+
   if (existingProductId) {
     try {
       const product = await stripe.products.retrieve(existingProductId);
@@ -192,6 +206,7 @@ export async function ensureManagedPlanStripePrice(args: {
   existingPriceId: string | null;
   existingProductId: string | null;
   selectedPriceId?: string | null;
+  selectedProductId?: string | null;
 }) {
   const selectedPriceId = args.selectedPriceId?.trim() || null;
   if (selectedPriceId) {
@@ -217,7 +232,11 @@ export async function ensureManagedPlanStripePrice(args: {
     };
   }
 
-  const productId = await ensurePlanProduct(args.plan, args.existingProductId);
+  const productId = await ensurePlanProduct(
+    args.plan,
+    args.existingProductId,
+    args.selectedProductId
+  );
   const reusablePriceId = await reuseCompatiblePrice(
     args.existingPriceId,
     productId,

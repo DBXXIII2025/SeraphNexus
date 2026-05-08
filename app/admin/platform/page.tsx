@@ -737,11 +737,22 @@ export default async function PlatformPage({
               <p className="text-xs text-[var(--text-muted)]">
                 Current Stripe price: {settings.pro_stripe_price_id || "Will be created on save"}
               </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                Current Stripe product: {settings.pro_stripe_product_id || "Will be created on save"}
+              </p>
               <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Use existing active Stripe price ID</span>
                 <input
                   name="pro_stripe_price_id_override"
                   placeholder={settings.pro_stripe_price_id || "price_..."}
+                  className="input-field mt-2"
+                />
+              </label>
+              <label className="text-sm text-[var(--text-soft)]">
+                <span className="form-label">Use existing Stripe product ID</span>
+                <input
+                  name="pro_stripe_product_id_override"
+                  placeholder={settings.pro_stripe_product_id || "prod_..."}
                   className="input-field mt-2"
                 />
               </label>
@@ -766,11 +777,22 @@ export default async function PlatformPage({
               <p className="text-xs text-[var(--text-muted)]">
                 Current Stripe price: {settings.elite_stripe_price_id || "Will be created on save"}
               </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                Current Stripe product: {settings.elite_stripe_product_id || "Will be created on save"}
+              </p>
               <label className="text-sm text-[var(--text-soft)]">
                 <span className="form-label">Use existing active Stripe price ID</span>
                 <input
                   name="elite_stripe_price_id_override"
                   placeholder={settings.elite_stripe_price_id || "price_..."}
+                  className="input-field mt-2"
+                />
+              </label>
+              <label className="text-sm text-[var(--text-soft)]">
+                <span className="form-label">Use existing Stripe product ID</span>
+                <input
+                  name="elite_stripe_product_id_override"
+                  placeholder={settings.elite_stripe_product_id || "prod_..."}
                   className="input-field mt-2"
                 />
               </label>
