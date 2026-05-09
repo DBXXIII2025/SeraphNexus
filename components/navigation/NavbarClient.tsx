@@ -18,9 +18,25 @@ type NavLinkItem = {
   emphasis?: "primary" | "secondary" | "ghost";
 };
 
-const HIDDEN_PREFIXES = ["/admin", "/dashboard", "/platform-admin", "/explore"];
+const HIDDEN_PREFIXES = [
+  "/admin",
+  "/dashboard",
+  "/platform-admin",
+  "/explore",
+  "/auth",
+];
+const HIDDEN_EXACT_PATHS = [
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+];
 
 function isHiddenPath(pathname: string) {
+  if (HIDDEN_EXACT_PATHS.includes(pathname)) {
+    return true;
+  }
+
   return HIDDEN_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
