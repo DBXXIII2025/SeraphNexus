@@ -21,6 +21,12 @@ export default async function RootLayout({
 }) {
   const requestHeaders = await headers();
   const currentPath = requestHeaders.get("x-current-path") || "";
+  const hideGlobalHeader =
+    currentPath === "/login" ||
+    currentPath === "/signup" ||
+    currentPath === "/forgot-password" ||
+    currentPath === "/reset-password" ||
+    currentPath.startsWith("/auth/");
   const hideGlobalFooter =
     currentPath.startsWith("/admin") ||
     currentPath.startsWith("/dashboard") ||
@@ -30,7 +36,7 @@ export default async function RootLayout({
     <html lang="en">
       <body>
         <div className="flex min-h-screen flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
-          <Navbar />
+          {!hideGlobalHeader ? <Navbar /> : null}
           <div className="flex-1">{children}</div>
           {!hideGlobalFooter ? (
             <footer className="site-legal-footer">
