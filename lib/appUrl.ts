@@ -34,6 +34,10 @@ function isLocalOrigin(value: string) {
   }
 }
 
+function normalizeNextPath(nextPath: string) {
+  return nextPath.startsWith("/") ? nextPath : "/admin";
+}
+
 export function getConfiguredAppUrl() {
   const explicitUrl = getExplicitConfiguredAppUrl();
   if (explicitUrl) {
@@ -93,6 +97,20 @@ export function getBrowserAppUrl() {
   }
 
   return configuredUrl;
+}
+
+export function getPasswordResetRedirectUrl(nextPath = "/reset-password") {
+  const safeNext = normalizeNextPath(nextPath);
+
+  if (typeof window !== "undefined") {
+    const browserOrigin = window.location.origin;
+
+    if (isLocalOrigin(browserOrigin)) {
+      return `${browserOrigin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+    }
+  }
+
+  return `https://seraphnexus.com/auth/callback?next=${encodeURIComponent(safeNext)}`;
 }
 
 export function getStripeConnectAppUrl(req?: Request) {

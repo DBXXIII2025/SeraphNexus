@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -22,6 +23,7 @@ function getResetErrorMessage(message: string | null | undefined) {
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,9 +31,11 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [hasRecoverySession, setHasRecoverySession] = useState(false);
 
   useEffect(() => {
     let active = true;
+    const urlError = searchParams.get("error");
 
     const initializeRecovery = async () => {
       const {
@@ -42,9 +46,14 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      if (session) {
+      if (urlError === "expired") {
+        setHasRecoverySession(false);
+        setError("This password reset link is invalid or expired.");
+      } else if (session) {
+        setHasRecoverySession(true);
         setError(null);
       } else {
+        setHasRecoverySession(false);
         setError("Open the reset link from your email to choose a new password.");
       }
 
@@ -59,6 +68,7 @@ export default function ResetPasswordPage() {
       }
 
       if (event === "PASSWORD_RECOVERY" || session) {
+        setHasRecoverySession(true);
         setError(null);
         setReady(true);
       }
@@ -70,7 +80,7 @@ export default function ResetPasswordPage() {
       active = false;
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [searchParams, supabase]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -87,6 +97,11 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    if (!hasRecoverySession) {
+      setError("This password reset link is invalid or expired.");
+      return;
+    }
+
     setLoading(true);
 
     const { error: updateError } = await supabase.auth.updateUser({
@@ -99,6 +114,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    await supabase.auth.signOut();
     setMessage("Password updated. Redirecting to login...");
     setLoading(false);
 
@@ -158,7 +174,7 @@ export default function ResetPasswordPage() {
         <button
           type="submit"
           className="inline-flex rounded-md bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={loading || !ready}
+          disabled={loading || !ready || !hasRecoverySession}
         >
           {loading ? "Updating password..." : "Update password"}
         </button>

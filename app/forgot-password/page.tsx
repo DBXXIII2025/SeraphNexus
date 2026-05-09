@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { getBrowserAppUrl } from "@/lib/appUrl";
+import { getPasswordResetRedirectUrl } from "@/lib/appUrl";
 import { createClient } from "@/lib/supabase/client";
 
 function isValidEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email);
 }
+
+const RESET_REQUEST_MESSAGE =
+  "If an account exists for that email, a password reset link has been sent.";
 
 export default function ForgotPasswordPage() {
   const supabase = createClient();
@@ -26,30 +29,22 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    const origin = getBrowserAppUrl() || "";
-    if (!origin) {
-      setError("We couldn't prepare password recovery right now.");
-      return;
-    }
-
     setLoading(true);
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email,
       {
-        redirectTo: `${origin}/auth/callback?next=/reset-password`,
+        redirectTo: getPasswordResetRedirectUrl("/reset-password"),
       }
     );
 
     if (resetError) {
-      setError(resetError.message || "Failed to send reset email.");
+      setError("We couldn't start password recovery right now.");
       setLoading(false);
       return;
     }
 
-    setMessage(
-      "Password reset email sent. Check your inbox for the recovery link."
-    );
+    setMessage(RESET_REQUEST_MESSAGE);
     setLoading(false);
   };
 
