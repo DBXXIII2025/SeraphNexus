@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
+import PromoCodeField from "@/components/checkout/PromoCodeField";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
+import type { AppliedDiscount } from "@/lib/discountCodes";
 import { translate, type LanguageCode } from "@/lib/i18n";
 
 type PropertyItem = {
@@ -89,6 +91,7 @@ export default function RentalCatalogClient({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
   const today = useMemo(() => getTodayDate(), []);
   const timeZone = useMemo(
@@ -99,6 +102,22 @@ export default function RentalCatalogClient({
   const selectedProperty = useMemo(
     () => properties.find((item) => item.id === selectedPropertyId) || null,
     [properties, selectedPropertyId]
+  );
+  const selectedNights = useMemo(() => {
+    if (!startDate || !endDate || endDate <= startDate) {
+      return 1;
+    }
+    return Math.max(
+      1,
+      Math.round(
+        (new Date(`${endDate}T00:00:00.000Z`).getTime() -
+          new Date(`${startDate}T00:00:00.000Z`).getTime()) /
+          86400000
+      )
+    );
+  }, [endDate, startDate]);
+  const rentalSubtotalCents = Math.round(
+    Number(selectedProperty?.price || 0) * selectedNights * 100
   );
   const mapEmbedUrl = useMemo(() => {
     const query = business.mapQuery?.trim();
@@ -243,6 +262,7 @@ export default function RentalCatalogClient({
           business_id: business.id,
           item_id: selectedPropertyId,
           price: Number(selectedProperty?.price || 0),
+          promo_code: appliedDiscount?.code,
           metadata: {
             customer: {
               name: customerName,
@@ -611,7 +631,7 @@ export default function RentalCatalogClient({
                     </p>
                   </div>
                   <p className="text-base font-semibold text-[var(--text-strong)]">
-                    ${Number(selectedProperty.price || 0).toFixed(2)}
+                    ${(rentalSubtotalCents / 100).toFixed(2)}
                   </p>
                 </div>
               ) : null}
@@ -652,6 +672,16 @@ export default function RentalCatalogClient({
                     className="input-field"
                   />
                 </div>
+              </div>
+
+              <div className="mt-5">
+                <PromoCodeField
+                  businessId={business.id}
+                  checkoutType="rental"
+                  subtotalCents={rentalSubtotalCents}
+                  disabled={!selectedProperty}
+                  onAppliedChange={setAppliedDiscount}
+                />
               </div>
 
               <button

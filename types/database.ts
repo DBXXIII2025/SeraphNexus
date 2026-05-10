@@ -315,6 +315,54 @@ export interface Database {
         };
       };
 
+      discount_codes: {
+        Row: {
+          id: string;
+          business_id: string;
+          code: string;
+          discount_type: "percent" | "fixed";
+          discount_value: number;
+          applies_to: "all" | "service" | "rental" | "food" | "product";
+          minimum_order_amount_cents?: number | null;
+          usage_limit?: number | null;
+          usage_count: number;
+          starts_at?: string | null;
+          expires_at?: string | null;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          code: string;
+          discount_type: "percent" | "fixed";
+          discount_value: number;
+          applies_to?: "all" | "service" | "rental" | "food" | "product";
+          minimum_order_amount_cents?: number | null;
+          usage_limit?: number | null;
+          usage_count?: number;
+          starts_at?: string | null;
+          expires_at?: string | null;
+          active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          code?: string;
+          discount_type?: "percent" | "fixed";
+          discount_value?: number;
+          applies_to?: "all" | "service" | "rental" | "food" | "product";
+          minimum_order_amount_cents?: number | null;
+          usage_limit?: number | null;
+          usage_count?: number;
+          starts_at?: string | null;
+          expires_at?: string | null;
+          active?: boolean;
+          created_at?: string;
+        };
+      };
+
       legal_acceptances: {
         Row: {
           id: string;

@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import BusinessProfileShell from "@/components/BusinessProfileShell";
+import PromoCodeField from "@/components/checkout/PromoCodeField";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
+import type { AppliedDiscount } from "@/lib/discountCodes";
 import { translate, type LanguageCode } from "@/lib/i18n";
 
 type MenuCategory = {
@@ -121,6 +123,7 @@ export default function OrderClient({
   const [notes, setNotes] = useState("");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   const [menu, setMenu] = useState<MenuPayload>({
     categories: [],
     items: [],
@@ -137,6 +140,7 @@ export default function OrderClient({
     () => cart.reduce((sum, item) => sum + item.price * item.qty, 0),
     [cart]
   );
+  const subtotalCents = Math.round(total * 100);
 
   useEffect(() => {
     let active = true;
@@ -344,6 +348,7 @@ export default function OrderClient({
           type: "food",
           business_id: businessId,
           item_id: orderItems[0]?.id,
+          promo_code: appliedDiscount?.code,
           metadata: {
             customer: {
               name: customerName,
@@ -629,6 +634,14 @@ export default function OrderClient({
                 </div>
               </div>
             )}
+
+            <PromoCodeField
+              businessId={businessId}
+              checkoutType="food"
+              subtotalCents={subtotalCents}
+              disabled={cart.length === 0}
+              onAppliedChange={setAppliedDiscount}
+            />
 
             <div className="space-y-2">
               <div className="space-y-1">

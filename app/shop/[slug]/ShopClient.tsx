@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import BusinessProfileShell from "@/components/BusinessProfileShell";
+import PromoCodeField from "@/components/checkout/PromoCodeField";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
+import type { AppliedDiscount } from "@/lib/discountCodes";
 import { translate, type LanguageCode } from "@/lib/i18n";
 
 type CatalogItem = {
@@ -80,11 +82,13 @@ export default function ShopClient({
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart]
   );
+  const subtotalCents = Math.round(total * 100);
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
   const hasEnabledFulfillmentMode = pickupEnabled || deliveryEnabled;
 
@@ -200,6 +204,7 @@ export default function ShopClient({
           type: "product",
           business_id: businessId,
           item_id: cart[0]?.id,
+          promo_code: appliedDiscount?.code,
           metadata: {
             customer: {
               name: customerName,
@@ -364,6 +369,16 @@ export default function ShopClient({
                 <span>{t("total")}</span>
                 <span>${total.toFixed(2)}</span>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <PromoCodeField
+                businessId={businessId}
+                checkoutType="product"
+                subtotalCents={subtotalCents}
+                disabled={cart.length === 0}
+                onAppliedChange={setAppliedDiscount}
+              />
             </div>
 
             <div className="mt-5 space-y-3">

@@ -2,6 +2,10 @@ import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
 import { updateCheckoutIntentSafely } from "@/lib/checkoutIntents";
+import {
+  readAppliedDiscount,
+  serializeAppliedDiscount,
+} from "@/lib/discountCodes";
 import { upsertConversationForBooking } from "@/lib/messages";
 import { createTransactionNotification } from "@/lib/notifications";
 import { sendTransactionConfirmationEmail } from "@/lib/transactionEmails";
@@ -835,6 +839,92 @@ async function updateCheckoutIntentPaid(
     duplicateRetryHandled: false,
     finalSuccess: true,
   });
+}
+
+async function incrementDiscountUsageIfNeeded(
+  intent: NormalizedCheckoutIntent,
+  context: FinalizationLogContext
+) {
+  const discount = readAppliedDiscount(intent.metadata.discount);
+  if (!discount || discount.usageRecorded || !discount.id || !intent.businessId) {
+    return;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("discount_codes")
+    .select("id, business_id, usage_count")
+    .eq("id", discount.id)
+    .eq("business_id", intent.businessId)
+    .maybeSingle();
+
+  if (error || !data?.id) {
+    console.error("[checkout/finalize]", {
+      stage: "discount.lookup_failed",
+      ...context,
+      discountCodeId: discount.id,
+      finalSuccess: true,
+      message: error?.message || "Discount code lookup failed during finalization",
+    });
+    return;
+  }
+
+  const currentUsageCount = Number(data.usage_count || 0);
+  const nextUsageCount = currentUsageCount + 1;
+  const { error: updateError } = await supabaseAdmin
+    .from("discount_codes")
+    .update({ usage_count: nextUsageCount })
+    .eq("id", discount.id)
+    .eq("business_id", intent.businessId)
+    .eq("usage_count", currentUsageCount);
+
+  if (updateError) {
+    console.error("[checkout/finalize]", {
+      stage: "discount.increment_failed",
+      ...context,
+      discountCodeId: discount.id,
+      finalSuccess: true,
+      message: updateError.message || "Discount code usage increment failed",
+    });
+    return;
+  }
+
+  if (!intent.id.startsWith("session:")) {
+    const updatedDiscount = {
+      ...discount,
+      usageCount: nextUsageCount,
+      usageRecorded: true,
+    };
+    const metadata = {
+      ...intent.metadata,
+      discount: serializeAppliedDiscount(updatedDiscount),
+      discount_code: updatedDiscount.code,
+      discount_amount_cents: updatedDiscount.discountAmountCents,
+    };
+    const payload: JsonRecord = {};
+    const rawKeys = Object.keys(intent.raw);
+    if (rawKeys.includes("metadata")) {
+      payload.metadata = metadata;
+    } else if (rawKeys.includes("meta_json")) {
+      payload.meta_json = metadata;
+    }
+
+    if (Object.keys(payload).length > 0) {
+      await updateCheckoutIntentSafely({
+        supabaseAdmin,
+        intentId: intent.id,
+        payload,
+        context: {
+          source: context.source,
+          sessionId: context.sessionId,
+          checkoutIntentId: intent.id,
+          flowType: context.flowType,
+          businessType: context.businessType,
+          sourceTable: context.sourceTable,
+          stage: "discount_usage_recorded",
+        },
+      });
+    }
+  }
 }
 
 async function findExistingOrder(
@@ -1990,6 +2080,8 @@ export async function finalizeCheckoutSession({
           "Paid session finalized from session metadata because no checkout_intent row was found.",
       });
     }
+
+    await incrementDiscountUsageIfNeeded(resolvedIntent, context);
 
     await sendTransactionConfirmationEmail({
       intent: resolvedIntent,

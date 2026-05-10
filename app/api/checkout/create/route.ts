@@ -39,6 +39,10 @@ import {
 import { finalizeCheckoutSession } from "@/lib/checkoutFinalization";
 import { loadMissingLegalDocumentKeysSafe } from "@/lib/legalAcceptance";
 import { trackLeadEventServer } from "@/lib/leads.server";
+import {
+  serializeAppliedDiscount,
+  validateDiscountForCheckout,
+} from "@/lib/discountCodes";
 import { errorResponse, getErrorMessage, logRouteError } from "@/lib/apiErrors";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { loadBusinessPreferences } from "@/lib/businessPreferences";
@@ -91,6 +95,7 @@ type UniversalCheckoutPayload = {
   business_id?: string;
   item_id?: string;
   price?: number | string;
+  promo_code?: string;
   verificationMode?: "draft" | "paid";
   metadata?: {
     customer?: {
@@ -146,6 +151,7 @@ type CheckoutPayload = {
   universalType?: UniversalCheckoutType;
   universalPrice?: number | null;
   universalMetadata?: Record<string, unknown>;
+  promoCode?: string;
 };
 
 type StripeLikeError = Error & {
@@ -311,6 +317,12 @@ function normalizeUniversalCheckoutPayload(payload: UniversalCheckoutPayload): C
     universalType: payload.type,
     universalPrice: Number(payload.price ?? 0) || null,
     universalMetadata: metadata,
+    promoCode:
+      typeof payload.promo_code === "string"
+        ? payload.promo_code
+        : typeof metadata.promo_code === "string"
+          ? metadata.promo_code
+          : undefined,
   };
 
   if (payload.type === "service") {
@@ -361,6 +373,20 @@ function normalizeUniversalCheckoutPayload(payload: UniversalCheckoutPayload): C
     options: item.options,
   }));
   return normalized;
+}
+
+function normalizeLegacyCheckoutPayload(value: unknown): CheckoutPayload {
+  const record = asObjectRecord(value);
+  const payload = record as CheckoutPayload;
+  return {
+    ...payload,
+    promoCode:
+      typeof record.promoCode === "string"
+        ? record.promoCode
+        : typeof record.promo_code === "string"
+          ? String(record.promo_code)
+          : payload.promoCode,
+  };
 }
 
 function timeToMinutes(time: string) {
@@ -678,7 +704,7 @@ export async function POST(req: Request) {
     const rawPayload = (await req.json()) as unknown;
     const payload = isUniversalCheckoutPayload(rawPayload)
       ? normalizeUniversalCheckoutPayload(rawPayload)
-      : (rawPayload as CheckoutPayload);
+      : normalizeLegacyCheckoutPayload(rawPayload);
     logCheckoutStage("request_received", summarizePayload(payload));
 
     const intentType = payload.intentType;
@@ -886,6 +912,7 @@ export async function POST(req: Request) {
         business.business_type === "product" ||
         business.business_type === "creator";
       const orderFlowType = isStoreOrder ? "store_order" : "food_order";
+      const orderCheckoutType = isStoreOrder ? "product" : "food";
       const rawOrderItems = payload.orderItems ?? payload.items ?? payload.cart ?? [];
       const normalizedOrderItems = normalizeOrderItems(rawOrderItems);
 
@@ -1001,7 +1028,27 @@ export async function POST(req: Request) {
         return sum + Math.round(item.price * 100) * item.quantity;
       }, 0);
       const amountTax = 0;
-      const totalCents = subtotalCents + amountTax;
+      const discountValidation = payload.promoCode
+        ? await validateDiscountForCheckout({
+            supabaseAdmin,
+            businessId: safeBusinessId,
+            code: payload.promoCode,
+            checkoutType: orderCheckoutType,
+            subtotalCents,
+          })
+        : null;
+      if (discountValidation && !discountValidation.ok) {
+        return errorResponse({
+          status: 400,
+          error: discountValidation.error,
+          code: discountValidation.code,
+          step: "discount.validate",
+        });
+      }
+      const appliedDiscount =
+        discountValidation && discountValidation.ok ? discountValidation.discount : null;
+      const totalBeforeTaxCents = appliedDiscount?.finalTotalCents ?? subtotalCents;
+      const totalCents = totalBeforeTaxCents + amountTax;
 
       logCheckoutStage("amounts_resolved", {
         branch: orderFlowType,
@@ -1010,6 +1057,7 @@ export async function POST(req: Request) {
         subtotal: subtotalCents,
         tax: amountTax,
         total: totalCents,
+        discountAmountCents: appliedDiscount?.discountAmountCents ?? 0,
       });
 
       if (!Number.isFinite(subtotalCents) || subtotalCents <= 0) {
@@ -1018,6 +1066,15 @@ export async function POST(req: Request) {
           error: "We couldn't calculate a valid order total.",
           code: "CHECKOUT_ORDER_TOTAL_INVALID",
           step: "amount.validate",
+        });
+      }
+
+      if (!Number.isFinite(totalCents) || totalCents <= 0) {
+        return errorResponse({
+          status: 400,
+          error: "Promo code reduces the payable total below the minimum supported amount.",
+          code: "CHECKOUT_ORDER_TOTAL_DISCOUNT_INVALID",
+          step: "discount.validate",
         });
       }
 
@@ -1064,6 +1121,7 @@ export async function POST(req: Request) {
           options:
             normalizedOrderItems.find((rawItem) => rawItem.id === item.id)?.options ?? null,
         })),
+        promoCode: appliedDiscount?.code || payload.promoCode || null,
       });
       logCheckoutStage("fee_resolved", {
         branch: orderFlowType,
@@ -1095,6 +1153,7 @@ export async function POST(req: Request) {
             itemCount: pricedOrderItems.length,
             subtotalCents,
             totalCents,
+            discountAmountCents: appliedDiscount?.discountAmountCents ?? 0,
           },
         });
       } catch (leadError) {
@@ -1131,6 +1190,9 @@ export async function POST(req: Request) {
           amount_subtotal: subtotalCents,
           amount_tax: amountTax,
           amount_total: totalCents,
+          discount: serializeAppliedDiscount(appliedDiscount),
+          discount_code: appliedDiscount?.code || null,
+          discount_amount_cents: appliedDiscount?.discountAmountCents ?? 0,
           plan: normalizedPlan,
           platform_fee_percent: feePercent,
           platform_fee_bps: feeBasisPoints,
@@ -1139,7 +1201,7 @@ export async function POST(req: Request) {
           net_to_business_cents: netToBusinessCents,
           request_fingerprint: requestFingerprint,
           notes: payload.notes || "",
-          checkout_type: payload.universalType || orderFlowType,
+          checkout_type: payload.universalType || orderCheckoutType,
           requested_price: payload.universalPrice,
           checkout_metadata: payload.universalMetadata || null,
         },
@@ -1250,14 +1312,21 @@ export async function POST(req: Request) {
         ),
         address_json: JSON.stringify(addressInput),
         notes: payload.notes || "",
+        amount_subtotal: String(subtotalCents),
         amount_total: String(totalCents),
+        discount_code_id: appliedDiscount?.id || "",
+        discount_code: appliedDiscount?.code || "",
+        discount_amount_cents: String(appliedDiscount?.discountAmountCents ?? 0),
+        discount_type: appliedDiscount?.discountType || "",
+        discount_value: appliedDiscount ? String(appliedDiscount.discountValue) : "",
+        discount_applies_to: appliedDiscount?.appliesTo || "",
         platform_fee: String(applicationFee),
         platform_fee_percent: String(feePercent),
         platform_fee_bps: String(feeBasisPoints),
         platform_fee_source: platformFee.source,
         net_to_business_cents: String(netToBusinessCents),
         request_fingerprint: requestFingerprint,
-        checkout_type: payload.universalType || orderFlowType,
+        checkout_type: payload.universalType || orderCheckoutType,
         requested_price: payload.universalPrice ? String(payload.universalPrice) : "",
         checkout_metadata: JSON.stringify(payload.universalMetadata || {}),
       };
@@ -1276,16 +1345,30 @@ export async function POST(req: Request) {
               mode: "payment",
               customer_email: customerEmail || undefined,
               payment_method_types: ["card"],
-              line_items: pricedOrderItems.map((item) => ({
-                quantity: item.quantity,
-                price_data: {
-                  currency: "usd",
-                  unit_amount: Math.round(item.price * 100),
-                  product_data: {
-                    name: item.name || "Item",
-                  },
-                },
-              })),
+              line_items: appliedDiscount
+                ? [
+                    {
+                      quantity: 1,
+                      price_data: {
+                        currency: "usd",
+                        unit_amount: totalCents,
+                        product_data: {
+                          name: `${business.name || "Order"} checkout`,
+                          description: `Promo code ${appliedDiscount.code} applied`,
+                        },
+                      },
+                    },
+                  ]
+                : pricedOrderItems.map((item) => ({
+                    quantity: item.quantity,
+                    price_data: {
+                      currency: "usd",
+                      unit_amount: Math.round(item.price * 100),
+                      product_data: {
+                        name: item.name || "Item",
+                      },
+                    },
+                  })),
               success_url: orderSuccessUrl,
               cancel_url: getPublicCancelUrl({
                 baseUrl,
@@ -1649,7 +1732,35 @@ export async function POST(req: Request) {
         );
       const subtotalCents = Math.round(Number(property.price) * nights * 100);
       const amountTax = 0;
-      const totalCents = subtotalCents + amountTax;
+      const discountValidation = payload.promoCode
+        ? await validateDiscountForCheckout({
+            supabaseAdmin,
+            businessId: safeBusinessId,
+            code: payload.promoCode,
+            checkoutType: "rental",
+            subtotalCents,
+          })
+        : null;
+      if (discountValidation && !discountValidation.ok) {
+        return errorResponse({
+          status: 400,
+          error: discountValidation.error,
+          code: discountValidation.code,
+          step: "discount.validate",
+        });
+      }
+      const appliedDiscount =
+        discountValidation && discountValidation.ok ? discountValidation.discount : null;
+      const totalBeforeTaxCents = appliedDiscount?.finalTotalCents ?? subtotalCents;
+      const totalCents = totalBeforeTaxCents + amountTax;
+      if (!Number.isFinite(totalCents) || totalCents <= 0) {
+        return errorResponse({
+          status: 400,
+          error: "Promo code reduces the payable total below the minimum supported amount.",
+          code: "CHECKOUT_RENTAL_TOTAL_DISCOUNT_INVALID",
+          step: "discount.validate",
+        });
+      }
       const applicationFee = calculatePlatformFeeCents(totalCents, feeBasisPoints);
       const netToBusinessCents = getNetPayoutCents(totalCents, applicationFee);
       const requestFingerprint = buildCheckoutRequestFingerprint({
@@ -1663,6 +1774,7 @@ export async function POST(req: Request) {
         customerEmail,
         customerPhone,
         notes: payload.notes || "",
+        promoCode: appliedDiscount?.code || payload.promoCode || null,
       });
 
       logCheckoutStage("amounts_resolved", {
@@ -1672,6 +1784,7 @@ export async function POST(req: Request) {
         subtotal: subtotalCents,
         tax: amountTax,
         total: totalCents,
+        discountAmountCents: appliedDiscount?.discountAmountCents ?? 0,
       });
       logCheckoutStage("fee_resolved", {
         branch: "rental_reservation",
@@ -1709,6 +1822,7 @@ export async function POST(req: Request) {
             startDate,
             endDate,
             totalCents,
+            discountAmountCents: appliedDiscount?.discountAmountCents ?? 0,
           },
         });
       } catch (leadError) {
@@ -1744,6 +1858,9 @@ export async function POST(req: Request) {
           amount_subtotal: subtotalCents,
           amount_tax: amountTax,
           amount_total: totalCents,
+          discount: serializeAppliedDiscount(appliedDiscount),
+          discount_code: appliedDiscount?.code || null,
+          discount_amount_cents: appliedDiscount?.discountAmountCents ?? 0,
           plan: normalizedPlan,
           platform_fee_percent: feePercent,
           platform_fee_bps: feeBasisPoints,
@@ -1846,7 +1963,14 @@ export async function POST(req: Request) {
         guest_email: customerEmail,
         guest_phone: customerPhone,
         notes: payload.notes || "",
+        amount_subtotal: String(subtotalCents),
         amount_total: String(totalCents),
+        discount_code_id: appliedDiscount?.id || "",
+        discount_code: appliedDiscount?.code || "",
+        discount_amount_cents: String(appliedDiscount?.discountAmountCents ?? 0),
+        discount_type: appliedDiscount?.discountType || "",
+        discount_value: appliedDiscount ? String(appliedDiscount.discountValue) : "",
+        discount_applies_to: appliedDiscount?.appliesTo || "",
         platform_fee: String(applicationFee),
         platform_fee_percent: String(feePercent),
         platform_fee_bps: String(feeBasisPoints),
@@ -2067,7 +2191,35 @@ export async function POST(req: Request) {
     const computedStripeAmount = normalizeUsdAmountToCents(price);
     const subtotalCents = computedStripeAmount;
     const amountTax = 0;
-    const totalCents = subtotalCents + amountTax;
+    const discountValidation = payload.promoCode
+      ? await validateDiscountForCheckout({
+          supabaseAdmin,
+          businessId: safeBusinessId,
+          code: payload.promoCode,
+          checkoutType: "service",
+          subtotalCents,
+        })
+      : null;
+    if (discountValidation && !discountValidation.ok) {
+      return errorResponse({
+        status: 400,
+        error: discountValidation.error,
+        code: discountValidation.code,
+        step: "discount.validate",
+      });
+    }
+    const appliedDiscount =
+      discountValidation && discountValidation.ok ? discountValidation.discount : null;
+    const totalBeforeTaxCents = appliedDiscount?.finalTotalCents ?? subtotalCents;
+    const totalCents = totalBeforeTaxCents + amountTax;
+    if (!Number.isFinite(totalCents) || totalCents <= 0) {
+      return errorResponse({
+        status: 400,
+        error: "Promo code reduces the payable total below the minimum supported amount.",
+        code: "CHECKOUT_SERVICE_TOTAL_DISCOUNT_INVALID",
+        step: "discount.validate",
+      });
+    }
     const applicationFee = calculatePlatformFeeCents(totalCents, feeBasisPoints);
     const netToBusinessCents = getNetPayoutCents(totalCents, applicationFee);
     const requestFingerprint = buildCheckoutRequestFingerprint({
@@ -2084,6 +2236,7 @@ export async function POST(req: Request) {
       customerPhone,
       address: addressInput,
       notes: payload.notes || "",
+      promoCode: appliedDiscount?.code || payload.promoCode || null,
     });
 
     logCheckoutStage("amounts_resolved", {
@@ -2094,6 +2247,7 @@ export async function POST(req: Request) {
       subtotal: subtotalCents,
       tax: amountTax,
       total: totalCents,
+      discountAmountCents: appliedDiscount?.discountAmountCents ?? 0,
     });
     logCheckoutStage("fee_resolved", {
       branch: "service_booking",
@@ -2119,6 +2273,7 @@ export async function POST(req: Request) {
       pricingAdjustmentApplied: priceAdjustment !== 0,
       baseServicePrice,
       finalTotalCents: totalCents,
+      discountAmountCents: appliedDiscount?.discountAmountCents ?? 0,
     });
     console.log("[checkout/create] stripe amount audit", {
       businessId: safeBusinessId,
@@ -2162,6 +2317,7 @@ export async function POST(req: Request) {
           startTime: slot.startTime,
           endTime: slot.endTime,
           totalCents,
+          discountAmountCents: appliedDiscount?.discountAmountCents ?? 0,
         },
       });
     } catch (leadError) {
@@ -2198,6 +2354,9 @@ export async function POST(req: Request) {
         amount_subtotal: subtotalCents,
         amount_tax: amountTax,
         amount_total: totalCents,
+        discount: serializeAppliedDiscount(appliedDiscount),
+        discount_code: appliedDiscount?.code || null,
+        discount_amount_cents: appliedDiscount?.discountAmountCents ?? 0,
         plan: normalizedPlan,
         platform_fee_percent: feePercent,
         platform_fee_bps: feeBasisPoints,
@@ -2319,7 +2478,14 @@ export async function POST(req: Request) {
       service_mode: serviceMode || "",
       address_json: JSON.stringify(addressInput),
       notes: payload.notes || "",
+      amount_subtotal: String(subtotalCents),
       amount_total: String(totalCents),
+      discount_code_id: appliedDiscount?.id || "",
+      discount_code: appliedDiscount?.code || "",
+      discount_amount_cents: String(appliedDiscount?.discountAmountCents ?? 0),
+      discount_type: appliedDiscount?.discountType || "",
+      discount_value: appliedDiscount ? String(appliedDiscount.discountValue) : "",
+      discount_applies_to: appliedDiscount?.appliesTo || "",
       platform_fee: String(applicationFee),
       platform_fee_percent: String(feePercent),
       platform_fee_bps: String(feeBasisPoints),

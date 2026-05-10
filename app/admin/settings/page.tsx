@@ -5,6 +5,7 @@ import { loadBusinessLogoById } from "@/lib/businessLogos";
 import ConnectStripeButton from "@/components/ConnectStripeButton";
 import BusinessLogoManager from "@/app/admin/settings/BusinessLogoManager";
 import BusinessPreferencesForm from "@/app/admin/settings/BusinessPreferencesForm";
+import DiscountCodesManager from "@/app/admin/settings/DiscountCodesManager";
 import PublicBusinessLink from "@/app/admin/settings/PublicBusinessLink";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPaymentReadiness } from "@/lib/paymentReadiness";
@@ -281,6 +282,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 ...business,
                 ...(businessPreferences || {}),
               }}
+            />
+
+            <DiscountCodesManager
+              businessId={business.id}
+              businessType={business.business_type}
             />
 
             <DashboardPrimaryPanel>

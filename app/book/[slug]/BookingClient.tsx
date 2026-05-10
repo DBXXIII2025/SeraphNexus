@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import BusinessProfileShell from "@/components/BusinessProfileShell";
+import PromoCodeField from "@/components/checkout/PromoCodeField";
 import type { ServiceImageRecord } from "@/lib/serviceImages";
 import type { BusinessPageImage, BusinessPageTheme } from "@/lib/businessPageCustomization";
+import type { AppliedDiscount } from "@/lib/discountCodes";
 import { translate } from "@/lib/i18n";
 
 type Slot = {
@@ -147,6 +149,7 @@ export default function BookingClient({
   >("strict_slot");
   const [availabilityReason, setAvailabilityReason] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const t = (key: Parameters<typeof translate>[1]) => translate(business.language, key);
@@ -172,6 +175,8 @@ export default function BookingClient({
     0
   );
   const selectedSlotPrice = selectedServicesTotal;
+  const selectedSubtotalCents = Math.round(selectedSlotPrice * 100);
+  const selectedFinalCents = appliedDiscount?.finalTotalCents ?? selectedSubtotalCents;
   const serviceModes = {
     onsite: business.onsite_enabled !== false,
     remote: business.remote_enabled !== false,
@@ -315,6 +320,7 @@ export default function BookingClient({
           business_id: business.id,
           item_id: selectedServiceIds[0],
           price: selectedServices.reduce((sum, service) => sum + Number(service.price || 0), 0),
+          promo_code: appliedDiscount?.code,
           metadata: {
             service_ids: selectedServiceIds,
             customer: {
@@ -787,7 +793,16 @@ export default function BookingClient({
                   : t("onsite")
                 : "Unavailable"}
             </div>
-            <div>{t("total")}: ${selectedSlotPrice.toFixed(2)}</div>
+            <PromoCodeField
+              businessId={business.id}
+              checkoutType="service"
+              subtotalCents={selectedSubtotalCents}
+              disabled={selectedServiceIds.length === 0}
+              onAppliedChange={setAppliedDiscount}
+            />
+            <div>
+              {t("total")}: ${(selectedFinalCents / 100).toFixed(2)}
+            </div>
             {selectedSlot?.is_flexible ? (
               <div className="text-xs text-[var(--text-main)]">
                 Exact scheduling can be confirmed after booking.
