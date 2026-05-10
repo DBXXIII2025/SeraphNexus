@@ -147,6 +147,7 @@ export async function POST(request: Request) {
     }
 
     let action = null;
+    let actionError: string | null = null;
 
     if (parsedCompletion.action) {
       const actionResult = await insertAssistantActionDraft({
@@ -156,10 +157,10 @@ export async function POST(request: Request) {
       });
 
       if (!actionResult.ok) {
-        return jsonError(actionResult.error, 503);
+        actionError = actionResult.error;
+      } else {
+        action = actionResult.action;
       }
-
-      action = actionResult.action;
     }
 
     return NextResponse.json(
@@ -168,6 +169,7 @@ export async function POST(request: Request) {
         model: completion.model,
         messages: saveResult.messages,
         action,
+        actionError,
         business: {
           id: access.business.id,
           name: access.business.name || "Active business",

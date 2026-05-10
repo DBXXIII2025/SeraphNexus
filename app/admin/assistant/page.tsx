@@ -241,7 +241,8 @@ export default async function AdminAssistantPage({
             businessName={contextSummary.businessName}
             initialMessages={history.messages}
             initialActions={actionHistory.actions}
-            initialError={history.storageError || actionHistory.storageError}
+            initialError={history.storageError}
+            initialActionError={actionHistory.storageError}
             isPlatformAdmin={access.isPlatformAdmin}
             businessOptions={businessOptions}
             selectedBusinessId={business.id}

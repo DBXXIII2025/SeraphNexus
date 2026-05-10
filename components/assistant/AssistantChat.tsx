@@ -14,6 +14,7 @@ type AssistantChatProps = {
   initialMessages: AssistantMessageRecord[];
   initialActions: AssistantActionRecord[];
   initialError: string | null;
+  initialActionError: string | null;
   isPlatformAdmin: boolean;
   businessOptions: AssistantBusinessOption[];
   selectedBusinessId: string;
@@ -92,6 +93,7 @@ export default function AssistantChat({
   initialMessages,
   initialActions,
   initialError,
+  initialActionError,
   isPlatformAdmin,
   businessOptions,
   selectedBusinessId,
@@ -106,6 +108,7 @@ export default function AssistantChat({
   const [actions, setActions] = useState<AssistantActionRecord[]>(initialActions);
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState(initialError);
+  const [actionError, setActionError] = useState(initialActionError);
   const [isLoading, setIsLoading] = useState(false);
   const [businessSelection, setBusinessSelection] = useState(selectedBusinessId);
   const [actionMutations, setActionMutations] = useState<Record<string, ActionMutationState>>({});
@@ -121,9 +124,10 @@ export default function AssistantChat({
     );
     setActions(initialActions);
     setError(initialError);
+    setActionError(initialActionError);
     setBusinessSelection(selectedBusinessId);
     setActionMutations({});
-  }, [initialMessages, initialActions, initialError, selectedBusinessId, businessId]);
+  }, [initialMessages, initialActions, initialError, initialActionError, selectedBusinessId, businessId]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -139,6 +143,7 @@ export default function AssistantChat({
 
     setIsLoading(true);
     setError(null);
+    setActionError(initialActionError);
     setPrompt("");
 
     const requestId = `local-${Date.now()}`;
@@ -169,6 +174,7 @@ export default function AssistantChat({
         reply?: string;
         messages?: AssistantMessageRecord[];
         action?: AssistantActionRecord | null;
+        actionError?: string | null;
       };
 
       if (!response.ok || !data.reply || !Array.isArray(data.messages) || data.messages.length === 0) {
@@ -187,6 +193,7 @@ export default function AssistantChat({
       if (data.action?.id) {
         setActions((current) => mergeActions(current, [data.action!]));
       }
+      setActionError(data.actionError || initialActionError);
     } catch (submitError) {
       setMessages((current) =>
         current.map((entry) =>
@@ -451,6 +458,12 @@ export default function AssistantChat({
         </div>
 
         <div className="border-t border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-4 sm:px-5">
+          {actionError ? (
+            <div className="mb-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              {actionError}
+            </div>
+          ) : null}
+
           {error ? (
             <div className="mb-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               {error}

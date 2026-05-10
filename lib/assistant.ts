@@ -159,7 +159,7 @@ export type AssistantBusinessOption = {
   isPublished: boolean;
 };
 
-const MISSING_TABLE_CODES = new Set(["42P01", "42703"]);
+const MISSING_TABLE_CODES = new Set(["42P01", "42703", "PGRST205"]);
 const ALLOWED_ACTION_TYPES = new Set<AssistantActionType>([
   "draft_client_reply",
   "draft_service_create",
