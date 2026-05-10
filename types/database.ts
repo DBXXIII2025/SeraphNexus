@@ -363,6 +363,33 @@ export interface Database {
         };
       };
 
+      assistant_messages: {
+        Row: {
+          id: string;
+          business_id: string;
+          user_id: string;
+          role: "user" | "assistant";
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          user_id: string;
+          role: "user" | "assistant";
+          content: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          user_id?: string;
+          role?: "user" | "assistant";
+          content?: string;
+          created_at?: string;
+        };
+      };
+
       legal_acceptances: {
         Row: {
           id: string;

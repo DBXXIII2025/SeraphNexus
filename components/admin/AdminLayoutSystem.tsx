@@ -23,6 +23,7 @@ function inferGlyphName(href: string, label: string): AdminGlyphName {
   const normalized = `${href} ${label}`.toLowerCase();
 
   if (normalized.includes("business")) return "businesses";
+  if (normalized.includes("assistant")) return "messages";
   if (normalized.includes("calendar") || normalized.includes("rental") || normalized.includes("listing")) {
     return "calendar";
   }
