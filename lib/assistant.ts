@@ -20,7 +20,9 @@ type AssistantBusinessRow = Pick<
 export type AssistantMessageRecord = Pick<
   AssistantMessageRow,
   "id" | "role" | "content" | "created_at"
->;
+> & {
+  status?: "pending" | "failed" | "sent";
+};
 
 export type AssistantBusinessScope = {
   id: string;
@@ -291,7 +293,11 @@ export async function insertAssistantMessages(args: {
     content: message.content,
   }));
 
-  const { error } = await supabase.from("assistant_messages").insert(rows);
+  const { data, error } = await supabase
+    .from("assistant_messages")
+    .insert(rows)
+    .select("id,role,content,created_at")
+    .order("created_at", { ascending: true });
 
   if (error) {
     if (isMissingTableError(error)) {
@@ -317,5 +323,9 @@ export async function insertAssistantMessages(args: {
 
   return {
     ok: true as const,
+    messages: ((data || []) as AssistantMessageRecord[]).map((message) => ({
+      ...message,
+      status: "sent" as const,
+    })),
   };
 }

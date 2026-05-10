@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AssistantBusinessOption, AssistantMessageRecord } from "@/lib/assistant";
 
@@ -23,6 +23,24 @@ function formatTimestamp(value: string) {
   return parsed.toLocaleString();
 }
 
+function mergeMessages(current: AssistantMessageRecord[], next: AssistantMessageRecord[]) {
+  const merged = new Map<string, AssistantMessageRecord>();
+
+  [...current, ...next].forEach((message) => {
+    if (!message.id) {
+      return;
+    }
+
+    const existing = merged.get(message.id);
+    merged.set(message.id, existing ? { ...existing, ...message } : message);
+  });
+
+  return Array.from(merged.values()).sort(
+    (left, right) =>
+      new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
+  );
+}
+
 export default function AssistantChat({
   businessId,
   businessName,
@@ -33,12 +51,33 @@ export default function AssistantChat({
   selectedBusinessId,
 }: AssistantChatProps) {
   const router = useRouter();
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState<AssistantMessageRecord[]>(
+    initialMessages.map((message) => ({
+      ...message,
+      status: message.status || "sent",
+    }))
+  );
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState(initialError);
   const [isLoading, setIsLoading] = useState(false);
   const [businessSelection, setBusinessSelection] = useState(selectedBusinessId);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setMessages(
+      initialMessages.map((message) => ({
+        ...message,
+        status: message.status || "sent",
+      }))
+    );
+    setError(initialError);
+    setBusinessSelection(selectedBusinessId);
+  }, [initialMessages, initialError, selectedBusinessId, businessId]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, isLoading]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,16 +89,18 @@ export default function AssistantChat({
 
     setIsLoading(true);
     setError(null);
+    setPrompt("");
 
+    const requestId = `local-${Date.now()}`;
     const optimisticUserMessage: AssistantMessageRecord = {
-      id: `local-user-${Date.now()}`,
+      id: `${requestId}-user`,
       role: "user",
       content: trimmedPrompt,
       created_at: new Date().toISOString(),
+      status: "pending",
     };
 
-    setMessages((current) => [...current, optimisticUserMessage]);
-    setPrompt("");
+    setMessages((current) => mergeMessages(current, [optimisticUserMessage]));
 
     try {
       const response = await fetch("/api/admin/assistant/chat", {
@@ -76,24 +117,31 @@ export default function AssistantChat({
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;
         reply?: string;
+        messages?: AssistantMessageRecord[];
       };
 
-      if (!response.ok || !data.reply) {
+      if (!response.ok || !data.reply || !Array.isArray(data.messages) || data.messages.length === 0) {
         throw new Error(data.error || "The AI assistant could not answer right now.");
       }
 
-      setMessages((current) => [
-        ...current,
-        {
-          id: `local-assistant-${Date.now()}`,
-          role: "assistant",
-          content: data.reply || "",
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      setMessages((current) => {
+        const withoutOptimistic = current.filter((entry) => entry.id !== optimisticUserMessage.id);
+        const savedMessages = data.messages!.map((message) => ({
+          ...message,
+          status: "sent" as const,
+        }));
+        return mergeMessages(withoutOptimistic, savedMessages);
+      });
     } catch (submitError) {
       setMessages((current) =>
-        current.filter((entry) => entry.id !== optimisticUserMessage.id)
+        current.map((entry) =>
+          entry.id === optimisticUserMessage.id
+            ? {
+                ...entry,
+                status: "failed",
+              }
+            : entry
+        )
       );
       setError(
         submitError instanceof Error
@@ -197,6 +245,16 @@ export default function AssistantChat({
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[var(--text-main)]">
                     {message.content}
                   </p>
+                  {message.role === "user" && message.status === "failed" ? (
+                    <p className="mt-3 text-xs text-red-200">
+                      Send failed. Edit or retry.
+                    </p>
+                  ) : null}
+                  {message.role === "user" && message.status === "pending" ? (
+                    <p className="mt-3 text-xs text-[var(--text-muted)]">
+                      Sending...
+                    </p>
+                  ) : null}
                 </div>
               ))}
 
@@ -210,6 +268,7 @@ export default function AssistantChat({
                   </p>
                 </div>
               ) : null}
+              <div ref={scrollRef} />
             </div>
           )}
         </div>
@@ -249,4 +308,3 @@ export default function AssistantChat({
     </div>
   );
 }
-

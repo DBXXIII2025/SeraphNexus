@@ -137,6 +137,7 @@ export async function POST(request: Request) {
       {
         reply: completion.text,
         model: completion.model,
+        messages: saveResult.messages,
         business: {
           id: access.business.id,
           name: access.business.name || "Active business",
@@ -163,4 +164,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
