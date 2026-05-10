@@ -4,7 +4,7 @@ import {
   normalizeDiscountCode,
   validateDiscountCodePayload,
 } from "@/lib/discountCodes";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 function getRequestedBusinessId(input: Request | URLSearchParams, body?: Record<string, unknown>) {
   if (input instanceof URLSearchParams) {
@@ -16,8 +16,24 @@ function getRequestedBusinessId(input: Request | URLSearchParams, body?: Record<
   return String(fromBody || "").trim() || undefined;
 }
 
+function canManageDiscountCodes(input: {
+  ownerId?: string | null;
+  userId?: string | null;
+  accessRole?: string | null;
+}) {
+  if (!input.userId) {
+    return false;
+  }
+
+  if (input.ownerId && input.ownerId === input.userId) {
+    return true;
+  }
+
+  return input.accessRole === "admin" || input.accessRole === "manager";
+}
+
 export async function GET(req: Request) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const business = await getActiveBusiness(
     getRequestedBusinessId(new URL(req.url).searchParams)
   );
@@ -43,12 +59,29 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
+  const authClient = await createClient();
+  const supabase = createAdminClient();
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const business = await getActiveBusiness(getRequestedBusinessId(req, body));
 
   if (!business) {
     return NextResponse.json({ error: "No active business." }, { status: 400 });
+  }
+
+  if (
+    !canManageDiscountCodes({
+      ownerId: business.owner_id,
+      userId: user?.id || null,
+      accessRole: business.access_role,
+    })
+  ) {
+    return NextResponse.json(
+      { error: "You do not have permission to manage promo codes for this business." },
+      { status: 403 }
+    );
   }
 
   const parsed = validateDiscountCodePayload(body);
@@ -85,12 +118,29 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const supabase = await createClient();
+  const authClient = await createClient();
+  const supabase = createAdminClient();
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const business = await getActiveBusiness(getRequestedBusinessId(req, body));
 
   if (!business) {
     return NextResponse.json({ error: "No active business." }, { status: 400 });
+  }
+
+  if (
+    !canManageDiscountCodes({
+      ownerId: business.owner_id,
+      userId: user?.id || null,
+      accessRole: business.access_role,
+    })
+  ) {
+    return NextResponse.json(
+      { error: "You do not have permission to manage promo codes for this business." },
+      { status: 403 }
+    );
   }
 
   const codeId = String(body.id || "").trim();
@@ -133,12 +183,29 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const supabase = await createClient();
+  const authClient = await createClient();
+  const supabase = createAdminClient();
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const business = await getActiveBusiness(getRequestedBusinessId(req, body));
 
   if (!business) {
     return NextResponse.json({ error: "No active business." }, { status: 400 });
+  }
+
+  if (
+    !canManageDiscountCodes({
+      ownerId: business.owner_id,
+      userId: user?.id || null,
+      accessRole: business.access_role,
+    })
+  ) {
+    return NextResponse.json(
+      { error: "You do not have permission to manage promo codes for this business." },
+      { status: 403 }
+    );
   }
 
   const codeId = String(body.id || "").trim();
