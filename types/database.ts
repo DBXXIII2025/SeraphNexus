@@ -390,6 +390,42 @@ export interface Database {
         };
       };
 
+      assistant_actions: {
+        Row: {
+          id: string;
+          business_id: string;
+          user_id: string;
+          action_type: string;
+          status: "draft" | "approved" | "rejected" | "executed" | "failed";
+          payload: Json;
+          result: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          user_id: string;
+          action_type: string;
+          status?: "draft" | "approved" | "rejected" | "executed" | "failed";
+          payload?: Json;
+          result?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          user_id?: string;
+          action_type?: string;
+          status?: "draft" | "approved" | "rejected" | "executed" | "failed";
+          payload?: Json;
+          result?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+
       legal_acceptances: {
         Row: {
           id: string;

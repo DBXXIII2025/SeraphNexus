@@ -2,16 +2,26 @@
 
 import { startTransition, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { AssistantBusinessOption, AssistantMessageRecord } from "@/lib/assistant";
+import type {
+  AssistantActionRecord,
+  AssistantBusinessOption,
+  AssistantMessageRecord,
+} from "@/lib/assistant";
 
 type AssistantChatProps = {
   businessId: string;
   businessName: string;
   initialMessages: AssistantMessageRecord[];
+  initialActions: AssistantActionRecord[];
   initialError: string | null;
   isPlatformAdmin: boolean;
   businessOptions: AssistantBusinessOption[];
   selectedBusinessId: string;
+};
+
+type ActionMutationState = {
+  isLoading: boolean;
+  error: string | null;
 };
 
 function formatTimestamp(value: string) {
@@ -21,6 +31,14 @@ function formatTimestamp(value: string) {
   }
 
   return parsed.toLocaleString();
+}
+
+function formatActionLabel(value: string) {
+  return value
+    .replace(/^draft_/, "")
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function mergeMessages(current: AssistantMessageRecord[], next: AssistantMessageRecord[]) {
@@ -41,10 +59,38 @@ function mergeMessages(current: AssistantMessageRecord[], next: AssistantMessage
   );
 }
 
+function mergeActions(current: AssistantActionRecord[], next: AssistantActionRecord[]) {
+  const merged = new Map<string, AssistantActionRecord>();
+
+  [...current, ...next].forEach((action) => {
+    if (!action.id) {
+      return;
+    }
+
+    const existing = merged.get(action.id);
+    merged.set(action.id, existing ? { ...existing, ...action } : action);
+  });
+
+  return Array.from(merged.values()).sort(
+    (left, right) =>
+      new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
+  );
+}
+
+function actionSummary(action: AssistantActionRecord) {
+  const summary =
+    action.payload && typeof action.payload === "object" && "summary" in action.payload
+      ? String(action.payload.summary || "").trim()
+      : "";
+
+  return summary || "Review this drafted assistant action before deciding whether to run it.";
+}
+
 export default function AssistantChat({
   businessId,
   businessName,
   initialMessages,
+  initialActions,
   initialError,
   isPlatformAdmin,
   businessOptions,
@@ -57,10 +103,12 @@ export default function AssistantChat({
       status: message.status || "sent",
     }))
   );
+  const [actions, setActions] = useState<AssistantActionRecord[]>(initialActions);
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState(initialError);
   const [isLoading, setIsLoading] = useState(false);
   const [businessSelection, setBusinessSelection] = useState(selectedBusinessId);
+  const [actionMutations, setActionMutations] = useState<Record<string, ActionMutationState>>({});
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -71,13 +119,15 @@ export default function AssistantChat({
         status: message.status || "sent",
       }))
     );
+    setActions(initialActions);
     setError(initialError);
     setBusinessSelection(selectedBusinessId);
-  }, [initialMessages, initialError, selectedBusinessId, businessId]);
+    setActionMutations({});
+  }, [initialMessages, initialActions, initialError, selectedBusinessId, businessId]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, isLoading]);
+  }, [messages, actions, isLoading]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -118,6 +168,7 @@ export default function AssistantChat({
         error?: string;
         reply?: string;
         messages?: AssistantMessageRecord[];
+        action?: AssistantActionRecord | null;
       };
 
       if (!response.ok || !data.reply || !Array.isArray(data.messages) || data.messages.length === 0) {
@@ -132,6 +183,10 @@ export default function AssistantChat({
         }));
         return mergeMessages(withoutOptimistic, savedMessages);
       });
+
+      if (data.action?.id) {
+        setActions((current) => mergeActions(current, [data.action!]));
+      }
     } catch (submitError) {
       setMessages((current) =>
         current.map((entry) =>
@@ -152,6 +207,59 @@ export default function AssistantChat({
     } finally {
       setIsLoading(false);
       textareaRef.current?.focus();
+    }
+  }
+
+  async function handleActionDecision(actionId: string, decision: "approve" | "reject") {
+    setError(null);
+    setActionMutations((current) => ({
+      ...current,
+      [actionId]: {
+        isLoading: true,
+        error: null,
+      },
+    }));
+
+    try {
+      const response = await fetch(`/api/admin/assistant/actions/${encodeURIComponent(actionId)}/${decision}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ businessId }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        action?: AssistantActionRecord;
+      };
+
+      if (data.action?.id) {
+        setActions((current) => mergeActions(current, [data.action!]));
+      }
+
+      if (!response.ok || !data.action) {
+        throw new Error(data.error || `The assistant action could not be ${decision}d.`);
+      }
+
+      setActionMutations((current) => ({
+        ...current,
+        [actionId]: {
+          isLoading: false,
+          error: null,
+        },
+      }));
+    } catch (decisionError) {
+      setActionMutations((current) => ({
+        ...current,
+        [actionId]: {
+          isLoading: false,
+          error:
+            decisionError instanceof Error
+              ? decisionError.message
+              : `The assistant action could not be ${decision}d.`,
+        },
+      }));
     }
   }
 
@@ -178,7 +286,7 @@ export default function AssistantChat({
                 {businessName}
               </h2>
               <p className="mt-1 text-sm text-[var(--text-soft)]">
-                Compact read-only guidance for Seraph Nexus workflows and business operations.
+                Approval-based guidance and action drafting for Seraph Nexus workflows.
               </p>
             </div>
 
@@ -208,7 +316,7 @@ export default function AssistantChat({
         </div>
 
         <div className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,rgba(212,175,55,0.04),transparent_18%),var(--surface)] px-4 py-4 sm:px-5">
-          {messages.length === 0 ? (
+          {messages.length === 0 && actions.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <div className="max-w-xl rounded-3xl border border-dashed border-[var(--accent-border)] bg-[var(--accent-muted)] px-6 py-8 text-center">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--accent-soft)]">
@@ -218,8 +326,8 @@ export default function AssistantChat({
                   Ask about this business workspace
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
-                  Try onboarding questions, launch-readiness advice, workflow suggestions, plan
-                  explanations, or business improvement ideas grounded in this workspace.
+                  Ask for operational advice or have the assistant draft a reply, service,
+                  product, promo code, or booking summary for review.
                 </p>
               </div>
             </div>
@@ -246,17 +354,86 @@ export default function AssistantChat({
                     {message.content}
                   </p>
                   {message.role === "user" && message.status === "failed" ? (
-                    <p className="mt-3 text-xs text-red-200">
-                      Send failed. Edit or retry.
-                    </p>
+                    <p className="mt-3 text-xs text-red-200">Send failed. Edit or retry.</p>
                   ) : null}
                   {message.role === "user" && message.status === "pending" ? (
-                    <p className="mt-3 text-xs text-[var(--text-muted)]">
-                      Sending...
-                    </p>
+                    <p className="mt-3 text-xs text-[var(--text-muted)]">Sending...</p>
                   ) : null}
                 </div>
               ))}
+
+              {actions.map((action) => {
+                const mutation = actionMutations[action.id];
+                const isPendingDecision = mutation?.isLoading === true;
+                const canDecide = action.status === "draft" && !isPendingDecision;
+
+                return (
+                  <div
+                    key={action.id}
+                    className="mr-auto max-w-[92%] rounded-[1.8rem] border border-[var(--accent-border)] bg-[linear-gradient(180deg,rgba(212,175,55,0.12),rgba(15,15,15,0.96))] px-4 py-4 sm:max-w-[88%]"
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-[var(--accent-soft)]">
+                          Draft Action
+                        </p>
+                        <h3 className="mt-2 text-base font-semibold text-[var(--text-strong)]">
+                          {formatActionLabel(action.action_type)}
+                        </h3>
+                        <p className="mt-2 text-sm text-[var(--text-soft)]">
+                          {actionSummary(action)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                          {action.status}
+                        </p>
+                        <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+                          {formatTimestamp(action.updated_at || action.created_at)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <pre className="mt-4 overflow-x-auto rounded-2xl border border-[var(--border-soft)] bg-black/20 p-3 text-xs leading-5 text-[var(--text-soft)]">
+                      {JSON.stringify(action.payload, null, 2)}
+                    </pre>
+
+                    {action.result && Object.keys(action.result).length > 0 ? (
+                      <pre className="mt-3 overflow-x-auto rounded-2xl border border-[var(--border-soft)] bg-black/10 p-3 text-xs leading-5 text-[var(--text-soft)]">
+                        {JSON.stringify(action.result, null, 2)}
+                      </pre>
+                    ) : null}
+
+                    {mutation?.error ? (
+                      <p className="mt-3 text-sm text-red-200">{mutation.error}</p>
+                    ) : null}
+
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Review first. The assistant cannot execute anything until you approve it.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleActionDecision(action.id, "reject")}
+                          disabled={!canDecide}
+                          className="btn-secondary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isPendingDecision ? "Working..." : "Reject"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleActionDecision(action.id, "approve")}
+                          disabled={!canDecide}
+                          className="btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isPendingDecision ? "Working..." : "Approve"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
 
               {isLoading ? (
                 <div className="mr-auto max-w-[84%] rounded-[1.6rem] border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-4">
@@ -264,7 +441,7 @@ export default function AssistantChat({
                     AI Assistant
                   </p>
                   <p className="mt-3 text-sm text-[var(--text-soft)]">
-                    Analyzing workspace context and drafting a concise response...
+                    Analyzing workspace context and drafting a response or approval-ready action...
                   </p>
                 </div>
               ) : null}
@@ -285,21 +462,21 @@ export default function AssistantChat({
               ref={textareaRef}
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Ask how to improve launch readiness, use a Seraph Nexus feature, or tighten business operations."
+              placeholder="Ask for guidance or have the assistant draft a reply, service, product, promo code, or booking summary for approval."
               className="input-field min-h-[132px] resize-y"
               maxLength={4000}
               disabled={isLoading || Boolean(initialError)}
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-[var(--text-muted)]">
-                Read-only guidance only. No refunds, deletes, edits, sends, or account changes.
+                Draft, review, approve, execute. Restricted actions stay blocked.
               </p>
               <button
                 type="submit"
                 disabled={isLoading || !prompt.trim() || Boolean(initialError)}
                 className="btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLoading ? "Thinking..." : "Ask AI Assistant"}
+                {isLoading ? "Drafting..." : "Ask AI Assistant"}
               </button>
             </div>
           </form>

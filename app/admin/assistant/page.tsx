@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import AssistantChat from "@/components/assistant/AssistantChat";
 import {
   buildAssistantContextSummary,
+  loadAssistantActions,
   loadAssistantBusinessOptions,
   loadAssistantMessages,
   resolveAssistantAccess,
@@ -125,12 +126,17 @@ export default async function AdminAssistantPage({
     );
   }
 
-  const [contextSummary, history, businessOptions] = await Promise.all([
+  const [contextSummary, history, actionHistory, businessOptions] = await Promise.all([
     buildAssistantContextSummary(business),
     loadAssistantMessages({
       businessId: business.id,
       userId: access.userId!,
       limit: 40,
+    }),
+    loadAssistantActions({
+      businessId: business.id,
+      userId: access.userId!,
+      limit: 24,
     }),
     access.isPlatformAdmin ? loadAssistantBusinessOptions() : Promise.resolve([]),
   ]);
@@ -145,8 +151,8 @@ export default async function AdminAssistantPage({
             </p>
             <h1 className="section-title">AI Assistant</h1>
             <p className="section-description">
-              Read-only operational guidance for {business.name || "this business"} with compact
-              workspace context and safe business summaries only.
+              Business guidance plus approval-based action drafting for{" "}
+              {business.name || "this business"} with safe workspace summaries only.
             </p>
           </div>
         </div>
@@ -223,9 +229,8 @@ export default async function AdminAssistantPage({
             </div>
 
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
-              The assistant is read-only. It can explain workflows and suggest business
-              improvements, but it cannot send messages, edit bookings, change prices, delete
-              data, or alter account settings.
+              The assistant can draft controlled actions for review. Nothing executes until you
+              approve it, and restricted operations stay blocked.
             </div>
           </div>
         </DashboardSecondaryPanel>
@@ -235,7 +240,8 @@ export default async function AdminAssistantPage({
             businessId={business.id}
             businessName={contextSummary.businessName}
             initialMessages={history.messages}
-            initialError={history.storageError}
+            initialActions={actionHistory.actions}
+            initialError={history.storageError || actionHistory.storageError}
             isPlatformAdmin={access.isPlatformAdmin}
             businessOptions={businessOptions}
             selectedBusinessId={business.id}
@@ -245,4 +251,3 @@ export default async function AdminAssistantPage({
     </AdminPageContainer>
   );
 }
-
