@@ -48,8 +48,6 @@ export type AssistantClientReplyPayload = {
 export type AssistantServiceCreatePayload = {
   summary: string;
   name: string;
-  description?: string | null;
-  category?: string | null;
   price: number;
   duration: number;
 };
@@ -275,12 +273,59 @@ function summaryFromPayload(payload: JsonObject) {
   return normalizeText(payload.summary, 240);
 }
 
-function validateClientReplyPayload(payload: unknown): AssistantClientReplyPayload | null {
+type PayloadValidationResult<T> =
+  | {
+      ok: true;
+      value: T;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
+function getObjectRecord(
+  payload: unknown,
+  invalidMessage: string
+): PayloadValidationResult<JsonObject> {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return {
+      ok: false,
+      error: invalidMessage,
+    };
+  }
+
+  return {
+    ok: true,
+    value: payload as JsonObject,
+  };
+}
+
+function findUnsupportedKeys(record: JsonObject, allowedKeys: string[]) {
+  const allowed = new Set(allowedKeys);
+  return Object.keys(record)
+    .filter((key) => !allowed.has(key))
+    .sort();
+}
+
+function unsupportedFieldsError(fields: string[]) {
+  return `This action included unsupported fields: ${fields.join(", ")}.`;
+}
+
+function resolveDraftName(record: JsonObject) {
+  return normalizeText(record.name, 200) || normalizeText(record.title, 200);
+}
+
+function validateClientReplyPayload(payload: unknown): AssistantClientReplyPayload | null {
+  const objectResult = getObjectRecord(payload, "This drafted reply payload is invalid.");
+  if (!objectResult.ok) {
     return null;
   }
 
-  const record = payload as JsonObject;
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, ["summary", "conversationId", "body"]);
+  if (unsupported.length > 0) {
+    return null;
+  }
   const summary = summaryFromPayload(record);
   const conversationId = normalizeText(record.conversationId, 120);
   const body = normalizeText(record.body, 4000);
@@ -297,13 +342,18 @@ function validateClientReplyPayload(payload: unknown): AssistantClientReplyPaylo
 }
 
 function validateServiceCreatePayload(payload: unknown): AssistantServiceCreatePayload | null {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+  const objectResult = getObjectRecord(payload, "This drafted service payload is invalid.");
+  if (!objectResult.ok) {
     return null;
   }
 
-  const record = payload as JsonObject;
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, ["summary", "name", "title", "price", "duration"]);
+  if (unsupported.length > 0) {
+    return null;
+  }
   const summary = summaryFromPayload(record);
-  const name = normalizeText(record.name, 200);
+  const name = resolveDraftName(record);
   const price = normalizePrice(record.price);
 
   if (!summary || !name || price === null) {
@@ -313,21 +363,31 @@ function validateServiceCreatePayload(payload: unknown): AssistantServiceCreateP
   return {
     summary,
     name,
-    description: normalizeText(record.description),
-    category: normalizeText(record.category, 200),
     price,
     duration: normalizeDuration(record.duration),
   };
 }
 
 function validateProductCreatePayload(payload: unknown): AssistantProductCreatePayload | null {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+  const objectResult = getObjectRecord(payload, "This drafted product payload is invalid.");
+  if (!objectResult.ok) {
     return null;
   }
 
-  const record = payload as JsonObject;
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, [
+    "summary",
+    "name",
+    "title",
+    "description",
+    "price",
+    "image_url",
+  ]);
+  if (unsupported.length > 0) {
+    return null;
+  }
   const summary = summaryFromPayload(record);
-  const name = normalizeText(record.name, 200);
+  const name = resolveDraftName(record);
   const price = normalizePrice(record.price);
 
   if (!summary || !name || price === null) {
@@ -344,11 +404,27 @@ function validateProductCreatePayload(payload: unknown): AssistantProductCreateP
 }
 
 function validatePromoCodeCreatePayload(payload: unknown): AssistantPromoCodeCreatePayload | null {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+  const objectResult = getObjectRecord(payload, "This drafted promo code payload is invalid.");
+  if (!objectResult.ok) {
     return null;
   }
 
-  const record = payload as JsonObject;
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, [
+    "summary",
+    "code",
+    "discount_type",
+    "discount_value",
+    "applies_to",
+    "minimum_order_amount_cents",
+    "usage_limit",
+    "starts_at",
+    "expires_at",
+    "active",
+  ]);
+  if (unsupported.length > 0) {
+    return null;
+  }
   const summary = summaryFromPayload(record);
 
   if (!summary) {
@@ -367,11 +443,16 @@ function validatePromoCodeCreatePayload(payload: unknown): AssistantPromoCodeCre
 }
 
 function validateBookingSummaryPayload(payload: unknown): AssistantBookingSummaryPayload | null {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+  const objectResult = getObjectRecord(payload, "This drafted booking summary payload is invalid.");
+  if (!objectResult.ok) {
     return null;
   }
 
-  const record = payload as JsonObject;
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, ["summary", "bookingId", "conversationId", "note"]);
+  if (unsupported.length > 0) {
+    return null;
+  }
   const summary = summaryFromPayload(record);
   const note = normalizeText(record.note, 4000);
 
@@ -391,6 +472,221 @@ function validateBookingSummaryPayload(payload: unknown): AssistantBookingSummar
     note,
     bookingId,
     conversationId,
+  };
+}
+
+function parseClientReplyPayload(payload: unknown): PayloadValidationResult<AssistantClientReplyPayload> {
+  const objectResult = getObjectRecord(payload, "This drafted reply payload is invalid.");
+  if (!objectResult.ok) {
+    return objectResult;
+  }
+
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, ["summary", "conversationId", "body"]);
+  if (unsupported.length > 0) {
+    return {
+      ok: false,
+      error: unsupportedFieldsError(unsupported),
+    };
+  }
+
+  const summary = summaryFromPayload(record);
+  const conversationId = normalizeText(record.conversationId, 120);
+  const body = normalizeText(record.body, 4000);
+
+  if (!summary || !conversationId || !body) {
+    return {
+      ok: false,
+      error: "This drafted reply payload is invalid.",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      summary,
+      conversationId,
+      body,
+    },
+  };
+}
+
+function parseServiceCreatePayload(
+  payload: unknown
+): PayloadValidationResult<AssistantServiceCreatePayload> {
+  const objectResult = getObjectRecord(payload, "This drafted service payload is invalid.");
+  if (!objectResult.ok) {
+    return objectResult;
+  }
+
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, ["summary", "name", "title", "price", "duration"]);
+  if (unsupported.length > 0) {
+    return {
+      ok: false,
+      error: unsupportedFieldsError(unsupported),
+    };
+  }
+
+  const summary = summaryFromPayload(record);
+  const name = resolveDraftName(record);
+  const price = normalizePrice(record.price);
+
+  if (!summary || !name || price === null) {
+    return {
+      ok: false,
+      error: "This drafted service payload is invalid.",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      summary,
+      name,
+      price,
+      duration: normalizeDuration(record.duration),
+    },
+  };
+}
+
+function parseProductCreatePayload(
+  payload: unknown
+): PayloadValidationResult<AssistantProductCreatePayload> {
+  const objectResult = getObjectRecord(payload, "This drafted product payload is invalid.");
+  if (!objectResult.ok) {
+    return objectResult;
+  }
+
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, [
+    "summary",
+    "name",
+    "title",
+    "description",
+    "price",
+    "image_url",
+  ]);
+  if (unsupported.length > 0) {
+    return {
+      ok: false,
+      error: unsupportedFieldsError(unsupported),
+    };
+  }
+
+  const summary = summaryFromPayload(record);
+  const name = resolveDraftName(record);
+  const price = normalizePrice(record.price);
+
+  if (!summary || !name || price === null) {
+    return {
+      ok: false,
+      error: "This drafted product payload is invalid.",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      summary,
+      name,
+      description: normalizeText(record.description),
+      price,
+      image_url: normalizeText(record.image_url, 2000),
+    },
+  };
+}
+
+function parsePromoCodeCreatePayload(
+  payload: unknown
+): PayloadValidationResult<AssistantPromoCodeCreatePayload> {
+  const objectResult = getObjectRecord(payload, "This drafted promo code payload is invalid.");
+  if (!objectResult.ok) {
+    return objectResult;
+  }
+
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, [
+    "summary",
+    "code",
+    "discount_type",
+    "discount_value",
+    "applies_to",
+    "minimum_order_amount_cents",
+    "usage_limit",
+    "starts_at",
+    "expires_at",
+    "active",
+  ]);
+  if (unsupported.length > 0) {
+    return {
+      ok: false,
+      error: unsupportedFieldsError(unsupported),
+    };
+  }
+
+  const summary = summaryFromPayload(record);
+  if (!summary) {
+    return {
+      ok: false,
+      error: "This drafted promo code payload is invalid.",
+    };
+  }
+
+  const parsed = validateDiscountCodePayload(record);
+  if (!parsed.ok) {
+    return {
+      ok: false,
+      error: parsed.error,
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      summary,
+      ...parsed.value,
+    },
+  };
+}
+
+function parseBookingSummaryPayload(
+  payload: unknown
+): PayloadValidationResult<AssistantBookingSummaryPayload> {
+  const objectResult = getObjectRecord(payload, "This drafted booking summary payload is invalid.");
+  if (!objectResult.ok) {
+    return objectResult;
+  }
+
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, ["summary", "bookingId", "conversationId", "note"]);
+  if (unsupported.length > 0) {
+    return {
+      ok: false,
+      error: unsupportedFieldsError(unsupported),
+    };
+  }
+
+  const summary = summaryFromPayload(record);
+  const note = normalizeText(record.note, 4000);
+  const bookingId = normalizeText(record.bookingId, 120);
+  const conversationId = normalizeText(record.conversationId, 120);
+
+  if (!summary || !note || (!bookingId && !conversationId)) {
+    return {
+      ok: false,
+      error: "This drafted booking summary payload is invalid.",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      summary,
+      note,
+      bookingId,
+      conversationId,
+    },
   };
 }
 
@@ -934,11 +1230,12 @@ async function executeDraftClientReply(args: {
   business: AssistantBusinessScope;
   userId: string;
 }) {
-  const payload = validateClientReplyPayload(args.action.payload);
+  const payloadResult = parseClientReplyPayload(args.action.payload);
 
-  if (!payload) {
-    throw new Error("This drafted reply payload is invalid.");
+  if (!payloadResult.ok) {
+    throw new Error(payloadResult.error);
   }
+  const payload = payloadResult.value;
 
   const access = await getAuthorizedConversationForUser({
     conversationId: payload.conversationId,
@@ -992,11 +1289,12 @@ async function executeDraftServiceCreate(args: {
   business: AssistantBusinessScope;
   userId: string;
 }) {
-  const payload = validateServiceCreatePayload(args.action.payload);
+  const payloadResult = parseServiceCreatePayload(args.action.payload);
 
-  if (!payload) {
-    throw new Error("This drafted service payload is invalid.");
+  if (!payloadResult.ok) {
+    throw new Error(payloadResult.error);
   }
+  const payload = payloadResult.value;
 
   await enforceCreateLimit({
     table: "services",
@@ -1011,17 +1309,12 @@ async function executeDraftServiceCreate(args: {
     payload: {
       business_id: args.business.id,
       name: payload.name,
-      description: payload.description || null,
-      category: payload.category || null,
       price: payload.price,
       duration: payload.duration,
-      is_active: true,
-      archived_at: null,
-      updated_at: nowIso(),
     },
     requiredColumns: ["business_id", "name", "price", "duration"],
     runMutation: (nextPayload) =>
-      servicesTable.insert(nextPayload).select("id,name,price,duration,category,created_at").single(),
+      servicesTable.insert(nextPayload).select("id,name,price,duration,created_at").single(),
   });
 
   if (result.error || !result.data) {
@@ -1034,7 +1327,6 @@ async function executeDraftServiceCreate(args: {
     name: String(row.name || payload.name),
     price: Number(row.price || payload.price),
     duration: Number(row.duration || payload.duration),
-    category: row.category ? String(row.category) : payload.category || null,
     created_at: row.created_at ? String(row.created_at) : null,
   };
 }
@@ -1044,11 +1336,12 @@ async function executeDraftProductCreate(args: {
   business: AssistantBusinessScope;
   userId: string;
 }) {
-  const payload = validateProductCreatePayload(args.action.payload);
+  const payloadResult = parseProductCreatePayload(args.action.payload);
 
-  if (!payload) {
-    throw new Error("This drafted product payload is invalid.");
+  if (!payloadResult.ok) {
+    throw new Error(payloadResult.error);
   }
+  const payload = payloadResult.value;
 
   await enforceCreateLimit({
     table: "products",
@@ -1066,9 +1359,6 @@ async function executeDraftProductCreate(args: {
       description: payload.description || null,
       price: payload.price,
       image_url: payload.image_url || null,
-      is_active: true,
-      archived_at: null,
-      updated_at: nowIso(),
     },
     requiredColumns: ["business_id", "name", "price"],
     runMutation: (nextPayload) =>
@@ -1093,11 +1383,12 @@ async function executeDraftPromoCodeCreate(args: {
   action: AssistantActionRecord;
   business: AssistantBusinessScope;
 }) {
-  const payload = validatePromoCodeCreatePayload(args.action.payload);
+  const payloadResult = parsePromoCodeCreatePayload(args.action.payload);
 
-  if (!payload) {
-    throw new Error("This drafted promo code payload is invalid.");
+  if (!payloadResult.ok) {
+    throw new Error(payloadResult.error);
   }
+  const payload = payloadResult.value;
 
   const insertPayload = {
     business_id: args.business.id,
@@ -1135,11 +1426,12 @@ async function executeDraftPromoCodeCreate(args: {
 async function executeDraftBookingSummary(args: {
   action: AssistantActionRecord;
 }) {
-  const payload = validateBookingSummaryPayload(args.action.payload);
+  const payloadResult = parseBookingSummaryPayload(args.action.payload);
 
-  if (!payload) {
-    throw new Error("This drafted booking summary payload is invalid.");
+  if (!payloadResult.ok) {
+    throw new Error(payloadResult.error);
   }
+  const payload = payloadResult.value;
 
   return {
     note: payload.note,
