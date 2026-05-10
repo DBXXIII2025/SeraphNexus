@@ -9,6 +9,7 @@ import {
   getConversationByAccessToken,
   getConversationMessages,
   markConversationReadForClient,
+  normalizeConversationStatus,
 } from "@/lib/messages";
 import { getGuestConversationCookieName } from "@/lib/messageThreadCookies";
 import BusinessConversationClient from "./business/[conversationId]/BusinessConversationClient";
@@ -113,7 +114,7 @@ export default async function MessagesPage({
               <Link
                 href={`/admin/messages?businessId=${encodeURIComponent(
                   access.business.id
-                )}&conversation=${encodeURIComponent(conversationId)}`}
+                )}&conversationId=${encodeURIComponent(conversationId)}`}
                 className="inline-flex rounded-xl border border-[var(--border-soft)] px-4 py-2 text-sm text-[var(--text-strong)] transition hover:bg-[var(--panel-strong)]"
               >
                 Open owner inbox
@@ -148,6 +149,7 @@ export default async function MessagesPage({
         conversationId={conversationId}
         businessName={access.business.name || "Business"}
         subject={access.conversation.subject || "Message Business"}
+        initialStatus={normalizeConversationStatus((access.conversation as { status?: unknown }).status)}
         initialMessages={visibleMessages}
         sourceHref={source || access.conversation.source || "/explore"}
       />
@@ -249,6 +251,7 @@ export default async function MessagesPage({
             conversationId={existingConversation.id}
             businessName={access.business.name || "Business"}
             subject={access.conversation.subject || "Message Business"}
+            initialStatus={normalizeConversationStatus((access.conversation as { status?: unknown }).status)}
             initialMessages={visibleMessages}
             sourceHref={source || access.conversation.source || "/explore"}
           />
@@ -267,7 +270,6 @@ export default async function MessagesPage({
       businessId={businessId}
       businessName={business.name || "Business"}
       source={source || null}
-      isLoggedIn={Boolean(user)}
       prefillName={metadata.full_name || metadata.name || ""}
       prefillEmail={user?.email || ""}
     />

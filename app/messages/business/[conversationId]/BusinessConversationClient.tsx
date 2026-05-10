@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -17,10 +17,23 @@ type MessageRecord = {
 type ThreadResponse = {
   conversation?: {
     id: string;
+    tag: string;
     subject: string | null;
+    status: "open" | "resolved" | "archived";
   };
   messages?: MessageRecord[];
 };
+
+function formatConversationTag(conversationId: string) {
+  const compact = String(conversationId || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+  return compact ? `CONV-${compact.slice(0, 6)}` : "CONV";
+}
+
+function formatConversationStatus(status: "open" | "resolved" | "archived") {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 function formatTimestamp(value: string | null) {
   if (!value) {
@@ -43,6 +56,7 @@ export default function BusinessConversationClient({
   businessName,
   subject,
   initialMessages,
+  initialStatus,
   accessToken,
   sourceHref,
 }: {
@@ -50,6 +64,7 @@ export default function BusinessConversationClient({
   businessName: string;
   subject: string;
   initialMessages: MessageRecord[];
+  initialStatus?: "open" | "resolved" | "archived";
   accessToken?: string | null;
   sourceHref?: string | null;
 }) {
@@ -58,6 +73,10 @@ export default function BusinessConversationClient({
   const searchParams = useSearchParams();
   const supabase = useMemo(() => createClient(), []);
   const [messages, setMessages] = useState<MessageRecord[]>(initialMessages);
+  const [conversationTag, setConversationTag] = useState(
+    formatConversationTag(conversationId)
+  );
+  const [status, setStatus] = useState<"open" | "resolved" | "archived">(initialStatus || "open");
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,15 +84,16 @@ export default function BusinessConversationClient({
   const [authPresent, setAuthPresent] = useState(true);
   const [pollingEnabled, setPollingEnabled] = useState(true);
   const authLostHandledRef = useRef(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const backHref =
     sourceHref && sourceHref.startsWith("/") ? sourceHref : "/explore";
 
-  function getCurrentRoute() {
+  const getCurrentRoute = useCallback(() => {
     const query = searchParams.toString();
     return query ? `${pathname}?${query}` : pathname;
-  }
+  }, [pathname, searchParams]);
 
-  function handleUnauthorized(reason: string) {
+  const handleUnauthorized = useCallback((reason: string) => {
     if (accessToken) {
       return;
     }
@@ -100,7 +120,7 @@ export default function BusinessConversationClient({
     }
 
     router.replace(destination);
-  }
+  }, [accessToken, conversationId, getCurrentRoute, router]);
 
   const sortedMessages = useMemo(
     () =>
@@ -112,7 +132,7 @@ export default function BusinessConversationClient({
     [messages]
   );
 
-  async function refreshThread() {
+  const refreshThread = useCallback(async () => {
     if (!pollingEnabled) {
       return;
     }
@@ -133,11 +153,17 @@ export default function BusinessConversationClient({
         throw new Error(data.error || "Failed to refresh conversation");
       }
       setMessages(Array.isArray(data.messages) ? data.messages : []);
+      if (data.conversation?.tag) {
+        setConversationTag(data.conversation.tag);
+      }
+      if (data.conversation?.status) {
+        setStatus(data.conversation.status);
+      }
       setSyncError(null);
     } catch (err: any) {
       setSyncError(err?.message || "Failed to refresh conversation");
     }
-  }
+  }, [accessToken, conversationId, handleUnauthorized, pollingEnabled]);
 
   useEffect(() => {
     let mounted = true;
@@ -200,7 +226,7 @@ export default function BusinessConversationClient({
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [accessToken, conversationId, router, searchParams, pathname, supabase]);
+  }, [accessToken, conversationId, handleUnauthorized, pathname, router, searchParams, supabase]);
 
   useEffect(() => {
     if (!pollingEnabled) {
@@ -228,7 +254,11 @@ export default function BusinessConversationClient({
         });
       }
     };
-  }, [authPresent, conversationId, pollingEnabled]);
+  }, [authPresent, conversationId, pollingEnabled, refreshThread]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ block: "end" });
+  }, [sortedMessages]);
 
   async function handleSend() {
     const body = draft.trim();
@@ -277,12 +307,13 @@ export default function BusinessConversationClient({
       <div className="mx-auto max-w-4xl rounded-3xl border border-[var(--border-soft)] bg-[var(--panel)] p-6 shadow-[0_18px_48px_rgba(81,61,10,0.08)]">
         <div className="border-b border-[var(--border-soft)] pb-4">
           <p className="text-xs uppercase tracking-[0.24em] text-[var(--text-soft)]">
-            Live conversation
+            {conversationTag} | {formatConversationStatus(status)}
           </p>
           <h1 className="mt-3 text-2xl font-semibold text-[var(--text-strong)]">
             {businessName}
           </h1>
           <p className="mt-2 text-sm text-[var(--text-soft)]">{subject}</p>
+          <p className="mt-2 text-xs text-[var(--text-soft)]">Thread ID {conversationId}</p>
           {sourceHref ? (
             <div className="mt-3">
               <Link
@@ -295,7 +326,7 @@ export default function BusinessConversationClient({
           ) : null}
         </div>
 
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 max-h-[60vh] space-y-3 overflow-y-auto">
           {sortedMessages.length === 0 ? (
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-4 text-sm text-[var(--text-soft)]">
               No messages yet. Start the conversation below.
@@ -324,6 +355,7 @@ export default function BusinessConversationClient({
               </div>
             ))
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         <div className="mt-6 space-y-3">

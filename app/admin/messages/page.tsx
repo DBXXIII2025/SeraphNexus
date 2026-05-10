@@ -130,7 +130,7 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
               conversations.map((conversation) => (
                 <Link
                   key={conversation.id}
-                  href={`/admin/messages?conversation=${encodeURIComponent(conversation.id)}`}
+                  href={`/admin/messages?conversationId=${encodeURIComponent(conversation.id)}`}
                   className={`block rounded-2xl border px-4 py-4 text-left transition ${
                     conversation.id === selectedConversationId
                       ? "border-[var(--destructive-border)] bg-[var(--destructive-bg)]"
@@ -386,7 +386,7 @@ export default async function AdminMessagesPage({
         </DashboardPrimaryPanel>
       ) : null}
 
-      <AdminMessagesClient
+        <AdminMessagesClient
         businessId={scopedBusiness.id}
         activeBusinessId={activeBusiness.id}
         activeBusinessName={activeBusiness.name || "Business"}

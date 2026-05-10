@@ -5,6 +5,7 @@ import {
   getConversationByAccessToken,
   getConversationMessages,
   markConversationReadForClientAccessToken,
+  normalizeConversationStatus,
 } from "@/lib/messages";
 
 type InitialMessageRecord = {
@@ -71,6 +72,7 @@ export default async function ClientMessagesPage({
       conversationId={access.conversation.id}
       businessName={access.business.name || "Business"}
       subject={access.conversation.subject || "Message Business"}
+      initialStatus={normalizeConversationStatus((access.conversation as { status?: unknown }).status)}
       initialMessages={visibleMessages}
       accessToken={token}
       sourceHref={access.conversation.source || "/explore"}

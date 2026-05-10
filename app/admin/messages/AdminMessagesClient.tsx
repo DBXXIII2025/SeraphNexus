@@ -12,6 +12,7 @@ import {
 
 type ConversationItem = {
   id: string;
+  tag: string;
   business_id: string;
   client_name: string | null;
   client_email: string;
@@ -25,6 +26,7 @@ type ConversationItem = {
   last_message_excerpt: string | null;
   business_unread_count: number;
   client_unread_count: number;
+  status: "open" | "resolved" | "archived";
 };
 
 type MessageItem = {
@@ -38,6 +40,7 @@ type MessageItem = {
 
 type ThreadConversation = {
   id: string;
+  tag: string;
   business_id: string;
   client_name: string | null;
   client_email: string | null;
@@ -49,6 +52,7 @@ type ThreadConversation = {
   source: string | null;
   owner_user_id: string | null;
   last_message_at: string | null;
+  status: "open" | "resolved" | "archived";
 };
 
 type ThreadBusiness = {
@@ -142,6 +146,22 @@ function getUnreadState(conversation: ConversationItem) {
   };
 }
 
+function getConversationStatusClass(status: ConversationItem["status"] | ThreadConversation["status"]) {
+  if (status === "resolved") {
+    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+  }
+
+  if (status === "archived") {
+    return "border-slate-500/30 bg-slate-500/10 text-slate-200";
+  }
+
+  return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+}
+
+function formatConversationStatus(status: ConversationItem["status"] | ThreadConversation["status"]) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
 export default function AdminMessagesClient({
   businessId,
   activeBusinessId,
@@ -191,18 +211,19 @@ export default function AdminMessagesClient({
   const [authPresent, setAuthPresent] = useState(true);
   const [pollingEnabled, setPollingEnabled] = useState(true);
   const authLostHandledRef = useRef(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const syncSelectedConversationInUrl = useCallback((conversationId: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
     const currentConversationId =
-      params.get("conversation") || params.get("conversationId");
+      params.get("conversationId") || params.get("conversation");
 
     if (conversationId) {
-      params.set("conversation", conversationId);
-      params.delete("conversationId");
-    } else {
+      params.set("conversationId", conversationId);
       params.delete("conversation");
+    } else {
       params.delete("conversationId");
+      params.delete("conversation");
     }
 
     const query = params.toString();
@@ -471,6 +492,10 @@ export default function AdminMessagesClient({
     syncSelectedConversationInUrl(selectedConversationId);
   }, [selectedConversationId, syncSelectedConversationInUrl]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ block: "end" });
+  }, [sortedMessages]);
+
   async function handleSend() {
     const body = draft.trim();
     if (!body || !selectedConversationId || loading || !authPresent) {
@@ -560,6 +585,70 @@ export default function AdminMessagesClient({
     }
   }
 
+  async function handleStatusChange(nextStatus: "open" | "resolved" | "archived") {
+    if (!selectedConversationId || !selectedConversation) {
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const res = await fetch("/api/messages/conversation-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId: selectedConversationId,
+          status: nextStatus,
+        }),
+      });
+
+      const data = (await res.json()) as {
+        error?: string;
+        conversation?: {
+          id: string;
+          tag: string;
+          status: "open" | "resolved" | "archived";
+        };
+      };
+
+      if (res.status === 401) {
+        handleUnauthorized("changeConversationStatus");
+        return;
+      }
+
+      if (!res.ok || !data.conversation) {
+        throw new Error(data.error || "Failed to update conversation status");
+      }
+
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === data.conversation!.id
+            ? {
+                ...conversation,
+                status: data.conversation!.status,
+                tag: data.conversation!.tag,
+              }
+            : conversation
+        )
+      );
+
+      setThreadConversation((current) =>
+        current && current.id === data.conversation!.id
+          ? {
+              ...current,
+              status: data.conversation!.status,
+              tag: data.conversation!.tag,
+            }
+          : current
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update conversation status";
+      setError(message);
+    }
+  }
+
   return (
     <DashboardGrid className="text-[var(--text-main)] xl:grid-cols-[360px,1fr]">
       <DashboardSecondaryPanel>
@@ -604,31 +693,44 @@ export default function AdminMessagesClient({
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium">
-                        {conversation.client_name ||
-                          conversation.client_email ||
-                          "Client"}
+                    <div className="min-w-0">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                        {conversation.tag}
+                      </p>
+                      <p className="mt-2 font-medium">
+                        {conversation.client_name || conversation.client_email || "Client"}
                       </p>
                       <p className="mt-1 text-sm text-[var(--text-soft)]">
-                        {conversation.subject || "Conversation"}
-                      </p>
-                      <p className="mt-2 text-xs text-[var(--text-muted)]">
-                        {getContextLabel(conversation)}
+                        {conversation.client_email}
+                        {conversation.client_phone ? ` | ${conversation.client_phone}` : ""}
                       </p>
                     </div>
-                    <span
-                      className={`rounded-full border px-2 py-1 text-xs font-semibold ${unread.className}`}
-                    >
-                      {unread.label}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span
+                        className={`rounded-full border px-2 py-1 text-xs font-semibold ${getConversationStatusClass(conversation.status)}`}
+                      >
+                        {formatConversationStatus(conversation.status)}
+                      </span>
+                      <span
+                        className={`rounded-full border px-2 py-1 text-xs font-semibold ${unread.className}`}
+                      >
+                        {unread.label}
+                      </span>
+                    </div>
                   </div>
-                  <p className="mt-2 text-xs text-[var(--text-soft)]">
+                  <p className="mt-3 text-sm text-[var(--text-strong)]">
+                    {conversation.subject || "Conversation"}
+                  </p>
+                  <p className="mt-2 text-xs text-[var(--text-muted)]">
+                    {getContextLabel(conversation)}
+                  </p>
+                  <p className="mt-2 text-xs text-[var(--text-soft)] line-clamp-2">
                     {conversation.last_message_excerpt || "No messages yet"}
                   </p>
-                  <p className="mt-3 text-xs text-[var(--text-muted)]">
-                    {formatTimestamp(conversation.last_message_at)}
-                  </p>
+                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
+                    <span>{formatTimestamp(conversation.last_message_at)}</span>
+                    <span className="font-medium text-[var(--accent-soft)]">Open thread</span>
+                  </div>
                 </button>
               );
             })
@@ -648,16 +750,31 @@ export default function AdminMessagesClient({
         ) : (
           <>
             <div className="border-b border-[var(--border-soft)] pb-4">
-              <h2 className="text-lg font-semibold">
-                {threadConversation?.client_name ||
-                  selectedConversation.client_name ||
-                  threadConversation?.client_email ||
-                  selectedConversation.client_email ||
-                  "Client"}
-              </h2>
-              <p className="mt-1 text-sm text-[var(--text-soft)]">
-                {threadConversation?.subject || selectedConversation.subject || "Conversation"}
-              </p>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    {(threadConversation?.tag || selectedConversation.tag)} | Thread ID{" "}
+                    {(threadConversation?.id || selectedConversation.id)}
+                  </p>
+                  <h2 className="mt-2 text-lg font-semibold">
+                    {threadConversation?.client_name ||
+                      selectedConversation.client_name ||
+                      threadConversation?.client_email ||
+                      selectedConversation.client_email ||
+                      "Client"}
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--text-soft)]">
+                    {threadConversation?.subject || selectedConversation.subject || "Conversation"}
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getConversationStatusClass(
+                    threadConversation?.status || selectedConversation.status
+                  )}`}
+                >
+                  {formatConversationStatus(threadConversation?.status || selectedConversation.status)}
+                </span>
+              </div>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
                   <p>Business: {threadBusiness?.name || scopedBusinessName}</p>
@@ -685,9 +802,25 @@ export default function AdminMessagesClient({
                     selectedConversation.last_message_at
                 )}
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {(["open", "resolved", "archived"] as const).map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => handleStatusChange(status)}
+                    className={`rounded-xl border px-3 py-1 text-xs font-medium transition ${
+                      (threadConversation?.status || selectedConversation.status) === status
+                        ? "border-[var(--accent-border)] bg-[var(--accent-muted)] text-[var(--accent-soft)]"
+                        : "border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-soft)] hover:border-[var(--accent-border)]"
+                    }`}
+                  >
+                    Mark {formatConversationStatus(status)}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="mt-5 space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
+            <div className="mt-5 max-h-[60vh] space-y-3 overflow-y-auto rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
               {sortedMessages.length === 0 ? (
                 <p className="text-sm text-[var(--text-soft)]">No messages yet.</p>
               ) : (
@@ -727,6 +860,7 @@ export default function AdminMessagesClient({
                   </div>
                 ))
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             <div className="mt-5 space-y-3">

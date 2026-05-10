@@ -436,15 +436,23 @@ export async function createMessageReceivedNotification(input: {
   messageId: string;
   senderLabel: string;
 }) {
+  const compactConversationId = String(input.conversationId || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+  const conversationTag = compactConversationId
+    ? `CONV-${compactConversationId.slice(0, 6)}`
+    : "CONV";
+
   return createBusinessEventNotification({
     businessId: input.businessId,
     type: "message_received",
     title: "New message received",
-    body: `${input.senderLabel} sent a new message to this business.`,
-    href: `/admin/messages?conversation=${encodeURIComponent(input.conversationId)}`,
+    body: `${input.senderLabel} sent a new message in ${conversationTag}.`,
+    href: `/admin/messages?conversationId=${encodeURIComponent(input.conversationId)}`,
     eventKey: `message:${input.messageId}`,
     metadata: {
       conversation_id: input.conversationId,
+      conversation_tag: conversationTag,
       message_id: input.messageId,
       sender_label: input.senderLabel,
     },

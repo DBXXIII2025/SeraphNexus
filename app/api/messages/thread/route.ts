@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import {
+  formatConversationTag,
   filterMessagesForRole,
   getAuthorizedConversationForUser,
   getConversationMessages,
   markConversationReadForBusiness,
   markConversationReadForClient,
   markConversationReadForClientAccessToken,
+  normalizeConversationStatus,
 } from "@/lib/messages";
 import { canAccessPlanFeature } from "@/lib/planConfig";
 
@@ -22,14 +24,24 @@ type NormalizedMessage = {
 
 type ThreadConversationResponse = {
   id: string;
+  tag: string;
   subject: string | null;
   business_id: string;
   source: string | null;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  context_type: string | null;
+  context_id: string | null;
+  booking_id: string | null;
+  last_message_at: string | null;
+  status: "open" | "resolved" | "archived";
 };
 
 type ThreadBusinessResponse = {
   id: string;
   name: string | null;
+  business_type: string | null;
 };
 
 function normalizeThreadMessage(
@@ -56,12 +68,18 @@ function normalizeThreadConversation(
 ): ThreadConversationResponse {
   return {
     id: access.id,
+    tag: formatConversationTag(access.id),
     subject: access.subject || null,
     business_id: access.business_id,
-    source:
-      typeof access.source === "string" && access.source.startsWith("/")
-        ? access.source
-        : null,
+    source: access.source || null,
+    client_name: access.client_name || null,
+    client_email: access.client_email || null,
+    client_phone: access.client_phone || null,
+    context_type: access.context_type || null,
+    context_id: access.context_id || null,
+    booking_id: access.booking_id || null,
+    last_message_at: access.last_message_at || null,
+    status: normalizeConversationStatus((access as { status?: unknown }).status),
   };
 }
 
@@ -71,6 +89,7 @@ function normalizeThreadBusiness(
   return {
     id: business.id,
     name: business.name || null,
+    business_type: business.business_type || null,
   };
 }
 

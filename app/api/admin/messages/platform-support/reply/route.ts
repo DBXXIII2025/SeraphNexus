@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
     return NextResponse.redirect(
       new URL(
-        `/admin/messages?conversation=${encodeURIComponent(conversationId)}&success=sent`,
+        `/admin/messages?conversationId=${encodeURIComponent(conversationId)}&success=sent`,
         req.url
       )
     );

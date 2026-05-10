@@ -6,7 +6,7 @@ type ConversationContext = {
   businessId: string;
   bookingId?: string | null;
   reservationId?: string | null;
-  clientEmail: string;
+  clientEmail?: string | null;
   clientName?: string | null;
   clientPhone?: string | null;
   clientUserId?: string | null;
@@ -15,6 +15,8 @@ type ConversationContext = {
   contextId?: string | null;
   source?: string | null;
 };
+
+export type ConversationStatus = "open" | "resolved" | "archived";
 
 export type ConversationRecord = {
   id: string;
@@ -34,6 +36,7 @@ export type ConversationRecord = {
   guest_token: string | null;
   booking_id: string | null;
   source: string | null;
+  status: ConversationStatus;
 };
 
 export type ConversationMessageRecord = {
@@ -73,6 +76,7 @@ export type ConversationAccessResult = {
 
 export type AdminConversationSummary = {
   id: string;
+  tag: string;
   business_id: string;
   client_name: string | null;
   client_email: string;
@@ -86,6 +90,7 @@ export type AdminConversationSummary = {
   last_message_excerpt: string | null;
   business_unread_count: number;
   client_unread_count: number;
+  status: ConversationStatus;
 };
 
 type BusinessConversationContext = {
@@ -109,13 +114,61 @@ type ResolvedConversationContext = {
 };
 
 const CONVERSATION_SELECT =
-  "id,business_id,client_user_id,client_name,client_email,client_phone,owner_user_id,subject,context_type,context_id,last_message_at,created_at,updated_at,access_token,guest_token,booking_id,source";
+  "*";
 const MESSAGE_SELECT =
   "id,conversation_id,sender_user_id,recipient_user_id,business_id,body,is_read,read_at,created_at,is_deleted,deleted_at,deleted_by_user_id";
 
 function normalizeString(value: string | null | undefined) {
   const trimmed = (value || "").trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+export function normalizeConversationStatus(value: unknown): ConversationStatus {
+  return value === "resolved" || value === "archived" ? value : "open";
+}
+
+export function formatConversationTag(conversationId: string) {
+  const compact = String(conversationId || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+  return compact ? `CONV-${compact.slice(0, 6)}` : "CONV";
+}
+
+function applyClientIdentityFilter<T extends {
+  eq: (column: string, value: string) => T;
+}>(
+  query: T,
+  context: ConversationContext
+) {
+  if (context.clientUserId) {
+    return query.eq("client_user_id", context.clientUserId);
+  }
+
+  const clientEmail = normalizeString(context.clientEmail);
+  if (clientEmail) {
+    return query.eq("client_email", clientEmail);
+  }
+
+  const clientPhone = normalizeString(context.clientPhone);
+  if (clientPhone) {
+    return query.eq("client_phone", clientPhone);
+  }
+
+  throw new Error("Client identity requires an email, phone, or signed-in account.");
+}
+
+function pickReusableConversation(
+  conversations: Array<Record<string, unknown>> | null | undefined
+) {
+  const normalized = Array.isArray(conversations)
+    ? conversations.map((conversation) =>
+        asConversationRecord(conversation as Record<string, unknown>)
+      )
+    : [];
+
+  return (
+    normalized.find((conversation) => conversation.status === "open") || null
+  );
 }
 
 function resolveConversationContext(
@@ -234,6 +287,7 @@ function asConversationRecord(value: Record<string, unknown>): ConversationRecor
     guest_token: value.guest_token ? String(value.guest_token) : null,
     booking_id: value.booking_id ? String(value.booking_id) : null,
     source: value.source ? String(value.source) : null,
+    status: normalizeConversationStatus(value.status),
   };
 }
 
@@ -270,9 +324,14 @@ function asConversationMessageRecord(
 function getClientIdentityLabel(args: {
   profileEmail: string | null;
   clientUserId: string | null;
+  clientPhone?: string | null;
 }) {
   if (args.profileEmail) {
     return args.profileEmail;
+  }
+
+  if (args.clientPhone) {
+    return args.clientPhone;
   }
 
   if (args.clientUserId) {
@@ -309,13 +368,12 @@ export async function upsertConversationForBooking(context: ConversationContext)
     query = query.is("booking_id", null);
   }
 
-  if (context.clientUserId) {
-    query = query.eq("client_user_id", context.clientUserId);
-  } else {
-    query = query.eq("client_email", context.clientEmail);
-  }
+  query = applyClientIdentityFilter(query, context);
 
-  const { data: existing } = await query.maybeSingle();
+  const { data: existingRows } = await query
+    .order("created_at", { ascending: false })
+    .limit(12);
+  const existing = pickReusableConversation(existingRows);
 
   if (process.env.NODE_ENV !== "production") {
     console.log("[messages/upsert] booking-aware lookup", {
@@ -349,7 +407,7 @@ export async function upsertConversationForBooking(context: ConversationContext)
     business_id: context.businessId,
     client_user_id: context.clientUserId || null,
     client_name: context.clientName || null,
-    client_email: context.clientEmail,
+    client_email: normalizeString(context.clientEmail),
     client_phone: context.clientPhone || null,
     owner_user_id: business.owner_id,
     subject: resolved.subject,
@@ -418,13 +476,12 @@ export async function upsertConversationForClientBusiness(context: ConversationC
     query = query.is("booking_id", null);
   }
 
-  if (context.clientUserId) {
-    query = query.eq("client_user_id", context.clientUserId);
-  } else {
-    query = query.eq("client_email", context.clientEmail);
-  }
+  query = applyClientIdentityFilter(query, context);
 
-  const { data: existing } = await query.maybeSingle();
+  const { data: existingRows } = await query
+    .order("created_at", { ascending: false })
+    .limit(12);
+  const existing = pickReusableConversation(existingRows);
 
   if (process.env.NODE_ENV !== "production") {
     console.log("[messages/upsert] universal client lookup", {
@@ -444,7 +501,7 @@ export async function upsertConversationForClientBusiness(context: ConversationC
         .update({
           owner_user_id: business.owner_id,
           client_name: context.clientName || existing.client_name || null,
-          client_email: context.clientEmail || existing.client_email || null,
+          client_email: normalizeString(context.clientEmail) || existing.client_email || null,
           client_phone: context.clientPhone || existing.client_phone || null,
         })
         .eq("id", existing.id)
@@ -458,14 +515,14 @@ export async function upsertConversationForClientBusiness(context: ConversationC
 
     if (
       existing.client_name !== (context.clientName || null) ||
-      existing.client_email !== context.clientEmail ||
+      existing.client_email !== (normalizeString(context.clientEmail) || null) ||
       existing.client_phone !== (context.clientPhone || null)
     ) {
       const { data: updated } = await supabase
         .from("conversations")
         .update({
           client_name: context.clientName || existing.client_name || null,
-          client_email: context.clientEmail || existing.client_email || null,
+          client_email: normalizeString(context.clientEmail) || existing.client_email || null,
           client_phone: context.clientPhone || existing.client_phone || null,
         })
         .eq("id", existing.id)
@@ -486,7 +543,7 @@ export async function upsertConversationForClientBusiness(context: ConversationC
       business_id: context.businessId,
       client_user_id: context.clientUserId || null,
       client_name: context.clientName || null,
-      client_email: context.clientEmail,
+      client_email: normalizeString(context.clientEmail),
       client_phone: context.clientPhone || null,
       owner_user_id: business.owner_id,
       subject: resolved.subject,
@@ -545,14 +602,12 @@ export async function findConversationForClientBusiness(context: ConversationCon
     query = query.is("booking_id", null);
   }
 
-  if (context.clientUserId) {
-    query = query.eq("client_user_id", context.clientUserId);
-  } else {
-    query = query.eq("client_email", context.clientEmail);
-  }
+  query = applyClientIdentityFilter(query, context);
 
-  const { data } = await query.maybeSingle();
-  return data?.id ? asConversationRecord(data as Record<string, unknown>) : null;
+  const { data } = await query
+    .order("created_at", { ascending: false })
+    .limit(12);
+  return pickReusableConversation(data as Array<Record<string, unknown>> | null);
 }
 
 export async function getConversationByAccessToken(accessToken: string) {
@@ -667,6 +722,11 @@ export async function getAuthorizedConversationForUser({
   const normalizedConversation = asConversationRecord(
     conversation as Record<string, unknown>
   );
+  const normalizedAccessToken = normalizeString(accessToken);
+  const normalizedGuestToken = normalizeString(normalizedConversation.guest_token);
+  const normalizedConversationAccessToken = normalizeString(
+    normalizedConversation.access_token
+  );
 
   if (userId && (await hasBusinessConversationAccess({ business, userId }))) {
     return {
@@ -689,9 +749,9 @@ export async function getAuthorizedConversationForUser({
   }
 
   if (
-    accessToken &&
-    (normalizedConversation.guest_token === accessToken ||
-      normalizedConversation.access_token === accessToken)
+    normalizedAccessToken &&
+    (normalizedGuestToken === normalizedAccessToken ||
+      normalizedConversationAccessToken === normalizedAccessToken)
   ) {
     return {
       conversation: normalizedConversation,
@@ -838,6 +898,7 @@ export async function getAdminConversationSummaries(args: {
         getClientIdentityLabel({
           profileEmail: profile?.email || null,
           clientUserId: conversation.client_user_id,
+          clientPhone: conversation.client_phone,
         }),
       subject: conversation.subject,
       client_phone: conversation.client_phone || null,
@@ -850,6 +911,8 @@ export async function getAdminConversationSummaries(args: {
       business_unread_count:
         businessUnreadCountByConversationId.get(conversation.id) || 0,
       client_unread_count: clientUnreadCountByConversationId.get(conversation.id) || 0,
+      tag: formatConversationTag(conversation.id),
+      status: conversation.status,
     } satisfies AdminConversationSummary;
   });
 }

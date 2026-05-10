@@ -271,7 +271,7 @@ function buildServiceDashboard(params: {
       detail: "Recent client conversation",
       timestamp: conversation.last_message_at || conversation.updated_at,
       status: conversation.context_type || "message",
-      href: `/admin/messages?conversation=${encodeURIComponent(conversation.id)}`,
+      href: `/admin/messages?conversationId=${encodeURIComponent(conversation.id)}`,
     })),
     ...leadEvents.map((event) => ({
       id: `lead-${event.id}`,
@@ -390,7 +390,7 @@ function buildOrderDashboard(params: {
       detail: "Recent client conversation",
       timestamp: conversation.last_message_at || conversation.updated_at,
       status: conversation.context_type || "message",
-      href: `/admin/messages?conversation=${encodeURIComponent(conversation.id)}`,
+      href: `/admin/messages?conversationId=${encodeURIComponent(conversation.id)}`,
     })),
   ]);
 
@@ -531,7 +531,7 @@ function buildRentalDashboard(params: {
       detail: "Recent guest conversation",
       timestamp: conversation.last_message_at || conversation.updated_at,
       status: conversation.context_type || "message",
-      href: `/admin/messages?conversation=${encodeURIComponent(conversation.id)}`,
+      href: `/admin/messages?conversationId=${encodeURIComponent(conversation.id)}`,
     })),
     ...leadEvents.map((event) => ({
       id: `lead-${event.id}`,

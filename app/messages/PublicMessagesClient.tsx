@@ -14,14 +14,12 @@ export default function PublicMessagesClient({
   businessId,
   businessName,
   source,
-  isLoggedIn,
   prefillName,
   prefillEmail,
 }: {
   businessId: string;
   businessName: string;
   source: string | null;
-  isLoggedIn: boolean;
   prefillName: string;
   prefillEmail: string;
 }) {
@@ -29,6 +27,7 @@ export default function PublicMessagesClient({
   const [senderName, setSenderName] = useState(prefillName);
   const [senderEmail, setSenderEmail] = useState(prefillEmail);
   const [senderPhone, setSenderPhone] = useState("");
+  const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,19 +37,20 @@ export default function PublicMessagesClient({
     const trimmedBody = body.trim();
     const trimmedName = senderName.trim();
     const trimmedEmail = senderEmail.trim();
+    const trimmedPhone = senderPhone.trim();
 
     if (!trimmedBody) {
       setError("Write a message to start the conversation.");
       return;
     }
 
-    if (!isLoggedIn && !trimmedName) {
+    if (!trimmedName) {
       setError("Your name is required.");
       return;
     }
 
-    if (!trimmedEmail) {
-      setError("Your email is required.");
+    if (!trimmedEmail && !trimmedPhone) {
+      setError("Your email or phone is required.");
       return;
     }
 
@@ -66,10 +66,11 @@ export default function PublicMessagesClient({
         body: JSON.stringify({
           businessId,
           body: trimmedBody,
+          subject: subject.trim(),
           source: source || "public_business",
           senderName: trimmedName,
           senderEmail: trimmedEmail,
-          senderPhone: senderPhone.trim(),
+          senderPhone: trimmedPhone,
         }),
       });
 
@@ -129,6 +130,12 @@ export default function PublicMessagesClient({
             onChange={(event) => setSenderPhone(event.target.value)}
             placeholder="Phone (optional)"
             type="tel"
+            className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 text-[var(--text-strong)]"
+          />
+          <input
+            value={subject}
+            onChange={(event) => setSubject(event.target.value)}
+            placeholder="Reason for contact (optional)"
             className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 text-[var(--text-strong)]"
           />
           <textarea

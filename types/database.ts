@@ -919,6 +919,7 @@ export interface Database {
           guest_token: string | null;
           booking_id: string | null;
           source: string | null;
+          status?: "open" | "resolved" | "archived" | null;
         };
         Insert: {
           id?: string;
@@ -938,6 +939,7 @@ export interface Database {
           guest_token?: string | null;
           booking_id?: string | null;
           source?: string | null;
+          status?: "open" | "resolved" | "archived" | null;
         };
         Update: {
           id?: string;
@@ -957,6 +959,7 @@ export interface Database {
           guest_token?: string | null;
           booking_id?: string | null;
           source?: string | null;
+          status?: "open" | "resolved" | "archived" | null;
         };
       };
 

@@ -16,6 +16,7 @@ type JsonPayload = {
   conversationId?: string;
   businessId?: string;
   body?: string;
+  subject?: string;
   isPrivate?: boolean;
   source?: string;
   senderName?: string;
@@ -116,6 +117,7 @@ export async function POST(req: Request) {
     let redirectTo = "/";
     let isPrivate = false;
     let source = "public_business";
+    let subject = "";
     let senderName = "";
     let senderEmail = "";
     let senderPhone = "";
@@ -126,6 +128,7 @@ export async function POST(req: Request) {
       conversationId = String(payload.conversationId || "").trim();
       businessId = String(payload.businessId || "").trim();
       body = String(payload.body || "").trim();
+      subject = String(payload.subject || "").trim();
       isPrivate = Boolean(payload.isPrivate);
       source = String(payload.source || "public_business").trim() || "public_business";
       senderName = String(payload.senderName || "").trim();
@@ -137,6 +140,7 @@ export async function POST(req: Request) {
       conversationId = String(formData.get("conversation_id") || "").trim();
       businessId = String(formData.get("business_id") || "").trim();
       body = String(formData.get("body") || "").trim();
+      subject = String(formData.get("subject") || "").trim();
       redirectTo = String(formData.get("redirect_to") || "/").trim() || "/";
       isPrivate = String(formData.get("is_private") || "") === "true";
       source = String(formData.get("source") || "public_business").trim() || "public_business";
@@ -212,20 +216,27 @@ export async function POST(req: Request) {
         user?.email ||
         "Guest";
       const resolvedSenderEmail = senderEmail || user?.email || "";
+      const resolvedSenderPhone = senderPhone || "";
 
-      if (!resolvedSenderEmail) {
+      if (!resolvedSenderName) {
         return expectsJson
-          ? jsonError("Sender email is required", 400)
+          ? jsonError("Sender name is required", 400)
+          : redirectError(req, redirectTo);
+      }
+
+      if (!resolvedSenderEmail && !resolvedSenderPhone) {
+        return expectsJson
+          ? jsonError("Sender email or phone is required", 400)
           : redirectError(req, redirectTo);
       }
 
       const existingConversation = await findConversationForClientBusiness({
         businessId,
         clientUserId: user?.id || null,
-        clientEmail: resolvedSenderEmail,
+        clientEmail: resolvedSenderEmail || null,
         clientName: resolvedSenderName,
-        clientPhone: senderPhone || null,
-        subject: `Message Business`,
+        clientPhone: resolvedSenderPhone || null,
+        subject: subject || "Message Business",
         contextType: "general_inquiry",
         contextId: null,
         source,
@@ -253,10 +264,10 @@ export async function POST(req: Request) {
         (await upsertConversationForClientBusiness({
           businessId,
           clientUserId: user?.id || null,
-          clientEmail: resolvedSenderEmail,
+          clientEmail: resolvedSenderEmail || null,
           clientName: resolvedSenderName,
-          clientPhone: senderPhone || null,
-          subject: "Message Business",
+          clientPhone: resolvedSenderPhone || null,
+          subject: subject || "Message Business",
           contextType: "general_inquiry",
           contextId: null,
           source,
