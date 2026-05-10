@@ -2,8 +2,14 @@ import fs from "fs";
 import path from "path";
 import { spawn, spawnSync } from "child_process";
 import { createClient } from "@supabase/supabase-js";
+import {
+  assertFixtureBusinessAllowed,
+  assertFixtureEnvironment,
+  filterFixtureBusinesses,
+  loadEnvLocal,
+  requireEnv,
+} from "./fixture-safety.mjs";
 
-const VERIFY_PREFIX = "verify-";
 const DEFAULT_PORT = Number(process.env.SERAPH_VERIFY_PORT || "4123");
 const BASE_URL = process.env.SERAPH_VERIFY_BASE_URL || `http://127.0.0.1:${DEFAULT_PORT}`;
 const DEFAULT_PASSWORD = process.env.SERAPH_VERIFY_PASSWORD || "VerifyPass123!";
@@ -12,7 +18,6 @@ const REQUEST_PHONE = "555-0100";
 const REQUEST_NAME = "Smoke Customer";
 const TIME_ZONE = "America/Chicago";
 const REQUIRED_ENV_KEYS = ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
-const REMOTE_FIXTURE_PROJECT_ALLOW_ENV = "SERAPH_ALLOW_REMOTE_FIXTURE_PROJECT";
 
 const FIXTURES = [
   {
@@ -89,99 +94,15 @@ const FIXTURES = [
   },
 ];
 
-function loadEnvLocal() {
-  const envPath = path.join(process.cwd(), ".env.local");
-  if (!fs.existsSync(envPath)) {
-    return;
-  }
-
-  const raw = fs.readFileSync(envPath, "utf8");
-  for (const line of raw.split(/\r?\n/)) {
-    if (!line || line.trim().startsWith("#")) {
-      continue;
-    }
-
-    const splitIndex = line.indexOf("=");
-    if (splitIndex <= 0) {
-      continue;
-    }
-
-    const key = line.slice(0, splitIndex).trim();
-    const value = line.slice(splitIndex + 1).trim();
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
-  }
-}
-
-function getSupabaseProjectDetails() {
-  const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-  let parsedUrl;
-
-  try {
-    parsedUrl = new URL(supabaseUrl);
-  } catch {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL must be a valid absolute URL.");
-  }
-
-  const hostname = parsedUrl.hostname.toLowerCase();
-  const projectRef = hostname.split(".")[0] || null;
-  const isLocalHost =
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "0.0.0.0";
-
-  return {
-    hostname,
-    isLocalHost,
-    projectRef,
-    url: supabaseUrl,
-  };
-}
-
 function assertNonLiveMode() {
-  if (process.env.SERAPH_NON_LIVE_VERIFY !== "1") {
-    throw new Error("SERAPH_NON_LIVE_VERIFY=1 is required for the verification harness.");
-  }
-
-  if (process.env.SERAPH_ALLOW_FIXTURE_BUSINESSES !== "1") {
-    throw new Error(
-      "Refusing to create verification businesses without SERAPH_ALLOW_FIXTURE_BUSINESSES=1."
-    );
-  }
-
-  const stripeSecretKey = String(process.env.STRIPE_SECRET_KEY || "");
-  if (stripeSecretKey.startsWith("sk_live_")) {
-    throw new Error("Refusing to run against a live Stripe secret key.");
-  }
-
-  if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(BASE_URL)) {
-    throw new Error(`Refusing to run verification fixtures against non-local base URL: ${BASE_URL}`);
-  }
-
-  const supabaseProject = getSupabaseProjectDetails();
-  if (!supabaseProject.isLocalHost) {
-    const allowedProjectRef = (process.env[REMOTE_FIXTURE_PROJECT_ALLOW_ENV] || "").trim();
-    if (!allowedProjectRef) {
-      throw new Error(
-        `Refusing to seed verification fixtures into remote Supabase project ${supabaseProject.projectRef}. Set ${REMOTE_FIXTURE_PROJECT_ALLOW_ENV}=${supabaseProject.projectRef} only when you intentionally want to reseed that remote database.`
-      );
-    }
-
-    if (allowedProjectRef !== supabaseProject.projectRef) {
-      throw new Error(
-        `${REMOTE_FIXTURE_PROJECT_ALLOW_ENV}=${allowedProjectRef} does not match remote Supabase project ${supabaseProject.projectRef}. Refusing fixture seeding.`
-      );
-    }
-  }
-}
-
-function requireEnv(key) {
-  const value = process.env[key];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-  return value;
+  assertFixtureEnvironment({
+    commandName: "verification harness",
+    requireVerifyFlag: true,
+    requireLocalBaseUrl: true,
+    requireStripeKeys: true,
+    baseUrl: BASE_URL,
+    logBanner: true,
+  });
 }
 
 function createSupabaseAdmin() {
@@ -454,6 +375,7 @@ async function maybeSingle(query) {
 }
 
 async function seedBusinessBase(supabase, fixture, ownerUser) {
+  assertFixtureBusinessAllowed(fixture, "verification harness");
   const existing = await maybeSingle(
     supabase.from("businesses").select("id").eq("slug", fixture.slug)
   );
@@ -945,14 +867,13 @@ async function safeDelete(queryFactory, label) {
 async function resetData(supabase) {
   const { data: businesses, error: businessesError } = await supabase
     .from("businesses")
-    .select("id")
-    .ilike("slug", `${VERIFY_PREFIX}%`);
+    .select("id,name,slug");
 
   if (businessesError) {
     throw businessesError;
   }
 
-  const businessIds = (businesses || []).map((business) => business.id);
+  const businessIds = filterFixtureBusinesses(businesses).map((business) => business.id);
   if (businessIds.length === 0) {
     await deleteSeedUsers(supabase);
     return { deletedBusinessCount: 0 };
