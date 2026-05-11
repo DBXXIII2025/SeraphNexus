@@ -142,7 +142,12 @@ export default function ManualPlanGrantPanel({
             <p className="mt-2">Pro permanent, Pro temporary, Elite permanent, Elite temporary.</p>
           </div>
 
-          <form onSubmit={handleCreateSubmit} className="mt-5 space-y-4">
+          <form
+            action="/api/admin/platform/plan-grants"
+            method="POST"
+            onSubmit={handleCreateSubmit}
+            className="mt-5 space-y-4"
+          >
             <input type="hidden" name="action" value="create_plan_grant" />
             <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Existing user email</span>
@@ -256,16 +261,24 @@ export default function ManualPlanGrantPanel({
                         </p>
                       ) : null}
                     </div>
-                    <button
-                      type="button"
-                      disabled={isSubmitting || isPending}
-                      onClick={() => {
+                    <form
+                      action="/api/admin/platform/plan-grants"
+                      method="POST"
+                      onSubmit={(event) => {
+                        event.preventDefault();
                         void handleRevoke(grant.id);
                       }}
-                      className="btn-secondary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Revoke
-                    </button>
+                      <input type="hidden" name="action" value="revoke_plan_grant" />
+                      <input type="hidden" name="grant_id" value={grant.id} />
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || isPending}
+                        className="btn-secondary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Revoke
+                      </button>
+                    </form>
                   </div>
                 </div>
               ))
