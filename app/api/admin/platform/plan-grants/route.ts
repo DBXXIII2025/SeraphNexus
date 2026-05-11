@@ -2,6 +2,10 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { findAuthUserByEmail } from "@/lib/adminAuthUsers";
 import {
+  getActivePlanGrantList,
+  getPlanGrantHistoryList,
+} from "@/lib/planGrantAdmin";
+import {
   replaceStoredPlanGrantForScope,
   revokeStoredPlanGrantById,
 } from "@/lib/manualPlanGrantStorage";
@@ -25,6 +29,39 @@ function buildRedirect(req: Request, params: Record<string, string>) {
   return NextResponse.redirect(url);
 }
 
+function wantsJson(req: Request) {
+  const accept = req.headers.get("accept") || "";
+  const requestedWith = req.headers.get("x-requested-with") || "";
+  return (
+    accept.includes("application/json") ||
+    requestedWith.toLowerCase() === "xmlhttprequest"
+  );
+}
+
+async function buildJsonSuccess(message: string) {
+  const [activePlanGrants, planGrantHistory] = await Promise.all([
+    getActivePlanGrantList(),
+    getPlanGrantHistoryList(),
+  ]);
+
+  return NextResponse.json({
+    ok: true,
+    message,
+    activePlanGrants,
+    planGrantHistory,
+  });
+}
+
+function buildJsonError(message: string, status = 400) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message,
+    },
+    { status }
+  );
+}
+
 function revalidateGrantViews() {
   revalidatePath("/admin/platform");
   revalidatePath("/admin");
@@ -32,6 +69,61 @@ function revalidateGrantViews() {
   revalidatePath("/admin/revenue");
   revalidatePath("/admin/settings");
   revalidatePath("/admin/upgrade");
+}
+
+function getErrorMessage(error: string) {
+  switch (error) {
+    case "forbidden":
+      return "Platform admin access is required.";
+    case "plan-grant-email-required":
+      return "An existing user email is required to grant a manual plan.";
+    case "plan-grant-user-not-found":
+      return "No existing account matched that email address for the manual grant.";
+    case "granted-plan-required":
+      return "Select Pro or Elite for the manual grant.";
+    case "grant-type-required":
+      return "Select whether the grant is temporary or permanent.";
+    case "temporary-expiry-required":
+      return "Temporary manual grants require a duration preset or a custom expiration date.";
+    case "invalid-custom-expiry":
+      return "Custom expiration must be a valid future date.";
+    case "permanent-expiry-not-allowed":
+      return "Permanent grants cannot include an expiration preset or custom expiry.";
+    case "plan-grant-business-not-found":
+      return "The selected business id could not be found.";
+    case "plan-grant-business-owner-mismatch":
+      return "That business is not owned by the selected account, so the grant would never apply.";
+    case "plan-grant-failed":
+      return "Manual plan grant could not be created.";
+    case "plan-grant-id-required":
+      return "A manual grant id is required to revoke access.";
+    case "plan-grant-revoke-failed":
+      return "Manual plan grant revocation failed.";
+    case "unknown-plan-grant-action":
+      return "Unknown manual plan grant action.";
+    default:
+      return "The manual plan grant action could not be completed.";
+  }
+}
+
+function buildErrorResponse(req: Request, error: string, status = 400) {
+  if (wantsJson(req)) {
+    return buildJsonError(getErrorMessage(error), status);
+  }
+
+  return buildRedirect(req, { error });
+}
+
+async function buildSuccessResponse(req: Request, success: string) {
+  if (wantsJson(req)) {
+    const message =
+      success === "plan-grant-created"
+        ? "Manual plan grant created."
+        : "Manual plan grant revoked.";
+    return buildJsonSuccess(message);
+  }
+
+  return buildRedirect(req, { success });
 }
 
 function resolveExpiresAt(formData: FormData) {
@@ -85,7 +177,7 @@ export async function POST(req: Request) {
     } = await supabase.auth.getUser();
 
     if (!user || !(await getIsPlatformAdminForUserId(user.id))) {
-      return buildRedirect(req, { error: "forbidden" });
+      return buildErrorResponse(req, "forbidden", 403);
     }
 
     const formData = await req.formData();
@@ -101,26 +193,26 @@ export async function POST(req: Request) {
       const reason = normalizeOptionalString(formData.get("reason"));
 
       if (!email) {
-        return buildRedirect(req, { error: "plan-grant-email-required" });
+        return buildErrorResponse(req, "plan-grant-email-required");
       }
 
       if (grantedPlan !== "pro" && grantedPlan !== "elite") {
-        return buildRedirect(req, { error: "granted-plan-required" });
+        return buildErrorResponse(req, "granted-plan-required");
       }
 
       if (grantType !== "temporary" && grantType !== "permanent") {
-        return buildRedirect(req, { error: "grant-type-required" });
+        return buildErrorResponse(req, "grant-type-required");
       }
 
       const authUser = await findAuthUserByEmail(email);
 
       if (!authUser?.id) {
-        return buildRedirect(req, { error: "plan-grant-user-not-found" });
+        return buildErrorResponse(req, "plan-grant-user-not-found");
       }
 
       const { expiresAt, error } = resolveExpiresAt(formData);
       if (error) {
-        return buildRedirect(req, { error });
+        return buildErrorResponse(req, error);
       }
 
       let validatedBusinessId: string | null = null;
@@ -132,11 +224,11 @@ export async function POST(req: Request) {
           .maybeSingle();
 
         if (!business?.id) {
-          return buildRedirect(req, { error: "plan-grant-business-not-found" });
+          return buildErrorResponse(req, "plan-grant-business-not-found");
         }
 
         if (String(business.owner_id || "") !== String(authUser.id)) {
-          return buildRedirect(req, { error: "plan-grant-business-owner-mismatch" });
+          return buildErrorResponse(req, "plan-grant-business-owner-mismatch");
         }
 
         validatedBusinessId = String(business.id);
@@ -156,7 +248,7 @@ export async function POST(req: Request) {
       });
 
       if (replaceGrantResult.error || !replaceGrantResult.data?.id) {
-        return buildRedirect(req, { error: "plan-grant-failed" });
+        return buildErrorResponse(req, "plan-grant-failed", 500);
       }
 
       console.info("[admin/platform/plan-grants] created", {
@@ -171,14 +263,14 @@ export async function POST(req: Request) {
       });
 
       revalidateGrantViews();
-      return buildRedirect(req, { success: "plan-grant-created" });
+      return buildSuccessResponse(req, "plan-grant-created");
     }
 
     if (action === "revoke_plan_grant") {
       const grantId = normalizeOptionalString(formData.get("grant_id"));
 
       if (!grantId) {
-        return buildRedirect(req, { error: "plan-grant-id-required" });
+        return buildErrorResponse(req, "plan-grant-id-required");
       }
 
       const { error } = await revokeStoredPlanGrantById({
@@ -187,7 +279,7 @@ export async function POST(req: Request) {
       });
 
       if (error) {
-        return buildRedirect(req, { error: "plan-grant-revoke-failed" });
+        return buildErrorResponse(req, "plan-grant-revoke-failed", 500);
       }
 
       console.info("[admin/platform/plan-grants] revoked", {
@@ -196,12 +288,12 @@ export async function POST(req: Request) {
       });
 
       revalidateGrantViews();
-      return buildRedirect(req, { success: "plan-grant-revoked" });
+      return buildSuccessResponse(req, "plan-grant-revoked");
     }
 
-    return buildRedirect(req, { error: "unknown-plan-grant-action" });
+    return buildErrorResponse(req, "unknown-plan-grant-action");
   } catch (error) {
     console.error("[admin/platform/plan-grants] failed", error);
-    return buildRedirect(req, { error: "unexpected" });
+    return buildErrorResponse(req, "unexpected", 500);
   }
 }
