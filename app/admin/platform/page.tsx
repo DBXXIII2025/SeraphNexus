@@ -36,6 +36,8 @@ import {
   MetricCard,
 } from "@/components/admin/AdminLayoutSystem";
 
+export const dynamic = "force-dynamic";
+
 type PlatformPageProps = {
   searchParams?: Promise<{
     success?: string;

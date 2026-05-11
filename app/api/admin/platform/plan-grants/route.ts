@@ -2,9 +2,8 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { findAuthUserByEmail } from "@/lib/adminAuthUsers";
 import {
-  createStoredPlanGrant,
+  replaceStoredPlanGrantForScope,
   revokeStoredPlanGrantById,
-  revokeStoredPlanGrantsForScope,
 } from "@/lib/manualPlanGrantStorage";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getIsPlatformAdminForUserId } from "@/lib/platformAdmin";
@@ -145,17 +144,7 @@ export async function POST(req: Request) {
 
       const nowIso = new Date().toISOString();
 
-      const revokeExistingResult = await revokeStoredPlanGrantsForScope({
-        userId: authUser.id,
-        businessId: validatedBusinessId,
-        revokedAt: nowIso,
-      });
-
-      if (revokeExistingResult.error) {
-        return buildRedirect(req, { error: "plan-grant-failed" });
-      }
-
-      const { error: insertError } = await createStoredPlanGrant({
+      const replaceGrantResult = await replaceStoredPlanGrantForScope({
         userId: authUser.id,
         businessId: validatedBusinessId,
         grantedPlan: grantedPlan as "pro" | "elite",
@@ -166,11 +155,12 @@ export async function POST(req: Request) {
         reason,
       });
 
-      if (insertError) {
+      if (replaceGrantResult.error || !replaceGrantResult.data?.id) {
         return buildRedirect(req, { error: "plan-grant-failed" });
       }
 
       console.info("[admin/platform/plan-grants] created", {
+        grantId: replaceGrantResult.data.id,
         targetUserId: authUser.id,
         email,
         businessId: validatedBusinessId,
