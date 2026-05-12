@@ -42,10 +42,10 @@ export default async function AdminAssistantPage({
     return (
       <AdminPageContainer className="text-[var(--text-main)]">
         <DashboardPrimaryPanel>
-          <p className="section-kicker">AI Assistant</p>
+          <p className="section-kicker">Seravelle</p>
           <h1 className="section-title">Select a business workspace</h1>
           <p className="section-description">
-            Platform admin mode can test the assistant against a real business context without
+            Platform admin mode can test Seravelle against a real business context without
             joining that tenant workspace directly.
           </p>
         </DashboardPrimaryPanel>
@@ -71,7 +71,7 @@ export default async function AdminAssistantPage({
                     Plan {business.plan} | {business.isPublished ? "Published" : "Not published"}
                   </p>
                   <p className="mt-3 text-xs text-[var(--accent-soft)]">
-                    Open assistant workspace
+                    Open Seravelle workspace
                   </p>
                 </Link>
               ))}
@@ -89,10 +89,10 @@ export default async function AdminAssistantPage({
     return (
       <AdminPageContainer className="text-[var(--text-main)]">
         <DashboardPrimaryPanel>
-          <p className="section-kicker">AI Assistant</p>
+          <p className="section-kicker">Seravelle</p>
           <h1 className="section-title">No active business</h1>
           <p className="section-description">
-            Select a business workspace before opening the assistant.
+            Select a business workspace before opening Seravelle.
           </p>
         </DashboardPrimaryPanel>
       </AdminPageContainer>
@@ -106,14 +106,14 @@ export default async function AdminAssistantPage({
       <AdminPageContainer className="text-[var(--text-main)]">
         <DashboardPrimaryPanel>
           <p className="section-kicker">Elite Feature</p>
-          <h1 className="section-title">AI Assistant</h1>
+          <h1 className="section-title">Seravelle</h1>
           <p className="section-description">
-            The AI Assistant is reserved for Elite workspaces. Your current plan for{" "}
+            Seravelle is reserved for Elite workspaces. Your current plan for{" "}
             {business.name || "this business"} is {plan.label}.
           </p>
           <div className="mt-5 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-5 text-sm text-[var(--accent-soft)]">
-            Use Elite to unlock AI-guided operational coaching, platform walkthroughs, and
-            read-only business analysis inside the admin workspace.
+            Use Elite to unlock Seravelle for AI-guided operational coaching, workspace
+            organization, and approval-based drafting inside the admin workspace.
           </div>
           <Link
             href="/admin/upgrade"
@@ -149,10 +149,12 @@ export default async function AdminAssistantPage({
             <p className="section-kicker">
               {access.isPlatformAdmin ? "Platform Override" : "Elite Feature"}
             </p>
-            <h1 className="section-title">AI Assistant</h1>
+            <h1 className="section-title">Seravelle</h1>
             <p className="section-description">
-              Business guidance plus approval-based action drafting for{" "}
-              {business.name || "this business"} with safe workspace summaries only.
+              AI-powered business intelligence for your workspace
+            </p>
+            <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              Powered by Gemini
             </p>
           </div>
         </div>
@@ -229,7 +231,7 @@ export default async function AdminAssistantPage({
             </div>
 
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
-              The assistant can draft controlled actions for review. Nothing executes until you
+              Seravelle can draft controlled actions for review. Nothing executes until you
               approve it, and restricted operations stay blocked.
             </div>
           </div>

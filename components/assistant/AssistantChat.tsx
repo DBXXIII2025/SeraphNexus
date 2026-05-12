@@ -84,7 +84,7 @@ function actionSummary(action: AssistantActionRecord) {
       ? String(action.payload.summary || "").trim()
       : "";
 
-  return summary || "Review this drafted assistant action before deciding whether to run it.";
+  return summary || "Review this Seravelle draft before deciding whether to run it.";
 }
 
 export default function AssistantChat({
@@ -178,7 +178,7 @@ export default function AssistantChat({
       };
 
       if (!response.ok || !data.reply || !Array.isArray(data.messages) || data.messages.length === 0) {
-        throw new Error(data.error || "The AI assistant could not answer right now.");
+        throw new Error(data.error || "Seravelle could not answer right now.");
       }
 
       setMessages((current) => {
@@ -208,7 +208,7 @@ export default function AssistantChat({
       setError(
         submitError instanceof Error
           ? submitError.message
-          : "The AI assistant could not answer right now."
+          : "Seravelle could not answer right now."
       );
       setPrompt(trimmedPrompt);
     } finally {
@@ -287,13 +287,16 @@ export default function AssistantChat({
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                Assistant Console
+                Seravelle
               </p>
               <h2 className="mt-2 text-lg font-semibold text-[var(--text-strong)]">
                 {businessName}
               </h2>
               <p className="mt-1 text-sm text-[var(--text-soft)]">
-                Approval-based guidance and action drafting for Seraph Nexus workflows.
+                AI-powered business intelligence for your workspace
+              </p>
+              <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Powered by Gemini
               </p>
             </div>
 
@@ -315,7 +318,7 @@ export default function AssistantChat({
                   onClick={handleBusinessChange}
                   className="btn-secondary px-4 py-2 text-sm font-medium"
                 >
-                  Switch context
+                  Switch workspace
                 </button>
               </div>
             ) : null}
@@ -327,14 +330,26 @@ export default function AssistantChat({
             <div className="flex h-full items-center justify-center">
               <div className="max-w-xl rounded-3xl border border-dashed border-[var(--accent-border)] bg-[var(--accent-muted)] px-6 py-8 text-center">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--accent-soft)]">
-                  Empty Session
+                  Welcome to Seravelle
                 </p>
                 <h3 className="mt-3 text-xl font-semibold text-[var(--text-strong)]">
-                  Ask about this business workspace
+                  Hello, I am Seravelle, your personal AI assistant.
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
-                  Ask for operational advice or have the assistant draft a reply, service,
-                  product, promo code, or booking summary for review.
+                  As of right now, I am here to assist you in growing your business and keeping
+                  everything running smoothly and organized.
+                </p>
+                <div className="mt-5 space-y-2 text-left text-sm leading-6 text-[var(--text-soft)]">
+                  <p>• Explain Seraph Nexus features</p>
+                  <p>• Summarize business workspace status</p>
+                  <p>• Suggest ways to improve operations</p>
+                  <p>• Help organize business workflows</p>
+                  <p>• Draft client replies for owner review</p>
+                  <p>• Prepare service, product, promo-code, and booking-summary drafts for approval</p>
+                  <p>• Guide you through manual changes when direct execution is not available</p>
+                </div>
+                <p className="mt-5 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  Powered by Gemini
                 </p>
               </div>
             </div>
@@ -351,7 +366,7 @@ export default function AssistantChat({
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                      {message.role === "assistant" ? "AI Assistant" : "You"}
+                      {message.role === "assistant" ? "Seravelle" : "You"}
                     </p>
                     <p className="text-[11px] text-[var(--text-muted)]">
                       {formatTimestamp(message.created_at)}
@@ -382,7 +397,7 @@ export default function AssistantChat({
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-xs uppercase tracking-[0.18em] text-[var(--accent-soft)]">
-                          Draft Action
+                          Seravelle Draft
                         </p>
                         <h3 className="mt-2 text-base font-semibold text-[var(--text-strong)]">
                           {formatActionLabel(action.action_type)}
@@ -417,7 +432,7 @@ export default function AssistantChat({
 
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-xs text-[var(--text-muted)]">
-                        Review first. The assistant cannot execute anything until you approve it.
+                        Review first. Seravelle cannot execute anything until you approve it.
                       </p>
                       <div className="flex gap-2">
                         <button
@@ -445,10 +460,10 @@ export default function AssistantChat({
               {isLoading ? (
                 <div className="mr-auto max-w-[84%] rounded-[1.6rem] border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                    AI Assistant
+                    Seravelle
                   </p>
                   <p className="mt-3 text-sm text-[var(--text-soft)]">
-                    Analyzing workspace context and drafting a response or approval-ready action...
+                    Reviewing workspace context and preparing a response or approval-ready draft...
                   </p>
                 </div>
               ) : null}
@@ -475,21 +490,21 @@ export default function AssistantChat({
               ref={textareaRef}
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Ask for guidance or have the assistant draft a reply, service, product, promo code, or booking summary for approval."
+              placeholder="Ask Seravelle for guidance or have her draft a reply, service, product, promo code, or booking summary for approval."
               className="input-field min-h-[132px] resize-y"
               maxLength={4000}
               disabled={isLoading || Boolean(initialError)}
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-[var(--text-muted)]">
-                Draft, review, approve, execute. Restricted actions stay blocked.
+                Draft, review, approve, execute. Restricted actions remain blocked.
               </p>
               <button
                 type="submit"
                 disabled={isLoading || !prompt.trim() || Boolean(initialError)}
                 className="btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLoading ? "Drafting..." : "Ask AI Assistant"}
+                {isLoading ? "Drafting..." : "Ask Seravelle"}
               </button>
             </div>
           </form>

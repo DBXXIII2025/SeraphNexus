@@ -25,7 +25,7 @@ import {
 const PLATFORM_OWNER_NAV = [
   { href: "/admin/dashboard", label: "Overview" },
   { href: "/admin/businesses", label: "Businesses" },
-  { href: "/admin/assistant", label: "AI Assistant" },
+  { href: "/admin/assistant", label: "Seravelle" },
   { href: "/admin/messages", label: "Support Inbox" },
   { href: "/admin/revenue", label: "Revenue" },
   { href: "/admin/platform", label: "Platform Control" },

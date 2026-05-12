@@ -46,7 +46,7 @@ export async function POST(
   }
 
   if (!access.canUseAssistant) {
-    return jsonError("The AI assistant requires the Elite plan.", 403);
+    return jsonError("Seravelle requires the Elite plan.", 403);
   }
 
   if (
