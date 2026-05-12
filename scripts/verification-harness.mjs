@@ -1236,13 +1236,13 @@ function auditBookingClientSource() {
       checkoutSource.includes("calculatePlatformFeeCents") &&
       checkoutSource.includes("application_fee_amount: applicationFee") &&
       checkoutSource.includes("platform_fee_bps"),
-    "Shared checkout no longer uses platform-settings transaction fee percentages."
+    "Shared checkout no longer applies centralized platform fee configuration."
   );
   assert(
-    platformFeesSource.includes("getPlatformSettings") &&
+    platformFeesSource.includes("getPlanDefinition") &&
       platformFeesSource.includes("basisPoints") &&
       platformFeesSource.includes("calculatePlatformFeeCents"),
-    "Platform fee helper no longer resolves fee basis points from platform settings."
+    "Platform fee helper no longer resolves fee basis points from the plan configuration."
   );
   assert(
     platformSettingsSource.includes("pro_transaction_fee_bps") &&

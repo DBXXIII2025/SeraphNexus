@@ -109,10 +109,11 @@ export async function POST(req: Request) {
     const submittedPlans = normalizePlatformPlans(
       parseJsonField(formData.get("managed_plan_cards_json"))
     );
+    const starterPlan = submittedPlans.find((plan) => plan.id === "starter");
     const proPlan = submittedPlans.find((plan) => plan.id === "pro");
     const elitePlan = submittedPlans.find((plan) => plan.id === "elite");
 
-    if (!proPlan || !elitePlan) {
+    if (!starterPlan || !proPlan || !elitePlan) {
       return NextResponse.redirect(
         new URL("/admin/platform?error=platform-settings-save-failed", req.url)
       );
@@ -121,9 +122,7 @@ export async function POST(req: Request) {
     const nextPayload: Record<string, unknown> = {
       ...payload,
       trial_transaction_fee_bps:
-        typeof existing?.trial_transaction_fee_bps === "number"
-          ? existing.trial_transaction_fee_bps
-          : DEFAULT_PLATFORM_SETTINGS.trial_transaction_fee_bps,
+        starterPlan.transaction_fee_bps || DEFAULT_PLATFORM_SETTINGS.trial_transaction_fee_bps,
       pro_monthly_price_cents: proPlan.monthly_price_cents,
       elite_monthly_price_cents: elitePlan.monthly_price_cents,
       pro_transaction_fee_bps: proPlan.transaction_fee_bps,

@@ -473,7 +473,10 @@ function normalizeCheckoutIntent(row: JsonRecord): NormalizedCheckoutIntent | nu
     metadata,
     totalCents: asNumber(row.amount_total ?? row.total_cents ?? metadata.amount_total),
     platformFeeCents: asNumber(
-      row.platform_fee_cents ?? metadata.application_fee_cents ?? metadata.platform_fee
+      row.platform_fee_cents ??
+        metadata.platform_fee_amount_cents ??
+        metadata.application_fee_cents ??
+        metadata.platform_fee
     ),
     stripeCheckoutSessionId:
       asString(row.stripe_checkout_session_id) || asString(row.stripe_session_id),
@@ -553,7 +556,9 @@ function buildSyntheticIntentFromSession(
     items: normalizeOrderItems(metadata.order_items),
     metadata,
     totalCents: asNumber(metadata.amount_total || session.amount_total),
-    platformFeeCents: asNumber(metadata.platform_fee),
+    platformFeeCents: asNumber(
+      metadata.platform_fee_amount_cents ?? metadata.platform_fee
+    ),
     stripeCheckoutSessionId: session.id,
     stripePaymentIntentId: asString(session.payment_intent),
     flowType,

@@ -172,10 +172,13 @@ export async function createBookingCheckoutSession(
       service_ids: serviceIds.join(","),
       client_address: normalizedInput.client_address,
       amount_total: String(totalAmountCents),
+      effective_plan: effectivePlan,
       platform_fee: String(applicationFee),
       platform_fee_percent: String(platformFee.rate),
       platform_fee_bps: String(platformFee.basisPoints),
       platform_fee_source: platformFee.source,
+      platform_fee_amount_cents: String(applicationFee),
+      owner_net_amount_cents: String(Math.max(0, totalAmountCents - applicationFee)),
       net_to_business_cents: String(Math.max(0, totalAmountCents - applicationFee)),
     },
   });
@@ -203,10 +206,13 @@ export async function createBookingCheckoutSession(
     platform_fee: toBookingPlatformFeeValue(applicationFee),
     metadata: {
       service_ids: serviceIds,
+      effective_plan: effectivePlan,
+      platform_fee_amount_cents: applicationFee,
       application_fee_cents: applicationFee,
       platform_fee_percent: platformFee.rate,
       platform_fee_bps: platformFee.basisPoints,
       platform_fee_source: platformFee.source,
+      owner_net_amount_cents: Math.max(0, totalAmountCents - applicationFee),
       net_to_business_cents: Math.max(0, totalAmountCents - applicationFee),
     },
   });

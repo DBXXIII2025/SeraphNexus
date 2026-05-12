@@ -1,12 +1,15 @@
-import { normalizeBusinessPlan, type PlanTier } from "@/lib/planConfig";
-import { getPlatformSettings } from "@/lib/platformSettings";
+import {
+  getPlanDefinition,
+  normalizeBusinessPlan,
+  type PlanTier,
+} from "@/lib/planConfig";
 
 export type PlatformFeeQuote = {
   plan: PlanTier;
   basisPoints: number;
   rate: number;
   label: string;
-  source: "platform_settings";
+  source: "plan_config";
 };
 
 function clampBasisPoints(value: unknown, fallback: number) {
@@ -28,20 +31,18 @@ export function calculatePlatformFeeCents(totalCents: number, basisPoints: numbe
 }
 
 export async function getConfiguredPlatformFee(plan: unknown): Promise<PlatformFeeQuote> {
-  const settings = await getPlatformSettings();
   const normalizedPlan = normalizeBusinessPlan(plan);
-  const basisPoints =
-    normalizedPlan === "elite"
-      ? clampBasisPoints(settings.elite_transaction_fee_bps, 500)
-      : normalizedPlan === "pro"
-        ? clampBasisPoints(settings.pro_transaction_fee_bps, 1200)
-        : clampBasisPoints(settings.trial_transaction_fee_bps, 1800);
+  const definition = getPlanDefinition(normalizedPlan);
+  const basisPoints = clampBasisPoints(
+    Math.round(definition.transactionFeeRate * 10000),
+    0
+  );
 
   return {
     plan: normalizedPlan,
     basisPoints,
     rate: basisPoints / 10000,
     label: formatPlatformFeeBpsLabel(basisPoints),
-    source: "platform_settings",
+    source: "plan_config",
   };
 }

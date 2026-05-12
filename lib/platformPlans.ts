@@ -1,3 +1,5 @@
+import { getPlanDefinition } from "@/lib/planConfig";
+
 export type PlatformCheckoutTier = "pro" | "elite";
 
 export type PlatformPlanCard = {
@@ -24,13 +26,34 @@ export const DEFAULT_PLATFORM_PRICING_NOTE =
 
 const DEFAULT_PLATFORM_PLANS: PlatformPlanCard[] = [
   {
+    id: "starter",
+    name: "Starter Access",
+    subtitle:
+      "Launch on Seraph Nexus with core checkout, payouts, publishing, and customer messaging.",
+    monthly_price_cents: 0,
+    billing_note: "Included by default for new workspaces.",
+    transaction_fee_bps: 1800,
+    feature_bullets: [
+      "18% platform fee",
+      "Publish, take payments, and operate one compact workspace",
+      "Up to 5 listings and 20 images before upgrading",
+    ],
+    badge_text: "Default",
+    cta_text: "Included",
+    is_active: true,
+    stripe_price_id: null,
+    stripe_product_id: null,
+    checkout_tier: null,
+    is_default: true,
+  },
+  {
     id: "pro",
     name: "Pro",
     subtitle:
       "Enable payments, full messaging, basic analytics, and standard owner controls.",
     monthly_price_cents: 1900,
     billing_note: "Best for growing businesses that need full operations.",
-    transaction_fee_bps: 500,
+    transaction_fee_bps: 1200,
     feature_bullets: [
       "12% platform fee",
       "Promo codes, analytics, and upgraded workspace controls",
@@ -51,7 +74,7 @@ const DEFAULT_PLATFORM_PLANS: PlatformPlanCard[] = [
       "Best economics and the full premium operating stack for scaling businesses.",
     monthly_price_cents: 4900,
     billing_note: "Best for scaling operators who want the premium stack.",
-    transaction_fee_bps: 200,
+    transaction_fee_bps: 500,
     feature_bullets: [
       "5% platform fee",
       "AI assistant, automation, advanced analytics, and advanced messaging",
@@ -120,10 +143,17 @@ function normalizePlanCard(
   fallback: PlatformPlanCard
 ): PlatformPlanCard {
   const id = normalizePlanId(input?.id, fallback.id);
-  const isDefault = id === "pro" || id === "elite" ? true : Boolean(input?.is_default);
+  const isDefault =
+    id === "starter" || id === "pro" || id === "elite"
+      ? true
+      : Boolean(input?.is_default);
   const checkoutTier = isDefault
-    ? (id as PlatformCheckoutTier)
+    ? (id === "pro" || id === "elite" ? (id as PlatformCheckoutTier) : null)
     : normalizeCheckoutTier(input?.checkout_tier);
+  const enforcedFeeBps =
+    id === "starter" || id === "pro" || id === "elite"
+      ? Math.round(getPlanDefinition(id).transactionFeeRate * 10000)
+      : clampBasisPoints(input?.transaction_fee_bps, fallback.transaction_fee_bps);
 
   return {
     id,
@@ -131,10 +161,7 @@ function normalizePlanCard(
     subtitle: String(input?.subtitle || "").trim() || fallback.subtitle,
     monthly_price_cents: clampPriceCents(input?.monthly_price_cents, fallback.monthly_price_cents),
     billing_note: String(input?.billing_note || "").trim() || fallback.billing_note,
-    transaction_fee_bps: clampBasisPoints(
-      input?.transaction_fee_bps,
-      fallback.transaction_fee_bps
-    ),
+    transaction_fee_bps: enforcedFeeBps,
     feature_bullets: normalizeFeatures(input?.feature_bullets, fallback.feature_bullets),
     badge_text: normalizeNullableString(input?.badge_text),
     cta_text: String(input?.cta_text || "").trim() || fallback.cta_text,
