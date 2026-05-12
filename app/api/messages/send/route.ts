@@ -195,12 +195,15 @@ export async function POST(req: Request) {
       const messagingGate = getFeatureGate(
         effectivePlan,
         "full_messaging",
-        "Customer messaging requires a Pro or Elite plan."
+        "Customer messaging requires Starter Access or higher."
       );
 
       if (!messagingGate.allowed) {
         return expectsJson
-          ? jsonError(messagingGate.message || "Customer messaging requires a Pro or Elite plan.", 403)
+          ? jsonError(
+              messagingGate.message || "Customer messaging requires Starter Access or higher.",
+              403
+            )
           : redirectError(req, redirectTo);
       }
 
@@ -249,7 +252,7 @@ export async function POST(req: Request) {
           limitKey: "max_message_threads",
           current: Number(usage.max_message_threads || 0),
           customMessage:
-            "Trial businesses are limited to 10 message threads. Upgrade to Pro or Elite to keep the inbox open as demand grows.",
+            "This workspace has reached its messaging thread limit. Upgrade to Pro or Elite for more scaling headroom.",
         });
 
         if (!threadLimit.allowed) {
@@ -315,12 +318,15 @@ export async function POST(req: Request) {
       const messagingGate = getFeatureGate(
         effectivePlan,
         "full_messaging",
-        "Customer messaging requires a Pro or Elite plan."
+        "Customer messaging requires Starter Access or higher."
       );
 
       if (!messagingGate.allowed) {
         return expectsJson
-          ? jsonError(messagingGate.message || "Customer messaging requires a Pro or Elite plan.", 403)
+          ? jsonError(
+              messagingGate.message || "Customer messaging requires Starter Access or higher.",
+              403
+            )
           : redirectError(req, redirectTo);
       }
 

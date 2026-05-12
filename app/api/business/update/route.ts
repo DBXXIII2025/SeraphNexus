@@ -239,12 +239,15 @@ export async function POST(req: Request) {
       const publishGate = getFeatureGate(
         effectivePlan,
         "publish_business",
-        "Publishing is available on Pro and Elite."
+        "Publishing is available on Starter Access and above."
       );
 
       if (!publishGate.allowed) {
         return NextResponse.json(
-          { error: publishGate.message || "Publishing is available on Pro and Elite." },
+          {
+            error:
+              publishGate.message || "Publishing is available on Starter Access and above.",
+          },
           { status: 403 }
         );
       }

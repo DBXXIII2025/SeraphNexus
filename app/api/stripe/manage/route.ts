@@ -90,7 +90,7 @@ export async function POST(req: Request) {
     const paymentGate = getFeatureGate(effectivePlan, "stripe_payments");
     if (!paymentGate.allowed) {
       return NextResponse.json(
-        { error: paymentGate.message || "Stripe payments require a Pro or Elite plan." },
+        { error: paymentGate.message || "Stripe payments require Starter Access or higher." },
         { status: 403 }
       );
     }

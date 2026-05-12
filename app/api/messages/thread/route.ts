@@ -157,7 +157,7 @@ export async function GET(req: Request) {
 
       if (!canAccessPlanFeature(effectivePlan, "full_messaging")) {
         return NextResponse.json(
-          { error: "Customer messaging requires a Pro or Elite plan." },
+          { error: "Customer messaging requires Starter Access or higher." },
           { status: 403 }
         );
       }

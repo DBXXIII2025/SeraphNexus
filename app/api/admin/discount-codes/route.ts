@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
+import { canCreatePromoCodes } from "@/lib/planConfig";
 import {
   normalizeDiscountCode,
   validateDiscountCodePayload,
@@ -84,6 +85,13 @@ export async function POST(req: Request) {
     );
   }
 
+  if (!canCreatePromoCodes(business.plan)) {
+    return NextResponse.json(
+      { error: "Promo codes require the Pro plan or higher." },
+      { status: 403 }
+    );
+  }
+
   const parsed = validateDiscountCodePayload(body);
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
@@ -139,6 +147,13 @@ export async function PATCH(req: Request) {
   ) {
     return NextResponse.json(
       { error: "You do not have permission to manage promo codes for this business." },
+      { status: 403 }
+    );
+  }
+
+  if (!canCreatePromoCodes(business.plan)) {
+    return NextResponse.json(
+      { error: "Promo codes require the Pro plan or higher." },
       { status: 403 }
     );
   }
@@ -204,6 +219,13 @@ export async function DELETE(req: Request) {
   ) {
     return NextResponse.json(
       { error: "You do not have permission to manage promo codes for this business." },
+      { status: 403 }
+    );
+  }
+
+  if (!canCreatePromoCodes(business.plan)) {
+    return NextResponse.json(
+      { error: "Promo codes require the Pro plan or higher." },
       { status: 403 }
     );
   }

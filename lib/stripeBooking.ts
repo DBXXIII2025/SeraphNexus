@@ -122,7 +122,7 @@ export async function createBookingCheckoutSession(
     limitKey: "max_transactions",
     current: Number(usage.max_transactions || 0),
     customMessage:
-      "Trial businesses are limited to 10 bookings and orders total. Upgrade to Pro or Elite to continue taking transactions.",
+      "This workspace has reached its transaction limit. Upgrade to Pro or Elite for more scaling headroom.",
   });
 
   if (!transactionLimit.allowed) {

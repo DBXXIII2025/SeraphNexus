@@ -40,8 +40,8 @@ export default async function ProductsPage() {
     <div className="space-y-6">
       {maxProducts !== null ? (
         <div className="rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
-          Trial workspaces can save up to {maxProducts} products. Upgrade to Pro or Elite for an
-          unlimited catalog.
+          Starter Access workspaces can save up to {maxProducts} products. Upgrade to Pro for 50
+          items or Elite for unlimited catalog depth.
         </div>
       ) : null}
 

@@ -374,7 +374,7 @@ export default async function AdminMessagesPage({
         <DashboardPrimaryPanel>
           <p className="section-kicker">{t("messages")}</p>
           <h2 className="mt-2 text-lg font-semibold text-[var(--text-strong)]">
-            Trial inbox is capped at {messageThreadLimit} message threads
+            Starter Access inbox is capped at {messageThreadLimit} message threads
           </h2>
           <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
             Upgrade to Pro for unlimited messaging volume, or Elite for advanced private and

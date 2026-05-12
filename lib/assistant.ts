@@ -171,7 +171,7 @@ function isMissingTableError(error: { code?: string | null } | null | undefined)
 }
 
 function normalizeStoredPlan(value: unknown) {
-  return typeof value === "string" && value.trim() ? value.trim() : "trial";
+  return typeof value === "string" && value.trim() ? value.trim() : "starter";
 }
 
 function normalizeText(value: unknown, maxLength = 5000) {

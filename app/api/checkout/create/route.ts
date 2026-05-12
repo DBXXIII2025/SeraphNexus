@@ -861,13 +861,13 @@ export async function POST(req: Request) {
     }
 
     const usage = await loadBusinessUsageSnapshot(business.id);
-    const transactionLimit = getUsageLimitResult({
-      plan: normalizedPlan,
-      limitKey: "max_transactions",
-      current: Number(usage.max_transactions || 0),
-      customMessage:
-        "Trial businesses are limited to 10 bookings and orders total. Upgrade to Pro or Elite to continue taking transactions.",
-    });
+      const transactionLimit = getUsageLimitResult({
+        plan: normalizedPlan,
+        limitKey: "max_transactions",
+        current: Number(usage.max_transactions || 0),
+        customMessage:
+          "This workspace has reached its transaction limit. Upgrade to Pro or Elite for more scaling headroom.",
+      });
 
     if (!transactionLimit.allowed) {
       return errorResponse({

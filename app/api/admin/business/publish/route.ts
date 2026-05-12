@@ -108,7 +108,7 @@ export async function POST(req: Request) {
     const publishGate = getFeatureGate(
       effectivePlan,
       "publish_business",
-      "Publishing is available on Pro and Elite."
+      "Publishing is available on Starter Access and above."
     );
 
     if (isPublished && !publishGate.allowed) {

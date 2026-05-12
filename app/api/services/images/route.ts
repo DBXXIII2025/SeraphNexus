@@ -9,11 +9,16 @@ import {
   sortServiceImages,
   type ServiceImageRecord,
 } from "@/lib/serviceImages";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
+import { getUsageLimitResult } from "@/lib/planEnforcement";
+import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
 
 type ServiceRow = {
   id: string;
   business_id: string;
   name: string | null;
+  owner_id?: string | null;
+  plan?: string | null;
 };
 
 type ServiceImageRow = ServiceImageRecord;
@@ -48,7 +53,7 @@ async function getOwnedService(args: { serviceId: string; userId: string }) {
 
   const { data: business, error: businessError } = await supabaseAdmin
     .from("businesses")
-    .select("id")
+    .select("id, owner_id, plan")
     .eq("id", service.business_id)
     .eq("owner_id", args.userId)
     .maybeSingle();
@@ -61,7 +66,11 @@ async function getOwnedService(args: { serviceId: string; userId: string }) {
     return null;
   }
 
-  return service as ServiceRow;
+  return {
+    ...(service as ServiceRow),
+    owner_id: business.owner_id || null,
+    plan: business.plan || null,
+  } satisfies ServiceRow;
 }
 
 async function loadServiceImages(serviceId: string) {
@@ -137,6 +146,31 @@ export async function POST(req: Request) {
     }
 
     const supabaseAdmin = createAdminClient();
+    const effectivePlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: ownedService.business_id,
+        owner_id: ownedService.owner_id || null,
+        plan: ownedService.plan || null,
+      },
+      userId: user.id,
+      email: user.email || null,
+    });
+    const usage = await loadBusinessUsageSnapshot(ownedService.business_id);
+    const uploadLimit = getUsageLimitResult({
+      plan: effectivePlan,
+      limitKey: "max_uploads",
+      current: Number(usage.max_uploads || 0),
+      customMessage:
+        "This workspace has reached its image upload limit. Upgrade to Pro or Elite for more media capacity.",
+    });
+
+    if (!uploadLimit.allowed) {
+      return NextResponse.json(
+        { error: uploadLimit.message || "Image upload limit reached." },
+        { status: 403 }
+      );
+    }
+
     const existingImages = await loadServiceImages(serviceId);
     const storagePath = buildServiceImageStoragePath({
       businessId: ownedService.business_id,

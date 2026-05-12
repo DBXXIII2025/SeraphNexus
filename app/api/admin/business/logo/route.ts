@@ -71,7 +71,7 @@ async function assertStandardCustomizationAccess(args: {
   });
 
   if (!canAccessPlanFeature(effectivePlan, "standard_customization")) {
-    throw new Error("Business logo customization requires a Pro or Elite plan.");
+    throw new Error("Business logo customization requires Starter Access or higher.");
   }
 }
 
@@ -173,7 +173,7 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     const status =
-      message === "Business logo customization requires a Pro or Elite plan."
+      message === "Business logo customization requires Starter Access or higher."
         ? 403
         : 500;
 
@@ -239,7 +239,7 @@ export async function DELETE(req: Request) {
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     const status =
-      message === "Business logo customization requires a Pro or Elite plan."
+      message === "Business logo customization requires Starter Access or higher."
         ? 403
         : 500;
 

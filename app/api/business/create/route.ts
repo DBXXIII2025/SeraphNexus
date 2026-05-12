@@ -51,9 +51,10 @@ export async function POST(req: Request) {
       ownerUserId: user.id,
       email: user.email || null,
     });
+    const onboardingPlan = ownerPlan === "inactive" ? "starter" : ownerPlan;
     const businessCount = await loadOwnerBusinessCount(user.id);
     const businessLimit = getUsageLimitResult({
-      plan: ownerPlan,
+      plan: onboardingPlan,
       limitKey: "max_businesses",
       current: businessCount,
     });

@@ -132,8 +132,8 @@ export default async function AdminServicesPage({
 
       {params?.error === "service-limit" ? (
         <StatusMessage tone="warning">
-          Trial workspaces can save up to 5 services. Upgrade to Pro or Elite for an unlimited
-          service catalog.
+          Starter Access workspaces can save up to 5 services. Upgrade to Pro for 50 services or
+          Elite for unlimited catalog depth.
         </StatusMessage>
       ) : null}
 
@@ -155,8 +155,8 @@ export default async function AdminServicesPage({
 
       {maxServices !== null ? (
         <StatusMessage tone="warning">
-          Trial workspaces can save up to {maxServices} services. Upgrade to Pro or Elite for an
-          unlimited service catalog.
+          Starter Access workspaces can save up to {maxServices} services. Upgrade to Pro for 50
+          services or Elite for unlimited catalog depth.
         </StatusMessage>
       ) : null}
 

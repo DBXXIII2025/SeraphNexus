@@ -76,12 +76,12 @@ function getStatusCopy(
   }
 
   if (type === "success") {
-    if (value === "trial-granted") {
-      return "Trial access granted to the existing account.";
+    if (value === "starter-granted") {
+      return "Starter Access granted to the existing account.";
     }
 
     if (value === "invite-created") {
-      return "Email-bound private trial invite created.";
+      return "Email-bound Starter Access invite created.";
     }
 
     if (value === "grant-revoked") {
@@ -118,7 +118,7 @@ function getStatusCopy(
   }
 
   if (value === "grant-email-required") {
-    return "An existing user email is required to grant trial access.";
+    return "An existing user email is required to grant Starter Access.";
   }
 
   if (value === "grant-user-not-found") {
@@ -178,7 +178,7 @@ function getStatusCopy(
   }
 
   if (value === "grant-failed") {
-    return "Trial access could not be granted.";
+    return "Starter Access could not be granted.";
   }
 
   if (value === "invite-email-required") {
@@ -891,12 +891,12 @@ export default async function PlatformPage({
 
       <DashboardGrid className="xl:grid-cols-[0.95fr,1.05fr]">
         <div className="dashboard-primary-panel p-6">
-          <p className="section-kicker">Trial Grants</p>
+          <p className="section-kicker">Starter Access</p>
           <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
-            Grant private trial access
+            Grant Starter Access
           </h2>
           <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
-            Attach trial access directly to an existing account or issue a
+            Attach Starter Access directly to an existing account or issue a
             one-time email-bound invite.
           </p>
 
@@ -905,7 +905,7 @@ export default async function PlatformPage({
             method="POST"
             className="mt-5 space-y-4"
           >
-            <input type="hidden" name="action" value="grant_trial" />
+            <input type="hidden" name="action" value="grant_starter" />
             <label className="text-sm text-[var(--text-soft)]">
               <span className="form-label">Existing user email</span>
               <input name="email" type="email" required className="input-field" />
@@ -930,7 +930,7 @@ export default async function PlatformPage({
               type="submit"
               className="btn-primary px-4 py-2 text-sm font-medium"
             >
-              Grant trial access
+              Grant Starter Access
             </button>
           </form>
 
@@ -974,7 +974,7 @@ export default async function PlatformPage({
             <div>
               <p className="section-kicker">Active Grants</p>
               <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
-                Trial access inventory
+                Starter Access inventory
               </h2>
             </div>
             <span className="text-sm text-[var(--text-soft)]">
@@ -985,7 +985,7 @@ export default async function PlatformPage({
           <div className="mt-5 space-y-3">
             {activeGrants.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-8 text-sm text-[var(--text-soft)]">
-                No active trial grants or invites.
+                No active Starter Access grants or invites.
               </div>
             ) : (
               activeGrants.map((grant) => (

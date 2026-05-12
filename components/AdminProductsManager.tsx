@@ -59,6 +59,7 @@ export default function AdminProductsManager({
   async function uploadFile(file: File) {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("businessId", businessId);
 
     const res = await fetch("/api/upload", {
       method: "POST",

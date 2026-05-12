@@ -34,11 +34,12 @@ export type UpgradeTrigger = {
 };
 
 const FEATURE_REQUIREMENTS: Record<PlanFeature, PlanTier> = {
-  stripe_payments: "pro",
-  publish_business: "pro",
-  full_messaging: "pro",
+  stripe_payments: "starter",
+  publish_business: "starter",
+  full_messaging: "starter",
+  promo_codes: "pro",
   basic_analytics: "pro",
-  standard_customization: "pro",
+  standard_customization: "starter",
   advanced_analytics: "elite",
   automation: "elite",
   priority_listing: "elite",
@@ -46,14 +47,17 @@ const FEATURE_REQUIREMENTS: Record<PlanFeature, PlanTier> = {
   advanced_customization: "elite",
   advanced_messaging: "elite",
   advanced_payments: "elite",
-  lead_capture: "pro",
+  lead_capture: "starter",
   branding_customization: "pro",
+  remove_branding: "pro",
 };
 
 const LIMIT_LABELS: Record<PlanLimitKey, string> = {
   max_businesses: "businesses",
+  max_listings: "listings",
   max_services: "services",
   max_products: "products",
+  max_uploads: "uploads",
   max_transactions: "bookings and orders",
   max_message_threads: "message threads",
 };
@@ -156,12 +160,12 @@ export function getUpgradeTriggers(args: {
     }
   });
 
-  if (normalizedPlan === "trial") {
+  if (normalizedPlan === "starter") {
     triggers.push({
-      id: "trial-upgrade",
-      title: "Payments and publishing locked on trial",
+      id: "starter-upgrade",
+      title: "Upgrade from Starter for lower fees and more capacity",
       detail:
-        "Upgrade to Pro to connect Stripe, publish the business publicly, and unlock analytics and full messaging.",
+        "Starter Access keeps core commerce live, but Pro unlocks promo codes, analytics, lower fees, and much larger workspace limits.",
       href: "/admin/upgrade",
     });
   } else if (normalizedPlan === "pro") {

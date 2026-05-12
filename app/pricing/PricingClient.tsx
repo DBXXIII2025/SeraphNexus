@@ -79,8 +79,8 @@ export default function PricingClient({
             Pick the fee structure that fits the business you are operating.
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)] sm:text-base">
-            Billing now uses the active business context instead of local browser state, which
-            prevents upgrades from targeting the wrong workspace.
+            Starter Access is the default onboarding tier. Upgrade only when lower fees or premium
+            operating tools become worth it for the active workspace.
           </p>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
             {pricingNote}

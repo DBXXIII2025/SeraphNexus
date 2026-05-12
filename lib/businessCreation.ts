@@ -171,7 +171,7 @@ export async function createBusinessRecord(args: {
       slug,
       business_type: args.businessType,
       service_category: args.serviceCategory || null,
-      plan: "inactive",
+      plan: "starter",
       is_published: false,
     };
 

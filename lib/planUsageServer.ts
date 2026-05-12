@@ -13,6 +13,9 @@ export async function loadBusinessUsageSnapshot(
   const [
     servicesCount,
     productsCount,
+    serviceImagesCount,
+    businessPageImagesCount,
+    logoCount,
     messageThreadsCount,
     bookingsCount,
     ordersCount,
@@ -26,6 +29,19 @@ export async function loadBusinessUsageSnapshot(
       .from("products")
       .select("id", { count: "exact", head: true })
       .eq("business_id", businessId),
+    supabaseAdmin
+      .from("service_images")
+      .select("id", { count: "exact", head: true })
+      .eq("business_id", businessId),
+    supabaseAdmin
+      .from("business_page_images")
+      .select("id", { count: "exact", head: true })
+      .eq("business_id", businessId),
+    supabaseAdmin
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .eq("id", businessId)
+      .not("logo_url", "is", null),
     supabaseAdmin
       .from("conversations")
       .select("id", { count: "exact", head: true })
@@ -47,6 +63,11 @@ export async function loadBusinessUsageSnapshot(
   return {
     max_services: safeCount(servicesCount.count),
     max_products: safeCount(productsCount.count),
+    max_listings: Math.max(safeCount(servicesCount.count), safeCount(productsCount.count)),
+    max_uploads:
+      safeCount(serviceImagesCount.count) +
+      safeCount(businessPageImagesCount.count) +
+      safeCount(logoCount.count),
     max_message_threads: safeCount(messageThreadsCount.count),
     max_transactions:
       safeCount(bookingsCount.count) +

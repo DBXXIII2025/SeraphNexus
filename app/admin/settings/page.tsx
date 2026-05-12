@@ -9,7 +9,11 @@ import DiscountCodesManager from "@/app/admin/settings/DiscountCodesManager";
 import PublicBusinessLink from "@/app/admin/settings/PublicBusinessLink";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPaymentReadiness } from "@/lib/paymentReadiness";
-import { canAccessPlanFeature, getPlanDefinition } from "@/lib/planConfig";
+import {
+  canAccessPlanFeature,
+  canCreatePromoCodes,
+  getPlanDefinition,
+} from "@/lib/planConfig";
 import { getFeatureGate } from "@/lib/planEnforcement";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createClient } from "@/lib/supabase/server";
@@ -131,6 +135,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const canUseAdvancedCustomization = business
     ? canAccessPlanFeature(business.plan, "advanced_customization")
     : false;
+  const canUsePromoCodes = business ? canCreatePromoCodes(business.plan) : false;
   const canUseTeamRoles = business ? canAccessPlanFeature(business.plan, "team_roles") : false;
   const canManageTeam =
     Boolean(business?.owner_id && user?.id && business.owner_id === user.id) ||
@@ -139,7 +144,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     ? getFeatureGate(
         business.plan,
         "publish_business",
-        "Publishing is available on Pro and Elite."
+        "Publishing is available on Starter Access and above."
       )
     : null;
   const profileCompletion = business ? getBusinessProfileCompletion(business) : null;
@@ -233,8 +238,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       ) : null}
       {message === "publish-plan-locked" ? (
         <div className="rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
-          Publishing is locked on the {plan?.label || "current"} plan. Upgrade to Pro or Elite to
-          make this business visible on Explore and public routes.
+          Publishing is locked on the {plan?.label || "current"} plan. Starter Access or higher is
+          required to make this business visible on Explore and public routes.
         </div>
       ) : null}
 
@@ -284,10 +289,27 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               }}
             />
 
-            <DiscountCodesManager
-              businessId={business.id}
-              businessType={business.business_type}
-            />
+            {canUsePromoCodes ? (
+              <DiscountCodesManager
+                businessId={business.id}
+                businessType={business.business_type}
+              />
+            ) : (
+              <DashboardPrimaryPanel>
+                <div className="section-header-copy">
+                  <p className="section-kicker">Promo Codes</p>
+                  <h2 className="section-title">Discount campaigns</h2>
+                  <p className="section-description">
+                    Starter Access keeps checkout live, but promo-code campaigns unlock on Pro and
+                    Elite.
+                  </p>
+                </div>
+                <div className="mt-5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
+                  Upgrade this workspace to Pro or Elite to create promo codes, run campaign offers,
+                  and reduce platform fees.
+                </div>
+              </DashboardPrimaryPanel>
+            )}
 
             <DashboardPrimaryPanel>
               <div className="section-header">
@@ -403,8 +425,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
               {!canUsePayments ? (
                 <div className="mt-5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
-                  Stripe payments are available on Pro and Elite. Upgrade this business to connect
-                  Stripe and accept live bookings or orders.
+                  Stripe payments are available on Starter Access and above. If this business is
+                  blocked here, the workspace access state needs attention.
                 </div>
               ) : null}
 
@@ -480,8 +502,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               ) : null}
               {publishGate && !publishGate.allowed ? (
                 <div className="mt-5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
-                  Publishing is locked on {plan?.label || "the current"} plan. Upgrade to Pro or
-                  Elite before making this business visible publicly.
+                  Publishing is locked on {plan?.label || "the current"} plan. Starter Access and
+                  above can publish publicly once readiness is complete.
                 </div>
               ) : null}
 

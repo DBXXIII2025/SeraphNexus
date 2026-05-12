@@ -7,7 +7,10 @@ import {
   MAX_BUSINESS_PAGE_IMAGE_BYTES,
   type BusinessPageImage,
 } from "@/lib/businessPageCustomization";
+import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getBusinessStaffRole } from "@/lib/businessStaff";
+import { getUsageLimitResult } from "@/lib/planEnforcement";
+import { loadBusinessUsageSnapshot } from "@/lib/planUsageServer";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -20,7 +23,7 @@ async function getOwnedBusiness(userId: string, requestedBusinessId: string | nu
   const supabaseAdmin = createAdminClient();
   const { data: ownedBusiness, error } = await supabaseAdmin
     .from("businesses")
-    .select("id, owner_id")
+    .select("id, owner_id, plan")
     .eq("id", requestedBusinessId)
     .maybeSingle();
 
@@ -29,7 +32,11 @@ async function getOwnedBusiness(userId: string, requestedBusinessId: string | nu
   }
 
   if (ownedBusiness.owner_id === userId) {
-    return { id: ownedBusiness.id, owner_id: ownedBusiness.owner_id };
+    return {
+      id: ownedBusiness.id,
+      owner_id: ownedBusiness.owner_id,
+      plan: ownedBusiness.plan || null,
+    };
   }
 
   const staffRole = await getBusinessStaffRole({
@@ -41,7 +48,11 @@ async function getOwnedBusiness(userId: string, requestedBusinessId: string | nu
     return null;
   }
 
-  return { id: ownedBusiness.id, owner_id: ownedBusiness.owner_id };
+  return {
+    id: ownedBusiness.id,
+    owner_id: ownedBusiness.owner_id,
+    plan: ownedBusiness.plan || null,
+  };
 }
 
 function normalizeImageRow(row: Record<string, unknown>, index = 0): BusinessPageImage {
@@ -162,6 +173,31 @@ export async function POST(req: Request) {
     });
 
     const supabaseAdmin = createAdminClient();
+    const effectivePlan = await resolveAccessPlanForBusiness({
+      business: {
+        id: ownedBusiness.id,
+        owner_id: ownedBusiness.owner_id || null,
+        plan: ownedBusiness.plan || null,
+      },
+      userId: user.id,
+      email: user.email || null,
+    });
+    const usage = await loadBusinessUsageSnapshot(ownedBusiness.id);
+    const uploadLimit = getUsageLimitResult({
+      plan: effectivePlan,
+      limitKey: "max_uploads",
+      current: Number(usage.max_uploads || 0),
+      customMessage:
+        "This workspace has reached its image upload limit. Upgrade to Pro or Elite for more media capacity.",
+    });
+
+    if (!uploadLimit.allowed) {
+      return NextResponse.json(
+        { error: uploadLimit.message || "Image upload limit reached." },
+        { status: 403 }
+      );
+    }
+
     const existingImages = await loadGalleryImages(supabaseAdmin, ownedBusiness.id);
 
     if (existingImages.length >= MAX_BUSINESS_GALLERY_IMAGES) {

@@ -20,7 +20,7 @@ export type PlatformPlanCard = {
 const PLAN_CONFIG_NOTE_PREFIX = "__SERAPH_PLAN_CONFIG_V2__";
 
 export const DEFAULT_PLATFORM_PRICING_NOTE =
-  "Choose the plan that matches your growth stage: Pro 5%, Elite 2%.";
+  "Starter Access is included at 18% platform fees. Upgrade to Pro at 12% or Elite at 5% for lower fees and premium tools.";
 
 const DEFAULT_PLATFORM_PLANS: PlatformPlanCard[] = [
   {
@@ -32,9 +32,9 @@ const DEFAULT_PLATFORM_PLANS: PlatformPlanCard[] = [
     billing_note: "Best for growing businesses that need full operations.",
     transaction_fee_bps: 500,
     feature_bullets: [
-      "5% platform fee",
-      "Stripe payments, full messaging, and standard customization",
-      "Up to 2 businesses with unlimited services and products",
+      "12% platform fee",
+      "Promo codes, analytics, and upgraded workspace controls",
+      "Up to 2 businesses with 50 listings and 200 uploads",
     ],
     badge_text: null,
     cta_text: "Choose Pro",
@@ -53,9 +53,9 @@ const DEFAULT_PLATFORM_PLANS: PlatformPlanCard[] = [
     billing_note: "Best for scaling operators who want the premium stack.",
     transaction_fee_bps: 200,
     feature_bullets: [
-      "2% platform fee",
-      "Automation, advanced analytics, and advanced messaging",
-      "Priority explore boost with unlimited businesses",
+      "5% platform fee",
+      "AI assistant, automation, advanced analytics, and advanced messaging",
+      "Priority explore boost with unlimited businesses, listings, and uploads",
     ],
     badge_text: null,
     cta_text: "Choose Elite",

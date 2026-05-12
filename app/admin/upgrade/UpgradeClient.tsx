@@ -124,6 +124,9 @@ export default function UpgradeClient({
       </div>
 
       <p className="text-sm text-[var(--text-soft)]">{pricingNote}</p>
+      <p className="text-xs text-[var(--text-muted)]">
+        Starter Access remains the default workspace tier and is managed outside subscription checkout.
+      </p>
     </div>
   );
 }

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const supabaseAdmin = createAdminClient();
     const grantedBy = user.email || user.id;
 
-    if (action === "grant_trial") {
+    if (action === "grant_trial" || action === "grant_starter") {
       const email = normalizeEmail(formData.get("email"));
       const businessId = normalizeOptionalString(formData.get("business_id"));
       const expiresAt = normalizeOptionalString(formData.get("expires_at"));
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         user_id: profile.id,
         email,
         business_id: businessId,
-        plan: "trial",
+        plan: "starter",
         granted_by: grantedBy,
         expires_at: expiresAt,
         is_active: true,
@@ -69,10 +69,10 @@ export async function POST(req: Request) {
         return buildRedirect(req, { error: "grant-failed" });
       }
 
-      return buildRedirect(req, { success: "trial-granted" });
+      return buildRedirect(req, { success: "starter-granted" });
     }
 
-    if (action === "create_invite") {
+    if (action === "create_invite" || action === "create_starter_invite") {
       const email = normalizeEmail(formData.get("email"));
       const businessId = normalizeOptionalString(formData.get("business_id"));
       const expiresAt = normalizeOptionalString(formData.get("expires_at"));
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       const { error } = await supabaseAdmin.from("access_grants").insert({
         email,
         business_id: businessId,
-        plan: "trial",
+        plan: "starter",
         granted_by: grantedBy,
         expires_at: expiresAt,
         is_active: true,

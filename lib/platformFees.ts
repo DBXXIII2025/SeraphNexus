@@ -32,10 +32,10 @@ export async function getConfiguredPlatformFee(plan: unknown): Promise<PlatformF
   const normalizedPlan = normalizeBusinessPlan(plan);
   const basisPoints =
     normalizedPlan === "elite"
-      ? clampBasisPoints(settings.elite_transaction_fee_bps, 200)
+      ? clampBasisPoints(settings.elite_transaction_fee_bps, 500)
       : normalizedPlan === "pro"
-        ? clampBasisPoints(settings.pro_transaction_fee_bps, 500)
-        : clampBasisPoints(settings.trial_transaction_fee_bps, 1000);
+        ? clampBasisPoints(settings.pro_transaction_fee_bps, 1200)
+        : clampBasisPoints(settings.trial_transaction_fee_bps, 1800);
 
   return {
     plan: normalizedPlan,

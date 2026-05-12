@@ -109,7 +109,7 @@ export default function SignupPage() {
         setError(
           activationError instanceof Error
             ? activationError.message
-            : "Account created, but trial invite activation failed."
+            : "Account created, but Starter Access invite activation failed."
         );
         setLoading(false);
         return;
@@ -141,7 +141,7 @@ export default function SignupPage() {
 
         {inviteToken ? (
           <div className="mb-4 rounded-lg border border-[var(--border-soft)] bg-[var(--accent-muted)] px-3 py-2 text-xs text-[var(--accent)]">
-            Private trial invite detected. Sign up with the invited email to activate it.
+            Private Starter Access invite detected. Sign up with the invited email to activate it.
           </div>
         ) : null}
 
