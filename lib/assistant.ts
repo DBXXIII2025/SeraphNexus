@@ -29,6 +29,7 @@ export type AssistantActionType =
   | "draft_client_reply"
   | "draft_service_create"
   | "draft_product_create"
+  | "draft_menu_item_create"
   | "draft_promo_code_create"
   | "draft_booking_summary";
 
@@ -60,6 +61,14 @@ export type AssistantProductCreatePayload = {
   image_url?: string | null;
 };
 
+export type AssistantMenuItemCreatePayload = {
+  summary: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  image_url?: string | null;
+};
+
 export type AssistantPromoCodeCreatePayload = {
   summary: string;
   code: string;
@@ -84,6 +93,7 @@ export type AssistantActionPayload =
   | AssistantClientReplyPayload
   | AssistantServiceCreatePayload
   | AssistantProductCreatePayload
+  | AssistantMenuItemCreatePayload
   | AssistantPromoCodeCreatePayload
   | AssistantBookingSummaryPayload;
 
@@ -162,6 +172,7 @@ const ALLOWED_ACTION_TYPES = new Set<AssistantActionType>([
   "draft_client_reply",
   "draft_service_create",
   "draft_product_create",
+  "draft_menu_item_create",
   "draft_promo_code_create",
   "draft_booking_summary",
 ]);
@@ -403,6 +414,41 @@ function validateProductCreatePayload(payload: unknown): AssistantProductCreateP
   };
 }
 
+function validateMenuItemCreatePayload(payload: unknown): AssistantMenuItemCreatePayload | null {
+  const objectResult = getObjectRecord(payload, "This drafted menu item payload is invalid.");
+  if (!objectResult.ok) {
+    return null;
+  }
+
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, [
+    "summary",
+    "name",
+    "title",
+    "description",
+    "price",
+    "image_url",
+  ]);
+  if (unsupported.length > 0) {
+    return null;
+  }
+  const summary = summaryFromPayload(record);
+  const name = resolveDraftName(record);
+  const price = normalizePrice(record.price);
+
+  if (!summary || !name || price === null) {
+    return null;
+  }
+
+  return {
+    summary,
+    name,
+    description: normalizeText(record.description),
+    price,
+    image_url: normalizeText(record.image_url, 2000),
+  };
+}
+
 function validatePromoCodeCreatePayload(payload: unknown): AssistantPromoCodeCreatePayload | null {
   const objectResult = getObjectRecord(payload, "This drafted promo code payload is invalid.");
   if (!objectResult.ok) {
@@ -597,6 +643,53 @@ function parseProductCreatePayload(
   };
 }
 
+function parseMenuItemCreatePayload(
+  payload: unknown
+): PayloadValidationResult<AssistantMenuItemCreatePayload> {
+  const objectResult = getObjectRecord(payload, "This drafted menu item payload is invalid.");
+  if (!objectResult.ok) {
+    return objectResult;
+  }
+
+  const record = objectResult.value;
+  const unsupported = findUnsupportedKeys(record, [
+    "summary",
+    "name",
+    "title",
+    "description",
+    "price",
+    "image_url",
+  ]);
+  if (unsupported.length > 0) {
+    return {
+      ok: false,
+      error: unsupportedFieldsError(unsupported),
+    };
+  }
+
+  const summary = summaryFromPayload(record);
+  const name = resolveDraftName(record);
+  const price = normalizePrice(record.price);
+
+  if (!summary || !name || price === null) {
+    return {
+      ok: false,
+      error: "This drafted menu item payload is invalid.",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      summary,
+      name,
+      description: normalizeText(record.description),
+      price,
+      image_url: normalizeText(record.image_url, 2000),
+    },
+  };
+}
+
 function parsePromoCodeCreatePayload(
   payload: unknown
 ): PayloadValidationResult<AssistantPromoCodeCreatePayload> {
@@ -713,6 +806,9 @@ export function validateAssistantActionDraft(input: unknown): AssistantActionDra
       break;
     case "draft_product_create":
       payload = validateProductCreatePayload(record.payload);
+      break;
+    case "draft_menu_item_create":
+      payload = validateMenuItemCreatePayload(record.payload);
       break;
     case "draft_promo_code_create":
       payload = validatePromoCodeCreatePayload(record.payload);
@@ -1379,6 +1475,58 @@ async function executeDraftProductCreate(args: {
   };
 }
 
+async function executeDraftMenuItemCreate(args: {
+  action: AssistantActionRecord;
+  business: AssistantBusinessScope;
+  userId: string;
+}) {
+  if (args.business.business_type !== "restaurant" && args.business.business_type !== "food") {
+    throw new Error("Menu item drafts can only be approved for restaurant or food workspaces.");
+  }
+
+  const payloadResult = parseMenuItemCreatePayload(args.action.payload);
+
+  if (!payloadResult.ok) {
+    throw new Error(payloadResult.error);
+  }
+  const payload = payloadResult.value;
+
+  await enforceCreateLimit({
+    table: "menu_items",
+    business: args.business,
+    userId: args.userId,
+    limitKey: "max_products",
+  });
+
+  const supabase = createAdminClient() as any;
+  const menuItemsTable = supabase.from("menu_items");
+  const result = await runSchemaSafeMutation({
+    payload: {
+      business_id: args.business.id,
+      name: payload.name,
+      description: payload.description || null,
+      price: payload.price,
+      image_url: payload.image_url || null,
+    },
+    requiredColumns: ["business_id", "name", "price"],
+    runMutation: (nextPayload) =>
+      menuItemsTable.insert(nextPayload).select("id,name,price,image_url,created_at").single(),
+  });
+
+  if (result.error || !result.data) {
+    throw new Error(result.error?.message || "Failed to create drafted menu item.");
+  }
+
+  const row = result.data as Record<string, unknown>;
+  return {
+    menuItemId: String(row.id || ""),
+    name: String(row.name || payload.name),
+    price: Number(row.price || payload.price),
+    image_url: row.image_url ? String(row.image_url) : payload.image_url || null,
+    created_at: row.created_at ? String(row.created_at) : null,
+  };
+}
+
 async function executeDraftPromoCodeCreate(args: {
   action: AssistantActionRecord;
   business: AssistantBusinessScope;
@@ -1453,6 +1601,8 @@ export async function executeAssistantAction(args: {
       return executeDraftServiceCreate(args);
     case "draft_product_create":
       return executeDraftProductCreate(args);
+    case "draft_menu_item_create":
+      return executeDraftMenuItemCreate(args);
     case "draft_promo_code_create":
       return executeDraftPromoCodeCreate(args);
     case "draft_booking_summary":

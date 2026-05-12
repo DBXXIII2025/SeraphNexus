@@ -345,7 +345,7 @@ export default function AssistantChat({
                   <p>• Suggest ways to improve operations</p>
                   <p>• Help organize business workflows</p>
                   <p>• Draft client replies for owner review</p>
-                  <p>• Prepare service, product, promo-code, and booking-summary drafts for approval</p>
+                  <p>• Prepare service, product, menu-item, promo-code, and booking-summary drafts for approval</p>
                   <p>• Guide you through manual changes when direct execution is not available</p>
                 </div>
                 <p className="mt-5 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -490,7 +490,7 @@ export default function AssistantChat({
               ref={textareaRef}
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Ask Seravelle for guidance or have her draft a reply, service, product, promo code, or booking summary for approval."
+              placeholder="Ask Seravelle for guidance or have her draft a reply, service, product, menu item, promo code, or booking summary for approval."
               className="input-field min-h-[132px] resize-y"
               maxLength={4000}
               disabled={isLoading || Boolean(initialError)}
