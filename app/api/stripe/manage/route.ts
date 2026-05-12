@@ -17,6 +17,11 @@ type BusinessRow = {
   id: string;
   name: string | null;
   owner_id: string;
+  slug?: string | null;
+  description?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  website?: string | null;
   stripe_account_id: string | null;
   plan?: string | null;
   business_type?: string | null;
@@ -55,7 +60,9 @@ export async function POST(req: Request) {
 
     const { data: business, error: businessError } = await supabase
       .from("businesses")
-      .select("id, name, owner_id, stripe_account_id, plan, business_type")
+      .select(
+        "id, name, owner_id, slug, description, email, phone, website, stripe_account_id, plan, business_type"
+      )
       .eq("id", businessId)
       .eq("owner_id", user.id)
       .maybeSingle();
@@ -119,6 +126,7 @@ export async function POST(req: Request) {
       business: ownedBusiness,
       ownerUserId: user.id,
       ownerEmail: user.email || null,
+      baseUrl,
     });
 
     const account = await stripe.accounts.retrieve(stripeAccountId);

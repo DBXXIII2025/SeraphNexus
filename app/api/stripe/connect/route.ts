@@ -17,9 +17,13 @@ type BusinessRow = {
   id: string;
   name: string | null;
   owner_id: string;
+  slug?: string | null;
+  description?: string | null;
   stripe_account_id: string | null;
   plan?: string | null;
   email?: string | null;
+  phone?: string | null;
+  website?: string | null;
   business_type?: string | null;
 };
 
@@ -160,6 +164,7 @@ export async function POST(req: Request) {
         business: ownedBusiness,
         ownerUserId: user.id,
         ownerEmail: user.email || null,
+        baseUrl,
       });
     }
 

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { getAppUrl } from "@/lib/appUrl";
 import { stripe } from "@/lib/stripe";
 import { ensureUniqueSlug, slugify } from "@/lib/slug";
+import { getCanonicalPublicBusinessRoute } from "@/lib/publicBusinessRoutes";
 
 const supabase = createAdminClient();
 
@@ -35,11 +36,6 @@ export async function POST(req: Request) {
 
     const userId = userRes.user.id;
 
-    const account = await stripe.accounts.create({
-      type: "standard",
-      email,
-    });
-
     const baseSlug = slugify(String(business_name));
     if (!baseSlug) {
       return NextResponse.json(
@@ -50,6 +46,19 @@ export async function POST(req: Request) {
 
     const businessesTable = supabase.from("businesses") as any;
     const slug = await ensureUniqueSlug(businessesTable, baseSlug);
+
+    const account = await stripe.accounts.create({
+      type: "standard",
+      email,
+      metadata: {
+        owner_user_id: userId,
+        business_name: String(business_name).trim(),
+        business_slug: slug,
+      },
+      business_profile: {
+        name: String(business_name).trim(),
+      },
+    });
 
     const { error: businessError } = await businessesTable.insert({
       id: randomUUID(),
@@ -68,6 +77,20 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = getAppUrl(req);
+    const publicUrl = new URL(
+      getCanonicalPublicBusinessRoute(null, slug).href,
+      baseUrl
+    ).toString();
+
+    await stripe.accounts.update(account.id, {
+      business_profile: {
+        name: String(business_name).trim(),
+        url: publicUrl,
+        product_description: `${String(business_name).trim()} accepts payments through Seraph Nexus.`,
+        support_email: email,
+      },
+    });
+
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
       refresh_url: `${baseUrl}/signup`,
