@@ -6,6 +6,7 @@ import {
   loadAssistantActions,
   loadAssistantBusinessOptions,
   loadAssistantConversations,
+  loadAssistantMemorySummaries,
   loadAssistantMessages,
   resolveAssistantAccess,
 } from "@/lib/assistant";
@@ -144,7 +145,7 @@ export default async function AdminAssistantPage({
 
   const selectedConversation = conversationSelection.selectedConversation;
 
-  const [history, actionHistory] = selectedConversation
+  const [history, actionHistory, memorySummaries] = selectedConversation
     ? await Promise.all([
         loadAssistantMessages({
           businessId: business.id,
@@ -158,6 +159,11 @@ export default async function AdminAssistantPage({
           assistantConversationId: selectedConversation.id,
           limit: 24,
         }),
+        loadAssistantMemorySummaries({
+          businessId: business.id,
+          userId: access.userId!,
+          limit: 12,
+        }),
       ])
     : [
         {
@@ -166,6 +172,10 @@ export default async function AdminAssistantPage({
         },
         {
           actions: [],
+          storageError: conversationSelection.storageError,
+        },
+        {
+          memories: [],
           storageError: conversationSelection.storageError,
         },
       ];
@@ -274,8 +284,9 @@ export default async function AdminAssistantPage({
             selectedConversation={selectedConversation}
             initialMessages={history.messages}
             initialActions={actionHistory.actions}
+            initialMemories={memorySummaries.memories}
             initialError={history.storageError || conversationSelection.storageError}
-            initialActionError={actionHistory.storageError}
+            initialActionError={actionHistory.storageError || memorySummaries.storageError}
             initialNotice={
               notice === "cleared"
                 ? "This conversation has been archived. Seravelle can still recall relevant information from it when needed."

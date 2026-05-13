@@ -6,6 +6,7 @@ import type {
   AssistantActionRecord,
   AssistantBusinessOption,
   AssistantConversationRecord,
+  AssistantMemorySummaryRecord,
   AssistantMessageRecord,
 } from "@/lib/assistant";
 
@@ -16,6 +17,7 @@ type AssistantChatProps = {
   selectedConversation: AssistantConversationRecord | null;
   initialMessages: AssistantMessageRecord[];
   initialActions: AssistantActionRecord[];
+  initialMemories: AssistantMemorySummaryRecord[];
   initialError: string | null;
   initialActionError: string | null;
   initialNotice: string | null;
@@ -164,6 +166,7 @@ export default function AssistantChat({
   selectedConversation,
   initialMessages,
   initialActions,
+  initialMemories,
   initialError,
   initialActionError,
   initialNotice,
@@ -182,6 +185,7 @@ export default function AssistantChat({
     conversations
   );
   const [actions, setActions] = useState<AssistantActionRecord[]>(initialActions);
+  const [memories, setMemories] = useState<AssistantMemorySummaryRecord[]>(initialMemories);
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState(initialError);
   const [actionError, setActionError] = useState(initialActionError);
@@ -190,8 +194,11 @@ export default function AssistantChat({
   const [isConversationMutating, setIsConversationMutating] = useState(false);
   const [businessSelection, setBusinessSelection] = useState(selectedBusinessId);
   const [actionMutations, setActionMutations] = useState<Record<string, ActionMutationState>>({});
+  const [forgettingMemoryId, setForgettingMemoryId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const stickToBottomRef = useRef(true);
 
   const selectedConversationId = selectedConversation?.id || "";
   const isActiveConversation = selectedConversation?.status === "active";
@@ -204,6 +211,7 @@ export default function AssistantChat({
       }))
     );
     setActions(initialActions);
+    setMemories(initialMemories);
     setConversationItems(conversations);
     setError(initialError);
     setActionError(initialActionError);
@@ -214,6 +222,7 @@ export default function AssistantChat({
   }, [
     initialMessages,
     initialActions,
+    initialMemories,
     conversations,
     initialError,
     initialActionError,
@@ -223,8 +232,29 @@ export default function AssistantChat({
   ]);
 
   useEffect(() => {
+    if (!stickToBottomRef.current) {
+      return;
+    }
+
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, actions, isLoading]);
+
+  useEffect(() => {
+    const element = messagesViewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    const handleScroll = () => {
+      const distanceFromBottom =
+        element.scrollHeight - element.scrollTop - element.clientHeight;
+      stickToBottomRef.current = distanceFromBottom < 72;
+    };
+
+    handleScroll();
+    element.addEventListener("scroll", handleScroll, { passive: true });
+    return () => element.removeEventListener("scroll", handleScroll);
+  }, [selectedConversationId]);
 
   function buildAssistantHref(nextConversationId?: string, nextNotice?: string | null) {
     const params = new URLSearchParams();
@@ -251,6 +281,7 @@ export default function AssistantChat({
     setNotice(null);
     setActionError(initialActionError);
     setPrompt("");
+    stickToBottomRef.current = true;
 
     const requestId = `local-${Date.now()}`;
     const optimisticUserMessage: AssistantMessageRecord = {
@@ -446,7 +477,8 @@ export default function AssistantChat({
           buildAssistantHref(
             data.conversation?.id,
             action === "clear" ? "cleared" : "new"
-          )
+          ),
+          { scroll: false }
         );
       });
     } catch (mutationError) {
@@ -465,8 +497,50 @@ export default function AssistantChat({
     }
 
     startTransition(() => {
-      router.replace(`/admin/assistant?businessId=${encodeURIComponent(businessSelection)}`);
+      router.replace(`/admin/assistant?businessId=${encodeURIComponent(businessSelection)}`, {
+        scroll: false,
+      });
     });
+  }
+
+  async function handleForgetMemory(memoryId: string) {
+    if (forgettingMemoryId) {
+      return;
+    }
+
+    setForgettingMemoryId(memoryId);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/assistant/memory/${encodeURIComponent(memoryId)}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ businessId }),
+        }
+      );
+
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Seravelle memory could not be removed.");
+      }
+
+      setMemories((current) => current.filter((memory) => memory.id !== memoryId));
+    } catch (forgetError) {
+      setError(
+        forgetError instanceof Error
+          ? forgetError.message
+          : "Seravelle memory could not be removed."
+      );
+    } finally {
+      setForgettingMemoryId(null);
+    }
   }
 
   return (
@@ -512,7 +586,9 @@ export default function AssistantChat({
                   type="button"
                   onClick={() =>
                     startTransition(() => {
-                      router.replace(buildAssistantHref(conversation.id));
+                      router.replace(buildAssistantHref(conversation.id), {
+                        scroll: false,
+                      });
                     })
                   }
                   className={
@@ -543,6 +619,57 @@ export default function AssistantChat({
                 </button>
               );
             })}
+          </div>
+          <div className="mt-5 space-y-2 border-t border-[var(--border-soft)] pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Business Memory
+              </p>
+              <span className="text-[11px] text-[var(--text-muted)]">{memories.length}</span>
+            </div>
+            {memories.length === 0 ? (
+              <p className="text-xs leading-5 text-[var(--text-soft)]">
+                Seravelle will build business-scoped memory summaries from your conversations
+                and approved patterns.
+              </p>
+            ) : (
+              memories.map((memory) => (
+                <div
+                  key={memory.id}
+                  className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                        {memory.conversationStatus}
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-[var(--text-strong)]">
+                        {memory.conversationTitle}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleForgetMemory(memory.id)}
+                      disabled={forgettingMemoryId === memory.id}
+                      className="text-[11px] uppercase tracking-[0.18em] text-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {forgettingMemoryId === memory.id ? "Forgetting..." : "Forget"}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-[var(--text-soft)]">
+                    {memory.summary}
+                  </p>
+                  {memory.topics.length > 0 ? (
+                    <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+                      Topics: {memory.topics.join(", ")}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+                    {formatTimestamp(memory.updatedAt)}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </aside>
@@ -593,7 +720,10 @@ export default function AssistantChat({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,rgba(212,175,55,0.04),transparent_18%),var(--surface)] px-4 py-4 sm:px-5">
+        <div
+          ref={messagesViewportRef}
+          className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,rgba(212,175,55,0.04),transparent_18%),var(--surface)] px-4 py-4 sm:px-5"
+        >
           {notice ? (
             <div className="mb-4 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
               {notice}

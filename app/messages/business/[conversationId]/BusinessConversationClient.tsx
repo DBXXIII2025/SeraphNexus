@@ -12,6 +12,7 @@ type MessageRecord = {
   created_at: string | null;
   read_at_business: string | null;
   read_at_client: string | null;
+  status?: "pending" | "sent";
 };
 
 type ThreadResponse = {
@@ -51,6 +52,25 @@ function createClientMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function mergeThreadMessages(current: MessageRecord[], next: MessageRecord[]) {
+  const merged = new Map<string, MessageRecord>();
+
+  [...current, ...next].forEach((message) => {
+    if (!message.id) {
+      return;
+    }
+
+    const existing = merged.get(message.id);
+    merged.set(message.id, existing ? { ...existing, ...message } : message);
+  });
+
+  return Array.from(merged.values()).sort((a, b) => {
+    const left = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const right = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return left - right;
+  });
+}
+
 export default function BusinessConversationClient({
   conversationId,
   businessName,
@@ -85,6 +105,8 @@ export default function BusinessConversationClient({
   const [pollingEnabled, setPollingEnabled] = useState(true);
   const authLostHandledRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesViewportRef = useRef<HTMLDivElement | null>(null);
+  const stickToBottomRef = useRef(true);
   const backHref =
     sourceHref && sourceHref.startsWith("/") ? sourceHref : "/explore";
 
@@ -152,7 +174,9 @@ export default function BusinessConversationClient({
       if (!res.ok) {
         throw new Error(data.error || "Failed to refresh conversation");
       }
-      setMessages(Array.isArray(data.messages) ? data.messages : []);
+      setMessages((current) =>
+        mergeThreadMessages(current, Array.isArray(data.messages) ? data.messages : [])
+      );
       if (data.conversation?.tag) {
         setConversationTag(data.conversation.tag);
       }
@@ -257,8 +281,55 @@ export default function BusinessConversationClient({
   }, [authPresent, conversationId, pollingEnabled, refreshThread]);
 
   useEffect(() => {
+    if (!stickToBottomRef.current) {
+      return;
+    }
+
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [sortedMessages]);
+
+  useEffect(() => {
+    const element = messagesViewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    const handleScroll = () => {
+      const distanceFromBottom =
+        element.scrollHeight - element.scrollTop - element.clientHeight;
+      stickToBottomRef.current = distanceFromBottom < 72;
+    };
+
+    handleScroll();
+    element.addEventListener("scroll", handleScroll, { passive: true });
+    return () => element.removeEventListener("scroll", handleScroll);
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!pollingEnabled) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`client-messages-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        () => {
+          void refreshThread();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [conversationId, pollingEnabled, refreshThread, supabase]);
 
   async function handleSend() {
     const body = draft.trim();
@@ -268,6 +339,18 @@ export default function BusinessConversationClient({
 
     setLoading(true);
     setError(null);
+    const optimisticId = `pending-${createClientMessageId()}`;
+    const optimisticMessage: MessageRecord = {
+      id: optimisticId,
+      sender_type: "client",
+      body,
+      created_at: new Date().toISOString(),
+      read_at_business: null,
+      read_at_client: null,
+      status: "pending",
+    };
+    stickToBottomRef.current = true;
+    setMessages((current) => mergeThreadMessages(current, [optimisticMessage]));
 
     try {
       const res = await fetch("/api/messages/send", {
@@ -283,7 +366,14 @@ export default function BusinessConversationClient({
         }),
       });
 
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+        message?: {
+          id: string;
+          body: string;
+          created_at: string | null;
+        };
+      };
       if (!accessToken && res.status === 401) {
         handleUnauthorized("sendMessage");
         return;
@@ -294,8 +384,27 @@ export default function BusinessConversationClient({
       }
 
       setDraft("");
+      if (data.message?.id) {
+        setMessages((current) =>
+          mergeThreadMessages(
+            current.filter((message) => message.id !== optimisticId),
+            [
+              {
+                id: data.message.id,
+                sender_type: "client",
+                body: data.message.body,
+                created_at: data.message.created_at,
+                read_at_business: null,
+                read_at_client: null,
+                status: "sent",
+              },
+            ]
+          )
+        );
+      }
       await refreshThread();
     } catch (err: any) {
+      setMessages((current) => current.filter((message) => message.id !== optimisticId));
       setError(err?.message || "Failed to send message");
     } finally {
       setLoading(false);
@@ -326,7 +435,7 @@ export default function BusinessConversationClient({
           ) : null}
         </div>
 
-        <div className="mt-6 max-h-[60vh] space-y-3 overflow-y-auto">
+        <div ref={messagesViewportRef} className="mt-6 max-h-[60vh] space-y-3 overflow-y-auto">
           {sortedMessages.length === 0 ? (
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-4 text-sm text-[var(--text-soft)]">
               No messages yet. Start the conversation below.
@@ -344,13 +453,15 @@ export default function BusinessConversationClient({
                 <p className="text-sm text-[var(--text-strong)]">{message.body}</p>
                 <p className="mt-2 text-xs text-[var(--text-soft)]">
                   {formatTimestamp(message.created_at)}{" "}
-                  {message.sender_type === "client"
-                    ? message.read_at_business
-                      ? "| Read by business"
-                      : "| Sent"
-                    : message.read_at_client
-                      ? "| Read"
-                      : "| New"}
+                  {message.status === "pending"
+                    ? "| Sending..."
+                    : message.sender_type === "client"
+                      ? message.read_at_business
+                        ? "| Read by business"
+                        : "| Sent"
+                      : message.read_at_client
+                        ? "| Read"
+                        : "| New"}
                 </p>
               </div>
             ))

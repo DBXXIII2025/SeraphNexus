@@ -36,6 +36,7 @@ type MessageItem = {
   created_at: string | null;
   read_at_business: string | null;
   read_at_client: string | null;
+  status?: "pending" | "sent";
 };
 
 type ThreadConversation = {
@@ -103,6 +104,25 @@ function createClientMessageId() {
   }
 
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function mergeThreadMessages(current: MessageItem[], next: MessageItem[]) {
+  const merged = new Map<string, MessageItem>();
+
+  [...current, ...next].forEach((message) => {
+    if (!message.id) {
+      return;
+    }
+
+    const existing = merged.get(message.id);
+    merged.set(message.id, existing ? { ...existing, ...message } : message);
+  });
+
+  return Array.from(merged.values()).sort((a, b) => {
+    const left = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const right = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return left - right;
+  });
 }
 
 function getContextLabel(conversation: {
@@ -212,6 +232,8 @@ export default function AdminMessagesClient({
   const [pollingEnabled, setPollingEnabled] = useState(true);
   const authLostHandledRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesViewportRef = useRef<HTMLDivElement | null>(null);
+  const stickToBottomRef = useRef(true);
 
   const syncSelectedConversationInUrl = useCallback((conversationId: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -370,7 +392,7 @@ export default function AdminMessagesClient({
       }
 
       const nextMessages = Array.isArray(data.messages) ? data.messages : [];
-      setMessages(nextMessages);
+      setMessages((current) => mergeThreadMessages(current, nextMessages));
       setThreadConversation(data.conversation || null);
       setThreadBusiness(data.business || null);
 
@@ -493,8 +515,56 @@ export default function AdminMessagesClient({
   }, [selectedConversationId, syncSelectedConversationInUrl]);
 
   useEffect(() => {
+    if (!stickToBottomRef.current) {
+      return;
+    }
+
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [sortedMessages]);
+
+  useEffect(() => {
+    const element = messagesViewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    const handleScroll = () => {
+      const distanceFromBottom =
+        element.scrollHeight - element.scrollTop - element.clientHeight;
+      stickToBottomRef.current = distanceFromBottom < 72;
+    };
+
+    handleScroll();
+    element.addEventListener("scroll", handleScroll, { passive: true });
+    return () => element.removeEventListener("scroll", handleScroll);
+  }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (!pollingEnabled || !selectedConversationId) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`admin-messages-${selectedConversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${selectedConversationId}`,
+        },
+        () => {
+          void refreshThread(selectedConversationId);
+          void refreshConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [pollingEnabled, refreshConversations, refreshThread, selectedConversationId, supabase]);
 
   async function handleSend() {
     const body = draft.trim();
@@ -504,6 +574,29 @@ export default function AdminMessagesClient({
 
     setLoading(true);
     setError(null);
+    const optimisticId = `pending-${createClientMessageId()}`;
+    const optimisticMessage: MessageItem = {
+      id: optimisticId,
+      sender_type: "business",
+      body,
+      created_at: new Date().toISOString(),
+      read_at_business: null,
+      read_at_client: null,
+      status: "pending",
+    };
+    stickToBottomRef.current = true;
+    setMessages((current) => mergeThreadMessages(current, [optimisticMessage]));
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === selectedConversationId
+          ? {
+              ...conversation,
+              last_message_at: optimisticMessage.created_at,
+              last_message_excerpt: body,
+            }
+          : conversation
+      )
+    );
 
     try {
       const res = await fetch("/api/messages/send", {
@@ -519,7 +612,14 @@ export default function AdminMessagesClient({
         }),
       });
 
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+        message?: {
+          id: string;
+          body: string;
+          created_at: string | null;
+        };
+      };
       if (res.status === 401) {
         handleUnauthorized("sendMessage");
         return;
@@ -530,9 +630,28 @@ export default function AdminMessagesClient({
 
       setDraft("");
       setIsPrivate(false);
+      if (data.message?.id) {
+        setMessages((current) =>
+          mergeThreadMessages(
+            current.filter((message) => message.id !== optimisticId),
+            [
+              {
+                id: data.message.id,
+                sender_type: "business",
+                body: data.message.body,
+                created_at: data.message.created_at,
+                read_at_business: null,
+                read_at_client: null,
+                status: "sent",
+              },
+            ]
+          )
+        );
+      }
       await refreshThread(selectedConversationId);
       await refreshConversations();
     } catch (err: unknown) {
+      setMessages((current) => current.filter((message) => message.id !== optimisticId));
       const message = err instanceof Error ? err.message : "Failed to send message";
       setError(message);
     } finally {
@@ -820,7 +939,10 @@ export default function AdminMessagesClient({
               </div>
             </div>
 
-            <div className="mt-5 max-h-[60vh] space-y-3 overflow-y-auto rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
+            <div
+              ref={messagesViewportRef}
+              className="mt-5 max-h-[60vh] space-y-3 overflow-y-auto rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4"
+            >
               {sortedMessages.length === 0 ? (
                 <p className="text-sm text-[var(--text-soft)]">No messages yet.</p>
               ) : (
@@ -837,13 +959,15 @@ export default function AdminMessagesClient({
                     <div className="mt-2 flex items-center justify-between gap-3">
                       <p className="text-xs text-[var(--text-muted)]">
                         {formatTimestamp(message.created_at)}{" "}
-                        {message.sender_type === "business"
-                          ? message.read_at_client
-                            ? "| Client read"
-                            : "| Awaiting client read"
-                          : message.read_at_business
-                            ? "| Business read"
-                            : "| Awaiting business reply"}
+                        {message.status === "pending"
+                          ? "| Sending..."
+                          : message.sender_type === "business"
+                            ? message.read_at_client
+                              ? "| Client read"
+                              : "| Awaiting client read"
+                            : message.read_at_business
+                              ? "| Business read"
+                              : "| Awaiting business reply"}
                       </p>
                       {message.sender_type === "business" &&
                       canUseAdvancedMessagingTools ? (

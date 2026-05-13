@@ -153,6 +153,16 @@ export type AssistantMemoryBlock = {
   updatedAt: string;
 };
 
+export type AssistantMemorySummaryRecord = {
+  id: string;
+  conversationId: string;
+  conversationTitle: string;
+  conversationStatus: AssistantConversationStatus;
+  summary: string;
+  topics: string[];
+  updatedAt: string;
+};
+
 export type AssistantBusinessScope = {
   id: string;
   name: string | null;
@@ -200,6 +210,11 @@ export type AssistantBusinessOption = {
 export type AssistantConversationSelection = {
   selectedConversation: AssistantConversationRecord | null;
   conversations: AssistantConversationRecord[];
+  storageError: string | null;
+};
+
+export type AssistantMemorySummaryLoadResult = {
+  memories: AssistantMemorySummaryRecord[];
   storageError: string | null;
 };
 
@@ -1384,6 +1399,7 @@ async function syncAssistantConversationDetails(args: {
 }
 
 function buildAssistantMemorySummary(args: {
+  business: Pick<AssistantBusinessScope, "name" | "business_type" | "service_category">;
   title: string | null;
   messages: Array<Pick<AssistantMessageRow, "role" | "content" | "created_at">>;
   actions: AssistantActionRecord[];
@@ -1407,10 +1423,21 @@ function buildAssistantMemorySummary(args: {
         : null;
     })
     .filter(Boolean);
+  const businessProfileHighlights = [
+    args.business.name ? `Business: ${args.business.name}` : null,
+    args.business.business_type ? `Type: ${args.business.business_type}` : null,
+    args.business.service_category
+      ? `Category: ${args.business.service_category}`
+      : null,
+  ].filter(Boolean) as string[];
 
   const summaryLines = [
+    businessProfileHighlights[0] || null,
+    businessProfileHighlights[1] || null,
+    businessProfileHighlights[2] || null,
     args.title ? `Conversation: ${args.title}` : null,
     userHighlights[0] ? `Primary request: ${userHighlights[0]}` : null,
+    userHighlights[1] ? `Owner preference: ${userHighlights[1]}` : null,
     assistantHighlights[0] ? `Seravelle guidance: ${assistantHighlights[0]}` : null,
     actionHighlights.length > 0 ? `Drafts: ${actionHighlights.join("; ")}` : null,
   ].filter(Boolean) as string[];
@@ -1418,6 +1445,7 @@ function buildAssistantMemorySummary(args: {
   const summary = truncateText(summaryLines.join(" "), 1200);
   const topics = extractKeywordTokens(
     [
+      ...businessProfileHighlights,
       args.title || "",
       ...userHighlights,
       ...assistantHighlights,
@@ -1449,7 +1477,7 @@ async function upsertAssistantMemorySummary(args: {
   const [conversationResult, messageResult, actionResult] = await Promise.all([
     supabase
       .from("assistant_conversations")
-      .select("id,title,status,updated_at,last_message_at")
+      .select("id,business_id,title,status,updated_at,last_message_at")
       .eq("id", args.conversationId)
       .maybeSingle(),
     supabase
@@ -1475,7 +1503,20 @@ async function upsertAssistantMemorySummary(args: {
     return;
   }
 
+  const { data: businessData } = await supabase
+    .from("businesses")
+    .select("id,name,business_type,service_category")
+    .eq("id", args.businessId)
+    .maybeSingle();
+
   const summaryPayload = buildAssistantMemorySummary({
+    business: {
+      name: businessData?.name ? String(businessData.name) : null,
+      business_type: businessData?.business_type ? String(businessData.business_type) : null,
+      service_category: businessData?.service_category
+        ? String(businessData.service_category)
+        : null,
+    },
     title: conversationResult.data.title,
     messages: ((messageResult.data || []) as Array<
       Pick<AssistantMessageRow, "role" | "content" | "created_at">
@@ -1885,6 +1926,100 @@ export async function loadRelevantAssistantMemories(args: {
   return Array.from(snippets.values()).slice(0, args.limit || 3);
 }
 
+export async function loadAssistantMemorySummaries(args: {
+  businessId: string;
+  userId: string;
+  limit?: number;
+}): Promise<AssistantMemorySummaryLoadResult> {
+  const supabase = createAdminClient();
+  const [memoryResult, conversationResult] = await Promise.all([
+    supabase
+      .from("assistant_memory_summaries")
+      .select("id,business_id,user_id,assistant_conversation_id,summary,topics,created_at,updated_at")
+      .eq("business_id", args.businessId)
+      .eq("user_id", args.userId)
+      .order("updated_at", { ascending: false })
+      .limit(args.limit || 12),
+    supabase
+      .from("assistant_conversations")
+      .select("id,title,status")
+      .eq("business_id", args.businessId)
+      .eq("user_id", args.userId),
+  ]);
+
+  if (memoryResult.error) {
+    return {
+      memories: [],
+      storageError:
+        isMissingTableError(memoryResult.error)
+          ? ASSISTANT_CONVERSATION_SETUP_ERROR
+          : memoryResult.error.message || "Seravelle memories could not be loaded.",
+    };
+  }
+
+  const conversationMap = new Map(
+    ((conversationResult.data || []) as AssistantConversationRow[]).map((conversation) => [
+      conversation.id,
+      conversation,
+    ])
+  );
+
+  const memories = ((memoryResult.data || []) as AssistantMemorySummaryRow[]).map((row) => {
+    const conversation = conversationMap.get(row.assistant_conversation_id);
+    return {
+      id: row.id,
+      conversationId: row.assistant_conversation_id,
+      conversationTitle: conversation?.title || "Earlier Seravelle discussion",
+      conversationStatus: (conversation?.status || "archived") as AssistantConversationStatus,
+      summary: row.summary,
+      topics: row.topics || [],
+      updatedAt: row.updated_at,
+    } satisfies AssistantMemorySummaryRecord;
+  });
+
+  return {
+    memories,
+    storageError: null,
+  };
+}
+
+export async function deleteAssistantMemorySummary(args: {
+  id: string;
+  businessId: string;
+  userId: string;
+}) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("assistant_memory_summaries")
+    .delete()
+    .eq("id", args.id)
+    .eq("business_id", args.businessId)
+    .eq("user_id", args.userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return {
+      ok: false as const,
+      error:
+        isMissingTableError(error)
+          ? ASSISTANT_CONVERSATION_SETUP_ERROR
+          : error.message || "Seravelle memory could not be removed.",
+    };
+  }
+
+  if (!data?.id) {
+    return {
+      ok: false as const,
+      error: "Seravelle memory not found.",
+    };
+  }
+
+  return {
+    ok: true as const,
+  };
+}
+
 export async function loadAssistantMessages(args: {
   businessId: string;
   userId: string;
@@ -1984,6 +2119,11 @@ export async function insertAssistantMessages(args: {
     conversationId: args.assistantConversationId,
     occurredAt: latestCreatedAt,
     suggestedTitle: firstUserMessage?.content || null,
+  });
+  await upsertAssistantMemorySummary({
+    businessId: args.businessId,
+    userId: args.userId,
+    conversationId: args.assistantConversationId,
   });
 
   return {
@@ -2128,7 +2268,15 @@ export async function insertAssistantActionDraft(args: {
 
   return {
     ok: true as const,
-    action: normalizeActionRecord(data as AssistantActionRow),
+    action: (() => {
+      const normalized = normalizeActionRecord(data as AssistantActionRow);
+      void upsertAssistantMemorySummary({
+        businessId: normalized.business_id,
+        userId: normalized.user_id,
+        conversationId: normalized.assistant_conversation_id || args.assistantConversationId,
+      });
+      return normalized;
+    })(),
   };
 }
 
@@ -2185,9 +2333,18 @@ export async function updateAssistantAction(args: {
     };
   }
 
+  const normalized = normalizeActionRecord(data as AssistantActionRow);
+  if (normalized.assistant_conversation_id) {
+    await upsertAssistantMemorySummary({
+      businessId: normalized.business_id,
+      userId: normalized.user_id,
+      conversationId: normalized.assistant_conversation_id,
+    });
+  }
+
   return {
     ok: true as const,
-    action: normalizeActionRecord(data as AssistantActionRow),
+    action: normalized,
   };
 }
 
