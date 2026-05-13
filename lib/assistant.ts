@@ -325,6 +325,15 @@ function shouldRetrieveAssistantMemory(message: string) {
   return MEMORY_RECALL_PATTERNS.some((pattern) => pattern.test(message));
 }
 
+function getTimestamp(value: string | null | undefined) {
+  if (!value) {
+    return 0;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
