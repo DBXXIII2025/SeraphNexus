@@ -35,7 +35,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="flex min-h-screen flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
+        <div className="app-root-shell flex flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
           {!hideGlobalHeader ? <Navbar /> : null}
           <div className="flex-1">{children}</div>
           {!hideGlobalFooter ? (
