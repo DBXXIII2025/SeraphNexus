@@ -368,6 +368,7 @@ export interface Database {
           id: string;
           business_id: string;
           user_id: string;
+          assistant_conversation_id: string | null;
           role: "user" | "assistant";
           content: string;
           created_at: string;
@@ -376,6 +377,7 @@ export interface Database {
           id?: string;
           business_id: string;
           user_id: string;
+          assistant_conversation_id?: string | null;
           role: "user" | "assistant";
           content: string;
           created_at?: string;
@@ -384,6 +386,7 @@ export interface Database {
           id?: string;
           business_id?: string;
           user_id?: string;
+          assistant_conversation_id?: string | null;
           role?: "user" | "assistant";
           content?: string;
           created_at?: string;
@@ -395,6 +398,7 @@ export interface Database {
           id: string;
           business_id: string;
           user_id: string;
+          assistant_conversation_id: string | null;
           action_type: string;
           status: "draft" | "approved" | "rejected" | "executed" | "failed";
           payload: Json;
@@ -406,6 +410,7 @@ export interface Database {
           id?: string;
           business_id: string;
           user_id: string;
+          assistant_conversation_id?: string | null;
           action_type: string;
           status?: "draft" | "approved" | "rejected" | "executed" | "failed";
           payload?: Json;
@@ -417,10 +422,77 @@ export interface Database {
           id?: string;
           business_id?: string;
           user_id?: string;
+          assistant_conversation_id?: string | null;
           action_type?: string;
           status?: "draft" | "approved" | "rejected" | "executed" | "failed";
           payload?: Json;
           result?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+
+      assistant_conversations: {
+        Row: {
+          id: string;
+          business_id: string;
+          user_id: string;
+          title: string | null;
+          status: "active" | "archived" | "cleared";
+          created_at: string;
+          updated_at: string;
+          last_message_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          user_id: string;
+          title?: string | null;
+          status?: "active" | "archived" | "cleared";
+          created_at?: string;
+          updated_at?: string;
+          last_message_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          user_id?: string;
+          title?: string | null;
+          status?: "active" | "archived" | "cleared";
+          created_at?: string;
+          updated_at?: string;
+          last_message_at?: string;
+        };
+      };
+
+      assistant_memory_summaries: {
+        Row: {
+          id: string;
+          business_id: string;
+          user_id: string;
+          assistant_conversation_id: string;
+          summary: string;
+          topics: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          user_id: string;
+          assistant_conversation_id: string;
+          summary: string;
+          topics?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          user_id?: string;
+          assistant_conversation_id?: string;
+          summary?: string;
+          topics?: string[];
           created_at?: string;
           updated_at?: string;
         };

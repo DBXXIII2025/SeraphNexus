@@ -13,6 +13,10 @@ type JsonObject = Record<string, unknown>;
 
 type AssistantActionRow =
   Database["public"]["Tables"]["assistant_actions"]["Row"];
+type AssistantConversationRow =
+  Database["public"]["Tables"]["assistant_conversations"]["Row"];
+type AssistantMemorySummaryRow =
+  Database["public"]["Tables"]["assistant_memory_summaries"]["Row"];
 
 type AssistantBusinessRow = Pick<
   Database["public"]["Tables"]["businesses"]["Row"],
@@ -39,6 +43,8 @@ export type AssistantActionStatus =
   | "rejected"
   | "executed"
   | "failed";
+
+export type AssistantConversationStatus = "active" | "archived" | "cleared";
 
 export type AssistantClientReplyPayload = {
   summary: string;
@@ -99,7 +105,14 @@ export type AssistantActionPayload =
 
 export type AssistantActionRecord = Pick<
   AssistantActionRow,
-  "id" | "business_id" | "user_id" | "action_type" | "status" | "created_at" | "updated_at"
+  | "id"
+  | "business_id"
+  | "user_id"
+  | "assistant_conversation_id"
+  | "action_type"
+  | "status"
+  | "created_at"
+  | "updated_at"
 > & {
   payload: AssistantActionPayload;
   result: JsonObject;
@@ -118,9 +131,25 @@ export type AssistantCompletionEnvelope = {
 
 export type AssistantMessageRecord = Pick<
   AssistantMessageRow,
-  "id" | "role" | "content" | "created_at"
+  "id" | "assistant_conversation_id" | "role" | "content" | "created_at"
 > & {
   status?: "pending" | "failed" | "sent";
+};
+
+export type AssistantConversationRecord = Pick<
+  AssistantConversationRow,
+  "id" | "title" | "status" | "created_at" | "updated_at" | "last_message_at"
+> & {
+  latestPreview: string | null;
+};
+
+export type AssistantMemoryBlock = {
+  conversationId: string;
+  title: string;
+  status: AssistantConversationStatus;
+  summary: string;
+  topics: string[];
+  updatedAt: string;
 };
 
 export type AssistantBusinessScope = {
@@ -167,7 +196,15 @@ export type AssistantBusinessOption = {
   isPublished: boolean;
 };
 
+export type AssistantConversationSelection = {
+  selectedConversation: AssistantConversationRecord | null;
+  conversations: AssistantConversationRecord[];
+  storageError: string | null;
+};
+
 const MISSING_TABLE_CODES = new Set(["42P01", "42703", "PGRST205"]);
+const ASSISTANT_CONVERSATION_SETUP_ERROR =
+  "Seravelle conversation storage is not installed yet. Apply the assistant conversation migration first.";
 const ALLOWED_ACTION_TYPES = new Set<AssistantActionType>([
   "draft_client_reply",
   "draft_service_create",
@@ -175,6 +212,54 @@ const ALLOWED_ACTION_TYPES = new Set<AssistantActionType>([
   "draft_menu_item_create",
   "draft_promo_code_create",
   "draft_booking_summary",
+]);
+const MEMORY_RECALL_PATTERNS = [
+  /\brecall\b/i,
+  /\bremember\b/i,
+  /\bprevious\b/i,
+  /\bearlier\b/i,
+  /\bbefore\b/i,
+  /\blast week\b/i,
+  /\blast month\b/i,
+  /\bwe discussed\b/i,
+  /\bwe talked about\b/i,
+  /\bwhat did we\b/i,
+];
+const MEMORY_STOP_WORDS = new Set([
+  "about",
+  "after",
+  "again",
+  "already",
+  "also",
+  "and",
+  "been",
+  "before",
+  "could",
+  "from",
+  "have",
+  "into",
+  "just",
+  "last",
+  "like",
+  "made",
+  "more",
+  "need",
+  "that",
+  "them",
+  "then",
+  "they",
+  "this",
+  "those",
+  "what",
+  "when",
+  "where",
+  "which",
+  "with",
+  "would",
+  "your",
+  "seravelle",
+  "workspace",
+  "business",
 ]);
 
 function isMissingTableError(error: { code?: string | null } | null | undefined) {
@@ -198,6 +283,46 @@ function normalizePrice(value: unknown) {
 function normalizeDuration(value: unknown) {
   const duration = Number(value);
   return Number.isFinite(duration) && duration > 0 ? Math.round(duration) : 30;
+}
+
+function normalizeConversationTitle(value: unknown) {
+  const title = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return title ? title.slice(0, 120) : null;
+}
+
+function truncateText(value: string, maxLength: number) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 1).trimEnd()}…` : value;
+}
+
+function buildConversationTitleFromText(value: string | null | undefined) {
+  const normalized = normalizeConversationTitle(value);
+  return normalized ? truncateText(normalized, 72) : "Untitled conversation";
+}
+
+function extractKeywordTokens(value: string, limit = 8) {
+  const tokens = Array.from(
+    new Set(
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]+/g, " ")
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter(
+          (token) =>
+            token.length >= 3 &&
+            !MEMORY_STOP_WORDS.has(token) &&
+            !/^\d+$/.test(token)
+        )
+    )
+  );
+
+  return tokens.slice(0, limit);
+}
+
+function shouldRetrieveAssistantMemory(message: string) {
+  return MEMORY_RECALL_PATTERNS.some((pattern) => pattern.test(message));
 }
 
 function nowIso() {
@@ -265,6 +390,7 @@ function normalizeActionRecord(row: AssistantActionRow): AssistantActionRecord {
     id: row.id,
     business_id: row.business_id,
     user_id: row.user_id,
+    assistant_conversation_id: row.assistant_conversation_id,
     action_type: row.action_type as AssistantActionType,
     status: row.status as AssistantActionStatus,
     payload:
@@ -277,6 +403,21 @@ function normalizeActionRecord(row: AssistantActionRow): AssistantActionRecord {
         : {},
     created_at: row.created_at,
     updated_at: row.updated_at,
+  };
+}
+
+function normalizeConversationRecord(
+  row: AssistantConversationRow,
+  latestPreview: string | null
+): AssistantConversationRecord {
+  return {
+    id: row.id,
+    title: row.title,
+    status: row.status as AssistantConversationStatus,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    last_message_at: row.last_message_at,
+    latestPreview,
   };
 }
 
@@ -1041,17 +1182,680 @@ export async function buildAssistantContextSummary(
   };
 }
 
+function sortAssistantConversations(
+  left: AssistantConversationRecord,
+  right: AssistantConversationRecord
+) {
+  const statusOrder: Record<AssistantConversationStatus, number> = {
+    active: 0,
+    archived: 1,
+    cleared: 2,
+  };
+  const statusDelta = statusOrder[left.status] - statusOrder[right.status];
+  if (statusDelta !== 0) {
+    return statusDelta;
+  }
+
+  return (
+    getTimestamp(right.last_message_at || right.updated_at) -
+    getTimestamp(left.last_message_at || left.updated_at)
+  );
+}
+
+async function loadAssistantConversationPreviewMap(
+  conversationIds: string[]
+) {
+  const previews = new Map<string, { preview: string; createdAt: string }>();
+  if (conversationIds.length === 0) {
+    return previews;
+  }
+
+  const supabase = createAdminClient() as any;
+  const [messageResult, actionResult] = await Promise.all([
+    supabase
+      .from("assistant_messages")
+      .select("assistant_conversation_id,content,created_at")
+      .in("assistant_conversation_id", conversationIds)
+      .order("created_at", { ascending: false })
+      .limit(Math.max(40, conversationIds.length * 8)),
+    supabase
+      .from("assistant_actions")
+      .select("assistant_conversation_id,payload,created_at")
+      .in("assistant_conversation_id", conversationIds)
+      .order("created_at", { ascending: false })
+      .limit(Math.max(24, conversationIds.length * 4)),
+  ]);
+
+  if (!messageResult.error) {
+    for (const row of messageResult.data || []) {
+      const conversationId = String(row.assistant_conversation_id || "").trim();
+      if (!conversationId || previews.has(conversationId)) {
+        continue;
+      }
+
+      const preview = normalizeText(row.content, 240);
+      if (!preview) {
+        continue;
+      }
+
+      previews.set(conversationId, {
+        preview: truncateText(preview, 120),
+        createdAt: String(row.created_at || ""),
+      });
+    }
+  }
+
+  if (!actionResult.error) {
+    for (const row of actionResult.data || []) {
+      const conversationId = String(row.assistant_conversation_id || "").trim();
+      if (!conversationId || previews.has(conversationId)) {
+        continue;
+      }
+
+      const payload =
+        row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
+          ? (row.payload as JsonObject)
+          : {};
+      const summary = summaryFromPayload(payload);
+      if (!summary) {
+        continue;
+      }
+
+      previews.set(conversationId, {
+        preview: truncateText(summary, 120),
+        createdAt: String(row.created_at || ""),
+      });
+    }
+  }
+
+  return previews;
+}
+
+export async function createFreshAssistantConversation(args: {
+  businessId: string;
+  userId: string;
+  title?: string | null;
+  status?: AssistantConversationStatus;
+}) {
+  const supabase = createAdminClient();
+  const timestamp = nowIso();
+  const { data, error } = await supabase
+    .from("assistant_conversations")
+    .insert({
+      business_id: args.businessId,
+      user_id: args.userId,
+      title: normalizeConversationTitle(args.title),
+      status: args.status || "active",
+      updated_at: timestamp,
+      last_message_at: timestamp,
+    })
+    .select("id,business_id,user_id,title,status,created_at,updated_at,last_message_at")
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      ok: false as const,
+      error:
+        isMissingTableError(error)
+          ? ASSISTANT_CONVERSATION_SETUP_ERROR
+          : error?.message || "Seravelle conversation could not be created.",
+    };
+  }
+
+  return {
+    ok: true as const,
+    conversation: normalizeConversationRecord(
+      data as AssistantConversationRow,
+      null
+    ),
+  };
+}
+
+async function syncAssistantConversationDetails(args: {
+  conversationId: string;
+  occurredAt?: string | null;
+  suggestedTitle?: string | null;
+}) {
+  const supabase = createAdminClient();
+  const updates: Record<string, unknown> = {
+    updated_at: args.occurredAt || nowIso(),
+  };
+
+  if (args.occurredAt) {
+    updates.last_message_at = args.occurredAt;
+  }
+
+  const existing = await supabase
+    .from("assistant_conversations")
+    .select("id,title")
+    .eq("id", args.conversationId)
+    .maybeSingle();
+
+  if (!existing.error && existing.data && !existing.data.title && args.suggestedTitle) {
+    updates.title = buildConversationTitleFromText(args.suggestedTitle);
+  }
+
+  await supabase
+    .from("assistant_conversations")
+    .update(updates)
+    .eq("id", args.conversationId);
+}
+
+function buildAssistantMemorySummary(args: {
+  title: string | null;
+  messages: Array<Pick<AssistantMessageRow, "role" | "content" | "created_at">>;
+  actions: AssistantActionRecord[];
+}) {
+  const userHighlights = args.messages
+    .filter((message) => message.role === "user")
+    .slice(-3)
+    .map((message) => truncateText(String(message.content || "").trim(), 160))
+    .filter(Boolean);
+  const assistantHighlights = args.messages
+    .filter((message) => message.role === "assistant")
+    .slice(-2)
+    .map((message) => truncateText(String(message.content || "").trim(), 180))
+    .filter(Boolean);
+  const actionHighlights = args.actions
+    .slice(-3)
+    .map((action) => {
+      const summary = summaryFromPayload(action.payload as JsonObject);
+      return summary
+        ? `${formatActionTypeForMemory(action.action_type)}: ${summary}`
+        : null;
+    })
+    .filter(Boolean);
+
+  const summaryLines = [
+    args.title ? `Conversation: ${args.title}` : null,
+    userHighlights[0] ? `Primary request: ${userHighlights[0]}` : null,
+    assistantHighlights[0] ? `Seravelle guidance: ${assistantHighlights[0]}` : null,
+    actionHighlights.length > 0 ? `Drafts: ${actionHighlights.join("; ")}` : null,
+  ].filter(Boolean) as string[];
+
+  const summary = truncateText(summaryLines.join(" "), 1200);
+  const topics = extractKeywordTokens(
+    [
+      args.title || "",
+      ...userHighlights,
+      ...assistantHighlights,
+      ...actionHighlights,
+    ].join(" "),
+    10
+  );
+
+  return {
+    summary,
+    topics,
+  };
+}
+
+function formatActionTypeForMemory(value: string) {
+  return value
+    .replace(/^draft_/, "")
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+async function upsertAssistantMemorySummary(args: {
+  businessId: string;
+  userId: string;
+  conversationId: string;
+}) {
+  const supabase = createAdminClient();
+  const [conversationResult, messageResult, actionResult] = await Promise.all([
+    supabase
+      .from("assistant_conversations")
+      .select("id,title,status,updated_at,last_message_at")
+      .eq("id", args.conversationId)
+      .maybeSingle(),
+    supabase
+      .from("assistant_messages")
+      .select("role,content,created_at")
+      .eq("assistant_conversation_id", args.conversationId)
+      .order("created_at", { ascending: true })
+      .limit(24),
+    supabase
+      .from("assistant_actions")
+      .select("id,business_id,user_id,assistant_conversation_id,action_type,status,payload,result,created_at,updated_at")
+      .eq("assistant_conversation_id", args.conversationId)
+      .order("created_at", { ascending: true })
+      .limit(12),
+  ]);
+
+  if (
+    conversationResult.error ||
+    !conversationResult.data ||
+    messageResult.error ||
+    actionResult.error
+  ) {
+    return;
+  }
+
+  const summaryPayload = buildAssistantMemorySummary({
+    title: conversationResult.data.title,
+    messages: ((messageResult.data || []) as Array<
+      Pick<AssistantMessageRow, "role" | "content" | "created_at">
+    >),
+    actions: ((actionResult.data || []) as AssistantActionRow[]).map(normalizeActionRecord),
+  });
+
+  if (!summaryPayload.summary) {
+    return;
+  }
+
+  await supabase.from("assistant_memory_summaries").upsert(
+    {
+      business_id: args.businessId,
+      user_id: args.userId,
+      assistant_conversation_id: args.conversationId,
+      summary: summaryPayload.summary,
+      topics: summaryPayload.topics,
+      updated_at: nowIso(),
+    },
+    {
+      onConflict: "assistant_conversation_id",
+    }
+  );
+}
+
+async function ensureLegacyAssistantConversationData(args: {
+  businessId: string;
+  userId: string;
+}) {
+  const supabase = createAdminClient() as any;
+  const [legacyMessagesResult, legacyActionsResult, conversationsResult] = await Promise.all([
+    supabase
+      .from("assistant_messages")
+      .select("id,role,content,created_at")
+      .eq("business_id", args.businessId)
+      .eq("user_id", args.userId)
+      .is("assistant_conversation_id", null)
+      .order("created_at", { ascending: true })
+      .limit(80),
+    supabase
+      .from("assistant_actions")
+      .select("id")
+      .eq("business_id", args.businessId)
+      .eq("user_id", args.userId)
+      .is("assistant_conversation_id", null)
+      .limit(40),
+    supabase
+      .from("assistant_conversations")
+      .select("id,title,status,created_at,updated_at,last_message_at")
+      .eq("business_id", args.businessId)
+      .eq("user_id", args.userId)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  if (
+    legacyMessagesResult.error ||
+    legacyActionsResult.error ||
+    conversationsResult.error
+  ) {
+    if (
+      isMissingTableError(legacyMessagesResult.error) ||
+      isMissingTableError(legacyActionsResult.error) ||
+      isMissingTableError(conversationsResult.error)
+    ) {
+      return ASSISTANT_CONVERSATION_SETUP_ERROR;
+    }
+
+    return null;
+  }
+
+  const legacyMessages = legacyMessagesResult.data || [];
+  const legacyActions = legacyActionsResult.data || [];
+  if (legacyMessages.length === 0 && legacyActions.length === 0) {
+    return null;
+  }
+
+  const existingConversations = (conversationsResult.data || []) as AssistantConversationRow[];
+  const firstUserMessage = legacyMessages.find((message: AssistantMessageRow) => message.role === "user");
+  const createdConversation = await createFreshAssistantConversation({
+    businessId: args.businessId,
+    userId: args.userId,
+    title: firstUserMessage?.content || "Earlier Seravelle discussion",
+    status: existingConversations.length === 0 ? "active" : "archived",
+  });
+
+  if (!createdConversation.ok) {
+    return createdConversation.error;
+  }
+
+  const conversationId = createdConversation.conversation.id;
+
+  await Promise.all([
+    legacyMessages.length > 0
+      ? supabase
+          .from("assistant_messages")
+          .update({ assistant_conversation_id: conversationId })
+          .eq("business_id", args.businessId)
+          .eq("user_id", args.userId)
+          .is("assistant_conversation_id", null)
+      : Promise.resolve(),
+    legacyActions.length > 0
+      ? supabase
+          .from("assistant_actions")
+          .update({ assistant_conversation_id: conversationId })
+          .eq("business_id", args.businessId)
+          .eq("user_id", args.userId)
+          .is("assistant_conversation_id", null)
+      : Promise.resolve(),
+  ]);
+
+  if (existingConversations.length > 0) {
+    await upsertAssistantMemorySummary({
+      businessId: args.businessId,
+      userId: args.userId,
+      conversationId,
+    });
+  }
+
+  return null;
+}
+
+export async function loadAssistantConversations(args: {
+  businessId: string;
+  userId: string;
+  requestedConversationId?: string | null;
+  limit?: number;
+}): Promise<AssistantConversationSelection> {
+  const legacyError = await ensureLegacyAssistantConversationData({
+    businessId: args.businessId,
+    userId: args.userId,
+  });
+
+  if (legacyError) {
+    return {
+      selectedConversation: null,
+      conversations: [],
+      storageError: legacyError,
+    };
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("assistant_conversations")
+    .select("id,title,status,created_at,updated_at,last_message_at")
+    .eq("business_id", args.businessId)
+    .eq("user_id", args.userId)
+    .order("updated_at", { ascending: false })
+    .limit(args.limit || 24);
+
+  if (error) {
+    return {
+      selectedConversation: null,
+      conversations: [],
+      storageError:
+        isMissingTableError(error)
+          ? ASSISTANT_CONVERSATION_SETUP_ERROR
+          : error.message || "Seravelle conversations could not be loaded.",
+    };
+  }
+
+  let rows = (data || []) as AssistantConversationRow[];
+  if (rows.length === 0) {
+    const created = await createFreshAssistantConversation({
+      businessId: args.businessId,
+      userId: args.userId,
+      status: "active",
+    });
+
+    if (!created.ok) {
+      return {
+        selectedConversation: null,
+        conversations: [],
+        storageError: created.error,
+      };
+    }
+
+    rows = [
+      {
+        id: created.conversation.id,
+        business_id: args.businessId,
+        user_id: args.userId,
+        title: created.conversation.title,
+        status: created.conversation.status,
+        created_at: created.conversation.created_at,
+        updated_at: created.conversation.updated_at,
+        last_message_at: created.conversation.last_message_at,
+      } satisfies AssistantConversationRow,
+    ];
+  }
+
+  const previewMap = await loadAssistantConversationPreviewMap(rows.map((row) => row.id));
+  const conversations = rows
+    .map((row) =>
+      normalizeConversationRecord(
+        row,
+        previewMap.get(row.id)?.preview || null
+      )
+    )
+    .sort(sortAssistantConversations);
+
+  const selectedConversation =
+    conversations.find((conversation) => conversation.id === args.requestedConversationId) ||
+    conversations.find((conversation) => conversation.status === "active") ||
+    conversations[0] ||
+    null;
+
+  return {
+    selectedConversation,
+    conversations,
+    storageError: null,
+  };
+}
+
+export async function archiveAssistantConversationAndStartFresh(args: {
+  businessId: string;
+  userId: string;
+  currentConversationId: string;
+  archiveStatus: "archived" | "cleared";
+}) {
+  const supabase = createAdminClient();
+  const currentResult = await supabase
+    .from("assistant_conversations")
+    .select("id,business_id,user_id,title,status,created_at,updated_at,last_message_at")
+    .eq("id", args.currentConversationId)
+    .eq("business_id", args.businessId)
+    .eq("user_id", args.userId)
+    .maybeSingle();
+
+  if (currentResult.error || !currentResult.data) {
+    return {
+      ok: false as const,
+      error:
+        isMissingTableError(currentResult.error)
+          ? ASSISTANT_CONVERSATION_SETUP_ERROR
+          : currentResult.error?.message || "Seravelle conversation could not be updated.",
+    };
+  }
+
+  await upsertAssistantMemorySummary({
+    businessId: args.businessId,
+    userId: args.userId,
+    conversationId: args.currentConversationId,
+  });
+
+  const archivedAt = nowIso();
+  const { error: archiveError } = await supabase
+    .from("assistant_conversations")
+    .update({
+      status: args.archiveStatus,
+      updated_at: archivedAt,
+    })
+    .eq("id", args.currentConversationId);
+
+  if (archiveError) {
+    return {
+      ok: false as const,
+      error:
+        isMissingTableError(archiveError)
+          ? ASSISTANT_CONVERSATION_SETUP_ERROR
+          : archiveError.message || "Seravelle conversation could not be archived.",
+    };
+  }
+
+  const created = await createFreshAssistantConversation({
+    businessId: args.businessId,
+    userId: args.userId,
+    status: "active",
+  });
+
+  if (!created.ok) {
+    return created;
+  }
+
+  return {
+    ok: true as const,
+    archivedConversationId: args.currentConversationId,
+    conversation: created.conversation,
+  };
+}
+
+export async function loadRelevantAssistantMemories(args: {
+  businessId: string;
+  userId: string;
+  currentConversationId: string | null;
+  message: string;
+  limit?: number;
+}) {
+  if (!shouldRetrieveAssistantMemory(args.message)) {
+    return [] as AssistantMemoryBlock[];
+  }
+
+  const supabase = createAdminClient();
+  const { data: conversations, error: conversationsError } = await supabase
+    .from("assistant_conversations")
+    .select("id,title,status,updated_at,last_message_at")
+    .eq("business_id", args.businessId)
+    .eq("user_id", args.userId)
+    .in("status", ["archived", "cleared"])
+    .order("updated_at", { ascending: false })
+    .limit(24);
+
+  if (conversationsError || !conversations?.length) {
+    return [] as AssistantMemoryBlock[];
+  }
+
+  const archivedConversations = (conversations as AssistantConversationRow[]).filter(
+    (conversation) => conversation.id !== args.currentConversationId
+  );
+  if (archivedConversations.length === 0) {
+    return [] as AssistantMemoryBlock[];
+  }
+
+  const conversationMap = new Map(
+    archivedConversations.map((conversation) => [conversation.id, conversation])
+  );
+  const tokens = extractKeywordTokens(args.message, 6);
+  const conversationIds = archivedConversations.map((conversation) => conversation.id);
+
+  const { data: summaries, error: summariesError } = await supabase
+    .from("assistant_memory_summaries")
+    .select("id,business_id,user_id,assistant_conversation_id,summary,topics,created_at,updated_at")
+    .eq("business_id", args.businessId)
+    .eq("user_id", args.userId)
+    .in("assistant_conversation_id", conversationIds)
+    .order("updated_at", { ascending: false })
+    .limit(48);
+
+  const rankedSummaries = ((summariesError ? [] : summaries) || [])
+    .map((row) => {
+      const record = row as AssistantMemorySummaryRow;
+      const haystack = `${record.summary} ${(record.topics || []).join(" ")}`.toLowerCase();
+      const score = tokens.reduce(
+        (total, token) => total + (haystack.includes(token) ? 3 : 0),
+        0
+      );
+
+      return {
+        record,
+        score,
+      };
+    })
+    .filter((entry) => entry.score > 0 || tokens.length === 0)
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        getTimestamp(right.record.updated_at) - getTimestamp(left.record.updated_at)
+    )
+    .slice(0, args.limit || 3)
+    .map(({ record }) => {
+      const conversation = conversationMap.get(record.assistant_conversation_id);
+      return {
+        conversationId: record.assistant_conversation_id,
+        title: conversation?.title || "Earlier Seravelle discussion",
+        status: (conversation?.status || "archived") as AssistantConversationStatus,
+        summary: record.summary,
+        topics: record.topics || [],
+        updatedAt: record.updated_at,
+      } satisfies AssistantMemoryBlock;
+    });
+
+  if (rankedSummaries.length > 0) {
+    return rankedSummaries;
+  }
+
+  const { data: messageMatches, error: messageMatchesError } = await supabase
+    .from("assistant_messages")
+    .select("assistant_conversation_id,role,content,created_at")
+    .eq("business_id", args.businessId)
+    .eq("user_id", args.userId)
+    .in("assistant_conversation_id", conversationIds)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (messageMatchesError) {
+    return [] as AssistantMemoryBlock[];
+  }
+
+  const snippets = new Map<string, AssistantMemoryBlock>();
+  for (const row of messageMatches || []) {
+    const conversationId = String(row.assistant_conversation_id || "").trim();
+    if (!conversationId || snippets.has(conversationId)) {
+      continue;
+    }
+
+    const content = String(row.content || "").trim();
+    if (!content) {
+      continue;
+    }
+
+    const haystack = content.toLowerCase();
+    if (tokens.length > 0 && !tokens.some((token) => haystack.includes(token))) {
+      continue;
+    }
+
+    const conversation = conversationMap.get(conversationId);
+    snippets.set(conversationId, {
+      conversationId,
+      title: conversation?.title || "Earlier Seravelle discussion",
+      status: (conversation?.status || "archived") as AssistantConversationStatus,
+      summary: truncateText(content, 320),
+      topics: tokens,
+      updatedAt: String(row.created_at || conversation?.updated_at || ""),
+    });
+  }
+
+  return Array.from(snippets.values()).slice(0, args.limit || 3);
+}
+
 export async function loadAssistantMessages(args: {
   businessId: string;
   userId: string;
+  assistantConversationId: string;
   limit?: number;
 }) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("assistant_messages")
-    .select("id,role,content,created_at")
+    .select("id,assistant_conversation_id,role,content,created_at")
     .eq("business_id", args.businessId)
     .eq("user_id", args.userId)
+    .eq("assistant_conversation_id", args.assistantConversationId)
     .order("created_at", { ascending: false })
     .limit(args.limit || 40);
 
@@ -1086,12 +1890,14 @@ export async function loadAssistantMessages(args: {
 export async function insertAssistantMessages(args: {
   businessId: string;
   userId: string;
+  assistantConversationId: string;
   messages: Array<Pick<AssistantMessageRow, "role" | "content">>;
 }) {
   const supabase = createAdminClient();
   const rows = args.messages.map((message) => ({
     business_id: args.businessId,
     user_id: args.userId,
+    assistant_conversation_id: args.assistantConversationId,
     role: message.role,
     content: message.content,
   }));
@@ -1099,7 +1905,7 @@ export async function insertAssistantMessages(args: {
   const { data, error } = await supabase
     .from("assistant_messages")
     .insert(rows)
-    .select("id,role,content,created_at")
+    .select("id,assistant_conversation_id,role,content,created_at")
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -1124,6 +1930,20 @@ export async function insertAssistantMessages(args: {
     };
   }
 
+  const latestCreatedAt = (data || []).reduce<string | null>((latest, row) => {
+    const createdAt = String((row as AssistantMessageRow).created_at || "");
+    if (!createdAt) {
+      return latest;
+    }
+    return !latest || getTimestamp(createdAt) > getTimestamp(latest) ? createdAt : latest;
+  }, null);
+  const firstUserMessage = args.messages.find((message) => message.role === "user");
+  await syncAssistantConversationDetails({
+    conversationId: args.assistantConversationId,
+    occurredAt: latestCreatedAt,
+    suggestedTitle: firstUserMessage?.content || null,
+  });
+
   return {
     ok: true as const,
     messages: ((data || []) as AssistantMessageRecord[]).map((message) => ({
@@ -1136,14 +1956,16 @@ export async function insertAssistantMessages(args: {
 export async function loadAssistantActions(args: {
   businessId: string;
   userId: string;
+  assistantConversationId: string;
   limit?: number;
 }) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("assistant_actions")
-    .select("id,business_id,user_id,action_type,status,payload,result,created_at,updated_at")
+    .select("id,business_id,user_id,assistant_conversation_id,action_type,status,payload,result,created_at,updated_at")
     .eq("business_id", args.businessId)
     .eq("user_id", args.userId)
+    .eq("assistant_conversation_id", args.assistantConversationId)
     .order("created_at", { ascending: false })
     .limit(args.limit || 40);
 
@@ -1178,12 +2000,14 @@ export async function loadAssistantActions(args: {
 export async function insertAssistantActionDraft(args: {
   businessId: string;
   userId: string;
+  assistantConversationId: string;
   action: AssistantActionDraft;
 }) {
   const supabase = createAdminClient();
   const row = {
     business_id: args.businessId,
     user_id: args.userId,
+    assistant_conversation_id: args.assistantConversationId,
     action_type: args.action.type,
     status: "draft",
     payload: args.action.payload,
@@ -1193,7 +2017,7 @@ export async function insertAssistantActionDraft(args: {
   const { data, error } = await supabase
     .from("assistant_actions")
     .insert(row)
-    .select("id,business_id,user_id,action_type,status,payload,result,created_at,updated_at")
+    .select("id,business_id,user_id,assistant_conversation_id,action_type,status,payload,result,created_at,updated_at")
     .maybeSingle();
 
   if (error || !data) {
@@ -1228,7 +2052,7 @@ export async function getAssistantActionById(id: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("assistant_actions")
-    .select("id,business_id,user_id,action_type,status,payload,result,created_at,updated_at")
+    .select("id,business_id,user_id,assistant_conversation_id,action_type,status,payload,result,created_at,updated_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -1267,7 +2091,7 @@ export async function updateAssistantAction(args: {
       updated_at: nowIso(),
     })
     .eq("id", args.id)
-    .select("id,business_id,user_id,action_type,status,payload,result,created_at,updated_at")
+    .select("id,business_id,user_id,assistant_conversation_id,action_type,status,payload,result,created_at,updated_at")
     .maybeSingle();
 
   if (error || !data) {

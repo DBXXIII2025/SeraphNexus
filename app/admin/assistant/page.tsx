@@ -5,6 +5,7 @@ import {
   buildAssistantContextSummary,
   loadAssistantActions,
   loadAssistantBusinessOptions,
+  loadAssistantConversations,
   loadAssistantMessages,
   resolveAssistantAccess,
 } from "@/lib/assistant";
@@ -21,6 +22,8 @@ export const dynamic = "force-dynamic";
 
 type SearchParams = {
   businessId?: string;
+  conversationId?: string;
+  notice?: string;
 };
 
 export default async function AdminAssistantPage({
@@ -30,6 +33,8 @@ export default async function AdminAssistantPage({
 }) {
   const params = searchParams ? await searchParams : undefined;
   const requestedBusinessId = String(params?.businessId || "").trim();
+  const requestedConversationId = String(params?.conversationId || "").trim();
+  const notice = String(params?.notice || "").trim();
   const access = await resolveAssistantAccess(requestedBusinessId || undefined);
 
   if (!access.userId) {
@@ -126,20 +131,44 @@ export default async function AdminAssistantPage({
     );
   }
 
-  const [contextSummary, history, actionHistory, businessOptions] = await Promise.all([
+  const [contextSummary, conversationSelection, businessOptions] = await Promise.all([
     buildAssistantContextSummary(business),
-    loadAssistantMessages({
+    loadAssistantConversations({
       businessId: business.id,
       userId: access.userId!,
-      limit: 40,
-    }),
-    loadAssistantActions({
-      businessId: business.id,
-      userId: access.userId!,
+      requestedConversationId,
       limit: 24,
     }),
     access.isPlatformAdmin ? loadAssistantBusinessOptions() : Promise.resolve([]),
   ]);
+
+  const selectedConversation = conversationSelection.selectedConversation;
+
+  const [history, actionHistory] = selectedConversation
+    ? await Promise.all([
+        loadAssistantMessages({
+          businessId: business.id,
+          userId: access.userId!,
+          assistantConversationId: selectedConversation.id,
+          limit: 40,
+        }),
+        loadAssistantActions({
+          businessId: business.id,
+          userId: access.userId!,
+          assistantConversationId: selectedConversation.id,
+          limit: 24,
+        }),
+      ])
+    : [
+        {
+          messages: [],
+          storageError: conversationSelection.storageError,
+        },
+        {
+          actions: [],
+          storageError: conversationSelection.storageError,
+        },
+      ];
 
   return (
     <AdminPageContainer className="text-[var(--text-main)]">
@@ -241,10 +270,19 @@ export default async function AdminAssistantPage({
           <AssistantChat
             businessId={business.id}
             businessName={contextSummary.businessName}
+            conversations={conversationSelection.conversations}
+            selectedConversation={selectedConversation}
             initialMessages={history.messages}
             initialActions={actionHistory.actions}
-            initialError={history.storageError}
+            initialError={history.storageError || conversationSelection.storageError}
             initialActionError={actionHistory.storageError}
+            initialNotice={
+              notice === "cleared"
+                ? "This conversation has been archived. Seravelle can still recall relevant information from it when needed."
+                : notice === "new"
+                  ? "A fresh Seravelle conversation is ready."
+                  : null
+            }
             isPlatformAdmin={access.isPlatformAdmin}
             businessOptions={businessOptions}
             selectedBusinessId={business.id}

@@ -5,16 +5,20 @@ import { useRouter } from "next/navigation";
 import type {
   AssistantActionRecord,
   AssistantBusinessOption,
+  AssistantConversationRecord,
   AssistantMessageRecord,
 } from "@/lib/assistant";
 
 type AssistantChatProps = {
   businessId: string;
   businessName: string;
+  conversations: AssistantConversationRecord[];
+  selectedConversation: AssistantConversationRecord | null;
   initialMessages: AssistantMessageRecord[];
   initialActions: AssistantActionRecord[];
   initialError: string | null;
   initialActionError: string | null;
+  initialNotice: string | null;
   isPlatformAdmin: boolean;
   businessOptions: AssistantBusinessOption[];
   selectedBusinessId: string;
@@ -34,12 +38,30 @@ function formatTimestamp(value: string) {
   return parsed.toLocaleString();
 }
 
+function formatConversationStamp(conversation: AssistantConversationRecord) {
+  return formatTimestamp(conversation.last_message_at || conversation.updated_at);
+}
+
 function formatActionLabel(value: string) {
   return value
     .replace(/^draft_/, "")
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function buildConversationTag(conversationId: string) {
+  return `SRV-${conversationId.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
+
+function buildConversationTitle(conversation: AssistantConversationRecord) {
+  if (conversation.title?.trim()) {
+    return conversation.title.trim();
+  }
+
+  return conversation.status === "active"
+    ? "Current Seravelle conversation"
+    : "Earlier Seravelle discussion";
 }
 
 function mergeMessages(current: AssistantMessageRecord[], next: AssistantMessageRecord[]) {
@@ -78,6 +100,30 @@ function mergeActions(current: AssistantActionRecord[], next: AssistantActionRec
   );
 }
 
+function newestMessageTime(messages: AssistantMessageRecord[]) {
+  return messages.reduce<string | null>((latest, message) => {
+    const current = String(message.created_at || "");
+    if (!current) {
+      return latest;
+    }
+    if (!latest) {
+      return current;
+    }
+    return new Date(current).getTime() > new Date(latest).getTime() ? current : latest;
+  }, null);
+}
+
+function parsedPreviewFromMessages(
+  messages: AssistantMessageRecord[],
+  fallback: string
+) {
+  const latestAssistant = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant" && message.content.trim());
+
+  return latestAssistant?.content?.trim() || fallback;
+}
+
 function actionSummary(action: AssistantActionRecord) {
   const summary =
     action.payload && typeof action.payload === "object" && "summary" in action.payload
@@ -87,13 +133,26 @@ function actionSummary(action: AssistantActionRecord) {
   return summary || "Review this Seravelle draft before deciding whether to run it.";
 }
 
+function statusLabel(status: AssistantConversationRecord["status"]) {
+  if (status === "cleared") {
+    return "Cleared";
+  }
+  if (status === "archived") {
+    return "Archived";
+  }
+  return "Active";
+}
+
 export default function AssistantChat({
   businessId,
   businessName,
+  conversations,
+  selectedConversation,
   initialMessages,
   initialActions,
   initialError,
   initialActionError,
+  initialNotice,
   isPlatformAdmin,
   businessOptions,
   selectedBusinessId,
@@ -105,15 +164,23 @@ export default function AssistantChat({
       status: message.status || "sent",
     }))
   );
+  const [conversationItems, setConversationItems] = useState<AssistantConversationRecord[]>(
+    conversations
+  );
   const [actions, setActions] = useState<AssistantActionRecord[]>(initialActions);
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState(initialError);
   const [actionError, setActionError] = useState(initialActionError);
+  const [notice, setNotice] = useState(initialNotice);
   const [isLoading, setIsLoading] = useState(false);
+  const [isConversationMutating, setIsConversationMutating] = useState(false);
   const [businessSelection, setBusinessSelection] = useState(selectedBusinessId);
   const [actionMutations, setActionMutations] = useState<Record<string, ActionMutationState>>({});
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedConversationId = selectedConversation?.id || "";
+  const isActiveConversation = selectedConversation?.status === "active";
 
   useEffect(() => {
     setMessages(
@@ -123,32 +190,58 @@ export default function AssistantChat({
       }))
     );
     setActions(initialActions);
+    setConversationItems(conversations);
     setError(initialError);
     setActionError(initialActionError);
+    setNotice(initialNotice);
     setBusinessSelection(selectedBusinessId);
     setActionMutations({});
-  }, [initialMessages, initialActions, initialError, initialActionError, selectedBusinessId, businessId]);
+    setIsConversationMutating(false);
+  }, [
+    initialMessages,
+    initialActions,
+    conversations,
+    initialError,
+    initialActionError,
+    initialNotice,
+    selectedBusinessId,
+    businessId,
+  ]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, actions, isLoading]);
 
+  function buildAssistantHref(nextConversationId?: string, nextNotice?: string | null) {
+    const params = new URLSearchParams();
+    params.set("businessId", businessId);
+    if (nextConversationId) {
+      params.set("conversationId", nextConversationId);
+    }
+    if (nextNotice) {
+      params.set("notice", nextNotice);
+    }
+    return `/admin/assistant?${params.toString()}`;
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const trimmedPrompt = prompt.trim();
-    if (!trimmedPrompt || isLoading) {
+    if (!trimmedPrompt || isLoading || !selectedConversationId || !isActiveConversation) {
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setNotice(null);
     setActionError(initialActionError);
     setPrompt("");
 
     const requestId = `local-${Date.now()}`;
     const optimisticUserMessage: AssistantMessageRecord = {
       id: `${requestId}-user`,
+      assistant_conversation_id: selectedConversationId,
       role: "user",
       content: trimmedPrompt,
       created_at: new Date().toISOString(),
@@ -156,6 +249,19 @@ export default function AssistantChat({
     };
 
     setMessages((current) => mergeMessages(current, [optimisticUserMessage]));
+    setConversationItems((current) =>
+      current.map((conversation) =>
+        conversation.id === selectedConversationId
+          ? {
+              ...conversation,
+              title: conversation.title || trimmedPrompt.slice(0, 72),
+              latestPreview: trimmedPrompt,
+              last_message_at: optimisticUserMessage.created_at,
+              updated_at: optimisticUserMessage.created_at,
+            }
+          : conversation
+      )
+    );
 
     try {
       const response = await fetch("/api/admin/assistant/chat", {
@@ -165,6 +271,7 @@ export default function AssistantChat({
         },
         body: JSON.stringify({
           businessId,
+          conversationId: selectedConversationId,
           message: trimmedPrompt,
         }),
       });
@@ -189,6 +296,19 @@ export default function AssistantChat({
         }));
         return mergeMessages(withoutOptimistic, savedMessages);
       });
+      setConversationItems((current) =>
+        current.map((conversation) =>
+          conversation.id === selectedConversationId
+            ? {
+                ...conversation,
+                title: conversation.title || trimmedPrompt.slice(0, 72),
+                latestPreview: parsedPreviewFromMessages(data.messages!, trimmedPrompt),
+                last_message_at: newestMessageTime(data.messages!) || conversation.last_message_at,
+                updated_at: newestMessageTime(data.messages!) || conversation.updated_at,
+              }
+            : conversation
+        )
+      );
 
       if (data.action?.id) {
         setActions((current) => mergeActions(current, [data.action!]));
@@ -228,13 +348,16 @@ export default function AssistantChat({
     }));
 
     try {
-      const response = await fetch(`/api/admin/assistant/actions/${encodeURIComponent(actionId)}/${decision}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ businessId }),
-      });
+      const response = await fetch(
+        `/api/admin/assistant/actions/${encodeURIComponent(actionId)}/${decision}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ businessId }),
+        }
+      );
 
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;
@@ -270,6 +393,58 @@ export default function AssistantChat({
     }
   }
 
+  async function handleConversationMutation(action: "new" | "clear") {
+    if (isConversationMutating) {
+      return;
+    }
+
+    setIsConversationMutating(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const response = await fetch("/api/admin/assistant/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          businessId,
+          currentConversationId: selectedConversationId || null,
+          action,
+        }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        notice?: string | null;
+        conversation?: {
+          id?: string;
+        } | null;
+      };
+
+      if (!response.ok || !data.conversation?.id) {
+        throw new Error(data.error || "Seravelle conversation could not be updated.");
+      }
+
+      startTransition(() => {
+        router.replace(
+          buildAssistantHref(
+            data.conversation?.id,
+            action === "clear" ? "cleared" : "new"
+          )
+        );
+      });
+    } catch (mutationError) {
+      setError(
+        mutationError instanceof Error
+          ? mutationError.message
+          : "Seravelle conversation could not be updated."
+      );
+      setIsConversationMutating(false);
+    }
+  }
+
   function handleBusinessChange() {
     if (!businessSelection || businessSelection === selectedBusinessId) {
       return;
@@ -281,8 +456,84 @@ export default function AssistantChat({
   }
 
   return (
-    <div className="grid min-h-[680px] xl:grid-cols-[1fr]">
-      <div className="flex min-h-[680px] flex-col">
+    <div className="grid min-h-[720px] xl:grid-cols-[280px,1fr]">
+      <aside className="border-b border-[var(--border-soft)] bg-[var(--surface-raised)] xl:border-b-0 xl:border-r">
+        <div className="border-b border-[var(--border-soft)] px-4 py-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            Seravelle
+          </p>
+          <h2 className="mt-2 text-lg font-semibold text-[var(--text-strong)]">
+            Conversations
+          </h2>
+          <p className="mt-2 text-sm text-[var(--text-soft)]">
+            Keep current work active while archived threads stay available for recall.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleConversationMutation("new")}
+              disabled={isConversationMutating}
+              className="btn-secondary flex-1 px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isConversationMutating ? "Working..." : "New Conversation"}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleConversationMutation("clear")}
+              disabled={isConversationMutating || !selectedConversationId}
+              className="btn-secondary flex-1 px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Clear Conversation
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[260px] overflow-y-auto px-3 py-3 xl:max-h-[calc(720px-118px)]">
+          <div className="space-y-2">
+            {conversationItems.map((conversation) => {
+              const isSelected = conversation.id === selectedConversationId;
+              return (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() =>
+                    startTransition(() => {
+                      router.replace(buildAssistantHref(conversation.id));
+                    })
+                  }
+                  className={
+                    isSelected
+                      ? "w-full rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-3 text-left"
+                      : "w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] p-3 text-left transition hover:border-[var(--accent-border)] hover:bg-[var(--surface-raised)]"
+                  }
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                        {buildConversationTag(conversation.id)}
+                      </p>
+                      <h3 className="mt-2 text-sm font-semibold text-[var(--text-strong)]">
+                        {buildConversationTitle(conversation)}
+                      </h3>
+                    </div>
+                    <span className="rounded-full border border-[var(--border-soft)] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                      {statusLabel(conversation.status)}
+                    </span>
+                  </div>
+                  <p className="mt-3 line-clamp-2 text-xs leading-5 text-[var(--text-soft)]">
+                    {conversation.latestPreview || "No saved preview yet."}
+                  </p>
+                  <p className="mt-3 text-[11px] text-[var(--text-muted)]">
+                    {formatConversationStamp(conversation)}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </aside>
+
+      <div className="flex min-h-[720px] flex-col">
         <div className="border-b border-[var(--border-soft)] bg-[var(--surface-raised)] px-5 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -295,9 +546,12 @@ export default function AssistantChat({
               <p className="mt-1 text-sm text-[var(--text-soft)]">
                 AI-powered business intelligence for your workspace
               </p>
-              <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                Powered by Gemini
-              </p>
+              {selectedConversation ? (
+                <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  {buildConversationTag(selectedConversation.id)} |{" "}
+                  {statusLabel(selectedConversation.status)}
+                </p>
+              ) : null}
             </div>
 
             {isPlatformAdmin && businessOptions.length > 0 ? (
@@ -326,6 +580,20 @@ export default function AssistantChat({
         </div>
 
         <div className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,rgba(212,175,55,0.04),transparent_18%),var(--surface)] px-4 py-4 sm:px-5">
+          {notice ? (
+            <div className="mb-4 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
+              {notice}
+            </div>
+          ) : null}
+
+          {!isActiveConversation && selectedConversation ? (
+            <div className="mb-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-soft)]">
+              This Seravelle thread is {selectedConversation.status}. It remains available for
+              history and memory recall, but new messages should continue in an active
+              conversation.
+            </div>
+          ) : null}
+
           {messages.length === 0 && actions.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <div className="max-w-xl rounded-3xl border border-dashed border-[var(--accent-border)] bg-[var(--accent-muted)] px-6 py-8 text-center">
@@ -340,13 +608,13 @@ export default function AssistantChat({
                   everything running smoothly and organized.
                 </p>
                 <div className="mt-5 space-y-2 text-left text-sm leading-6 text-[var(--text-soft)]">
-                  <p>• Explain Seraph Nexus features</p>
-                  <p>• Summarize business workspace status</p>
-                  <p>• Suggest ways to improve operations</p>
-                  <p>• Help organize business workflows</p>
-                  <p>• Draft client replies for owner review</p>
-                  <p>• Prepare service, product, menu-item, promo-code, and booking-summary drafts for approval</p>
-                  <p>• Guide you through manual changes when direct execution is not available</p>
+                  <p>- Explain Seraph Nexus features</p>
+                  <p>- Summarize business workspace status</p>
+                  <p>- Suggest ways to improve operations</p>
+                  <p>- Help organize business workflows</p>
+                  <p>- Draft client replies for owner review</p>
+                  <p>- Prepare service, product, menu-item, promo-code, and booking-summary drafts for approval</p>
+                  <p>- Guide you through manual changes when direct execution is not available</p>
                 </div>
                 <p className="mt-5 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   Powered by Gemini
@@ -493,15 +761,22 @@ export default function AssistantChat({
               placeholder="Ask Seravelle for guidance or have her draft a reply, service, product, menu item, promo code, or booking summary for approval."
               className="input-field min-h-[132px] resize-y"
               maxLength={4000}
-              disabled={isLoading || Boolean(initialError)}
+              disabled={isLoading || Boolean(initialError) || !isActiveConversation}
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-[var(--text-muted)]">
-                Draft, review, approve, execute. Restricted actions remain blocked.
+                {isActiveConversation
+                  ? "Draft, review, approve, execute. Restricted actions remain blocked."
+                  : "Archived conversations stay available for reference. Start a fresh active conversation to continue."}
               </p>
               <button
                 type="submit"
-                disabled={isLoading || !prompt.trim() || Boolean(initialError)}
+                disabled={
+                  isLoading ||
+                  !prompt.trim() ||
+                  Boolean(initialError) ||
+                  !isActiveConversation
+                }
                 className="btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isLoading ? "Drafting..." : "Ask Seravelle"}
