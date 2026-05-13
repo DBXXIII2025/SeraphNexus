@@ -3,7 +3,7 @@ import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createAdminClient } from "@/lib/supabase/server";
 import { validateDiscountCodePayload } from "@/lib/discountCodes";
-import { getAuthorizedConversationForUser, touchConversationAfterMessage } from "@/lib/messages";
+import { touchConversationAfterMessage } from "@/lib/messages";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getUsageLimitResult } from "@/lib/planEnforcement";
 import type { Database } from "@/types/database";
@@ -2166,28 +2166,31 @@ async function executeDraftClientReply(args: {
   }
   const payload = payloadResult.value;
 
-  const access = await getAuthorizedConversationForUser({
-    conversationId: payload.conversationId,
-    userId: args.userId,
-  });
+  const supabase = createAdminClient();
+  const { data: conversation, error: conversationError } = await supabase
+    .from("conversations")
+    .select("id,business_id,client_user_id")
+    .eq("id", payload.conversationId)
+    .eq("business_id", args.business.id)
+    .maybeSingle();
 
-  if (
-    !access.conversation?.id ||
-    !access.business?.id ||
-    access.business.id !== args.business.id ||
-    access.role !== "business"
-  ) {
+  if (conversationError) {
+    throw new Error(
+      conversationError.message || "The drafted client reply conversation could not be loaded."
+    );
+  }
+
+  if (!conversation?.id) {
     throw new Error("You do not have permission to send that drafted client reply.");
   }
 
-  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("messages")
     .insert({
-      conversation_id: access.conversation.id,
+      conversation_id: String(conversation.id),
       sender_user_id: args.userId,
-      recipient_user_id: access.conversation.client_user_id || null,
-      business_id: access.conversation.business_id,
+      recipient_user_id: conversation.client_user_id ? String(conversation.client_user_id) : null,
+      business_id: String(conversation.business_id),
       body: payload.body,
       is_read: false,
       read_at: null,
@@ -2200,14 +2203,14 @@ async function executeDraftClientReply(args: {
   }
 
   await touchConversationAfterMessage({
-    conversationId: access.conversation.id,
+    conversationId: String(conversation.id),
     senderType: "business",
     body: payload.body,
   });
 
   return {
     messageId: String(data.id),
-    conversationId: String(data.conversation_id),
+    conversationId: String(conversation.id),
     body: String(data.body || ""),
     created_at: data.created_at ? String(data.created_at) : null,
   };
