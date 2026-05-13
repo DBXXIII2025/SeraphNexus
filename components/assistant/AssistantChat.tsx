@@ -133,6 +133,20 @@ function actionSummary(action: AssistantActionRecord) {
   return summary || "Review this Seravelle draft before deciding whether to run it.";
 }
 
+function actionConversationTag(action: AssistantActionRecord) {
+  if (
+    action.action_type !== "draft_client_reply" ||
+    !action.payload ||
+    typeof action.payload !== "object" ||
+    !("conversationTag" in action.payload)
+  ) {
+    return null;
+  }
+
+  const value = String(action.payload.conversationTag || "").trim();
+  return value || null;
+}
+
 function statusLabel(status: AssistantConversationRecord["status"]) {
   if (status === "cleared") {
     return "Cleared";
@@ -656,6 +670,7 @@ export default function AssistantChat({
                 const mutation = actionMutations[action.id];
                 const isPendingDecision = mutation?.isLoading === true;
                 const canDecide = action.status === "draft" && !isPendingDecision;
+                const conversationTag = actionConversationTag(action);
 
                 return (
                   <div
@@ -670,6 +685,11 @@ export default function AssistantChat({
                         <h3 className="mt-2 text-base font-semibold text-[var(--text-strong)]">
                           {formatActionLabel(action.action_type)}
                         </h3>
+                        {conversationTag ? (
+                          <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[var(--accent-soft)]">
+                            {conversationTag}
+                          </p>
+                        ) : null}
                         <p className="mt-2 text-sm text-[var(--text-soft)]">
                           {actionSummary(action)}
                         </p>

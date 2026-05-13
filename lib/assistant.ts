@@ -3,7 +3,7 @@ import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createAdminClient } from "@/lib/supabase/server";
 import { validateDiscountCodePayload } from "@/lib/discountCodes";
-import { touchConversationAfterMessage } from "@/lib/messages";
+import { formatConversationTag, touchConversationAfterMessage } from "@/lib/messages";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getUsageLimitResult } from "@/lib/planEnforcement";
 import type { Database } from "@/types/database";
@@ -49,6 +49,7 @@ export type AssistantConversationStatus = "active" | "archived" | "cleared";
 export type AssistantClientReplyPayload = {
   summary: string;
   conversationId: string;
+  conversationTag?: string | null;
   body: string;
 };
 
@@ -285,6 +286,16 @@ function normalizeDuration(value: unknown) {
   return Number.isFinite(duration) && duration > 0 ? Math.round(duration) : 30;
 }
 
+function isUuid(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
+}
+
 function normalizeConversationTitle(value: unknown) {
   const title = String(value || "")
     .replace(/\s+/g, " ")
@@ -483,21 +494,28 @@ function validateClientReplyPayload(payload: unknown): AssistantClientReplyPaylo
   }
 
   const record = objectResult.value;
-  const unsupported = findUnsupportedKeys(record, ["summary", "conversationId", "body"]);
+  const unsupported = findUnsupportedKeys(record, [
+    "summary",
+    "conversationId",
+    "conversationTag",
+    "body",
+  ]);
   if (unsupported.length > 0) {
     return null;
   }
   const summary = summaryFromPayload(record);
   const conversationId = normalizeText(record.conversationId, 120);
+  const conversationTag = normalizeText(record.conversationTag, 40);
   const body = normalizeText(record.body, 4000);
 
-  if (!summary || !conversationId || !body) {
+  if (!summary || !conversationId || !body || !isUuid(conversationId)) {
     return null;
   }
 
   return {
     summary,
     conversationId,
+    conversationTag,
     body,
   };
 }
@@ -678,7 +696,12 @@ function parseClientReplyPayload(payload: unknown): PayloadValidationResult<Assi
   }
 
   const record = objectResult.value;
-  const unsupported = findUnsupportedKeys(record, ["summary", "conversationId", "body"]);
+  const unsupported = findUnsupportedKeys(record, [
+    "summary",
+    "conversationId",
+    "conversationTag",
+    "body",
+  ]);
   if (unsupported.length > 0) {
     return {
       ok: false,
@@ -688,6 +711,7 @@ function parseClientReplyPayload(payload: unknown): PayloadValidationResult<Assi
 
   const summary = summaryFromPayload(record);
   const conversationId = normalizeText(record.conversationId, 120);
+  const conversationTag = normalizeText(record.conversationTag, 40);
   const body = normalizeText(record.body, 4000);
 
   if (!summary || !conversationId || !body) {
@@ -697,11 +721,20 @@ function parseClientReplyPayload(payload: unknown): PayloadValidationResult<Assi
     };
   }
 
+  if (!isUuid(conversationId)) {
+    return {
+      ok: false,
+      error:
+        "Drafted client replies require a UUID conversationId. Display tags like CONV-XXXXXX are for UI only and cannot be executed.",
+    };
+  }
+
   return {
     ok: true,
     value: {
       summary,
       conversationId,
+      conversationTag,
       body,
     },
   };
@@ -2013,13 +2046,55 @@ export async function insertAssistantActionDraft(args: {
   action: AssistantActionDraft;
 }) {
   const supabase = createAdminClient();
+  let payload: AssistantActionPayload = args.action.payload;
+
+  if (args.action.type === "draft_client_reply") {
+    const parsedReply = parseClientReplyPayload(args.action.payload);
+    if (!parsedReply.ok) {
+      return {
+        ok: false as const,
+        error: parsedReply.error,
+      };
+    }
+
+    const { data: conversation, error: conversationError } = await supabase
+      .from("conversations")
+      .select("id,business_id")
+      .eq("id", parsedReply.value.conversationId)
+      .eq("business_id", args.businessId)
+      .maybeSingle();
+
+    if (conversationError) {
+      return {
+        ok: false as const,
+        error:
+          conversationError.message ||
+          "The drafted client reply conversation could not be verified.",
+      };
+    }
+
+    if (!conversation?.id) {
+      return {
+        ok: false as const,
+        error:
+          "Seravelle drafted reply must target a valid conversation UUID for this business.",
+      };
+    }
+
+    payload = {
+      ...parsedReply.value,
+      conversationId: String(conversation.id),
+      conversationTag: formatConversationTag(String(conversation.id)),
+    };
+  }
+
   const row = {
     business_id: args.businessId,
     user_id: args.userId,
     assistant_conversation_id: args.assistantConversationId,
     action_type: args.action.type,
     status: "draft",
-    payload: args.action.payload,
+    payload,
     result: {},
   };
 
