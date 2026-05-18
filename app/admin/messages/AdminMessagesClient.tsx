@@ -235,6 +235,18 @@ export default function AdminMessagesClient({
   const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
 
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const element = messagesViewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    element.scrollTo({
+      top: element.scrollHeight,
+      behavior,
+    });
+  }, []);
+
   const syncSelectedConversationInUrl = useCallback((conversationId: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
     const currentConversationId =
@@ -519,8 +531,8 @@ export default function AdminMessagesClient({
       return;
     }
 
-    messagesEndRef.current?.scrollIntoView({ block: "end" });
-  }, [sortedMessages]);
+    scrollMessagesToBottom();
+  }, [scrollMessagesToBottom, sortedMessages]);
 
   useEffect(() => {
     const element = messagesViewportRef.current;
@@ -538,6 +550,19 @@ export default function AdminMessagesClient({
     element.addEventListener("scroll", handleScroll, { passive: true });
     return () => element.removeEventListener("scroll", handleScroll);
   }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId) {
+      return;
+    }
+
+    stickToBottomRef.current = true;
+    const frame = window.requestAnimationFrame(() => {
+      scrollMessagesToBottom();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [scrollMessagesToBottom, selectedConversationId]);
 
   useEffect(() => {
     if (!pollingEnabled || !selectedConversationId) {
@@ -574,7 +599,8 @@ export default function AdminMessagesClient({
 
     setLoading(true);
     setError(null);
-    const optimisticId = `pending-${createClientMessageId()}`;
+    const clientMessageId = createClientMessageId();
+    const optimisticId = `pending-${clientMessageId}`;
     const optimisticMessage: MessageItem = {
       id: optimisticId,
       sender_type: "business",
@@ -608,7 +634,7 @@ export default function AdminMessagesClient({
           conversationId: selectedConversationId,
           body,
           isPrivate: canUseAdvancedMessagingTools ? isPrivate : false,
-          clientMessageId: createClientMessageId(),
+          clientMessageId,
         }),
       });
 

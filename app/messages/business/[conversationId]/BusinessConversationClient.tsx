@@ -107,6 +107,17 @@ export default function BusinessConversationClient({
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const element = messagesViewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    element.scrollTo({
+      top: element.scrollHeight,
+      behavior,
+    });
+  }, []);
   const backHref =
     sourceHref && sourceHref.startsWith("/") ? sourceHref : "/explore";
 
@@ -285,8 +296,8 @@ export default function BusinessConversationClient({
       return;
     }
 
-    messagesEndRef.current?.scrollIntoView({ block: "end" });
-  }, [sortedMessages]);
+    scrollMessagesToBottom();
+  }, [scrollMessagesToBottom, sortedMessages]);
 
   useEffect(() => {
     const element = messagesViewportRef.current;
@@ -304,6 +315,15 @@ export default function BusinessConversationClient({
     element.addEventListener("scroll", handleScroll, { passive: true });
     return () => element.removeEventListener("scroll", handleScroll);
   }, [conversationId]);
+
+  useEffect(() => {
+    stickToBottomRef.current = true;
+    const frame = window.requestAnimationFrame(() => {
+      scrollMessagesToBottom();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [conversationId, scrollMessagesToBottom]);
 
   useEffect(() => {
     if (!pollingEnabled) {
@@ -339,7 +359,8 @@ export default function BusinessConversationClient({
 
     setLoading(true);
     setError(null);
-    const optimisticId = `pending-${createClientMessageId()}`;
+    const clientMessageId = createClientMessageId();
+    const optimisticId = `pending-${clientMessageId}`;
     const optimisticMessage: MessageRecord = {
       id: optimisticId,
       sender_type: "client",
@@ -362,7 +383,7 @@ export default function BusinessConversationClient({
           conversationId,
           body,
           guestToken: accessToken,
-          clientMessageId: createClientMessageId(),
+          clientMessageId,
         }),
       });
 

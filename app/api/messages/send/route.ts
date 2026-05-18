@@ -24,6 +24,7 @@ type JsonPayload = {
   senderPhone?: string;
   accessToken?: string;
   guestToken?: string;
+  clientMessageId?: string;
 };
 
 type MessageRow = {
@@ -49,6 +50,7 @@ type MessageInsertPayload = {
   body: string;
   is_read: boolean;
   read_at: string | null;
+  client_message_id?: string;
 };
 
 const MESSAGE_SELECT =
@@ -87,13 +89,77 @@ function asMessageRow(value: Record<string, unknown>): MessageRow {
   };
 }
 
-async function insertMessage(payload: MessageInsertPayload): Promise<MessageRow> {
+function includesMissingClientMessageIdColumn(error: { message?: string | null; code?: string | null } | null | undefined) {
+  const message = String(error?.message || "");
+  return (
+    error?.code === "42703" ||
+    /client_message_id/i.test(message)
+  );
+}
+
+async function findMessageByClientMessageId(args: {
+  conversationId: string;
+  clientMessageId: string;
+}): Promise<MessageRow | null> {
   const supabaseAdmin = createAdminClient();
   const { data, error } = await supabaseAdmin
     .from("messages")
-    .insert(payload)
+    .select(MESSAGE_SELECT)
+    .eq("conversation_id", args.conversationId)
+    .eq("client_message_id", args.clientMessageId)
+    .maybeSingle();
+
+  if (error) {
+    if (includesMissingClientMessageIdColumn(error)) {
+      return null;
+    }
+
+    throw new Error(error.message || "Failed to load message");
+  }
+
+  return data?.id ? asMessageRow(data as Record<string, unknown>) : null;
+}
+
+async function insertMessage(payload: MessageInsertPayload): Promise<MessageRow> {
+  const supabaseAdmin = createAdminClient();
+  if (payload.client_message_id) {
+    const existing = await findMessageByClientMessageId({
+      conversationId: payload.conversation_id,
+      clientMessageId: payload.client_message_id,
+    });
+
+    if (existing) {
+      return existing;
+    }
+  }
+
+  let insertPayload: MessageInsertPayload = { ...payload };
+  let { data, error } = await supabaseAdmin
+    .from("messages")
+    .insert(insertPayload)
     .select(MESSAGE_SELECT)
     .maybeSingle();
+
+  if (error && payload.client_message_id && includesMissingClientMessageIdColumn(error)) {
+    insertPayload = { ...insertPayload };
+    delete insertPayload.client_message_id;
+    ({ data, error } = await supabaseAdmin
+      .from("messages")
+      .insert(insertPayload)
+      .select(MESSAGE_SELECT)
+      .maybeSingle());
+  }
+
+  if (error?.code === "23505" && payload.client_message_id) {
+    const existing = await findMessageByClientMessageId({
+      conversationId: payload.conversation_id,
+      clientMessageId: payload.client_message_id,
+    });
+
+    if (existing) {
+      return existing;
+    }
+  }
 
   if (error || !data?.id) {
     throw new Error(error?.message || "Failed to save message");
@@ -122,6 +188,7 @@ export async function POST(req: Request) {
     let senderEmail = "";
     let senderPhone = "";
     let accessToken = "";
+    let clientMessageId = "";
 
     if (expectsJson) {
       const payload = (await req.json()) as JsonPayload;
@@ -135,6 +202,7 @@ export async function POST(req: Request) {
       senderEmail = String(payload.senderEmail || "").trim().toLowerCase();
       senderPhone = String(payload.senderPhone || "").trim();
       accessToken = String(payload.guestToken || payload.accessToken || "").trim();
+      clientMessageId = String(payload.clientMessageId || "").trim();
     } else {
       const formData = await req.formData();
       conversationId = String(formData.get("conversation_id") || "").trim();
@@ -150,6 +218,7 @@ export async function POST(req: Request) {
       accessToken = String(
         formData.get("guest_token") || formData.get("access_token") || ""
       ).trim();
+      clientMessageId = String(formData.get("client_message_id") || "").trim();
     }
 
     if (!body) {
@@ -357,6 +426,7 @@ export async function POST(req: Request) {
       body,
       is_read: false,
       read_at: null,
+      client_message_id: clientMessageId || undefined,
     });
 
     if (access.role === "client") {

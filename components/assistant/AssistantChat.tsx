@@ -236,7 +236,15 @@ export default function AssistantChat({
       return;
     }
 
-    scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const element = messagesViewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    element.scrollTo({
+      top: element.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages, actions, isLoading]);
 
   useEffect(() => {
@@ -254,6 +262,26 @@ export default function AssistantChat({
     handleScroll();
     element.addEventListener("scroll", handleScroll, { passive: true });
     return () => element.removeEventListener("scroll", handleScroll);
+  }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId) {
+      return;
+    }
+
+    stickToBottomRef.current = true;
+    const frame = window.requestAnimationFrame(() => {
+      const element = messagesViewportRef.current;
+      if (!element) {
+        return;
+      }
+
+      element.scrollTo({
+        top: element.scrollHeight,
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [selectedConversationId]);
 
   function buildAssistantHref(nextConversationId?: string, nextNotice?: string | null) {

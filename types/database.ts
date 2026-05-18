@@ -1039,6 +1039,7 @@ export interface Database {
         Row: {
           id: string;
           conversation_id: string;
+          client_message_id: string | null;
           sender_user_id: string | null;
           recipient_user_id: string | null;
           business_id: string;
@@ -1053,6 +1054,7 @@ export interface Database {
         Insert: {
           id?: string;
           conversation_id: string;
+          client_message_id?: string | null;
           sender_user_id?: string | null;
           recipient_user_id?: string | null;
           business_id: string;
@@ -1067,6 +1069,7 @@ export interface Database {
         Update: {
           id?: string;
           conversation_id?: string;
+          client_message_id?: string | null;
           sender_user_id?: string | null;
           recipient_user_id?: string | null;
           business_id?: string;
