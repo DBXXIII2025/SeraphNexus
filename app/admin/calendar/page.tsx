@@ -3,29 +3,55 @@ import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { isRentalBusinessType } from "@/lib/businessModules";
 import CalendarClient from "./CalendarClient";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import { AdminPageContainer, DashboardPrimaryPanel } from "@/components/admin/AdminLayoutSystem";
 
 export default async function AdminCalendarPage() {
   const supabase = await createClient();
   const business = await getActiveBusiness();
 
   if (!business) {
-    return <div className="p-8 text-[var(--text-main)]">No active business</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <h1 className="section-title">Availability</h1>
+          <p className="section-description">Select a business to manage scheduling availability.</p>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
+    );
   }
 
   if (isRentalBusinessType(business.business_type)) {
     return (
-      <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-[var(--text-main)]">
-        Rental and property businesses use the dedicated reservations calendar in
-        Inventory & Calendar.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <div className="section-header-copy">
+            <p className="section-kicker">Business</p>
+            <h1 className="section-title">Availability</h1>
+            <p className="section-description">
+              Rental and property availability stays inside the dedicated rentals workspace.
+            </p>
+          </div>
+          <a href="/admin/rentals" className="btn-primary mt-5 inline-flex px-4 py-2 text-sm font-medium">
+            Open rentals workspace
+          </a>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
   if (business.business_type !== "service") {
     return (
-      <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-[var(--text-main)]">
-        Calendar view is only available for service businesses.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <div className="section-header-copy">
+            <p className="section-kicker">Business</p>
+            <h1 className="section-title">Availability</h1>
+            <p className="section-description">
+              Availability scheduling is only available for service businesses in this workspace.
+            </p>
+          </div>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -40,9 +66,12 @@ export default async function AdminCalendarPage() {
 
   if (error) {
     return (
-      <div className="p-8 text-red-600">
-        Failed to load calendar.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <h1 className="section-title">Availability</h1>
+          <p className="text-sm text-red-300">Failed to load the service calendar.</p>
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -52,5 +81,19 @@ export default async function AdminCalendarPage() {
     bookingCount: bookings?.length || 0,
   });
 
-  return <CalendarClient bookings={bookings ?? []} />;
+  return (
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
+        <div className="section-header-copy">
+          <p className="section-kicker">Business</p>
+          <h1 className="section-title">Availability</h1>
+          <p className="section-description">
+            View the live service calendar and keep upcoming appointments organized in one place.
+          </p>
+        </div>
+      </DashboardPrimaryPanel>
+
+      <CalendarClient bookings={bookings ?? []} />
+    </AdminPageContainer>
+  );
 }

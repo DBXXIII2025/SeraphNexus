@@ -1,9 +1,9 @@
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getManagedPricingSnapshot } from "@/lib/platformBilling";
 import { getPlanDefinition, getPlatformFeeLabel } from "@/lib/planConfig";
-import { createAdminTranslator } from "@/lib/adminI18n";
 import { getConfiguredPlatformFee } from "@/lib/platformFees";
 import { getVisiblePlatformPlans } from "@/lib/platformPlans";
+import { AdminPageContainer, DashboardPrimaryPanel } from "@/components/admin/AdminLayoutSystem";
 import UpgradeClient from "./UpgradeClient";
 
 type UpgradePageProps = {
@@ -22,7 +22,6 @@ export default async function AdminUpgradePage({
     return <div className="text-[var(--text-main)]">{createAdminTranslator(null)("noActiveBusiness")}</div>;
   }
 
-  const t = createAdminTranslator(business.language);
   const plan = getPlanDefinition(business.plan);
   const platformFee = await getConfiguredPlatformFee(business.plan);
   const pricing = await getManagedPricingSnapshot();
@@ -35,13 +34,17 @@ export default async function AdminUpgradePage({
         : plan.monthlyPriceLabel;
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <div>
-        <h1 className="text-2xl font-semibold">{t("upgrade")}</h1>
-        <p className="text-sm text-[var(--text-soft)]">
-          Manage plan access and transaction fees for {business.name}.
-        </p>
-      </div>
+    <AdminPageContainer className="space-y-6 text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
+        <div className="section-header-copy">
+          <p className="section-kicker">Settings</p>
+          <h1 className="section-title">Billing and plan</h1>
+          <p className="section-description">
+            Review workspace plan access, monthly pricing, and the Stripe Connect fee level tied to
+            this business.
+          </p>
+        </div>
+      </DashboardPrimaryPanel>
 
       {params?.billing === "success" ? (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
@@ -83,6 +86,6 @@ export default async function AdminUpgradePage({
         pricingNote={pricing.settings.pricing_note}
         plans={visiblePlans}
       />
-    </div>
+    </AdminPageContainer>
   );
 }

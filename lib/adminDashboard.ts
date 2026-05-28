@@ -211,10 +211,36 @@ function hasRentalRevenue(reservation: RentalReservationRow) {
 }
 
 function createQuickActions(business: BusinessRow) {
-  return getAdminNav(business.business_type, business.plan)
-    .filter((item) => item.href !== "/admin/dashboard" && item.href !== "/admin/settings")
-    .filter((item) => item.href !== "/admin/upgrade" && item.href !== "/admin/platform")
-    .slice(0, 4);
+  const preferredOrder = [
+    "/admin/services",
+    "/admin/products",
+    "/admin/rentals",
+    "/admin/bookings",
+    "/admin/orders",
+    "/admin/availability",
+    "/admin/messages",
+    "/admin/payments",
+    "/admin/promo-codes",
+    "/admin/customize",
+  ];
+  const navItems = getAdminNav(business.business_type).filter(
+    (item) =>
+      item.href !== "/admin/dashboard" &&
+      item.href !== "/admin/analytics" &&
+      item.href !== "/admin/settings" &&
+      item.href !== "/admin/upgrade" &&
+      item.href !== "/admin/stripe-payouts" &&
+      item.href !== "/admin/assistant" &&
+      item.href !== "/admin/leads" &&
+      item.href !== "/admin/notifications"
+  );
+
+  return [...navItems]
+    .sort(
+      (left, right) =>
+        preferredOrder.indexOf(left.href) - preferredOrder.indexOf(right.href)
+    )
+    .slice(0, 6);
 }
 
 function sortActivity(items: DashboardActivityItem[]) {

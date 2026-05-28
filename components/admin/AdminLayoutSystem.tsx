@@ -8,6 +8,7 @@ type AdminGlyphName =
   | "businesses"
   | "calendar"
   | "messages"
+  | "assistant"
   | "revenue"
   | "control"
   | "analytics"
@@ -23,17 +24,29 @@ function inferGlyphName(href: string, label: string): AdminGlyphName {
   const normalized = `${href} ${label}`.toLowerCase();
 
   if (normalized.includes("business")) return "businesses";
-  if (normalized.includes("assistant")) return "messages";
-  if (normalized.includes("calendar") || normalized.includes("rental") || normalized.includes("listing")) {
+  if (normalized.includes("assistant") || normalized.includes("seravelle")) return "assistant";
+  if (
+    normalized.includes("calendar") ||
+    normalized.includes("availability") ||
+    normalized.includes("rental") ||
+    normalized.includes("listing")
+  ) {
     return "calendar";
   }
-  if (normalized.includes("message") || normalized.includes("support")) return "messages";
+  if (
+    normalized.includes("message") ||
+    normalized.includes("support") ||
+    normalized.includes("broadcast") ||
+    normalized.includes("notification")
+  ) {
+    return "messages";
+  }
   if (normalized.includes("revenue")) return "revenue";
   if (normalized.includes("platform")) return "control";
   if (normalized.includes("analytic")) return "analytics";
   if (normalized.includes("setting")) return "settings";
   if (normalized.includes("lead")) return "leads";
-  if (normalized.includes("payment")) return "payments";
+  if (normalized.includes("payment") || normalized.includes("payout")) return "payments";
   if (normalized.includes("service") || normalized.includes("booking")) return "services";
   if (normalized.includes("product") || normalized.includes("menu") || normalized.includes("order")) {
     return "products";
@@ -80,6 +93,15 @@ function AdminGlyph({
       return (
         <svg {...shared}>
           <path d="M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />
+        </svg>
+      );
+    case "assistant":
+      return (
+        <svg {...shared}>
+          <rect x="5" y="6" width="14" height="12" rx="3" />
+          <path d="M9 11h6" />
+          <path d="M10 14h4" />
+          <path d="M12 3v3M12 18v3M4 12H2m20 0h-2" />
         </svg>
       );
     case "revenue":

@@ -15,12 +15,23 @@ export type AdminNavItem = {
   label: string;
 };
 
+export type AdminNavGroup = {
+  label:
+    | "Overview"
+    | "Business"
+    | "Commerce"
+    | "Customers"
+    | "Intelligence"
+    | "Settings";
+  items: AdminNavItem[];
+};
+
 type BusinessModule = {
   type: BusinessType;
   label: string;
   description: string;
   publicPath: (slug: string) => string;
-  adminNav: AdminNavItem[];
+  adminNavGroups: AdminNavGroup[];
   primaryAdminHref: string;
   primaryAdminLabel: string;
   leadsEnabled: boolean;
@@ -84,23 +95,79 @@ export const CREATE_BUSINESS_TYPE_OPTIONS = [
   description: string;
 }>;
 
+function createSharedOwnerGroups(args: {
+  customizeLabel?: string;
+  inventoryLabel: string;
+  inventoryHref: string;
+  commerceLabel: string;
+  commerceHref: string;
+  includeAvailability?: boolean;
+}): AdminNavGroup[] {
+  const businessItems: AdminNavItem[] = [
+    { href: "/admin/customize", label: args.customizeLabel || "Profile / Customize" },
+    { href: args.inventoryHref, label: args.inventoryLabel },
+  ];
+
+  if (args.includeAvailability) {
+    businessItems.push({ href: "/admin/availability", label: "Availability" });
+  }
+
+  return [
+    {
+      label: "Overview",
+      items: [
+        { href: "/admin/dashboard", label: "Dashboard" },
+        { href: "/admin/analytics", label: "Analytics" },
+      ],
+    },
+    {
+      label: "Business",
+      items: businessItems,
+    },
+    {
+      label: "Commerce",
+      items: [
+        { href: args.commerceHref, label: args.commerceLabel },
+        { href: "/admin/payments", label: "Payments" },
+        { href: "/admin/promo-codes", label: "Promo Codes" },
+      ],
+    },
+    {
+      label: "Customers",
+      items: [
+        { href: "/admin/messages", label: "Messages" },
+        { href: "/admin/leads", label: "Leads" },
+        { href: "/admin/notifications", label: "Notifications" },
+      ],
+    },
+    {
+      label: "Intelligence",
+      items: [{ href: "/admin/assistant", label: "Seravelle" }],
+    },
+    {
+      label: "Settings",
+      items: [
+        { href: "/admin/settings", label: "Business Settings" },
+        { href: "/admin/upgrade", label: "Billing / Plan" },
+        { href: "/admin/stripe-payouts", label: "Stripe / Payouts" },
+      ],
+    },
+  ];
+}
+
 export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
   service: {
     type: "service",
     label: "Services",
     description: "Appointments, consultations, field work",
     publicPath: (slug) => `/book/${slug}`,
-    adminNav: [
-      { href: "/admin/dashboard", label: "Overview" },
-      { href: "/admin/services", label: "Services" },
-      { href: "/admin/bookings", label: "Bookings" },
-      { href: "/admin/assistant", label: "Seravelle" },
-      { href: "/admin/messages", label: "Messages" },
-      { href: "/admin/payments", label: "Payments" },
-      { href: "/admin/analytics", label: "Analytics" },
-      { href: "/admin/settings", label: "Settings" },
-      { href: "/admin/leads", label: "Leads" },
-    ],
+    adminNavGroups: createSharedOwnerGroups({
+      inventoryLabel: "Services",
+      inventoryHref: "/admin/services",
+      commerceLabel: "Bookings",
+      commerceHref: "/admin/bookings",
+      includeAvailability: true,
+    }),
     primaryAdminHref: "/admin/services",
     primaryAdminLabel: "Services",
     leadsEnabled: true,
@@ -110,17 +177,12 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
     label: "Restaurant",
     description: "Dine-in, pickup, or delivery",
     publicPath: (slug) => `/order/${slug}`,
-    adminNav: [
-      { href: "/admin/dashboard", label: "Overview" },
-      { href: "/admin/products", label: "Menu" },
-      { href: "/admin/orders", label: "Orders" },
-      { href: "/admin/assistant", label: "Seravelle" },
-      { href: "/admin/messages", label: "Messages" },
-      { href: "/admin/payments", label: "Payments" },
-      { href: "/admin/analytics", label: "Analytics" },
-      { href: "/admin/settings", label: "Settings" },
-      { href: "/admin/leads", label: "Leads" },
-    ],
+    adminNavGroups: createSharedOwnerGroups({
+      inventoryLabel: "Products / Menu",
+      inventoryHref: "/admin/products",
+      commerceLabel: "Orders",
+      commerceHref: "/admin/orders",
+    }),
     primaryAdminHref: "/admin/products",
     primaryAdminLabel: "Menu",
     leadsEnabled: true,
@@ -130,17 +192,12 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
     label: "Food Vendor",
     description: "Food trucks, stands, or small vendors",
     publicPath: (slug) => `/order/${slug}`,
-    adminNav: [
-      { href: "/admin/dashboard", label: "Overview" },
-      { href: "/admin/products", label: "Menu" },
-      { href: "/admin/orders", label: "Orders" },
-      { href: "/admin/assistant", label: "Seravelle" },
-      { href: "/admin/messages", label: "Messages" },
-      { href: "/admin/payments", label: "Payments" },
-      { href: "/admin/analytics", label: "Analytics" },
-      { href: "/admin/settings", label: "Settings" },
-      { href: "/admin/leads", label: "Leads" },
-    ],
+    adminNavGroups: createSharedOwnerGroups({
+      inventoryLabel: "Products / Menu",
+      inventoryHref: "/admin/products",
+      commerceLabel: "Orders",
+      commerceHref: "/admin/orders",
+    }),
     primaryAdminHref: "/admin/products",
     primaryAdminLabel: "Menu",
     leadsEnabled: true,
@@ -150,19 +207,14 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
     label: "Rental",
     description: "Equipment or item rentals",
     publicPath: (slug) => `/rent/${slug}`,
-    adminNav: [
-      { href: "/admin/dashboard", label: "Overview" },
-      { href: "/admin/rentals", label: "Inventory & Calendar" },
-      { href: "/admin/bookings", label: "Reservations" },
-      { href: "/admin/assistant", label: "Seravelle" },
-      { href: "/admin/messages", label: "Messages" },
-      { href: "/admin/payments", label: "Payments" },
-      { href: "/admin/analytics", label: "Analytics" },
-      { href: "/admin/settings", label: "Settings" },
-      { href: "/admin/leads", label: "Leads" },
-    ],
+    adminNavGroups: createSharedOwnerGroups({
+      inventoryLabel: "Rentals",
+      inventoryHref: "/admin/rentals",
+      commerceLabel: "Bookings",
+      commerceHref: "/admin/bookings",
+    }),
     primaryAdminHref: "/admin/rentals",
-    primaryAdminLabel: "Inventory",
+    primaryAdminLabel: "Rentals",
     leadsEnabled: true,
   },
   property: {
@@ -170,19 +222,14 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
     label: "Property",
     description: "Vacation rentals or lodging",
     publicPath: (slug) => `/rent/${slug}`,
-    adminNav: [
-      { href: "/admin/dashboard", label: "Overview" },
-      { href: "/admin/rentals", label: "Listings & Calendar" },
-      { href: "/admin/bookings", label: "Reservations" },
-      { href: "/admin/assistant", label: "Seravelle" },
-      { href: "/admin/messages", label: "Messages" },
-      { href: "/admin/payments", label: "Payments" },
-      { href: "/admin/analytics", label: "Analytics" },
-      { href: "/admin/settings", label: "Settings" },
-      { href: "/admin/leads", label: "Leads" },
-    ],
+    adminNavGroups: createSharedOwnerGroups({
+      inventoryLabel: "Rentals",
+      inventoryHref: "/admin/rentals",
+      commerceLabel: "Bookings",
+      commerceHref: "/admin/bookings",
+    }),
     primaryAdminHref: "/admin/rentals",
-    primaryAdminLabel: "Listings",
+    primaryAdminLabel: "Rentals",
     leadsEnabled: true,
   },
   store: {
@@ -190,17 +237,12 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
     label: "Store",
     description: "Retail or online shop",
     publicPath: (slug) => `/shop/${slug}`,
-    adminNav: [
-      { href: "/admin/dashboard", label: "Overview" },
-      { href: "/admin/products", label: "Products" },
-      { href: "/admin/orders", label: "Orders" },
-      { href: "/admin/assistant", label: "Seravelle" },
-      { href: "/admin/messages", label: "Messages" },
-      { href: "/admin/payments", label: "Payments" },
-      { href: "/admin/analytics", label: "Analytics" },
-      { href: "/admin/settings", label: "Settings" },
-      { href: "/admin/leads", label: "Leads" },
-    ],
+    adminNavGroups: createSharedOwnerGroups({
+      inventoryLabel: "Products / Menu",
+      inventoryHref: "/admin/products",
+      commerceLabel: "Orders",
+      commerceHref: "/admin/orders",
+    }),
     primaryAdminHref: "/admin/products",
     primaryAdminLabel: "Products",
     leadsEnabled: true,
@@ -210,17 +252,12 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
     label: "Creator",
     description: "Digital creator or influencer",
     publicPath: (slug) => `/shop/${slug}`,
-    adminNav: [
-      { href: "/admin/dashboard", label: "Overview" },
-      { href: "/admin/products", label: "Products" },
-      { href: "/admin/orders", label: "Orders" },
-      { href: "/admin/assistant", label: "Seravelle" },
-      { href: "/admin/messages", label: "Messages" },
-      { href: "/admin/payments", label: "Payments" },
-      { href: "/admin/analytics", label: "Analytics" },
-      { href: "/admin/settings", label: "Settings" },
-      { href: "/admin/leads", label: "Leads" },
-    ],
+    adminNavGroups: createSharedOwnerGroups({
+      inventoryLabel: "Products / Menu",
+      inventoryHref: "/admin/products",
+      commerceLabel: "Orders",
+      commerceHref: "/admin/orders",
+    }),
     primaryAdminHref: "/admin/products",
     primaryAdminLabel: "Products",
     leadsEnabled: true,
@@ -230,17 +267,12 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
     label: "Product",
     description: "Sell individual products",
     publicPath: (slug) => `/shop/${slug}`,
-    adminNav: [
-      { href: "/admin/dashboard", label: "Overview" },
-      { href: "/admin/products", label: "Products" },
-      { href: "/admin/orders", label: "Orders" },
-      { href: "/admin/assistant", label: "Seravelle" },
-      { href: "/admin/messages", label: "Messages" },
-      { href: "/admin/payments", label: "Payments" },
-      { href: "/admin/analytics", label: "Analytics" },
-      { href: "/admin/settings", label: "Settings" },
-      { href: "/admin/leads", label: "Leads" },
-    ],
+    adminNavGroups: createSharedOwnerGroups({
+      inventoryLabel: "Products / Menu",
+      inventoryHref: "/admin/products",
+      commerceLabel: "Orders",
+      commerceHref: "/admin/orders",
+    }),
     primaryAdminHref: "/admin/products",
     primaryAdminLabel: "Products",
     leadsEnabled: true,
@@ -268,17 +300,16 @@ export function getPublicPath(
   return getCanonicalPublicBusinessRoute(businessType, slug).href;
 }
 
+export function getAdminNavGroups(
+  businessType: string | null | undefined
+): AdminNavGroup[] {
+  return getBusinessModule(businessType).adminNavGroups;
+}
+
 export function getAdminNav(
   businessType: string | null | undefined
 ): AdminNavItem[] {
-  const nav = [...getBusinessModule(businessType).adminNav];
-
-  return [
-    ...nav,
-    { href: "/admin/support", label: "Support" },
-    { href: "/admin/upgrade", label: "Upgrade" },
-    { href: "/admin/platform", label: "Platform" },
-  ];
+  return getAdminNavGroups(businessType).flatMap((group) => group.items);
 }
 
 export function isOrderBusinessType(

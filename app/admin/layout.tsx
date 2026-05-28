@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { headers } from "next/headers";
 import { getUserBusinesses } from "@/lib/getBusinesses";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
-import { getAdminNav, getBusinessModule, getPublicPath } from "@/lib/businessModules";
+import { getAdminNavGroups, getBusinessModule, getPublicPath } from "@/lib/businessModules";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { getTenantRecoveryState } from "@/lib/tenantRouting";
 import { createAdminTranslator, translateAdminLabel } from "@/lib/adminI18n";
@@ -22,19 +22,38 @@ import {
   AdminTopNav,
 } from "@/components/admin/AdminLayoutSystem";
 
-const PLATFORM_OWNER_NAV = [
-  { href: "/admin/dashboard", label: "Overview" },
-  { href: "/admin/businesses", label: "Businesses" },
-  { href: "/admin/assistant", label: "Seravelle" },
-  { href: "/admin/messages", label: "Support Inbox" },
-  { href: "/admin/revenue", label: "Revenue" },
-  { href: "/admin/platform", label: "Platform Control" },
-];
-
 type NavGroup = {
   label: string;
   items: Array<{ href: string; label: string }>;
 };
+
+const PLATFORM_OWNER_NAV: NavGroup[] = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/admin/dashboard", label: "Dashboard" },
+      { href: "/admin/businesses", label: "Businesses" },
+      { href: "/admin/revenue", label: "Revenue" },
+    ],
+  },
+  {
+    label: "Customers",
+    items: [{ href: "/admin/messages", label: "Support Inbox" }],
+  },
+  {
+    label: "Intelligence",
+    items: [{ href: "/admin/assistant", label: "Seravelle" }],
+  },
+  {
+    label: "Platform / Settings",
+    items: [
+      { href: "/admin/platform-settings", label: "Platform Settings" },
+      { href: "/admin/plan-management", label: "Plan Management" },
+      { href: "/admin/manual-grants", label: "Manual Grants" },
+      { href: "/admin/broadcasts", label: "Broadcasts" },
+    ],
+  },
+];
 
 const sidebarStackStyle = {
   height: "100%",
@@ -53,50 +72,6 @@ const sidebarScrollStyle = {
   paddingRight: "0.2rem",
 } as const;
 
-function groupOwnerNav(items: Array<{ href: string; label: string }>): NavGroup[] {
-  const groups: NavGroup[] = [
-    { label: "Workspace", items: [] },
-    { label: "Operations", items: [] },
-    { label: "Growth", items: [] },
-    { label: "Configuration", items: [] },
-  ];
-
-  items.forEach((item) => {
-    if (item.label === "Overview") {
-      groups[0].items.push(item);
-      return;
-    }
-
-    if (
-      item.label === "Services" ||
-      item.label === "Products" ||
-      item.label === "Menu" ||
-      item.label === "Inventory & Calendar" ||
-      item.label === "Listings & Calendar" ||
-      item.label === "Reservations" ||
-      item.label === "Bookings" ||
-      item.label === "Orders"
-    ) {
-      groups[1].items.push(item);
-      return;
-    }
-
-    if (
-      item.label === "Messages" ||
-      item.label === "Payments" ||
-      item.label === "Analytics" ||
-      item.label === "Leads"
-    ) {
-      groups[2].items.push(item);
-      return;
-    }
-
-    groups[3].items.push(item);
-  });
-
-  return groups.filter((group) => group.items.length > 0);
-}
-
 export default async function AdminLayout({
   children,
 }: {
@@ -113,7 +88,7 @@ export default async function AdminLayout({
   const activeBusiness = await getActiveBusiness();
   const businessModule = getBusinessModule(activeBusiness?.business_type);
   const t = createAdminTranslator(activeBusiness?.language);
-  const adminNav = getAdminNav(activeBusiness?.business_type);
+  const adminNavGroups = getAdminNavGroups(activeBusiness?.business_type);
   const switcherBusinesses = businesses.map((business) => ({
     id: business.id,
     name: business.name || "Untitled business",
@@ -169,27 +144,23 @@ export default async function AdminLayout({
                 title="Platform console"
               />
               <AdminSidebarSection title="Platform Navigation">
-                <nav className="admin-sidebar-nav">
-                  {PLATFORM_OWNER_NAV.map((item) => (
-                    <AdminNavLink
-                      key={item.href}
-                      href={item.href}
-                      active={currentPath === item.href}
-                    >
-                      {item.label}
-                    </AdminNavLink>
+                <div className="space-y-2">
+                  {PLATFORM_OWNER_NAV.map((group) => (
+                    <AdminSidebarSection key={group.label} title={group.label}>
+                      <nav className="admin-sidebar-nav">
+                        {group.items.map((item) => (
+                          <AdminNavLink
+                            key={item.href}
+                            href={item.href}
+                            active={currentPath === item.href}
+                          >
+                            {item.label}
+                          </AdminNavLink>
+                        ))}
+                      </nav>
+                    </AdminSidebarSection>
                   ))}
-                </nav>
-              </AdminSidebarSection>
-              <AdminSidebarSection title="Utilities">
-                <nav className="admin-sidebar-nav">
-                  <AdminNavLink href="/admin/support" active={currentPath === "/admin/support"}>
-                    Support
-                  </AdminNavLink>
-                  <AdminNavLink href="/pricing" active={currentPath === "/pricing"}>
-                    Upgrade
-                  </AdminNavLink>
-                </nav>
+                </div>
               </AdminSidebarSection>
 
               <AdminSidebarSection title="Tenant isolation">
@@ -286,7 +257,7 @@ export default async function AdminLayout({
               </AdminSidebarSection>
 
             <div>
-              {groupOwnerNav(adminNav).map((group) => (
+              {adminNavGroups.map((group) => (
                 <AdminSidebarSection
                   key={group.label}
                   title={translateAdminLabel(activeBusiness?.language, group.label)}
@@ -309,17 +280,6 @@ export default async function AdminLayout({
             {!activeBusiness ? (
               <AdminPanel>Create or select a business to manage settings.</AdminPanel>
             ) : null}
-
-            <AdminSidebarSection title="Utilities">
-              <nav className="admin-sidebar-nav">
-                <AdminNavLink href="/admin/settings" active={currentPath === "/admin/settings"}>
-                  {t("settings")}
-                </AdminNavLink>
-                <AdminNavLink href="/admin/upgrade" active={currentPath === "/admin/upgrade"}>
-                  {t("upgrade")}
-                </AdminNavLink>
-              </nav>
-            </AdminSidebarSection>
           </div>
         </div>
       }

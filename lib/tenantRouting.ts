@@ -1,4 +1,3 @@
-import { getBusinessModule } from "@/lib/businessModules";
 import { getBusinessReadinessState } from "@/lib/businessReadiness";
 
 type TenantBusiness = {
@@ -63,10 +62,10 @@ export async function getTenantRecoveryState(args: {
 
   return {
     readiness,
-    href: getBusinessModule(args.business.business_type).primaryAdminHref,
-    label: getBusinessModule(args.business.business_type).primaryAdminLabel,
+    href: "/admin/dashboard",
+    label: "Dashboard",
     reason: readiness.isLive
-      ? "This business is already live and ready for its main operational workspace."
-      : "Setup is complete. Move into the primary operational workspace for this business type.",
+      ? "This business is already live and ready for its command center."
+      : "Setup is complete. Move into the dashboard command center for this business.",
   };
 }

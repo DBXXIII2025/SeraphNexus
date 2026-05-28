@@ -370,6 +370,22 @@ export default async function AdminMessagesPage({
 
   return (
     <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
+        <div className="section-header">
+          <div className="section-header-copy">
+            <p className="section-kicker">{t("messages")}</p>
+            <h1 className="section-title">Customer conversations</h1>
+            <p className="section-description">
+              Keep every thread organized by contact, status, and latest activity without leaving
+              the active business context.
+            </p>
+          </div>
+          <Link href="/admin/notifications" className="btn-secondary px-4 py-2 text-sm font-medium">
+            Open notifications
+          </Link>
+        </div>
+      </DashboardPrimaryPanel>
+
       {messageThreadLimit !== null ? (
         <DashboardPrimaryPanel>
           <p className="section-kicker">{t("messages")}</p>

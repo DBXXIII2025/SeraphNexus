@@ -190,7 +190,7 @@ export default async function AdminAssistantPage({
             </p>
             <h1 className="section-title">Seravelle</h1>
             <p className="section-description">
-              AI-powered business intelligence for your workspace
+              Premium assistant workspace for drafts, archived memory, and approval-based actions.
             </p>
             <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Powered by Gemini

@@ -22,6 +22,7 @@ type DashboardClientProps = {
     id?: string | null;
     name?: string | null;
     language?: "en" | "es" | null;
+    plan?: string | null;
   } | null;
   dashboard: DashboardData;
   onboarding?: BusinessOnboardingState | null;
@@ -109,7 +110,7 @@ export default function DashboardClient({
           <InfoCard>
             <p className="section-kicker">{t("operations")}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {dashboard.quickActions.slice(0, 5).map((action, index) => (
+              {dashboard.quickActions.slice(0, 6).map((action, index) => (
                 <Link
                   key={action.href}
                   href={action.href}
@@ -294,6 +295,50 @@ export default function DashboardClient({
           ))}
         </DashboardGrid>
       </DashboardSection>
+
+      <DashboardGrid className="xl:grid-cols-2">
+        <DashboardSecondaryPanel>
+          <p className="section-kicker">Plan Status</p>
+          <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+            Workspace access
+          </h2>
+          <div className="mt-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
+              Current plan
+            </p>
+            <p className="mt-2 text-lg font-semibold text-[var(--text-strong)]">
+              {(business?.plan || "starter").toUpperCase()}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+              Upgrade prompts appear here when growth or locked features start slowing the workspace down.
+            </p>
+          </div>
+          <Link href="/admin/upgrade" className="btn-secondary mt-5 inline-flex px-4 py-2 text-sm font-medium">
+            Review billing and plan
+          </Link>
+        </DashboardSecondaryPanel>
+
+        <DashboardSecondaryPanel>
+          <p className="section-kicker">Setup Checklist</p>
+          <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+            What needs attention
+          </h2>
+          <div className="mt-5 space-y-3">
+            {readiness?.blockers.length ? (
+              readiness.blockers.slice(0, 4).map((blocker) => (
+                <div key={blocker.id} className="table-row-panel p-4">
+                  <p className="font-medium text-[var(--text-strong)]">{blocker.label}</p>
+                  <p className="mt-1 text-sm text-[var(--text-soft)]">{blocker.description}</p>
+                </div>
+              ))
+            ) : (
+              <div className="empty-state">
+                This business is clear of the main launch blockers right now.
+              </div>
+            )}
+          </div>
+        </DashboardSecondaryPanel>
+      </DashboardGrid>
 
       <DashboardGrid className="dashboard-grid-shell">
         <DashboardPrimaryPanel>

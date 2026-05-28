@@ -8,6 +8,7 @@ import { loadBusinessPageCustomization } from "@/lib/businessPageCustomization";
 import { loadBusinessProfileFieldsState } from "@/lib/businessProfileFields";
 import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
 import { getPlatformSettings } from "@/lib/platformSettings";
+import { AdminPageContainer, DashboardPrimaryPanel } from "@/components/admin/AdminLayoutSystem";
 import CustomizeClient from "./CustomizeClient";
 
 export default async function CustomizePage() {
@@ -48,6 +49,18 @@ export default async function CustomizePage() {
   );
 
   return (
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
+        <div className="section-header-copy">
+          <p className="section-kicker">Business</p>
+          <h1 className="section-title">Profile and customization</h1>
+          <p className="section-description">
+            Update the public business profile, gallery, theme, and trust-building details without
+            leaving the active workspace.
+          </p>
+        </div>
+      </DashboardPrimaryPanel>
+
       <CustomizeClient
         initialBusiness={{
           id: business.id,
@@ -97,5 +110,6 @@ export default async function CustomizePage() {
               }
         }
       />
+    </AdminPageContainer>
   );
 }
