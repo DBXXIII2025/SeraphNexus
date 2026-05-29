@@ -6,6 +6,7 @@ import type {
   AssistantActionRecord,
   AssistantBusinessOption,
   AssistantConversationRecord,
+  AssistantContextSummary,
   AssistantMemorySummaryRecord,
   AssistantMessageRecord,
 } from "@/lib/assistant";
@@ -13,6 +14,7 @@ import type {
 type AssistantChatProps = {
   businessId: string;
   businessName: string;
+  contextSummary: AssistantContextSummary;
   conversations: AssistantConversationRecord[];
   selectedConversation: AssistantConversationRecord | null;
   initialMessages: AssistantMessageRecord[];
@@ -162,6 +164,7 @@ function statusLabel(status: AssistantConversationRecord["status"]) {
 export default function AssistantChat({
   businessId,
   businessName,
+  contextSummary,
   conversations,
   selectedConversation,
   initialMessages,
@@ -651,7 +654,7 @@ export default function AssistantChat({
           <div className="mt-5 space-y-2 border-t border-[var(--border-soft)] pt-4">
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                Business Memory
+                Memory Seravelle Knows
               </p>
               <span className="text-[11px] text-[var(--text-muted)]">{memories.length}</span>
             </div>
@@ -713,7 +716,7 @@ export default function AssistantChat({
                 {businessName}
               </h2>
               <p className="mt-1 text-sm text-[var(--text-soft)]">
-                AI-powered business intelligence for your workspace
+                Warm, concise business intelligence for this workspace.
               </p>
               {selectedConversation ? (
                 <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -721,6 +724,11 @@ export default function AssistantChat({
                   {statusLabel(selectedConversation.status)}
                 </p>
               ) : null}
+              <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[var(--accent-soft)]">
+                {contextSummary.businessType}
+                {contextSummary.serviceCategory ? ` | ${contextSummary.serviceCategory}` : ""}
+                {` | ${contextSummary.effectivePlan} plan`}
+              </p>
             </div>
 
             {isPlatformAdmin && businessOptions.length > 0 ? (
@@ -773,20 +781,18 @@ export default function AssistantChat({
                   Welcome to Seravelle
                 </p>
                 <h3 className="mt-3 text-xl font-semibold text-[var(--text-strong)]">
-                  Hello, I am Seravelle, your personal AI assistant.
+                  Hello, I am Seravelle.
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
-                  As of right now, I am here to assist you in growing your business and keeping
-                  everything running smoothly and organized.
+                  I help you understand workspace health, remember operating preferences, suggest
+                  next steps, and prepare approval-based drafts.
                 </p>
                 <div className="mt-5 space-y-2 text-left text-sm leading-6 text-[var(--text-soft)]">
-                  <p>- Explain Seraph Nexus features</p>
-                  <p>- Summarize business workspace status</p>
-                  <p>- Suggest ways to improve operations</p>
-                  <p>- Help organize business workflows</p>
-                  <p>- Draft client replies for owner review</p>
-                  <p>- Prepare service, product, menu-item, promo-code, and booking-summary drafts for approval</p>
-                  <p>- Guide you through manual changes when direct execution is not available</p>
+                  <p>- Summarize today&apos;s business snapshot</p>
+                  <p>- Recall saved business preferences when relevant</p>
+                  <p>- Recommend next actions to stay organized and grow</p>
+                  <p>- Draft replies, offers, and records for approval</p>
+                  <p>- Keep everything business-scoped and non-destructive</p>
                 </div>
                 <p className="mt-5 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   Powered by Gemini

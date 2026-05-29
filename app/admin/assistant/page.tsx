@@ -214,8 +214,61 @@ export default async function AdminAssistantPage({
                 {contextSummary.serviceCategory ? ` | ${contextSummary.serviceCategory}` : ""}
               </p>
               <p className="mt-2 text-sm text-[var(--text-soft)]">
-                Plan {contextSummary.plan} |{" "}
+                Plan {contextSummary.effectivePlan} |{" "}
                 {contextSummary.published ? "Published" : "Not published"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Today&apos;s Business Snapshot
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    Unread
+                  </p>
+                  <p className="mt-1 text-xl font-semibold text-[var(--text-strong)]">
+                    {contextSummary.metrics.unreadMessages}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    Open threads
+                  </p>
+                  <p className="mt-1 text-xl font-semibold text-[var(--text-strong)]">
+                    {contextSummary.metrics.openConversations}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    Upcoming
+                  </p>
+                  <p className="mt-1 text-xl font-semibold text-[var(--text-strong)]">
+                    {contextSummary.metrics.upcomingItems}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    Promo codes
+                  </p>
+                  <p className="mt-1 text-xl font-semibold text-[var(--text-strong)]">
+                    {contextSummary.metrics.activePromoCodes}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-4 text-xs text-[var(--text-soft)]">
+                Recent customer activity: {contextSummary.metrics.recentCustomerActivity}
+              </p>
+              <p className="mt-1 text-xs text-[var(--text-soft)]">
+                Revenue:{" "}
+                {contextSummary.revenue.last30DaysGross !== null
+                  ? `${new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 0,
+                    }).format(contextSummary.revenue.last30DaysGross)} in ${contextSummary.revenue.windowLabel.toLowerCase()}`
+                  : "No recent paid activity"}
               </p>
             </div>
 
@@ -255,23 +308,53 @@ export default async function AdminAssistantPage({
             </div>
 
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
-              <p>
-                Bookings or reservations:{" "}
-                <span className="text-[var(--text-strong)]">
-                  {contextSummary.counts.bookingsOrReservations ?? "-"}
-                </span>
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Recommended Next Steps
               </p>
-              <p className="mt-2">
-                Customer conversation threads:{" "}
-                <span className="text-[var(--text-strong)]">
-                  {contextSummary.counts.customerConversationThreads ?? "-"}
-                </span>
-              </p>
+              <div className="mt-3 space-y-3">
+                {contextSummary.recommendedNextSteps.length === 0 ? (
+                  <p>Seravelle does not see an urgent next-step blocker right now.</p>
+                ) : (
+                  contextSummary.recommendedNextSteps.slice(0, 3).map((step) => (
+                    <div key={step.id}>
+                      <p className="font-medium text-[var(--text-strong)]">{step.label}</p>
+                      <p className="mt-1 text-xs text-[var(--text-soft)]">{step.detail}</p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
-              Seravelle can draft controlled actions for review. Nothing executes until you
-              approve it, and restricted operations stay blocked.
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Recent Activity Summary
+              </p>
+              <div className="mt-3 space-y-3">
+                {contextSummary.recentActivitySummary.length === 0 ? (
+                  <p>No safe recent activity summary is available yet.</p>
+                ) : (
+                  contextSummary.recentActivitySummary.map((item) => (
+                    <div key={item.id}>
+                      <p className="font-medium text-[var(--text-strong)]">{item.label}</p>
+                      <p className="mt-1 text-xs text-[var(--text-soft)]">{item.detail}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Seravelle Guidance
+              </p>
+              <div className="mt-3 space-y-3">
+                {contextSummary.insights.slice(0, 3).map((insight) => (
+                  <div key={insight.id}>
+                    <p className="font-medium text-[var(--text-strong)]">{insight.title}</p>
+                    <p className="mt-1 text-xs text-[var(--text-soft)]">{insight.detail}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </DashboardSecondaryPanel>
@@ -280,6 +363,7 @@ export default async function AdminAssistantPage({
           <AssistantChat
             businessId={business.id}
             businessName={contextSummary.businessName}
+            contextSummary={contextSummary}
             conversations={conversationSelection.conversations}
             selectedConversation={selectedConversation}
             initialMessages={history.messages}

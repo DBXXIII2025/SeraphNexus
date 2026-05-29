@@ -1,9 +1,14 @@
 import { canAccessPlanFeature } from "@/lib/planConfig";
+import { getBusinessProfileCompletion } from "@/lib/businessProfileCompletion";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
 import { createAdminClient } from "@/lib/supabase/server";
 import { validateDiscountCodePayload } from "@/lib/discountCodes";
-import { formatConversationTag, touchConversationAfterMessage } from "@/lib/messages";
+import {
+  formatConversationTag,
+  getAdminConversationSummaries,
+  touchConversationAfterMessage,
+} from "@/lib/messages";
 import { resolveAccessPlanForBusiness } from "@/lib/accessGrants";
 import { getUsageLimitResult } from "@/lib/planEnforcement";
 import type { Database } from "@/types/database";
@@ -179,6 +184,7 @@ export type AssistantContextSummary = {
   businessType: string;
   serviceCategory: string | null;
   plan: string;
+  effectivePlan: string;
   published: boolean;
   counts: {
     services: number | null;
@@ -188,6 +194,37 @@ export type AssistantContextSummary = {
     orders: number | null;
     customerConversationThreads: number | null;
   };
+  metrics: {
+    activePromoCodes: number;
+    unreadMessages: number;
+    openConversations: number;
+    upcomingItems: number;
+    recentCustomerActivity: number;
+  };
+  revenue: {
+    last30DaysGross: number | null;
+    paidTransactions: number;
+    windowLabel: string;
+  };
+  recentActivitySummary: Array<{
+    id: string;
+    label: string;
+    detail: string;
+    href: string | null;
+  }>;
+  insights: Array<{
+    id: string;
+    title: string;
+    detail: string;
+    href: string | null;
+    tone: "default" | "warning" | "success";
+  }>;
+  recommendedNextSteps: Array<{
+    id: string;
+    label: string;
+    detail: string;
+    href: string | null;
+  }>;
 };
 
 export type AssistantAccessResult = {
@@ -1192,6 +1229,70 @@ async function safeBusinessCount(table: string, businessId: string) {
   return typeof count === "number" ? count : 0;
 }
 
+function formatCompactCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(value) ? value : 0);
+}
+
+function getStartDate(days: number) {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getTodayDateKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getFutureDateKey(days: number) {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+async function safeBusinessRows<T = Record<string, unknown>>(args: {
+  table: string;
+  businessId: string;
+  select: string;
+  limit?: number;
+  orderBy?: string;
+  ascending?: boolean;
+}) {
+  const supabase = createAdminClient() as any;
+  let query = supabase
+    .from(args.table)
+    .select(args.select)
+    .eq("business_id", args.businessId);
+
+  if (args.orderBy) {
+    query = query.order(args.orderBy, { ascending: Boolean(args.ascending) });
+  }
+
+  if (args.limit) {
+    query = query.limit(args.limit);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    if (!isMissingTableError(error)) {
+      console.error("[assistant] row lookup failed", {
+        table: args.table,
+        businessId: args.businessId,
+        message: error.message,
+        code: error.code,
+      });
+    }
+    return [] as T[];
+  }
+
+  return (data || []) as T[];
+}
+
 export async function buildAssistantContextSummary(
   business: AssistantBusinessScope
 ): Promise<AssistantContextSummary> {
@@ -1203,6 +1304,19 @@ export async function buildAssistantContextSummary(
     business.business_type === "product";
   const isRentalBusiness =
     business.business_type === "rental" || business.business_type === "property";
+  const today = getTodayDateKey();
+  const soonDate = getFutureDateKey(14);
+  const recentDate = getStartDate(30);
+  const recentActivityDate = getStartDate(7);
+  const effectivePlan = await resolveAccessPlanForBusiness({
+    business: {
+      id: business.id,
+      owner_id: business.owner_id || null,
+      plan: business.plan || null,
+    },
+    userId: business.owner_id || "assistant",
+    email: null,
+  });
 
   const [
     servicesCount,
@@ -1212,6 +1326,12 @@ export async function buildAssistantContextSummary(
     reservationsCount,
     ordersCount,
     conversationCount,
+    conversationSummaries,
+    promoCodes,
+    serviceBookings,
+    rentalReservations,
+    orders,
+    businessProfile,
   ] = await Promise.all([
     safeBusinessCount("services", business.id),
     safeBusinessCount("products", business.id),
@@ -1220,13 +1340,344 @@ export async function buildAssistantContextSummary(
     safeBusinessCount("rental_reservations", business.id),
     safeBusinessCount("orders", business.id),
     safeBusinessCount("conversations", business.id),
+    getAdminConversationSummaries({
+      businessId: business.id,
+    }).catch(() => []),
+    safeBusinessRows<Database["public"]["Tables"]["discount_codes"]["Row"]>({
+      table: "discount_codes",
+      businessId: business.id,
+      select:
+        "id,code,active,usage_count,expires_at,starts_at,discount_type,discount_value",
+      limit: 24,
+      orderBy: "created_at",
+    }),
+    safeBusinessRows<
+      Pick<
+        Database["public"]["Tables"]["bookings"]["Row"],
+        | "id"
+        | "status"
+        | "payment_status"
+        | "date"
+        | "created_at"
+        | "amount_total"
+        | "total_amount"
+      >
+    >({
+      table: "bookings",
+      businessId: business.id,
+      select: "id,status,payment_status,date,created_at,amount_total,total_amount",
+      limit: 80,
+      orderBy: "created_at",
+    }),
+    safeBusinessRows<
+      Pick<
+        Database["public"]["Tables"]["rental_reservations"]["Row"],
+        "id" | "status" | "payment_status" | "check_in_date" | "created_at" | "amount_total"
+      >
+    >({
+      table: "rental_reservations",
+      businessId: business.id,
+      select: "id,status,payment_status,check_in_date,created_at,amount_total",
+      limit: 80,
+      orderBy: "created_at",
+    }),
+    safeBusinessRows<
+      Pick<
+        Database["public"]["Tables"]["orders"]["Row"],
+        "id" | "status" | "payment_status" | "created_at" | "total_amount"
+      >
+    >({
+      table: "orders",
+      businessId: business.id,
+      select: "id,status,payment_status,created_at,total_amount",
+      limit: 80,
+      orderBy: "created_at",
+    }),
+    (async () => {
+      const supabase = createAdminClient();
+      const { data } = await supabase
+        .from("businesses")
+        .select("id,name,slug,description,business_type")
+        .eq("id", business.id)
+        .maybeSingle();
+      return data as
+        | Pick<
+            Database["public"]["Tables"]["businesses"]["Row"],
+            "id" | "name" | "slug" | "description" | "business_type"
+          >
+        | null;
+    })(),
   ]);
+
+  const unreadMessages = conversationSummaries.reduce(
+    (sum, conversation) => sum + Number(conversation.business_unread_count || 0),
+    0
+  );
+  const openConversations = conversationSummaries.filter(
+    (conversation) => conversation.status === "open"
+  ).length;
+  const activePromoCodes = promoCodes.filter((code) => code.active !== false).length;
+  const expiringPromoCodes = promoCodes.filter((code) => {
+    if (!code.active || !code.expires_at) {
+      return false;
+    }
+
+    return code.expires_at.slice(0, 10) >= today && code.expires_at.slice(0, 10) <= soonDate;
+  });
+  const upcomingServiceBookings = serviceBookings.filter((booking) => {
+    const bookingDate = String(booking.date || "");
+    const status = String(booking.status || "").toLowerCase();
+    return bookingDate >= today && bookingDate <= soonDate && status !== "cancelled";
+  }).length;
+  const upcomingRentalReservations = rentalReservations.filter((reservation) => {
+    const reservationDate = String(reservation.check_in_date || "");
+    const status = String(reservation.status || "").toLowerCase();
+    return reservationDate >= today && reservationDate <= soonDate && status !== "cancelled";
+  }).length;
+  const upcomingOrders = orders.filter((order) => {
+    const createdDate = String(order.created_at || "").slice(0, 10);
+    const status = String(order.status || order.payment_status || "").toLowerCase();
+    return (
+      createdDate >= recentActivityDate &&
+      status !== "completed" &&
+      status !== "fulfilled" &&
+      status !== "cancelled" &&
+      status !== "canceled"
+    );
+  }).length;
+  const recentCustomerActivity =
+    conversationSummaries.filter((conversation) => {
+      const timestamp = String(conversation.last_message_at || "");
+      return timestamp.slice(0, 10) >= recentActivityDate;
+    }).length +
+    serviceBookings.filter((booking) => String(booking.created_at || "").slice(0, 10) >= recentActivityDate)
+      .length +
+    rentalReservations.filter(
+      (reservation) => String(reservation.created_at || "").slice(0, 10) >= recentActivityDate
+    ).length +
+    orders.filter((order) => String(order.created_at || "").slice(0, 10) >= recentActivityDate).length;
+  const paidServiceRevenue = serviceBookings.reduce((sum, booking) => {
+    const createdDate = String(booking.created_at || "").slice(0, 10);
+    const isPaid =
+      String(booking.payment_status || "").toLowerCase() === "paid" ||
+      String(booking.status || "").toLowerCase() === "confirmed";
+    if (!isPaid || createdDate < recentDate) {
+      return sum;
+    }
+    return sum + Number(booking.amount_total ?? booking.total_amount ?? 0) / 100;
+  }, 0);
+  const paidRentalRevenue = rentalReservations.reduce((sum, reservation) => {
+    const createdDate = String(reservation.created_at || "").slice(0, 10);
+    const isPaid =
+      String(reservation.payment_status || "").toLowerCase() === "paid" ||
+      String(reservation.status || "").toLowerCase() === "confirmed";
+    if (!isPaid || createdDate < recentDate) {
+      return sum;
+    }
+    return sum + Number(reservation.amount_total || 0) / 100;
+  }, 0);
+  const paidOrderRevenue = orders.reduce((sum, order) => {
+    const createdDate = String(order.created_at || "").slice(0, 10);
+    const normalizedStatus = String(order.status || "").toLowerCase();
+    const isPaid =
+      String(order.payment_status || "").toLowerCase() === "paid" ||
+      normalizedStatus === "completed" ||
+      normalizedStatus === "fulfilled";
+    if (!isPaid || createdDate < recentDate) {
+      return sum;
+    }
+    return sum + Number(order.total_amount || 0);
+  }, 0);
+  const paidTransactionCount =
+    serviceBookings.filter((booking) => {
+      const createdDate = String(booking.created_at || "").slice(0, 10);
+      return (
+        createdDate >= recentDate &&
+        (String(booking.payment_status || "").toLowerCase() === "paid" ||
+          String(booking.status || "").toLowerCase() === "confirmed")
+      );
+    }).length +
+    rentalReservations.filter((reservation) => {
+      const createdDate = String(reservation.created_at || "").slice(0, 10);
+      return (
+        createdDate >= recentDate &&
+        (String(reservation.payment_status || "").toLowerCase() === "paid" ||
+          String(reservation.status || "").toLowerCase() === "confirmed")
+      );
+    }).length +
+    orders.filter((order) => {
+      const createdDate = String(order.created_at || "").slice(0, 10);
+      const normalizedStatus = String(order.status || "").toLowerCase();
+      return (
+        createdDate >= recentDate &&
+        (String(order.payment_status || "").toLowerCase() === "paid" ||
+          normalizedStatus === "completed" ||
+          normalizedStatus === "fulfilled")
+      );
+    }).length;
+  const last30DaysGross = paidServiceRevenue + paidRentalRevenue + paidOrderRevenue;
+  const profileCompletion = getBusinessProfileCompletion({
+    name: businessProfile?.name || business.name,
+    slug: businessProfile?.slug || null,
+    description: businessProfile?.description || null,
+    business_type: businessProfile?.business_type || business.business_type,
+  });
+  const recentActivitySummary = [
+    unreadMessages > 0
+      ? {
+          id: "unread-messages",
+          label: "Unread messages",
+          detail: `${unreadMessages} customer messages are waiting for a response.`,
+          href: "/admin/messages",
+        }
+      : null,
+    upcomingServiceBookings + upcomingRentalReservations > 0
+      ? {
+          id: "upcoming-bookings",
+          label: "Upcoming bookings",
+          detail: `${upcomingServiceBookings + upcomingRentalReservations} appointments or reservations are coming up in the next 14 days.`,
+          href: "/admin/bookings",
+        }
+      : null,
+    upcomingOrders > 0
+      ? {
+          id: "order-queue",
+          label: "Order queue",
+          detail: `${upcomingOrders} recent orders still look open for fulfillment review.`,
+          href: "/admin/orders",
+        }
+      : null,
+    paidTransactionCount > 0
+      ? {
+          id: "recent-revenue",
+          label: "Recent revenue",
+          detail: `${formatCompactCurrency(last30DaysGross)} across ${paidTransactionCount} paid transactions in the last 30 days.`,
+          href: "/admin/payments",
+        }
+      : null,
+  ].filter(Boolean) as AssistantContextSummary["recentActivitySummary"];
+  const insights = [
+    unreadMessages > 0
+      ? {
+          id: "reply-backlog",
+          title: "Unread messages need attention",
+          detail: `${unreadMessages} unread customer messages are waiting in the inbox.`,
+          href: "/admin/messages",
+          tone: "warning" as const,
+        }
+      : null,
+    upcomingServiceBookings + upcomingRentalReservations + upcomingOrders > 0
+      ? {
+          id: "upcoming-work",
+          title: "Upcoming customer work is scheduled",
+          detail: `${upcomingServiceBookings + upcomingRentalReservations + upcomingOrders} bookings, reservations, or orders are active in the near-term queue.`,
+          href: isOrderBusiness ? "/admin/orders" : "/admin/bookings",
+          tone: "default" as const,
+        }
+      : null,
+    expiringPromoCodes.length > 0
+      ? {
+          id: "promo-expiring",
+          title: "Promo codes are expiring soon",
+          detail: `${expiringPromoCodes.length} active promo code${expiringPromoCodes.length === 1 ? "" : "s"} expire in the next 14 days.`,
+          href: "/admin/promo-codes",
+          tone: "warning" as const,
+        }
+      : null,
+    !profileCompletion.canPublishProfile
+      ? {
+          id: "profile-completion",
+          title: "Profile details are still incomplete",
+          detail: profileCompletion.summary,
+          href: "/admin/customize",
+          tone: "warning" as const,
+        }
+      : null,
+    recentCustomerActivity === 0
+      ? {
+          id: "slow-activity",
+          title: "Customer activity looks slow",
+          detail: "There has been no recent customer activity in the last 7 days. Review messaging, offers, and public profile visibility.",
+          href: "/admin/dashboard",
+          tone: "warning" as const,
+        }
+      : null,
+    ((servicesCount || 0) + (productsCount || 0) + (propertiesCount || 0)) <= 1
+      ? {
+          id: "catalog-depth",
+          title: "Offerings are still thin",
+          detail: "Seravelle recommends adding more real offerings so the workspace feels complete to customers.",
+          href: isRentalBusiness
+            ? "/admin/rentals"
+            : isOrderBusiness
+              ? "/admin/products"
+              : "/admin/services",
+          tone: "default" as const,
+        }
+      : null,
+    paidTransactionCount > 0
+      ? {
+          id: "recent-revenue-signal",
+          title: "Revenue signal is active",
+          detail: `${formatCompactCurrency(last30DaysGross)} has been processed in the last 30 days without exposing private payment details.`,
+          href: "/admin/payments",
+          tone: "success" as const,
+        }
+      : null,
+  ].filter(Boolean) as AssistantContextSummary["insights"];
+  const recommendedNextSteps = [
+    unreadMessages > 0
+      ? {
+          id: "next-reply",
+          label: "Reply to waiting customers",
+          detail: "Use Seravelle to draft responses for the conversations that still need follow-up.",
+          href: "/admin/messages",
+        }
+      : null,
+    !profileCompletion.canPublishProfile
+      ? {
+          id: "next-profile",
+          label: "Finish the public profile",
+          detail: profileCompletion.summary,
+          href: "/admin/customize",
+        }
+      : null,
+    expiringPromoCodes.length > 0
+      ? {
+          id: "next-promo",
+          label: "Refresh expiring promo codes",
+          detail: "Retire or replace expiring offers so checkout campaigns stay current.",
+          href: "/admin/promo-codes",
+        }
+      : null,
+    recentCustomerActivity === 0
+      ? {
+          id: "next-visibility",
+          label: "Improve visibility and demand",
+          detail: "Refresh your offer mix, review analytics, and publish a sharper customer-facing message.",
+          href: "/admin/analytics",
+        }
+      : null,
+    ((servicesCount || 0) + (productsCount || 0) + (propertiesCount || 0)) <= 1
+      ? {
+          id: "next-offering",
+          label: "Expand the offering mix",
+          detail: "Add another service, product, menu item, or rental so customers have more choices.",
+          href: isRentalBusiness
+            ? "/admin/rentals"
+            : isOrderBusiness
+              ? "/admin/products"
+              : "/admin/services",
+        }
+      : null,
+  ].filter(Boolean) as AssistantContextSummary["recommendedNextSteps"];
 
   return {
     businessName: business.name || "Active business",
     businessType: business.business_type || "business",
     serviceCategory: business.service_category || null,
     plan: normalizeStoredPlan(business.plan),
+    effectivePlan: normalizeStoredPlan(effectivePlan),
     published: Boolean(business.is_published),
     counts: {
       services: isOrderBusiness || isRentalBusiness ? null : servicesCount,
@@ -1236,6 +1687,22 @@ export async function buildAssistantContextSummary(
       orders: isOrderBusiness ? ordersCount : null,
       customerConversationThreads: conversationCount,
     },
+    metrics: {
+      activePromoCodes,
+      unreadMessages,
+      openConversations,
+      upcomingItems:
+        upcomingServiceBookings + upcomingRentalReservations + upcomingOrders,
+      recentCustomerActivity,
+    },
+    revenue: {
+      last30DaysGross: paidTransactionCount > 0 ? last30DaysGross : null,
+      paidTransactions: paidTransactionCount,
+      windowLabel: "Last 30 days",
+    },
+    recentActivitySummary,
+    insights,
+    recommendedNextSteps,
   };
 }
 
@@ -1404,6 +1871,26 @@ function buildAssistantMemorySummary(args: {
   messages: Array<Pick<AssistantMessageRow, "role" | "content" | "created_at">>;
   actions: AssistantActionRecord[];
 }) {
+  const preferenceSignals = Array.from(
+    new Set(
+      args.messages
+        .filter((message) => message.role === "user")
+        .map((message) => String(message.content || "").trim())
+        .filter((content) => {
+          const lowered = content.toLowerCase();
+          return (
+            lowered.includes("prefer ") ||
+            lowered.includes("please keep") ||
+            lowered.includes("our goal") ||
+            lowered.includes("we want") ||
+            lowered.includes("remember ") ||
+            lowered.includes("customers usually ask") ||
+            lowered.includes("common question")
+          );
+        })
+        .map((content) => truncateText(content, 180))
+    )
+  ).slice(0, 4);
   const userHighlights = args.messages
     .filter((message) => message.role === "user")
     .slice(-3)
@@ -1423,6 +1910,16 @@ function buildAssistantMemorySummary(args: {
         : null;
     })
     .filter(Boolean);
+  const approvedActionPatterns = args.actions
+    .filter((action) => action.status === "approved" || action.status === "executed")
+    .slice(-3)
+    .map((action) => {
+      const summary = summaryFromPayload(action.payload as JsonObject);
+      return summary
+        ? `${formatActionTypeForMemory(action.action_type)} approved: ${summary}`
+        : null;
+    })
+    .filter(Boolean);
   const businessProfileHighlights = [
     args.business.name ? `Business: ${args.business.name}` : null,
     args.business.business_type ? `Type: ${args.business.business_type}` : null,
@@ -1437,8 +1934,16 @@ function buildAssistantMemorySummary(args: {
     businessProfileHighlights[2] || null,
     args.title ? `Conversation: ${args.title}` : null,
     userHighlights[0] ? `Primary request: ${userHighlights[0]}` : null,
-    userHighlights[1] ? `Owner preference: ${userHighlights[1]}` : null,
+    preferenceSignals[0]
+      ? `Owner preference: ${preferenceSignals[0]}`
+      : userHighlights[1]
+        ? `Owner preference: ${userHighlights[1]}`
+        : null,
+    preferenceSignals[1] ? `Business goal: ${preferenceSignals[1]}` : null,
     assistantHighlights[0] ? `Seravelle guidance: ${assistantHighlights[0]}` : null,
+    approvedActionPatterns.length > 0
+      ? `Approved patterns: ${approvedActionPatterns.join("; ")}`
+      : null,
     actionHighlights.length > 0 ? `Drafts: ${actionHighlights.join("; ")}` : null,
   ].filter(Boolean) as string[];
 
@@ -1448,7 +1953,9 @@ function buildAssistantMemorySummary(args: {
       ...businessProfileHighlights,
       args.title || "",
       ...userHighlights,
+      ...preferenceSignals,
       ...assistantHighlights,
+      ...approvedActionPatterns,
       ...actionHighlights,
     ].join(" "),
     10
@@ -1815,7 +2322,7 @@ export async function loadRelevantAssistantMemories(args: {
     .select("id,title,status,updated_at,last_message_at")
     .eq("business_id", args.businessId)
     .eq("user_id", args.userId)
-    .in("status", ["archived", "cleared"])
+    .in("status", ["active", "archived", "cleared"])
     .order("updated_at", { ascending: false })
     .limit(24);
 
