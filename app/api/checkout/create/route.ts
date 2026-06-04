@@ -1989,6 +1989,7 @@ export async function POST(req: Request) {
         owner_net_amount_cents: String(netToBusinessCents),
         net_to_business_cents: String(netToBusinessCents),
         request_fingerprint: requestFingerprint,
+        checkout_type: payload.universalType || "rental",
       };
       logCheckoutStage("stripe_session_create_start", {
         branch: "rental_reservation",

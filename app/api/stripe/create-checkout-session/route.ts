@@ -414,6 +414,7 @@ export async function POST(req: Request) {
         platform_fee_amount_cents: String(applicationFee),
         owner_net_amount_cents: String(Math.max(0, unitAmount - applicationFee)),
         net_to_business_cents: String(Math.max(0, unitAmount - applicationFee)),
+        checkout_type: "service",
         demand_score: String(demandScore),
         price_adjustment: String(priceAdjustment),
       },

@@ -180,6 +180,7 @@ export async function createBookingCheckoutSession(
       platform_fee_amount_cents: String(applicationFee),
       owner_net_amount_cents: String(Math.max(0, totalAmountCents - applicationFee)),
       net_to_business_cents: String(Math.max(0, totalAmountCents - applicationFee)),
+      checkout_type: "service",
     },
   });
 
