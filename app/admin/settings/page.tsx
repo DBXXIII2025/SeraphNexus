@@ -26,6 +26,7 @@ import {
   DashboardPrimaryPanel,
   DashboardSecondaryPanel,
 } from "@/components/admin/AdminLayoutSystem";
+import { AppNotice, EmptyState } from "@/components/ui/app-ui";
 
 type SettingsPageProps = {
   searchParams?: Promise<{
@@ -177,74 +178,74 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       </DashboardPrimaryPanel>
 
       {setup === "stripe" && paymentReadiness?.status === "not_started" ? (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+        <AppNotice variant="warning">
           Connect Stripe next so this business can accept payments.
-        </div>
+        </AppNotice>
       ) : null}
       {stripeState === "connected" ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+        <AppNotice variant="success">
           Stripe onboarding returned successfully. Account status has been refreshed.
-        </div>
+        </AppNotice>
       ) : null}
       {stripeState === "refresh" ? (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+        <AppNotice variant="warning">
           Stripe status was refreshed. Review the payment readiness panel below for the next step.
-        </div>
+        </AppNotice>
       ) : null}
       {stripeState === "error" ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <AppNotice variant="error">
           {message || "Stripe onboarding could not be completed."}
-        </div>
+        </AppNotice>
       ) : null}
       {message === "published" ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+        <AppNotice variant="success">
           Business published successfully. It is now visible on public routes.
-        </div>
+        </AppNotice>
       ) : null}
       {message === "unpublished" ? (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+        <AppNotice variant="warning">
           Business unpublished successfully. It is no longer publicly visible.
-        </div>
+        </AppNotice>
       ) : null}
       {message === "publish-error" ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <AppNotice variant="error">
           Publish status could not be updated.
-        </div>
+        </AppNotice>
       ) : null}
       {message === "forbidden" ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <AppNotice variant="error">
           You do not have permission to publish this business.
-        </div>
+        </AppNotice>
       ) : null}
       {message === "missing-business" ? (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+        <AppNotice variant="warning">
           Select an active business before trying to change publish state.
-        </div>
+        </AppNotice>
       ) : null}
       {message === "profile-incomplete" ? (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+        <AppNotice variant="warning">
           Complete the business profile before publishing. Add the missing public details in the business profile editor.
-        </div>
+        </AppNotice>
       ) : null}
       {message === "readiness-incomplete" ? (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+        <AppNotice variant="warning">
           This business is not publish-ready yet. Review the readiness blockers below and complete the next required step.
-        </div>
+        </AppNotice>
       ) : null}
       {message === "legal-incomplete" ? (
-        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+        <AppNotice variant="warning">
           Required legal documents must be accepted before this business can be published.
-        </div>
+        </AppNotice>
       ) : null}
       {message === "publish-plan-locked" ? (
-        <div className="rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
+        <AppNotice>
           Publishing is locked on the {plan?.label || "current"} plan. Starter Access or higher is
           required to make this business visible on Explore and public routes.
-        </div>
+        </AppNotice>
       ) : null}
 
       {!business ? (
-        <div className="empty-state">{t("noActiveBusinessFound")}</div>
+        <EmptyState title={t("noActiveBusinessFound")} />
       ) : (
         <DashboardGrid className="dashboard-grid-shell xl:grid-cols-[1.08fr,0.92fr]">
           <div className="space-y-6">

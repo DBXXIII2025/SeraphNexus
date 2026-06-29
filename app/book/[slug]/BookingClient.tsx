@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
 import BusinessProfileShell from "@/components/BusinessProfileShell";
@@ -447,10 +448,13 @@ export default function BookingClient({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="h-[88px] w-[88px] shrink-0 overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] shadow-inner">
               {selectedServiceImage?.image_url ? (
-                <img
+                <Image
                   src={selectedServiceImage.image_url}
                   alt={selectedServiceImage.alt_text || `${selectedService.name || "Service"} cover`}
+                  width={88}
+                  height={88}
                   className="h-full w-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--text-soft)]">
@@ -485,10 +489,13 @@ export default function BookingClient({
                     className="h-12 w-12 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)]"
                   >
                     {image.image_url ? (
-                      <img
+                      <Image
                         src={image.image_url}
                         alt={image.alt_text || `${selectedService.name || "Service"} gallery image`}
+                        width={48}
+                        height={48}
                         className="h-full w-full object-cover"
+                        unoptimized
                       />
                     ) : null}
                   </div>
@@ -532,10 +539,13 @@ export default function BookingClient({
                   <div className="flex items-center gap-3">
                     <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)]">
                       {primaryImage?.image_url ? (
-                        <img
+                        <Image
                           src={primaryImage.image_url}
                           alt={primaryImage.alt_text || `${service.name || "Service"} cover`}
+                          width={56}
+                          height={56}
                           className="h-full w-full object-cover"
+                          unoptimized
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center px-1 text-center text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">

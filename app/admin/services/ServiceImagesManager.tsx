@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 import type { ServiceImageRecord } from "@/lib/serviceImages";
 
@@ -192,10 +193,13 @@ export default function ServiceImagesManager({
             >
               <div className="relative aspect-[1.05/1] overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] shadow-inner">
                 {image.image_url ? (
-                  <img
+                  <Image
                     src={image.image_url}
                     alt={image.alt_text || `${serviceName} image ${index + 1}`}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--text-muted)]">

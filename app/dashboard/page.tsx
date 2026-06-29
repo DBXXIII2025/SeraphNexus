@@ -5,8 +5,8 @@ import {
   AdminPageContainer,
   DashboardGrid,
   DashboardPrimaryPanel,
-  MetricCard,
 } from "@/components/admin/AdminLayoutSystem";
+import { EmptyState, SectionHeader, StatCard } from "@/components/ui/app-ui";
 
 export default async function DashboardPage() {
   const business = await getActiveBusiness();
@@ -15,37 +15,54 @@ export default async function DashboardPage() {
 
   return (
     <AdminPageContainer className="text-[var(--text-main)]">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-[var(--text-soft)]">
-          Launch controls for the active business.
-        </p>
-      </div>
+      <SectionHeader
+        eyebrow="Legacy Workspace"
+        title="Dashboard"
+        description="Launch controls for the active business."
+      />
 
       <DashboardPrimaryPanel>
-        <p className="text-sm text-[var(--text-soft)]">Active Business</p>
-        <p className="text-lg font-semibold">
-          {business ? business.name : "None"}
-        </p>
-        <p className="mt-1 text-sm text-[var(--text-soft)]">
-          {businessModule.label}
-          {" - "}
-          {businessModule.description}
-        </p>
+        <DashboardGrid className="md:grid-cols-3">
+          <StatCard
+            label="Active Business"
+            value={business ? business.name : "None"}
+            detail="The workspace context used by these legacy routes."
+          />
+          <StatCard
+            label="Module"
+            value={businessModule.label}
+            detail={businessModule.description}
+          />
+          <StatCard
+            label="Destinations"
+            value={String(adminNav.length)}
+            detail="Available operating areas for this business type."
+            tone="success"
+          />
+        </DashboardGrid>
       </DashboardPrimaryPanel>
 
-      <DashboardGrid className="md:grid-cols-2">
-        {adminNav.map((item) => (
-          <MetricCard key={item.href}>
-            <Link href={item.href} className="block no-underline">
-              <p className="font-semibold">{item.label}</p>
+      {adminNav.length === 0 ? (
+        <EmptyState
+          title="No workspace destinations"
+          description="No dashboard links are available for the active business type yet."
+        />
+      ) : (
+        <DashboardGrid className="md:grid-cols-2">
+          {adminNav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="dashboard-secondary-panel block no-underline transition hover:border-[var(--accent-border)]"
+            >
+              <p className="font-semibold text-[var(--text-strong)]">{item.label}</p>
               <p className="mt-2 text-sm text-[var(--text-soft)]">
                 Open {item.label.toLowerCase()} for this business.
               </p>
             </Link>
-          </MetricCard>
-        ))}
-      </DashboardGrid>
+          ))}
+        </DashboardGrid>
+      )}
     </AdminPageContainer>
   );
 }

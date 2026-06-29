@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -234,7 +235,14 @@ if (file.size > 3 * 1024 * 1024) {
             <h2 className="text-lg font-semibold mb-4">Logo</h2>
             <div className="w-24 h-24 rounded-xl bg-[var(--surface-muted)] border border-[var(--border-soft)] overflow-hidden mb-3">
               {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                <Image
+                  src={logoUrl}
+                  alt="Logo"
+                  width={96}
+                  height={96}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs text-[var(--text-muted)]">
                   No logo
@@ -258,7 +266,14 @@ if (file.size > 3 * 1024 * 1024) {
             <h2 className="text-lg font-semibold mb-4">Cover Image</h2>
             <div className="w-full h-32 rounded-xl bg-[var(--surface-muted)] border border-[var(--border-soft)] overflow-hidden mb-3">
               {coverUrl ? (
-                <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                <Image
+                  src={coverUrl}
+                  alt="Cover"
+                  width={480}
+                  height={256}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs text-[var(--text-muted)]">
                   No cover

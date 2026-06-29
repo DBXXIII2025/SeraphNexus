@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
@@ -8,6 +8,8 @@ import { createAdminTranslator } from "@/lib/adminI18n";
 import ServiceImagesManager from "./ServiceImagesManager";
 import { sortServiceImages, type ServiceImageRecord } from "@/lib/serviceImages";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
+import { AppNotice, EmptyState, FormActions, SectionHeader } from "@/components/ui/app-ui";
+import SubmitButton from "@/components/ui/submit-button";
 import {
   AdminPageContainer,
   DashboardGrid,
@@ -25,23 +27,6 @@ type ServiceRow = {
   category?: string | null;
   is_active?: boolean | null;
 };
-
-function StatusMessage({
-  tone,
-  children,
-}: {
-  tone: "success" | "error" | "warning";
-  children: ReactNode;
-}) {
-  const className =
-    tone === "success"
-      ? "rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200"
-      : tone === "warning"
-        ? "rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-4 text-sm text-[var(--accent-soft)]"
-        : "rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200";
-
-  return <div className={className}>{children}</div>;
-}
 
 export default async function AdminServicesPage({
   searchParams,
@@ -120,44 +105,44 @@ export default async function AdminServicesPage({
 
   return (
     <AdminPageContainer className="text-[var(--text-main)]">
-      {params?.success === "created" ? <StatusMessage tone="success">Service created.</StatusMessage> : null}
-      {params?.success === "updated" ? <StatusMessage tone="success">Service updated.</StatusMessage> : null}
-      {params?.success === "deleted" ? <StatusMessage tone="success">Service deleted.</StatusMessage> : null}
+      {params?.success === "created" ? <AppNotice tone="success">Service created.</AppNotice> : null}
+      {params?.success === "updated" ? <AppNotice tone="success">Service updated.</AppNotice> : null}
+      {params?.success === "deleted" ? <AppNotice tone="success">Service deleted.</AppNotice> : null}
       {params?.success === "archived" ? (
-        <StatusMessage tone="success">Service archived safely.</StatusMessage>
+        <AppNotice tone="success">Service archived safely.</AppNotice>
       ) : null}
       {params?.success === "restored" ? (
-        <StatusMessage tone="success">Service restored to the live catalog.</StatusMessage>
+        <AppNotice tone="success">Service restored to the live catalog.</AppNotice>
       ) : null}
 
       {params?.error === "service-limit" ? (
-        <StatusMessage tone="warning">
+        <AppNotice tone="warning">
           Starter Access workspaces can save up to 5 services. Upgrade to Pro for 50 services or
           Elite for unlimited catalog depth.
-        </StatusMessage>
+        </AppNotice>
       ) : null}
 
       {params?.error === "invalid-service" ? (
-        <StatusMessage tone="error">Enter a valid service name and price.</StatusMessage>
+        <AppNotice tone="error">Enter a valid service name and price.</AppNotice>
       ) : null}
 
       {params?.error === "save-failed" ? (
-        <StatusMessage tone="error">Service could not be saved.</StatusMessage>
+        <AppNotice tone="error">Service could not be saved.</AppNotice>
       ) : null}
 
       {params?.error === "service-delete-failed" ||
       params?.error === "service-archive-failed" ||
       params?.error === "service-state-failed" ? (
-        <StatusMessage tone="error">
+        <AppNotice tone="error">
           Service action failed. Historical records were left intact.
-        </StatusMessage>
+        </AppNotice>
       ) : null}
 
       {maxServices !== null ? (
-        <StatusMessage tone="warning">
+        <AppNotice tone="warning">
           Starter Access workspaces can save up to {maxServices} services. Upgrade to Pro for 50
           services or Elite for unlimited catalog depth.
-        </StatusMessage>
+        </AppNotice>
       ) : null}
 
       <DashboardPrimaryPanel>
@@ -196,11 +181,11 @@ export default async function AdminServicesPage({
       </DashboardPrimaryPanel>
 
       {serviceImagesError ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <AppNotice tone="warning">
           Service image storage is not configured yet. Apply{" "}
           <span className="font-mono text-amber-50">sql/migrations/20260401_service_images.sql</span>{" "}
           to create the table and bucket. Upload controls stay hidden until that migration is available.
-        </div>
+        </AppNotice>
       ) : null}
 
       {hasNoServices ? (
@@ -225,15 +210,11 @@ export default async function AdminServicesPage({
 
       <div id="create-service">
         <DashboardPrimaryPanel className="p-6">
-          <div className="section-header">
-            <div className="section-header-copy">
-              <p className="section-kicker">{t("operations")}</p>
-              <h2 className="section-title">{t("addService")}</h2>
-              <p className="section-description">
-                Add a new bookable offer and keep the list operationally tight.
-              </p>
-            </div>
-          </div>
+          <SectionHeader
+            eyebrow={t("operations")}
+            title={t("addService")}
+            description="Add a new bookable offer and keep the list operationally tight."
+          />
 
           <form action="/api/admin/services" method="POST" className="mt-5 space-y-4">
             <input type="hidden" name="business_id" value={business.id} />
@@ -265,22 +246,23 @@ export default async function AdminServicesPage({
                 className="input-field min-h-[110px]"
               />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <FormActions className="justify-between">
               <p className="text-xs text-[var(--text-muted)]">
                 Service image uploads appear after the service is saved and shows up below.
               </p>
-              <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+              <SubmitButton pendingLabel="Adding service...">
                 Add service
-              </button>
-            </div>
+              </SubmitButton>
+            </FormActions>
           </form>
         </DashboardPrimaryPanel>
       </div>
 
       {hasNoServices ? (
-        <div className="empty-state">
-          No services yet. Add your first real service above to unlock booking-ready setup.
-        </div>
+        <EmptyState
+          title="No services yet"
+          description="Add your first real service above to unlock booking-ready setup."
+        />
       ) : (
         <div className="space-y-4">
           {serviceRows.map((service) => {
@@ -298,10 +280,13 @@ export default async function AdminServicesPage({
                     <div className="space-y-2">
                       <div className="h-[76px] w-[76px] overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)]">
                         {primaryImage?.image_url ? (
-                          <img
+                          <Image
                             src={primaryImage.image_url}
                             alt={primaryImage.alt_text || `${service.name || "Service"} cover`}
+                            width={76}
+                            height={76}
                             className="h-full w-full object-cover"
+                            unoptimized
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center px-2 text-center text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--text-muted)]">
@@ -317,10 +302,13 @@ export default async function AdminServicesPage({
                               className="h-8 w-8 overflow-hidden rounded-lg border border-[var(--border-soft)] bg-[var(--surface-raised)]"
                             >
                               {image.image_url ? (
-                                <img
+                                <Image
                                   src={image.image_url}
                                   alt={image.alt_text || `${service.name || "Service"} thumbnail`}
+                                  width={32}
+                                  height={32}
                                   className="h-full w-full object-cover"
+                                  unoptimized
                                 />
                               ) : null}
                             </div>
@@ -402,9 +390,9 @@ export default async function AdminServicesPage({
                     className="input-field min-h-[120px]"
                   />
                   <div className="flex flex-wrap gap-3">
-                    <button type="submit" className="btn-primary px-4 py-2 text-sm font-medium">
+                    <SubmitButton pendingLabel="Saving changes...">
                       Save changes
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
 

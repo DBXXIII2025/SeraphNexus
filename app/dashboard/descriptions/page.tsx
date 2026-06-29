@@ -1,4 +1,10 @@
 import { getBusiness } from "@/lib/auth/getBusiness";
+import {
+  AdminPageContainer,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
+import { AppNotice, EmptyState, SectionHeader } from "@/components/ui/app-ui";
 
 export default async function DescriptionsPage() {
   try {
@@ -12,19 +18,44 @@ export default async function DescriptionsPage() {
       .single();
 
     if (error || !content) {
-      return <div>No description found</div>;
+      return (
+        <AdminPageContainer className="text-[var(--text-main)]">
+          <EmptyState
+            title="No description found"
+            description="Property content will appear here once a description has been saved."
+          />
+        </AdminPageContainer>
+      );
     }
 
     return (
-      <div>
-        <h1 className="text-2xl mb-4">Description</h1>
-        <div className="border p-4">
-          <h2 className="text-xl">{content.title}</h2>
-          <p>{content.description}</p>
-        </div>
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <SectionHeader
+            eyebrow="Legacy Workspace"
+            title="Description"
+            description="Saved customer-facing property content for the active business."
+          />
+        </DashboardPrimaryPanel>
+
+        <DashboardSecondaryPanel>
+          <p className="section-kicker">Property Content</p>
+          <h2 className="mt-2 text-xl font-semibold text-[var(--text-strong)]">
+            {content.title || "Untitled description"}
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
+            {content.description || "No description text has been saved yet."}
+          </p>
+        </DashboardSecondaryPanel>
+      </AdminPageContainer>
     );
   } catch (err: any) {
-    return <div>{err.message}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <AppNotice tone="error" title="Description unavailable">
+          {err.message}
+        </AppNotice>
+      </AdminPageContainer>
+    );
   }
 }

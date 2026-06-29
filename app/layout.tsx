@@ -8,7 +8,28 @@ import Navbar from "@/components/navigation/Navbar";
 import LegalBrandingNotice from "@/components/legal/LegalBrandingNotice";
 
 export const metadata: Metadata = {
+  title: {
+    default: "Seraph Nexus | Business operations and checkout platform",
+    template: "%s | Seraph Nexus",
+  },
+  description:
+    "Run bookings, services, rentals, products, orders, promotions, customer messages, and checkout from one business workspace.",
   applicationName: "Seraph Nexus",
+  metadataBase: new URL("https://seraphnexus.com"),
+  openGraph: {
+    type: "website",
+    siteName: "Seraph Nexus",
+    title: "Seraph Nexus",
+    description:
+      "A business operations platform for bookings, commerce, customer activity, and Stripe-powered checkout.",
+    url: "https://seraphnexus.com",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Seraph Nexus",
+    description:
+      "Manage services, rentals, products, orders, promotions, leads, messages, and checkout from one workspace.",
+  },
   other: {
     copyright: "2026 SeraphCore. All rights reserved.",
   },
@@ -35,9 +56,14 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <div className="app-root-shell flex flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
           {!hideGlobalHeader ? <Navbar /> : null}
-          <div className="flex-1">{children}</div>
+          <main id="main-content" className="flex-1" tabIndex={-1}>
+            {children}
+          </main>
           {!hideGlobalFooter ? (
             <footer className="site-legal-footer">
               <div className="public-container">

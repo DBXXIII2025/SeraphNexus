@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
@@ -286,12 +287,15 @@ export default function ShopClient({
                   key={item.id}
                   className="overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface)]"
                 >
-                  <div className="aspect-[4/3] bg-[var(--surface-muted)]">
+                  <div className="relative aspect-[4/3] bg-[var(--surface-muted)]">
                     {item.image_url ? (
-                      <img
+                      <Image
                         src={item.image_url}
                         alt={item.name}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
+                        unoptimized
                       />
                     ) : null}
                   </div>

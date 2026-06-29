@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import StructuredIcon from "@/components/icons/StructuredIcon";
 import { BusinessViewModel, formatBusinessType, getCategoryMeta } from "../exploreData";
@@ -27,11 +28,13 @@ export default function ExploreDirectoryRow({
       <article className="flex min-h-[84px] w-full items-center gap-3 rounded-[0.95rem] border border-[rgba(52,56,74,0.64)] bg-[var(--surface)] px-3 py-2 shadow-[0_6px_18px_rgba(6,8,18,0.14)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[rgba(59,63,85,0.9)] group-hover:shadow-[0_10px_24px_rgba(6,8,18,0.18)] sm:min-h-[88px] sm:px-3.5">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[0.75rem] border border-[rgba(59,63,85,0.74)] bg-[linear-gradient(180deg,rgba(45,49,71,0.96),rgba(31,34,51,0.96))] shadow-[inset_0_1px_0_rgba(229,231,235,0.05)] sm:h-[46px] sm:w-[46px]">
           {business.thumbnailUrl ? (
-            <img
+            <Image
               src={business.thumbnailUrl}
               alt={`${business.displayName} logo`}
+              width={46}
+              height={46}
               className="h-full w-full object-contain p-1.5"
-              loading="lazy"
+              unoptimized
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">

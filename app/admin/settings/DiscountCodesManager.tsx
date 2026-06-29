@@ -9,6 +9,7 @@ import {
   type DiscountCodeRow,
   type DiscountType,
 } from "@/lib/discountCodes";
+import { AppNotice, EmptyState, LoadingState } from "@/components/ui/app-ui";
 
 type FormState = {
   id: string | null;
@@ -219,11 +220,12 @@ export default function DiscountCodesManager({
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
         <div className="space-y-3">
           {loading ? (
-            <div className="empty-state">Loading promo codes…</div>
+            <LoadingState label="Loading promo codes" />
           ) : codes.length === 0 ? (
-            <div className="empty-state">
-              No promo codes yet. Create the first one for this business.
-            </div>
+            <EmptyState
+              title="No promo codes yet"
+              description="Create the first promo code for this business."
+            />
           ) : (
             codes.map((code) => (
               <div key={code.id} className="table-row-panel p-4">
@@ -423,8 +425,8 @@ export default function DiscountCodesManager({
               </label>
             </div>
 
-            {error ? <p className="text-sm text-red-300">{error}</p> : null}
-            {message ? <p className="text-sm text-green-300">{message}</p> : null}
+            {error ? <AppNotice variant="error">{error}</AppNotice> : null}
+            {message ? <AppNotice variant="success">{message}</AppNotice> : null}
 
             <div className="flex flex-wrap items-center gap-3">
               <button

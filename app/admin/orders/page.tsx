@@ -9,12 +9,12 @@ import {
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
+import { AppNotice, EmptyState, SectionHeader, StatCard } from "@/components/ui/app-ui";
 import {
   AdminPageContainer,
   DashboardGrid,
   DashboardPrimaryPanel,
   DashboardSecondaryPanel,
-  MetricCard,
 } from "@/components/admin/AdminLayoutSystem";
 
 type NormalizedItem = {
@@ -225,19 +225,13 @@ function SummaryCard({
   detail: string;
   tone?: "default" | "success" | "alert";
 }) {
-  const valueClass =
-    tone === "success"
-      ? "text-[var(--accent-soft)]"
-      : tone === "alert"
-        ? "text-[var(--accent-soft)]"
-        : "text-[var(--text-strong)]";
-
   return (
-    <MetricCard>
-      <p className="section-kicker">{label}</p>
-      <p className={`mt-3 text-[1.85rem] font-semibold leading-none ${valueClass}`}>{value}</p>
-      <p className="mt-2 text-sm text-[var(--text-soft)]">{detail}</p>
-    </MetricCard>
+    <StatCard
+      label={label}
+      value={value}
+      detail={detail}
+      tone={tone === "alert" ? "warning" : tone}
+    />
   );
 }
 
@@ -710,31 +704,33 @@ export default async function AdminOrdersPage({
   return (
     <AdminPageContainer className="text-[var(--text-main)]">
       {params?.success === "deleted" ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+        <AppNotice tone="success">
           Pending unpaid order deleted.
-        </div>
+        </AppNotice>
       ) : null}
 
       {params?.success === "status" ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+        <AppNotice tone="success">
           Order updated safely.
-        </div>
+        </AppNotice>
       ) : null}
 
       {params?.success === "refunded" ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+        <AppNotice tone="success">
           Order refunded and removed from active views.
-        </div>
+        </AppNotice>
       ) : null}
 
       <DashboardPrimaryPanel>
-        <p className="section-kicker">{t("orders")}</p>
-        <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.2rem]">{t("orders")} queue</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">
-          {isStoreBusiness
-            ? `Manage incoming product orders for ${business.name}.`
-            : `Manage incoming orders for ${business.name}.`}
-        </p>
+        <SectionHeader
+          eyebrow={t("orders")}
+          title={`${t("orders")} queue`}
+          description={
+            isStoreBusiness
+              ? `Manage incoming product orders for ${business.name}.`
+              : `Manage incoming orders for ${business.name}.`
+          }
+        />
       </DashboardPrimaryPanel>
 
       <DashboardGrid className="md:grid-cols-3">
@@ -762,11 +758,14 @@ export default async function AdminOrdersPage({
       </DashboardGrid>
 
       {normalizedOrders.length === 0 && fallbackRows.length === 0 ? (
-        <div className="empty-state">
-          {isStoreBusiness
-            ? "No product orders yet. New paid storefront orders will appear here."
-            : "No food orders yet. New order queue activity will appear here."}
-        </div>
+        <EmptyState
+          title={isStoreBusiness ? "No product orders yet" : "No food orders yet"}
+          description={
+            isStoreBusiness
+              ? "New paid storefront orders will appear here."
+              : "New order queue activity will appear here."
+          }
+        />
       ) : (
         <div className="space-y-4">
           {normalizedOrders.map((record) => renderOrderCard(record, isStoreBusiness))}

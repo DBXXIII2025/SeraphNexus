@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 import {
   getBusinessProfileCompletion,
@@ -1024,7 +1025,16 @@ export default function CustomizeClient({
             ) : (
               galleryImages.map((image, index) => (
                 <div key={image.id} className="overflow-hidden rounded-lg border border-[var(--border-soft)] bg-[var(--surface)]">
-                  <img src={image.image_url} alt={image.alt_text || "Business gallery photo"} className="aspect-square w-full object-cover" />
+                  <div className="relative aspect-square w-full">
+                    <Image
+                      src={image.image_url}
+                      alt={image.alt_text || "Business gallery photo"}
+                      fill
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
                   <div className="space-y-2 p-2 text-xs">
                     <span className="block font-medium text-[var(--text-soft)]">
                       {image.is_primary ? "Primary photo" : `Photo ${index + 1}`}

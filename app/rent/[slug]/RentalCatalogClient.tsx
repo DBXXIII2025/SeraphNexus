@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MessageBusinessButton from "@/components/MessageBusinessButton";
@@ -299,10 +300,13 @@ export default function RentalCatalogClient({
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--border-soft)] bg-[var(--accent-muted)] text-sm font-semibold text-[var(--accent)]">
                 {business.logo_url ? (
-                  <img
+                  <Image
                     src={business.logo_url}
                     alt={`${business.name} logo`}
+                    width={44}
+                    height={44}
                     className="h-full w-full object-cover"
+                    unoptimized
                   />
                 ) : (
                   businessInitials
@@ -368,10 +372,13 @@ export default function RentalCatalogClient({
           <section className="border-b border-[var(--border-soft)] py-8">
             <div className="public-gallery-frame">
               <div className="relative aspect-[1.2/1]">
-                <img
+                <Image
                   src={activeImage.image_url}
                   alt={activeImage.alt_text || `${business.name} photo`}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(min-width: 1024px) 960px, 100vw"
+                  className="object-cover"
+                  unoptimized
                 />
 
                 {galleryImages.length > 1 ? (
@@ -404,16 +411,19 @@ export default function RentalCatalogClient({
                     type="button"
                     onClick={() => setActiveImageIndex(index)}
                     aria-label={`Show photo ${index + 1}`}
-                    className={`aspect-square overflow-hidden border p-0 text-left ${
+                    className={`relative aspect-square overflow-hidden border p-0 text-left ${
                       index === activeImageIndex
                         ? "border-[var(--accent)]"
                         : "border-[var(--border-soft)] opacity-80 hover:opacity-100"
                     }`}
                   >
-                    <img
+                    <Image
                       src={image.image_url}
                       alt={image.alt_text || `${business.name} thumbnail ${index + 1}`}
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                      unoptimized
                     />
                   </button>
                 ))}

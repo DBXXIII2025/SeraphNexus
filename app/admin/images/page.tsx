@@ -1,15 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 export default function AdminImagesPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  const loadImages = useCallback(async () => {
+    const { data, error } = await supabase.storage
+      .from("property-images")
+      .list("", {
+        limit: 100,
+        sortBy: { column: "created_at", order: "desc" },
+      });
+
+    if (error) {
+      console.error("LIST ERROR:", error);
+      return;
+    }
+
+    if (!data) return;
+
+    const urls = data.map((file) => {
+      const { data: urlData } = supabase.storage
+        .from("property-images")
+        .getPublicUrl(file.name);
+
+      return urlData.publicUrl;
+    });
+
+    setImages(urls);
+  }, [supabase]);
 
   useEffect(() => {
     async function init() {
@@ -39,33 +66,7 @@ export default function AdminImagesPage() {
     }
 
     init();
-  }, [router, supabase]);
-
-  async function loadImages() {
-    const { data, error } = await supabase.storage
-      .from("property-images")
-      .list("", {
-        limit: 100,
-        sortBy: { column: "created_at", order: "desc" },
-      });
-
-    if (error) {
-      console.error("LIST ERROR:", error);
-      return;
-    }
-
-    if (!data) return;
-
-    const urls = data.map((file) => {
-      const { data: urlData } = supabase.storage
-        .from("property-images")
-        .getPublicUrl(file.name);
-
-      return urlData.publicUrl;
-    });
-
-    setImages(urls);
-  }
+  }, [loadImages, router, supabase]);
 
   async function uploadImage(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -127,10 +128,13 @@ export default function AdminImagesPage() {
             key={url}
             className="relative w-full h-56 rounded-xl overflow-hidden border border-zinc-700"
           >
-            <img
+            <Image
               src={url}
               alt="Property"
-              className="w-full h-full object-cover"
+              fill
+              sizes="(min-width: 768px) 33vw, 100vw"
+              className="object-cover"
+              unoptimized
             />
           </div>
         ))}

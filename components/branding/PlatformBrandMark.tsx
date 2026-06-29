@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export type PlatformBrandRenderState = "missing" | "loading" | "loaded" | "error";
@@ -42,9 +43,12 @@ export default function PlatformBrandMark({
   }
 
   return (
-    <img
+    <Image
       src={src}
       alt={alt}
+      width={96}
+      height={96}
+      unoptimized
       className={imgClassName}
       onLoad={() => {
         console.info(`[platform-branding] ${logScope} image loaded`, {

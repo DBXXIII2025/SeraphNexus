@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { getTenantQuickstart } from "@/lib/tenantQuickstart";
@@ -322,7 +323,16 @@ export default function AdminProductsManager({
             />
 
             {form.image_url && (
-              <img src={form.image_url} alt="Preview" className="h-40 w-full rounded-lg object-cover" />
+              <div className="relative h-40 w-full overflow-hidden rounded-lg">
+                <Image
+                  src={form.image_url}
+                  alt="Preview"
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
             )}
 
             {error && <p className="text-sm text-red-400">{error}</p>}

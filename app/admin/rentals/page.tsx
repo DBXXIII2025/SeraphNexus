@@ -25,6 +25,7 @@ import {
   DashboardPrimaryPanel,
   DashboardSecondaryPanel,
 } from "@/components/admin/AdminLayoutSystem";
+import { AppNotice, EmptyState } from "@/components/ui/app-ui";
 
 type PropertyRow = Database["public"]["Tables"]["property"]["Row"];
 type PropertyContentRow = Pick<
@@ -254,7 +255,6 @@ export default async function AdminRentalsPage({
   const errorMessage = params?.error ? ERROR_MESSAGES[String(params.error)] : null;
   const successMessage = params?.success ? SUCCESS_MESSAGES[String(params.success)] : null;
   const warningMessage = params?.warning ? ERROR_MESSAGES[String(params.warning)] : null;
-  const errorDetail = String(params?.message || "").trim();
 
   const totalRevenue = visibleReservations.reduce(
     (sum, reservation) => sum + Number(reservation.amount_total || 0),
@@ -305,22 +305,15 @@ export default async function AdminRentalsPage({
       </DashboardPrimaryPanel>
 
       {errorMessage ? (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          <p>{errorMessage}</p>
-          {errorDetail ? <p className="mt-2 text-xs text-red-300">Details: {errorDetail}</p> : null}
-        </div>
+        <AppNotice variant="error">{errorMessage}</AppNotice>
       ) : null}
 
       {successMessage ? (
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-          {successMessage}
-        </div>
+        <AppNotice variant="success">{successMessage}</AppNotice>
       ) : null}
 
       {warningMessage ? (
-        <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
-          {warningMessage}
-        </div>
+        <AppNotice variant="warning">{warningMessage}</AppNotice>
       ) : null}
 
       {propertyList.length === 0 ? (
@@ -360,9 +353,11 @@ export default async function AdminRentalsPage({
           </div>
 
           {propertyList.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-6 text-sm text-[var(--text-soft)]">
-              Create a listing to activate the calendar and availability controls. Use the quickstart below to save your first real property or rental item.
-            </div>
+            <EmptyState
+              className="mt-5"
+              title="No listings yet"
+              description="Create a listing to activate the calendar and availability controls."
+            />
           ) : (
             <div className="mt-5 space-y-3">
               {propertyList.map((property) => {
@@ -458,9 +453,11 @@ export default async function AdminRentalsPage({
           </p>
 
           {propertyList.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-4 text-sm text-[var(--text-soft)]">
-              Create a listing first, then return here to block dates for it.
-            </div>
+            <EmptyState
+              className="mt-4"
+              title="No listing selected"
+              description="Create a listing first, then return here to block dates for it."
+            />
           ) : (
             <form action="/api/admin/rentals" method="POST" className="mt-5 space-y-4">
               <input type="hidden" name="action" value="block_dates" />
@@ -525,13 +522,17 @@ export default async function AdminRentalsPage({
             description={selectedProperty.description || ""}
           />
         ) : propertyList.length === 0 ? (
-          <p className="mt-4 text-sm text-[var(--text-soft)]">
-            Create a listing first, then return here to edit its details.
-          </p>
+          <EmptyState
+            className="mt-4"
+            title="No listing to edit"
+            description="Create a listing first, then return here to edit its details."
+          />
         ) : (
-          <p className="mt-4 text-sm text-[var(--text-soft)]">
-            Select a listing from the left to edit its details.
-          </p>
+          <EmptyState
+            className="mt-4"
+            title="Select a listing"
+            description="Choose a listing from the selector to edit its details."
+          />
         )}
       </DashboardPrimaryPanel>
 
@@ -545,7 +546,7 @@ export default async function AdminRentalsPage({
         </div>
         <div className="mt-5 space-y-3">
           {propertyList.length === 0 ? (
-            <p className="text-sm text-[var(--text-soft)]">No listings saved yet.</p>
+            <EmptyState title="No listings saved yet" />
           ) : (
             propertyList.map((property) => (
               <div key={property.id} className="table-row-panel px-4 py-4">
@@ -593,7 +594,7 @@ export default async function AdminRentalsPage({
           ) : null}
           <div className="mt-5 space-y-3">
             {visibleBlocks.length === 0 ? (
-              <p className="text-sm text-[var(--text-soft)]">No blocked dates.</p>
+              <EmptyState title="No blocked dates" />
             ) : (
               visibleBlocks.map((block) => (
                 <div key={block.id} className="table-row-panel px-4 py-4">
@@ -640,7 +641,7 @@ export default async function AdminRentalsPage({
           </div>
           <div className="mt-5 space-y-3">
             {visibleReservations.length === 0 ? (
-              <p className="text-sm text-[var(--text-soft)]">No reservations yet.</p>
+              <EmptyState title="No reservations yet" />
             ) : (
               visibleReservations.map((reservation) =>
                 (() => {

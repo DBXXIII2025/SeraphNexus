@@ -1,4 +1,10 @@
 import { getBusiness } from "@/lib/auth/getBusiness";
+import {
+  AdminPageContainer,
+  DashboardPrimaryPanel,
+  DashboardSecondaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
+import { AppNotice, EmptyState, SectionHeader } from "@/components/ui/app-ui";
 
 export default async function PropertyPage() {
   try {
@@ -11,26 +17,53 @@ export default async function PropertyPage() {
       .eq("business_id", businessId);
 
     if (error) {
-      return <div>Error loading properties</div>;
+      return (
+        <AdminPageContainer className="text-[var(--text-main)]">
+          <AppNotice tone="error" title="Properties unavailable">
+            Error loading properties.
+          </AppNotice>
+        </AdminPageContainer>
+      );
     }
 
     return (
-      <div>
-        <h1 className="text-2xl mb-4">Properties</h1>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <SectionHeader
+            eyebrow="Legacy Workspace"
+            title="Properties"
+            description="Rental property records connected to the active business."
+          />
+        </DashboardPrimaryPanel>
 
-        {(properties?.length ?? 0) === 0 && <p>No properties found.</p>}
-
-        <ul className="space-y-2">
-          {properties?.map((p: any) => (
-            <li key={p.id} className="border p-2">
-              <p><strong>Name:</strong> {p.name}</p>
-              <p><strong>Price:</strong> ${p.price}</p>
-            </li>
-          ))}
-        </ul>
-      </div>
+        {(properties?.length ?? 0) === 0 ? (
+          <EmptyState
+            title="No properties found"
+            description="Rental listings will appear here once properties are added."
+          />
+        ) : (
+          <DashboardSecondaryPanel>
+            <ul className="space-y-3">
+              {properties?.map((p: any) => (
+                <li key={p.id} className="table-row-panel p-4">
+                  <p className="font-medium text-[var(--text-strong)]">{p.name || "Property"}</p>
+                  <p className="mt-1 text-sm text-[var(--text-soft)]">
+                    Price: {p.price ? `$${p.price}` : "Not set"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </DashboardSecondaryPanel>
+        )}
+      </AdminPageContainer>
     );
   } catch (err: any) {
-    return <div>{err.message}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <AppNotice tone="error" title="Properties unavailable">
+          {err.message}
+        </AppNotice>
+      </AdminPageContainer>
+    );
   }
 }

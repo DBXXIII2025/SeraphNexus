@@ -1,10 +1,21 @@
 import DashboardNav from "../components/DashboardNav";
+import {
+  AdminPageContainer,
+  DashboardPrimaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
+import { SectionHeader } from "@/components/ui/app-ui";
 
 export default function UpgradePage() {
   return (
-    <div style={{ padding: "40px", color: "white" }}>
-      <h1>Upgrade</h1>
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
+        <SectionHeader
+          eyebrow="Legacy Workspace"
+          title="Upgrade"
+          description="Plan and workspace navigation for legacy dashboard routes."
+        />
+      </DashboardPrimaryPanel>
       <DashboardNav />
-    </div>
+    </AdminPageContainer>
   );
 }

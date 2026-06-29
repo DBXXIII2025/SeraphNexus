@@ -22,6 +22,12 @@ import InAppTransactionCard, {
   type InAppTransactionSection,
 } from "@/components/confirmation/InAppTransactionCard";
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
+import {
+  AdminPageContainer,
+  DashboardGrid,
+  DashboardPrimaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
+import { EmptyState, SectionHeader, StatCard } from "@/components/ui/app-ui";
 
 type TransactionCardRecord = {
   id: string;
@@ -78,10 +84,12 @@ export default async function TransactionsPage() {
 
   if (!business) {
     return (
-      <div className="space-y-4 text-[var(--text-main)]">
-        <h1 className="text-2xl font-semibold">Transactions</h1>
-        <p className="text-sm text-[var(--text-soft)]">No active business found.</p>
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <EmptyState
+          title="No active business found"
+          description="Select or create a business before reviewing transactions."
+        />
+      </AdminPageContainer>
     );
   }
 
@@ -477,38 +485,38 @@ export default async function TransactionsPage() {
   }
 
   return (
-    <div className="space-y-6 text-[var(--text-main)]">
-      <section className="premium-card p-6 sm:p-8">
-        <p className="section-kicker">In-app confirmations</p>
-        <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)]">
-          Transactions
-        </h1>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--text-soft)] sm:text-base">
-          Completed transaction details for {business.name}. This view reads from the
-          live booking, reservation, and order records for the active business.
-        </p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="surface-card p-4">
-            <p className="section-kicker">Business</p>
-            <p className="mt-2 text-sm text-[var(--text-strong)]">{business.name}</p>
-          </div>
-          <div className="surface-card p-4">
-            <p className="section-kicker">Module</p>
-            <p className="mt-2 text-sm text-[var(--text-strong)]">{businessModule.label}</p>
-          </div>
-          <div className="surface-card p-4">
-            <p className="section-kicker">Records</p>
-            <p className="mt-2 text-sm text-[var(--text-strong)]">{cards.length}</p>
-          </div>
-        </div>
-      </section>
+    <AdminPageContainer className="text-[var(--text-main)]">
+      <DashboardPrimaryPanel>
+        <SectionHeader
+          eyebrow="In-app confirmations"
+          title="Transactions"
+          description={`Completed transaction details for ${business.name}. This view reads from the live booking, reservation, and order records for the active business.`}
+        />
+        <DashboardGrid className="mt-5 sm:grid-cols-3">
+          <StatCard
+            label="Business"
+            value={business.name}
+            detail="Active transaction workspace."
+          />
+          <StatCard
+            label="Module"
+            value={businessModule.label}
+            detail={businessModule.description}
+          />
+          <StatCard
+            label="Records"
+            value={String(cards.length)}
+            detail="Visible transaction records."
+            tone="success"
+          />
+        </DashboardGrid>
+      </DashboardPrimaryPanel>
 
       {cards.length === 0 ? (
-        <section className="surface-card p-6">
-          <p className="text-sm text-[var(--text-soft)]">
-            No completed transactions are available for this business yet.
-          </p>
-        </section>
+        <EmptyState
+          title="No completed transactions"
+          description="Completed transaction details will appear here once bookings, reservations, or orders are available for this business."
+        />
       ) : (
         <section className="space-y-4">
           {cards.map((card) => (
@@ -525,6 +533,6 @@ export default async function TransactionsPage() {
           ))}
         </section>
       )}
-    </div>
+    </AdminPageContainer>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 
 type BusinessLogoManagerProps = {
@@ -117,10 +118,13 @@ export default function BusinessLogoManager({
         <div className="flex items-center gap-4">
           <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] shadow-inner">
             {logoUrl ? (
-              <img
+              <Image
                 src={logoUrl}
                 alt={`${businessName} logo`}
+                width={76}
+                height={76}
                 className="h-full w-full object-cover"
+                unoptimized
               />
             ) : (
               <span className="text-lg font-semibold tracking-[0.16em] text-[var(--text-main)]">

@@ -18,6 +18,7 @@ import {
   DashboardGrid,
   DashboardPrimaryPanel,
 } from "@/components/admin/AdminLayoutSystem";
+import { EmptyState, SectionHeader, StatCard } from "@/components/ui/app-ui";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +39,11 @@ export default async function AdminLeadsPage() {
     return (
       <AdminPageContainer className="text-[var(--text-main)]">
         <DashboardPrimaryPanel>
-          <h1 className="text-2xl font-semibold text-[var(--text-strong)]">{t("leads")}</h1>
-          <p className="mt-3 text-sm text-[var(--text-soft)]">
-            Select or create a business to view lead activity and visitor analytics.
-          </p>
+          <SectionHeader
+            eyebrow={t("leads")}
+            title="Lead intelligence console"
+            description="Select or create a business to view lead activity and visitor analytics."
+          />
         </DashboardPrimaryPanel>
       </AdminPageContainer>
     );
@@ -55,16 +57,16 @@ export default async function AdminLeadsPage() {
     return (
       <AdminPageContainer className="text-[var(--text-main)]">
         <DashboardPrimaryPanel>
-          <h1 className="text-2xl font-semibold text-[var(--text-strong)]">{t("leads")}</h1>
-          <p className="mt-3 text-sm text-[var(--text-soft)]">
-            Lead capture is available on Pro and Elite plans. Your current plan is {plan.label}.
-          </p>
-          <Link
-            href="/admin/upgrade"
-            className="btn-primary mt-5 inline-flex px-4 py-2 text-sm font-medium"
-          >
-            {t("upgrade")}
-          </Link>
+          <SectionHeader
+            eyebrow={t("leads")}
+            title="Lead capture needs a higher plan"
+            description={`Lead capture is available on Pro and Elite plans. Your current plan is ${plan.label}.`}
+            actions={
+              <Link href="/admin/upgrade" className="btn-primary px-4 py-2 text-sm font-medium">
+                {t("upgrade")}
+              </Link>
+            }
+          />
         </DashboardPrimaryPanel>
       </AdminPageContainer>
     );
@@ -82,40 +84,25 @@ export default async function AdminLeadsPage() {
     <AdminPageContainer className="text-[var(--text-main)]">
       <DashboardPrimaryPanel>
         <div className="relative grid gap-6 xl:grid-cols-[1.5fr,0.9fr]">
-          <div>
-            <p className="section-kicker">{t("leads")}</p>
-            <h1 className="mt-3 text-3xl font-semibold text-[var(--text-strong)] lg:text-[2.35rem]">
-              Lead intelligence console
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--text-soft)]">
-              Real lead signals for {business.name || "your business"} are grouped here into a
-              clean follow-up workflow for the active {businessModule.label.toLowerCase()} workspace.
-            </p>
-          </div>
+          <SectionHeader
+            eyebrow={t("leads")}
+            title="Lead intelligence console"
+            description={`Real lead signals for ${business.name || "your business"} are grouped here into a clean follow-up workflow for the active ${businessModule.label.toLowerCase()} workspace.`}
+          />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-[var(--destructive-border)] bg-[var(--destructive-bg)] p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                Needs Follow-Up
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
-                {dashboard.summary.needsFollowUpLeads}
-              </p>
-              <p className="mt-2 text-sm text-[var(--text-soft)]">
-                Open leads that still need owner action.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                High Priority
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-[var(--accent-soft)]">
-                {dashboard.summary.highPriorityLeads}
-              </p>
-              <p className="mt-2 text-sm text-[var(--text-soft)]">
-                Leads showing direct conversation or transaction intent.
-              </p>
-            </div>
+            <StatCard
+              label="Needs Follow-Up"
+              value={dashboard.summary.needsFollowUpLeads}
+              detail="Open leads that still need owner action."
+              tone="warning"
+            />
+            <StatCard
+              label="High Priority"
+              value={dashboard.summary.highPriorityLeads}
+              detail="Leads showing direct conversation or transaction intent."
+              tone="success"
+            />
           </div>
         </div>
       </DashboardPrimaryPanel>
@@ -124,16 +111,15 @@ export default async function AdminLeadsPage() {
 
       {dashboard.events.length === 0 ? (
         <DashboardPrimaryPanel className="border-dashed p-8">
-          <h2 className="text-xl font-semibold text-[var(--text-strong)]">No lead events yet</h2>
-          <p className="mt-3 max-w-2xl text-sm text-[var(--text-soft)]">
-            Lead activity will appear here once visitors view pages, click message entry points,
-            send guest messages, or start booking, reservation, or checkout flows for this business.
-          </p>
+          <EmptyState
+            title="No lead events yet"
+            description="Lead activity will appear here once visitors view pages, click message entry points, send guest messages, or start booking, reservation, or checkout flows for this business."
+          />
           <div className="mt-5 grid gap-3 lg:grid-cols-3">
             {emptyStateSuggestions.map((item) => (
               <div
                 key={item}
-                className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4 text-sm text-[var(--text-soft)]"
+                className="dashboard-secondary-panel text-sm text-[var(--text-soft)]"
               >
                 {item}
               </div>

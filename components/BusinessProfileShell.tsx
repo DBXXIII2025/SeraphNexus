@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -157,17 +158,20 @@ export default function BusinessProfileShell({
         description={businessDescription || null}
         meta={
           <div
-            className="public-card-mark overflow-hidden"
+            className="public-card-mark relative overflow-hidden"
             style={{
               width: compact ? "44px" : "56px",
               height: compact ? "44px" : "56px",
             }}
           >
             {logoUrl ? (
-              <img
+              <Image
                 src={logoUrl}
                 alt={`${businessName} logo`}
-                className="h-full w-full object-cover"
+                fill
+                sizes={compact ? "44px" : "56px"}
+                className="object-cover"
+                unoptimized
               />
             ) : (
               <span>{initials}</span>
@@ -183,10 +187,13 @@ export default function BusinessProfileShell({
         <div className="public-gallery-frame">
           <div className="relative aspect-[1.2/1]">
             {activeImage ? (
-              <img
+              <Image
                 src={activeImage.image_url}
                 alt={activeImage.alt_text || `${businessName} photo ${activeIndex + 1}`}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(min-width: 768px) 720px, 100vw"
+                className="object-cover"
+                unoptimized
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
@@ -224,12 +231,15 @@ export default function BusinessProfileShell({
                   type="button"
                   onClick={() => setActiveIndex(index)}
                   aria-label={`Show photo ${index + 1}`}
-                  className="aspect-square overflow-hidden border p-0"
+                  className="relative aspect-square overflow-hidden border p-0"
                 >
-                  <img
+                  <Image
                     src={image.image_url}
                     alt={image.alt_text || `${businessName} thumbnail ${index + 1}`}
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                    unoptimized
                   />
                 </button>
               ))}

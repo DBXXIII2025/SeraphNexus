@@ -25,8 +25,18 @@ import type {
 import {
   DashboardGrid,
   DashboardPrimaryPanel,
-  MetricCard,
 } from "@/components/admin/AdminLayoutSystem";
+import {
+  ActionButton,
+  AppNotice,
+  ContentCard,
+  EmptyState,
+  FormField,
+  FormLabel,
+  LoadingState,
+  SectionHeader,
+  StatCard,
+} from "@/components/ui/app-ui";
 
 type Props = {
   businessId: string;
@@ -93,21 +103,6 @@ function buildRangeLabel(data: AnalyticsResponse | null) {
   }
 
   return `${formatAxisDate(data.range.startDate)} - ${formatAxisDate(data.range.endDate)}`;
-}
-
-function EmptyState({
-  title,
-  detail,
-}: {
-  title: string;
-  detail: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] px-6 py-12 text-center">
-      <p className="text-base font-medium text-[var(--text-strong)]">{title}</p>
-      <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">{detail}</p>
-    </div>
-  );
 }
 
 export default function PerformanceAnalyticsClient({
@@ -216,17 +211,20 @@ export default function PerformanceAnalyticsClient({
     <div className="space-y-6">
       <DashboardPrimaryPanel>
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="section-header-copy">
-            <p className="section-kicker">Performance Graph</p>
-            <h2 className="section-title">Live daily analytics for {businessName}</h2>
-            <p className="section-description">
+          <SectionHeader
+            eyebrow="Performance Graph"
+            title={`Live daily analytics for ${businessName}`}
+            description={
+              <>
               Daily buckets auto-calculate from the active business data source and stay aligned to
               the current workspace context.
-            </p>
-          </div>
+              </>
+            }
+            className="flex-1"
+          />
 
           <div className="min-w-full space-y-4 xl:min-w-[340px]">
-            <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
+            <ContentCard className="p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
                 Date range
               </p>
@@ -237,8 +235,9 @@ export default function PerformanceAnalyticsClient({
                     <button
                       key={option.value}
                       type="button"
+                      aria-pressed={isActive}
                       onClick={() => setRangePreset(option.value)}
-                      className={`rounded-full border px-3 py-2 text-sm transition ${
+                      className={`status-chip transition ${
                         isActive
                           ? "border-[var(--accent-soft)] bg-[var(--accent-muted)] text-[var(--text-strong)]"
                           : "border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-soft)] hover:border-[var(--accent-soft)]"
@@ -252,29 +251,31 @@ export default function PerformanceAnalyticsClient({
 
               {rangePreset === "custom" ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <label className="text-sm text-[var(--text-soft)]">
-                    <span className="form-label">Start date</span>
+                  <FormField>
+                    <FormLabel htmlFor="analytics-start-date">Start date</FormLabel>
                     <input
+                      id="analytics-start-date"
                       type="date"
                       value={customStartDate}
                       onChange={(event) => setCustomStartDate(event.target.value)}
                       className="input-field"
                     />
-                  </label>
-                  <label className="text-sm text-[var(--text-soft)]">
-                    <span className="form-label">End date</span>
+                  </FormField>
+                  <FormField>
+                    <FormLabel htmlFor="analytics-end-date">End date</FormLabel>
                     <input
+                      id="analytics-end-date"
                       type="date"
                       value={customEndDate}
                       onChange={(event) => setCustomEndDate(event.target.value)}
                       className="input-field"
                     />
-                  </label>
+                  </FormField>
                 </div>
               ) : null}
-            </div>
+            </ContentCard>
 
-            <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-raised)] p-4">
+            <ContentCard className="p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
                 Metric
               </p>
@@ -287,8 +288,9 @@ export default function PerformanceAnalyticsClient({
                       key={metric}
                       type="button"
                       disabled={!isSupported}
+                      aria-pressed={isActive}
                       onClick={() => setSelectedMetric(metric)}
-                      className={`rounded-full border px-3 py-2 text-sm transition ${
+                      className={`status-chip transition ${
                         isActive
                           ? "border-[var(--accent-soft)] bg-[var(--destructive-bg)] text-[var(--text-strong)]"
                           : isSupported
@@ -301,50 +303,38 @@ export default function PerformanceAnalyticsClient({
                   );
                 })}
               </div>
-            </div>
+            </ContentCard>
           </div>
         </div>
       </DashboardPrimaryPanel>
 
       <DashboardGrid className="dashboard-metrics-grid md:grid-cols-2">
-        <MetricCard>
-          <p className="section-kicker">{METRIC_LABELS[selectedMetric]}</p>
-          <p className="mt-4 text-[1.95rem] font-semibold text-[var(--text-strong)]">
-            {formatMetricValue(selectedMetric, selectedMetricTotal)}
-          </p>
-          <p className="mt-2 text-sm text-[var(--text-soft)]">
-            {rangeLabel || "Current range"} total
-          </p>
-        </MetricCard>
-        <MetricCard>
-          <p className="section-kicker">Peak day</p>
-          <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
-            {formatMetricValue(selectedMetric, selectedMetricPeak)}
-          </p>
-          <p className="mt-2 text-sm text-[var(--text-soft)]">
-            Highest single-day value in the selected window
-          </p>
-        </MetricCard>
-        <MetricCard>
-          <p className="section-kicker">Plan</p>
-          <p className="mt-4 text-[1.95rem] font-semibold text-[var(--text-strong)]">
-            {planLabel}
-          </p>
-          <p className="mt-2 text-sm text-[var(--text-soft)]">
-            Core analytics are enabled for this business
-          </p>
-        </MetricCard>
-        <MetricCard>
-          <p className="section-kicker">Advanced</p>
-          <p className="mt-4 text-[1.95rem] font-semibold text-[var(--accent-soft)]">
-            {supportsAdvancedAnalytics ? "Elite ready" : "Pro core"}
-          </p>
-          <p className="mt-2 text-sm text-[var(--text-soft)]">
-            {supportsAdvancedAnalytics
+        <StatCard
+          label={METRIC_LABELS[selectedMetric]}
+          value={formatMetricValue(selectedMetric, selectedMetricTotal)}
+          detail={`${rangeLabel || "Current range"} total`}
+        />
+        <StatCard
+          label="Peak day"
+          value={formatMetricValue(selectedMetric, selectedMetricPeak)}
+          detail="Highest single-day value in the selected window"
+          tone="success"
+        />
+        <StatCard
+          label="Plan"
+          value={planLabel}
+          detail="Core analytics are enabled for this business"
+        />
+        <StatCard
+          label="Advanced"
+          value={supportsAdvancedAnalytics ? "Elite ready" : "Pro core"}
+          detail={
+            supportsAdvancedAnalytics
               ? "Expanded breakdowns can layer onto this graph next."
-              : "Upgrade to Elite later for richer advanced analytics."}
-          </p>
-        </MetricCard>
+              : "Upgrade to Elite later for richer advanced analytics."
+          }
+          tone="success"
+        />
       </DashboardGrid>
 
       <DashboardPrimaryPanel>
@@ -362,16 +352,16 @@ export default function PerformanceAnalyticsClient({
 
         <div className="mt-6 min-h-[360px]">
           {state.status === "loading" && !state.data ? (
-            <div className="h-[360px] animate-pulse rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-raised)]" />
+            <LoadingState label="Loading analytics" className="h-[360px]" />
           ) : state.status === "error" ? (
             <EmptyState
               title="Analytics could not be loaded"
-              detail={state.error || "A temporary error interrupted the analytics request."}
+              description={state.error || "A temporary error interrupted the analytics request."}
             />
           ) : state.status === "empty" ? (
             <EmptyState
               title="No chartable activity in this range"
-              detail="Try a longer date window or wait for new bookings, orders, reservations, completions, or cancellations to land."
+              description="Try a longer date window or wait for new bookings, orders, reservations, completions, or cancellations to land."
             />
           ) : (
             <ResponsiveContainer width="100%" height={360}>
@@ -429,20 +419,19 @@ export default function PerformanceAnalyticsClient({
         ) : null}
 
         {state.data?.warnings && state.data.warnings.length > 0 ? (
-          <div className="mt-4 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
+          <AppNotice tone="warning" className="mt-4">
             {state.data.warnings[0]}
-          </div>
+          </AppNotice>
         ) : null}
 
         {state.status === "error" ? (
           <div className="mt-6">
-            <button
+            <ActionButton
               type="button"
               onClick={() => setReloadTick((value) => value + 1)}
-              className="btn-secondary px-4 py-2 text-sm font-medium"
             >
               Retry analytics load
-            </button>
+            </ActionButton>
           </div>
         ) : null}
       </DashboardPrimaryPanel>

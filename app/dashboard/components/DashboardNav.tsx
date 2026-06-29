@@ -18,17 +18,16 @@ export default function DashboardNav() {
     pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <nav style={{ marginTop: "20px" }}>
-      {links.map((link, idx) => (
-        <span key={link.href}>
+    <nav className="dashboard-secondary-panel flex flex-wrap gap-3" aria-label="Dashboard navigation">
+      {links.map((link) => (
           <Link
+            key={link.href}
             href={link.href}
-            className={isActive(link.href) ? "font-semibold" : ""}
+            className={isActive(link.href) ? "btn-primary px-4 py-2 text-sm font-medium" : "btn-secondary px-4 py-2 text-sm font-medium"}
+            aria-current={isActive(link.href) ? "page" : undefined}
           >
             {link.label}
           </Link>
-          {idx < links.length - 1 && <br />}
-        </span>
       ))}
     </nav>
   );

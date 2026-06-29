@@ -22,6 +22,7 @@ import {
   DashboardPrimaryPanel,
   DashboardSecondaryPanel,
 } from "@/components/admin/AdminLayoutSystem";
+import { AppNotice, EmptyState } from "@/components/ui/app-ui";
 
 export const dynamic = "force-dynamic";
 
@@ -113,19 +114,15 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
           </p>
 
           {successMessage ? (
-            <div className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-              {successMessage}
-            </div>
+            <AppNotice className="mt-4" variant="success">{successMessage}</AppNotice>
           ) : null}
           {errorMessage ? (
-            <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-              {errorMessage}
-            </div>
+            <AppNotice className="mt-4" variant="error">{errorMessage}</AppNotice>
           ) : null}
 
           <div className="mt-5 space-y-3">
             {conversations.length === 0 ? (
-              <p className="text-sm text-[var(--text-soft)]">No support threads yet.</p>
+              <EmptyState title="No support threads yet" />
             ) : (
               conversations.map((conversation) => (
                 <Link
@@ -166,9 +163,10 @@ async function renderPlatformOwnerMessages(params: SearchParams | undefined) {
 
         <DashboardPrimaryPanel>
           {!selectedConversation || !thread.conversation ? (
-            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--surface-raised)] p-6 text-sm text-[var(--text-soft)]">
-              Select a support thread to view business context and reply.
-            </div>
+            <EmptyState
+              title="Select a support thread"
+              description="View business context and reply from the selected conversation."
+            />
           ) : (
             <>
               <div className="border-b border-[var(--border-soft)] pb-4">

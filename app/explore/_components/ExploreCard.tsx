@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { BusinessViewModel, formatBusinessType, getCategoryMeta } from "../exploreData";
 import StructuredIcon from "@/components/icons/StructuredIcon";
@@ -17,11 +18,13 @@ export default function ExploreCard({
         <div className="flex h-full min-h-[218px] w-full flex-col overflow-hidden rounded-[1rem] border border-[rgba(52,56,74,0.72)] bg-[var(--surface)] shadow-[0_10px_22px_rgba(6,8,18,0.18)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-[rgba(59,63,85,0.95)] group-hover:shadow-[0_14px_26px_rgba(6,8,18,0.24)]">
           <div className="relative aspect-[16/9] overflow-hidden border-b border-[rgba(52,56,74,0.68)] bg-[var(--surface-raised)]">
             {business.thumbnailUrl ? (
-              <img
+              <Image
                 src={business.thumbnailUrl}
                 alt={`${business.displayName} thumbnail`}
-                className="h-full w-full object-cover"
-                loading="lazy"
+                fill
+                sizes="(min-width: 768px) 33vw, 100vw"
+                className="object-cover"
+                unoptimized
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(209,213,219,0.12),rgba(38,42,61,0.92))]">

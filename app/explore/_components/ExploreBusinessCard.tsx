@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { formatBusinessType, type BusinessViewModel } from "../exploreData";
 import { trackLeadEvent } from "@/lib/leadTracker";
@@ -69,11 +70,13 @@ export default function ExploreBusinessCard({
       >
         <div className="relative h-[116px] overflow-hidden border-b border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)]">
           {business.thumbnailUrl ? (
-            <img
+            <Image
               src={business.thumbnailUrl}
               alt={`${business.displayName} logo`}
-              className="h-full w-full object-cover"
-              loading="lazy"
+              fill
+              sizes="(min-width: 768px) 25vw, 100vw"
+              className="object-cover"
+              unoptimized
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(212,175,55,0.08),rgba(255,255,255,0.02))]">

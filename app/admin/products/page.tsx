@@ -4,6 +4,11 @@ import { isOrderBusinessType } from "@/lib/businessModules";
 import { getPlanLimit } from "@/lib/planConfig";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import AdminProductsManager from "@/components/AdminProductsManager";
+import { AppNotice, EmptyState } from "@/components/ui/app-ui";
+import {
+  AdminPageContainer,
+  DashboardPrimaryPanel,
+} from "@/components/admin/AdminLayoutSystem";
 
 export default async function ProductsPage() {
   const supabase = await createClient();
@@ -12,16 +17,28 @@ export default async function ProductsPage() {
   const maxProducts = business ? getPlanLimit(business.plan, "max_products") : null;
 
   if (!business) {
-    return <div className="text-[var(--text-main)]">{createAdminTranslator(null)("noActiveBusiness")}</div>;
+    return (
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <EmptyState
+          title={createAdminTranslator(null)("noActiveBusiness")}
+          description="Select or create a business before managing a catalog."
+        />
+      </AdminPageContainer>
+    );
   }
 
   const t = createAdminTranslator(business.language);
 
   if (!isOrderBusinessType(business.business_type)) {
     return (
-      <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-6 text-[var(--text-main)]">
-        {t("products")} and {t("menu").toLowerCase()} management is only available for order-based businesses.
-      </div>
+      <AdminPageContainer className="text-[var(--text-main)]">
+        <DashboardPrimaryPanel>
+          <EmptyState
+            title={`${t("products")} unavailable`}
+            description={`${t("products")} and ${t("menu").toLowerCase()} management is only available for order-based businesses.`}
+          />
+        </DashboardPrimaryPanel>
+      </AdminPageContainer>
     );
   }
 
@@ -39,10 +56,10 @@ export default async function ProductsPage() {
   return (
     <div className="space-y-6">
       {maxProducts !== null ? (
-        <div className="rounded-xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
+        <AppNotice tone="warning">
           Starter Access workspaces can save up to {maxProducts} products. Upgrade to Pro for 50
           items or Elite for unlimited catalog depth.
-        </div>
+        </AppNotice>
       ) : null}
 
       <AdminProductsManager

@@ -1,7 +1,8 @@
 "use client";
 
+import { AppNotice } from "@/components/ui/app-ui";
+
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -16,9 +17,9 @@ export default function GlobalError({
         <p className="mt-3 text-sm text-[var(--text-soft)]">
           The app hit a recoverable error. Try again or refresh the page.
         </p>
-        <p className="mt-3 text-xs text-[var(--text-soft)]">
-          {error?.message || "Unexpected application error"}
-        </p>
+        <AppNotice tone="warning" className="mt-5 text-left">
+          No customer or payment action was completed from this screen. Retry when you are ready.
+        </AppNotice>
         <button
           type="button"
           onClick={reset}

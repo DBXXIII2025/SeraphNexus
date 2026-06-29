@@ -19,6 +19,7 @@ import {
 import { applyVisibleFilter } from "@/lib/transactionVisibility";
 import { createAdminTranslator } from "@/lib/adminI18n";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
+import { AppNotice, EmptyState } from "@/components/ui/app-ui";
 import {
   AdminPageContainer,
   DashboardGrid,
@@ -668,27 +669,27 @@ export default async function AdminBookingsPage({
   return (
     <AdminPageContainer className="text-[var(--text-main)]">
       {params?.success === "deleted" ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+        <AppNotice tone="success">
           Pending unpaid booking deleted.
-        </div>
+        </AppNotice>
       ) : null}
 
       {params?.success === "cancelled" ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+        <AppNotice tone="success">
           Booking cancelled safely. Paid bookings were refunded automatically when eligible.
-        </div>
+        </AppNotice>
       ) : null}
 
       {params?.success === "confirmed" ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-200">
+        <AppNotice tone="success">
           Booking confirmed.
-        </div>
+        </AppNotice>
       ) : null}
 
       {params?.error === "status" ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+        <AppNotice tone="error">
           Booking action failed.
-        </div>
+        </AppNotice>
       ) : null}
 
       <DashboardPrimaryPanel>
@@ -736,10 +737,15 @@ export default async function AdminBookingsPage({
       </DashboardGrid>
 
       {(!rows || rows.length === 0) && fallbackRows.length === 0 ? (
-        <DashboardSecondaryPanel className="text-sm text-[var(--text-soft)]">
-          {isRental
-            ? "No reservations yet. When guests book a stay, it will appear here with status actions."
-            : "No bookings yet. When customers schedule an appointment, it will appear here with confirmation controls."}
+        <DashboardSecondaryPanel>
+          <EmptyState
+            title={isRental ? "No reservations yet" : "No bookings yet"}
+            description={
+              isRental
+                ? "When guests book a stay, it will appear here with status actions."
+                : "When customers schedule an appointment, it will appear here with confirmation controls."
+            }
+          />
         </DashboardSecondaryPanel>
       ) : (
         <div className="space-y-4">
