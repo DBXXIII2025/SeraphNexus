@@ -297,7 +297,7 @@ function getSessionMetadata(session: Stripe.Checkout.Session) {
 }
 
 function isPaidSession(session: Stripe.Checkout.Session) {
-  return session.payment_status === "paid" || session.status === "complete";
+  return session.payment_status === "paid" || session.payment_status === "no_payment_required";
 }
 
 function getErrorDebug(step: string, error: unknown): ReconciliationDebug {
