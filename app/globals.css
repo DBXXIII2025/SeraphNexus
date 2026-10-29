@@ -1584,3 +1584,32 @@ body:has(.public-business-page) .public-chip {
 .seravelle-chat .seravelle-composer textarea:focus-visible { box-shadow: 0 0 0 3px #eadba5; }
 .seravelle-chat .seravelle-conversations button:focus-visible,
 .seravelle-chat .seravelle-composer button:focus-visible { outline: 2px solid #ad8c2d; outline-offset: 2px; }
+
+
+/* Marketplace category pages use the same editorial palette as the new landing page. */
+body:has(.sn-marketplace) {
+  background: #f7f6f1 !important;
+  color-scheme: light;
+}
+body:has(.sn-marketplace) .app-root-shell {
+  --page-bg: #f7f6f1;
+  --section-bg: #fbfaf6;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #f2f4ee;
+  --border-soft: #e1e5da;
+  --border-strong: #cfd9cb;
+  --accent: #e5bc4f;
+  --accent-muted: #f7edcf;
+  --accent-contrast: #29332c;
+  --text-main: #354139;
+  --text-strong: #29332c;
+  --text-soft: #68746a;
+  --text-muted: #778076;
+  color-scheme: light;
+}
+.sn-home .sn-card-shop { background-color: #dbe8d6 !important; }
+.sn-marketplace a { text-decoration: none; }
+.sn-marketplace input::placeholder { color: #879186; }
+.sn-marketplace button:focus-visible,
+.sn-marketplace a:focus-visible { outline: 3px solid #b49b50; outline-offset: 3px; }
