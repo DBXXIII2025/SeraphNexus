@@ -899,7 +899,7 @@ export default function AssistantChat({
                           type="button"
                           onClick={() => handleActionDecision(action.id, "approve")}
                           disabled={!canDecide}
-                          className="btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                          className="btn-primary rounded-full px-6 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {isPendingDecision ? "Working..." : "Approve"}
                         </button>
@@ -924,7 +924,7 @@ export default function AssistantChat({
           )}
         </div>
 
-        <div className="border-t border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-4 sm:px-5">
+        <div className="seravelle-composer border-t border-[#e7e8df] bg-white px-4 py-4 sm:px-6">
           {actionError ? (
             <div className="mb-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
               {actionError}
@@ -943,7 +943,7 @@ export default function AssistantChat({
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               placeholder="Ask Seravelle for guidance or have her draft a reply, service, product, menu item, promo code, or booking summary for approval."
-              className="input-field min-h-[132px] resize-y"
+              className="input-field min-h-[72px] max-h-[200px] w-full resize-y rounded-2xl border border-[#dcded4] bg-[#fbfbf8] px-4 py-3 text-sm leading-6 text-[#252b28] shadow-none focus:border-[#d2b45b] focus:outline-none"
               maxLength={4000}
               disabled={isLoading || Boolean(initialError) || !isActiveConversation}
             />
