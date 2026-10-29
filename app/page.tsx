@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, Compass, House, LayoutGrid, ShoppingBag, Sparkles, Wind, MessageCircle } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Compass, House, LayoutGrid, ShoppingBag, Sparkles, Wind, MessageCircle } from "@/components/landing/LandingIcons";
 import { getPlatformSettings } from "@/lib/platformSettings";
 import { resolvePlatformName } from "@/lib/platformBranding";
 
