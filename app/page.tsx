@@ -8,13 +8,6 @@ export const metadata = {
   description: "Discover services, rentals, shops and food. Build your business on one connected platform.",
 };
 
-const categories = [
-  { label: "Services", subtitle: "Expert help, one booking away.", icon: Wind, href: "/explore?category=services" },
-  { label: "Rentals", subtitle: "Make room for your next getaway.", icon: House, href: "/explore?category=rentals" },
-  { label: "Shops", subtitle: "Independent finds. Personal touches.", icon: ShoppingBag, href: "/explore?category=shops" },
-  { label: "Food & drinks", subtitle: "A little something to brighten your day.", icon: Sparkles, href: "/explore?category=food" },
-];
-
 export default async function HomePage() {
   const settings = await getPlatformSettings();
   const name = resolvePlatformName(settings);
