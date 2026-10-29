@@ -1349,3 +1349,49 @@ a:focus-visible {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
+
+
+/* Editorial marketplace landing page: scoped so dashboards and checkout stay unchanged. */
+body:has(.sn-home) {
+  background: #f7f6f1;
+  color: #282c27;
+}
+body:has(.sn-home) .app-root-shell {
+  --page-bg: #f7f6f1;
+  --section-bg: #fbfaf6;
+  --surface: #ffffff;
+  --surface-muted: #f3f2eb;
+  --surface-raised: #ffffff;
+  --border-soft: #e7e7dd;
+  --border-strong: #d8d8cd;
+  --accent: #e8c75d;
+  --accent-muted: #f5eed7;
+  --accent-contrast: #252b28;
+  --text-main: #343b35;
+  --text-strong: #252b28;
+  --text-soft: #626a62;
+  --text-muted: #7a8076;
+  color-scheme: light;
+}
+.sn-home a,
+body:has(.sn-home) .app-root-shell > div a {
+  text-decoration: none;
+}
+.sn-home a:hover {
+  text-decoration: none;
+}
+.sn-home .sn-feature-card {
+  background-image: none;
+}
+.sn-home .sn-card-service { background-color: #e8eee6; }
+.sn-home .sn-card-rental { background-color: #f0e3dd; }
+.sn-home .sn-card-shop { background-color: #293632; }
+.sn-home .sn-card-business { background-color: #f0d778; }
+body:has(.sn-home) .site-brand-mark {
+  border-color: #e4dfcf !important;
+  background: #f5eed7 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sn-home .sn-feature-card { transition: none; }
+  .sn-home .sn-feature-card:hover { transform: none; }
+}
