@@ -1525,3 +1525,62 @@ body:has(.public-business-page) .public-chip {
   .admin-system .admin-shell-grid { padding: .75rem; gap: .75rem; }
   body:has(.public-business-page) .public-profile-shell-full { gap: .85rem; }
 }
+
+
+/* Platform console: keep the navigation independently scrollable at desktop sizes.
+   Nested sidebar sections previously clipped long menus. */
+@media (min-width: 1024px) {
+  .admin-system-sidebar {
+    overflow: hidden !important;
+    min-height: 0;
+  }
+  .admin-sidebar-stack {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  .admin-sidebar-scroll {
+    display: block !important;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #c8b778 transparent;
+    padding-bottom: 1.5rem;
+  }
+  .admin-sidebar-scroll .admin-sidebar-section {
+    overflow: visible !important;
+  }
+  .admin-sidebar-scroll .admin-sidebar-nav {
+    display: grid;
+    gap: .35rem;
+  }
+}
+.admin-sidebar-scroll:focus-visible {
+  outline: 2px solid #d9b64d;
+  outline-offset: -2px;
+}
+/* Seravelle chat: isolated visual styling, existing conversation/actions APIs retained. */
+.seravelle-chat {
+  --text-main: #343b35;
+  --text-strong: #252b28;
+  --text-soft: #687168;
+  --text-muted: #7d847b;
+  --surface: #fff;
+  --surface-raised: #fff;
+  --border-soft: #e7e8df;
+  --accent-muted: #f7edcf;
+  --accent-soft: #876d24;
+  color: #343b35;
+}
+.seravelle-chat .seravelle-conversations,
+.seravelle-chat .seravelle-thread,
+.seravelle-chat .seravelle-messages { min-width: 0; }
+.seravelle-chat .seravelle-messages { scrollbar-width: thin; scrollbar-color: #d8d8ca transparent; }
+.seravelle-chat .seravelle-composer textarea:focus-visible { box-shadow: 0 0 0 3px #eadba5; }
+.seravelle-chat .seravelle-conversations button:focus-visible,
+.seravelle-chat .seravelle-composer button:focus-visible { outline: 2px solid #ad8c2d; outline-offset: 2px; }
