@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import PlatformBrandMark from "@/components/branding/PlatformBrandMark";
 
 type NavbarClientProps = {
@@ -72,23 +71,6 @@ export default function NavbarClient({
   logoUrl,
 }: NavbarClientProps) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    if (!mobileOpen) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [mobileOpen]);
-
   if (!pathname || isHiddenPath(pathname)) {
     return null;
   }
@@ -100,7 +82,8 @@ export default function NavbarClient({
   const exploreActive = pathname === "/explore" || pathname.startsWith("/b/");
 
   const primaryLinks: NavLinkItem[] = [
-    { href: "/explore", label: "Explore", emphasis: "ghost" },
+    { href: "/explore", label: "Marketplace", emphasis: "ghost" },
+    { href: "/#features", label: "For businesses", emphasis: "ghost" },
     { href: "/pricing", label: "Pricing", emphasis: "ghost" },
   ];
 
@@ -136,7 +119,7 @@ export default function NavbarClient({
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href={homeHref}
-          className="group inline-flex shrink-0 items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 pr-4 shadow-[var(--shadow-soft)]"
+          className="group inline-flex shrink-0 items-center gap-2 rounded-xl px-2 py-2"
         >
           <span className="site-brand-mark">
             <PlatformBrandMark
@@ -148,15 +131,18 @@ export default function NavbarClient({
               fallbackClassName=""
             />
           </span>
-          <span className="hidden whitespace-nowrap text-sm font-semibold text-[var(--text-strong)] sm:inline">
+          <span className="whitespace-nowrap text-base font-semibold tracking-tight text-[var(--text-strong)]">
             {siteName}
           </span>
         </Link>
 
-        <nav aria-label="Main navigation" className="ml-2 hidden items-center gap-1 lg:flex"><Link href="/" className={getLinkClass("ghost", pathname === "/")}>Home</Link><details className="group relative">
+        <nav aria-label="Main navigation" className="ml-2 hidden items-center gap-1 lg:flex"><details className="group relative">
             <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-soft)] hover:bg-[var(--accent-muted)]">Discover <span aria-hidden="true">▾</span></summary>
             <div className="absolute left-0 top-full z-50 mt-2 grid min-w-52 gap-1 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-2 shadow-[var(--shadow-soft)]">
-              <Link href="/explore" className={getLinkClass("ghost", exploreActive)}>Marketplace</Link>
+              <Link href="/explore?category=services" className={getLinkClass("ghost", exploreActive)}>Services</Link>
+              <Link href="/explore?category=rentals" className={getLinkClass("ghost", false)}>Rentals</Link>
+              <Link href="/explore?category=shops" className={getLinkClass("ghost", false)}>Shops</Link>
+              <Link href="/explore?category=food" className={getLinkClass("ghost", false)}>Food &amp; drinks</Link>
               <Link href="/#features" className={getLinkClass("ghost", false)}>Platform features</Link>
               <Link href="/pricing" className={getLinkClass("ghost", pathname.startsWith("/pricing"))}>Plans & pricing</Link>
             </div>
@@ -187,60 +173,15 @@ export default function NavbarClient({
           ))}
         </div>
 
-        <button
-          type="button"
-          aria-label="Toggle site navigation"
-          aria-expanded={mobileOpen}
-          onClick={() => setMobileOpen((value) => !value)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-strong)] lg:hidden"
-        >
-          <span className="flex flex-col gap-1.5">
-            <span className="block h-0.5 w-5 rounded bg-current" />
-            <span className="block h-0.5 w-5 rounded bg-current" />
-            <span className="block h-0.5 w-5 rounded bg-current" />
-          </span>
-        </button>
       </div>
-
-      {mobileOpen ? (
-        <div className="border-t border-[var(--border-soft)] bg-[var(--section-bg)] px-4 py-4 lg:hidden">
-          <div className="mx-auto max-w-7xl space-y-4">
-            <div className="grid gap-2"><Link href="/" onClick={() => setMobileOpen(false)} className={getLinkClass("secondary", pathname === "/")}>Home</Link><Link href="/#features" onClick={() => setMobileOpen(false)} className={getLinkClass("secondary", false)}>Platform features</Link>
-              {primaryLinks.map((item) => (
-                <Link
-                  key={`mobile-${item.href}`}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={getLinkClass(
-                    "secondary",
-                    item.href === "/explore" ? exploreActive : pathname.startsWith(item.href)
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-3">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                Quick actions
-              </p>
-              <div className="mt-3 grid gap-2">
-                {actionLinks.map((item) => (
-                  <Link
-                    key={`action-${item.href}-${item.label}`}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={getLinkClass(item.emphasis, pathname.startsWith(item.href))}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <nav aria-label="Mobile navigation" className="flex flex-wrap items-center justify-center gap-1 border-t border-[var(--border-soft)] px-3 py-2 lg:hidden">
+        <Link href="/explore" className={getLinkClass("ghost", exploreActive)}>Marketplace</Link>
+        <Link href="/#features" className={getLinkClass("ghost", false)}>For businesses</Link>
+        <Link href="/pricing" className={getLinkClass("ghost", pathname.startsWith("/pricing"))}>Pricing</Link>
+        {actionLinks.map((item) => (
+          <Link key={item.href + item.label} href={item.href} className={getLinkClass(item.emphasis, pathname.startsWith(item.href))}>{item.label}</Link>
+        ))}
+      </nav>
     </div>
   );
 }

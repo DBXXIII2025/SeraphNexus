@@ -1349,3 +1349,267 @@ a:focus-visible {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
+
+
+/* Editorial marketplace landing page: scoped so dashboards and checkout stay unchanged. */
+body:has(.sn-home) {
+  background: #f7f6f1;
+  color: #282c27;
+}
+body:has(.sn-home) .app-root-shell {
+  --page-bg: #f7f6f1;
+  --section-bg: #fbfaf6;
+  --surface: #ffffff;
+  --surface-muted: #f3f2eb;
+  --surface-raised: #ffffff;
+  --border-soft: #e7e7dd;
+  --border-strong: #d8d8cd;
+  --accent: #e8c75d;
+  --accent-muted: #f5eed7;
+  --accent-contrast: #252b28;
+  --text-main: #343b35;
+  --text-strong: #252b28;
+  --text-soft: #626a62;
+  --text-muted: #7a8076;
+  color-scheme: light;
+}
+.sn-home a,
+body:has(.sn-home) .app-root-shell > div a {
+  text-decoration: none;
+}
+.sn-home a:hover {
+  text-decoration: none;
+}
+.sn-home .sn-feature-card {
+  background-image: none;
+}
+.sn-home .sn-card-service { background-color: #e8eee6; }
+.sn-home .sn-card-rental { background-color: #f0e3dd; }
+.sn-home .sn-card-shop { background-color: #293632; }
+.sn-home .sn-card-business { background-color: #f0d778; }
+body:has(.sn-home) .site-brand-mark {
+  border-color: #e4dfcf !important;
+  background: #f5eed7 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sn-home .sn-feature-card { transition: none; }
+  .sn-home .sn-feature-card:hover { transform: none; }
+}
+
+
+/* Shared editorial language for authenticated workspaces and public business profiles.
+   Layout and permissions remain controlled by their existing components. */
+body:has(.admin-system),
+body:has(.public-business-page) {
+  background: #f7f6f1;
+}
+body:has(.admin-system) .app-root-shell,
+body:has(.public-business-page) .app-root-shell {
+  --page-bg: #f7f6f1;
+  --section-bg: #fbfaf6;
+  --surface: #ffffff;
+  --surface-muted: #f2f2eb;
+  --surface-raised: #ffffff;
+  --border: #e6e6dc;
+  --border-soft: #e6e6dc;
+  --border-strong: #d9d7c8;
+  --accent: #d9b64d;
+  --accent-soft: #9b7c29;
+  --accent-muted: #f6efd9;
+  --accent-contrast: #252b28;
+  --text-main: #3d453f;
+  --text-strong: #252b28;
+  --text-soft: #687168;
+  --text-muted: #7d847b;
+  --shadow-card: 0 15px 35px -28px rgba(38, 43, 38, .34);
+  --shadow-soft: 0 12px 28px -24px rgba(38, 43, 38, .25);
+  color-scheme: light;
+}
+.admin-system {
+  background: #f7f6f1 !important;
+  color: #3d453f !important;
+}
+.admin-system * {
+  border-color: #e6e6dc !important;
+}
+.admin-system-sidebar,
+.admin-system .admin-panel,
+.admin-system .admin-page-header,
+.admin-system .admin-topnav,
+.admin-system .admin-sidebar-section {
+  background: #ffffff !important;
+  color: #3d453f !important;
+  border: 1px solid #e6e6dc !important;
+  border-radius: 1.5rem;
+  box-shadow: 0 14px 34px -29px rgba(38,43,38,.30) !important;
+}
+.admin-system-sidebar::before,
+.admin-system .admin-panel::before,
+.admin-system .admin-page-header::before,
+.admin-system .admin-topnav::before,
+.admin-system .admin-sidebar-section::before {
+  display: none !important;
+}
+.admin-system .admin-topnav-title,
+.admin-system .admin-page-title,
+.admin-system .section-title,
+.admin-system .admin-brand-name {
+  color: #252b28 !important;
+  letter-spacing: -.025em;
+}
+.admin-system .admin-eyebrow,
+.admin-system .admin-sidebar-eyebrow,
+.admin-system .section-kicker {
+  color: #977e37 !important;
+}
+.admin-system .admin-sidebar-heading,
+.admin-system .admin-muted {
+  color: #687168 !important;
+}
+.admin-system .admin-brand-mark {
+  border-color: #e8dfc6 !important;
+  background: #f6efd9 !important;
+  color: #846923 !important;
+}
+.admin-system .admin-shell-grid {
+  max-width: 1680px;
+  margin-inline: auto;
+  gap: 1.25rem;
+}
+.admin-system .admin-system-content {
+  min-width: 0;
+}
+.admin-system .surface-card,
+.admin-system .premium-card,
+.admin-system .metric-card,
+.admin-system .table-row-panel,
+.admin-system .shell-panel,
+.admin-system .surface-panel,
+.admin-system .empty-state,
+.admin-system .form-section {
+  background: #fff !important;
+  color: #3d453f !important;
+  border: 1px solid #e6e6dc !important;
+  border-radius: 1.25rem;
+  box-shadow: 0 12px 30px -28px rgba(38,43,38,.25) !important;
+}
+body:has(.public-business-page) .public-business-page {
+  background: #f7f6f1 !important;
+  color: #303831 !important;
+}
+body:has(.public-business-page) .public-profile-shell-full {
+  max-width: 76rem;
+  gap: 1.5rem;
+}
+body:has(.public-business-page) .public-topnav,
+body:has(.public-business-page) .public-hero,
+body:has(.public-business-page) .public-section,
+body:has(.public-business-page) .public-gallery-frame {
+  border: 1px solid #e7e6da !important;
+  border-radius: 1.5rem;
+  background: #ffffff !important;
+  color: #303831 !important;
+  box-shadow: 0 15px 35px -30px rgba(38,43,38,.28) !important;
+}
+body:has(.public-business-page) .public-hero {
+  background: #f3f1e6 !important;
+}
+body:has(.public-business-page) .public-gallery-frame {
+  overflow: hidden;
+}
+body:has(.public-business-page) .public-action-secondary,
+body:has(.public-business-page) .public-chip {
+  border-radius: 999px;
+}
+@media (max-width: 767px) {
+  .admin-system .admin-shell-grid { padding: .75rem; gap: .75rem; }
+  body:has(.public-business-page) .public-profile-shell-full { gap: .85rem; }
+}
+
+
+/* Platform console: keep the navigation independently scrollable at desktop sizes.
+   Nested sidebar sections previously clipped long menus. */
+@media (min-width: 1024px) {
+  .admin-system-sidebar {
+    overflow: hidden !important;
+    min-height: 0;
+  }
+  .admin-sidebar-stack {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  .admin-sidebar-scroll {
+    display: block !important;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #c8b778 transparent;
+    padding-bottom: 1.5rem;
+  }
+  .admin-sidebar-scroll .admin-sidebar-section {
+    overflow: visible !important;
+  }
+  .admin-sidebar-scroll .admin-sidebar-nav {
+    display: grid;
+    gap: .35rem;
+  }
+}
+.admin-sidebar-scroll:focus-visible {
+  outline: 2px solid #d9b64d;
+  outline-offset: -2px;
+}
+/* Seravelle chat: isolated visual styling, existing conversation/actions APIs retained. */
+.seravelle-chat {
+  --text-main: #343b35;
+  --text-strong: #252b28;
+  --text-soft: #687168;
+  --text-muted: #7d847b;
+  --surface: #fff;
+  --surface-raised: #fff;
+  --border-soft: #e7e8df;
+  --accent-muted: #f7edcf;
+  --accent-soft: #876d24;
+  color: #343b35;
+}
+.seravelle-chat .seravelle-conversations,
+.seravelle-chat .seravelle-thread,
+.seravelle-chat .seravelle-messages { min-width: 0; }
+.seravelle-chat .seravelle-messages { scrollbar-width: thin; scrollbar-color: #d8d8ca transparent; }
+.seravelle-chat .seravelle-composer textarea:focus-visible { box-shadow: 0 0 0 3px #eadba5; }
+.seravelle-chat .seravelle-conversations button:focus-visible,
+.seravelle-chat .seravelle-composer button:focus-visible { outline: 2px solid #ad8c2d; outline-offset: 2px; }
+
+
+/* Marketplace category pages use the same editorial palette as the new landing page. */
+body:has(.sn-marketplace) {
+  background: #f7f6f1 !important;
+  color-scheme: light;
+}
+body:has(.sn-marketplace) .app-root-shell {
+  --page-bg: #f7f6f1;
+  --section-bg: #fbfaf6;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #f2f4ee;
+  --border-soft: #e1e5da;
+  --border-strong: #cfd9cb;
+  --accent: #e5bc4f;
+  --accent-muted: #f7edcf;
+  --accent-contrast: #29332c;
+  --text-main: #354139;
+  --text-strong: #29332c;
+  --text-soft: #68746a;
+  --text-muted: #778076;
+  color-scheme: light;
+}
+.sn-home .sn-card-shop { background-color: #dbe8d6 !important; }
+.sn-marketplace a { text-decoration: none; }
+.sn-marketplace input::placeholder { color: #879186; }
+.sn-marketplace button:focus-visible,
+.sn-marketplace a:focus-visible { outline: 3px solid #b49b50; outline-offset: 3px; }

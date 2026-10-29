@@ -2,8 +2,12 @@
 
 export default function LogoutButton() {
   const logout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
-    window.location.href = "/explore";
+    const response = await fetch("/api/admin/logout", { method: "POST" });
+    if (!response.ok) {
+      console.error("Logout failed; session remains active.");
+      return;
+    }
+    window.location.replace("/");
   };
 
   return (
