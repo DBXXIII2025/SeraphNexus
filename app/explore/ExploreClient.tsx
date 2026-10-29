@@ -48,12 +48,17 @@ export default function ExploreClient({
   isLoggedIn: boolean;
   settings: PlatformSettings;
 }) {
-  const params = useSearchParams();
-  const requestedCategory = params.get("category");
-  const initialCategory: MarketplaceCategory = CATEGORY_PILLS.some((pill) => pill.id === requestedCategory) ? requestedCategory as MarketplaceCategory : "all";
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<MarketplaceCategory>(initialCategory);
-  useEffect(() => { setCategory(initialCategory); }, [initialCategory]);
+  const [category, setCategory] = useState<MarketplaceCategory>("all");
+  useEffect(() => {
+    const syncCategory = () => {
+      const requested = new URLSearchParams(window.location.search).get("category");
+      setCategory(CATEGORY_PILLS.some((pill) => pill.id === requested) ? requested as MarketplaceCategory : "all");
+    };
+    syncCategory();
+    window.addEventListener("popstate", syncCategory);
+    return () => window.removeEventListener("popstate", syncCategory);
+  }, []);
   const [serviceCategory, setServiceCategory] = useState<ServiceCategory | "all">("all");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const trackedPageViewRef = useRef(false);
