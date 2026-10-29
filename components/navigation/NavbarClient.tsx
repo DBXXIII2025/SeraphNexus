@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import PlatformBrandMark from "@/components/branding/PlatformBrandMark";
 
 type NavbarClientProps = {
@@ -72,23 +71,6 @@ export default function NavbarClient({
   logoUrl,
 }: NavbarClientProps) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    if (!mobileOpen) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [mobileOpen]);
-
   if (!pathname || isHiddenPath(pathname)) {
     return null;
   }
@@ -191,60 +173,15 @@ export default function NavbarClient({
           ))}
         </div>
 
-        <button
-          type="button"
-          aria-label="Toggle site navigation"
-          aria-expanded={mobileOpen}
-          onClick={() => setMobileOpen((value) => !value)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-strong)] lg:hidden"
-        >
-          <span className="flex flex-col gap-1.5">
-            <span className="block h-0.5 w-5 rounded bg-current" />
-            <span className="block h-0.5 w-5 rounded bg-current" />
-            <span className="block h-0.5 w-5 rounded bg-current" />
-          </span>
-        </button>
       </div>
-
-      {mobileOpen ? (
-        <div className="border-t border-[var(--border-soft)] bg-[var(--section-bg)] px-4 py-4 lg:hidden">
-          <div className="mx-auto max-w-7xl space-y-4">
-            <div className="grid gap-2"><Link href="/" onClick={() => setMobileOpen(false)} className={getLinkClass("secondary", pathname === "/")}>Home</Link><Link href="/#features" onClick={() => setMobileOpen(false)} className={getLinkClass("secondary", false)}>Platform features</Link>
-              {primaryLinks.map((item) => (
-                <Link
-                  key={`mobile-${item.href}`}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={getLinkClass(
-                    "secondary",
-                    item.href === "/explore" ? exploreActive : pathname.startsWith(item.href)
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-muted)] p-3">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                Quick actions
-              </p>
-              <div className="mt-3 grid gap-2">
-                {actionLinks.map((item) => (
-                  <Link
-                    key={`action-${item.href}-${item.label}`}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={getLinkClass(item.emphasis, pathname.startsWith(item.href))}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <nav aria-label="Mobile navigation" className="flex flex-wrap items-center justify-center gap-1 border-t border-[var(--border-soft)] px-3 py-2 lg:hidden">
+        <Link href="/explore" className={getLinkClass("ghost", exploreActive)}>Marketplace</Link>
+        <Link href="/#features" className={getLinkClass("ghost", false)}>For businesses</Link>
+        <Link href="/pricing" className={getLinkClass("ghost", pathname.startsWith("/pricing"))}>Pricing</Link>
+        {actionLinks.map((item) => (
+          <Link key={item.href + item.label} href={item.href} className={getLinkClass(item.emphasis, pathname.startsWith(item.href))}>{item.label}</Link>
+        ))}
+      </nav>
     </div>
   );
 }
