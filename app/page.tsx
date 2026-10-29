@@ -19,13 +19,13 @@ export default async function HomePage() {
         <div className="relative mx-auto max-w-6xl text-center">
           <p className="mb-7 text-[11px] font-bold uppercase tracking-[0.34em] text-[#73786c]">A simpler way forward</p>
           <h1 className="mx-auto max-w-5xl text-5xl font-semibold leading-[1.06] tracking-[-0.055em] text-[#282c27] sm:text-7xl lg:text-[5.7rem]">
-            Discover something <span className="font-normal italic text-[#a58b42]">great.</span><br className="hidden sm:block" /> Make it <span className="font-normal italic text-[#a58b42]">yours.</span>
+            Discover Great Businesses <span className="text-[#a58b42]">|</span><br className="hidden sm:block" /> Build Yours In One Place
           </h1>
           <p className="mx-auto mt-7 max-w-xl text-base leading-7 text-[#72766c] sm:text-lg">
             Discover local services, distinctive shops, and places to stay. Or bring your own business to life with {name}.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/explore" className="sn-pill inline-flex min-h-12 items-center gap-4 rounded-full bg-[#272c2a] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#454d48]">Explore the marketplace <ArrowUpRight size={17} aria-hidden="true" /></Link>
+            <Link href="/explore" className="sn-pill inline-flex min-h-12 items-center gap-4 rounded-full bg-[#e5bc4f] px-7 py-3 text-sm font-semibold text-[#252b28] transition hover:bg-[#f0ce70]">Explore the marketplace <ArrowUpRight size={17} aria-hidden="true" /></Link>
             <Link href="/onboarding/create-business" className="sn-pill inline-flex min-h-12 items-center gap-4 rounded-full border border-[#d9d9ce] bg-white/70 px-7 py-3 text-sm font-semibold text-[#353b36] transition hover:bg-white">Build your business <ArrowUpRight size={17} aria-hidden="true" /></Link>
           </div>
         </div>
