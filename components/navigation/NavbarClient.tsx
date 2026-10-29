@@ -96,7 +96,7 @@ export default function NavbarClient({
   const createBusinessHref = isLoggedIn
     ? "/onboarding/create-business"
     : "/login?next=/onboarding/create-business";
-  const homeHref = isLoggedIn ? "/admin" : "/";
+  const homeHref = "/";
   const exploreActive = pathname === "/explore" || pathname.startsWith("/b/");
 
   const primaryLinks: NavLinkItem[] = [
@@ -136,7 +136,7 @@ export default function NavbarClient({
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href={homeHref}
-          className="group inline-flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 pr-4 shadow-[var(--shadow-soft)]"
+          className="group inline-flex shrink-0 items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface)] px-3 py-2 pr-4 shadow-[var(--shadow-soft)]"
         >
           <span className="site-brand-mark">
             <PlatformBrandMark
@@ -148,12 +148,19 @@ export default function NavbarClient({
               fallbackClassName=""
             />
           </span>
-          <span className="truncate text-sm font-semibold text-[var(--text-strong)]">
+          <span className="hidden whitespace-nowrap text-sm font-semibold text-[var(--text-strong)] sm:inline">
             {siteName}
           </span>
         </Link>
 
-        <nav className="ml-2 hidden items-center gap-1 lg:flex">
+        <nav aria-label="Main navigation" className="ml-2 hidden items-center gap-1 lg:flex"><Link href="/" className={getLinkClass("ghost", pathname === "/")}>Home</Link><details className="group relative">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-soft)] hover:bg-[var(--accent-muted)]">Discover <span aria-hidden="true">▾</span></summary>
+            <div className="absolute left-0 top-full z-50 mt-2 grid min-w-52 gap-1 rounded-xl border border-[var(--border-soft)] bg-[var(--surface)] p-2 shadow-[var(--shadow-soft)]">
+              <Link href="/explore" className={getLinkClass("ghost", exploreActive)}>Marketplace</Link>
+              <Link href="/#features" className={getLinkClass("ghost", false)}>Platform features</Link>
+              <Link href="/pricing" className={getLinkClass("ghost", pathname.startsWith("/pricing"))}>Plans & pricing</Link>
+            </div>
+          </details>
           {primaryLinks.map((item) => (
             <Link
               key={item.href}
@@ -168,7 +175,7 @@ export default function NavbarClient({
           ))}
         </nav>
 
-        <div className="ml-auto hidden items-center gap-2 md:flex">
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
           {actionLinks.map((item) => (
             <Link
               key={item.href + item.label}
@@ -185,7 +192,7 @@ export default function NavbarClient({
           aria-label="Toggle site navigation"
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen((value) => !value)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-strong)] md:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--surface-raised)] text-[var(--text-strong)] lg:hidden"
         >
           <span className="flex flex-col gap-1.5">
             <span className="block h-0.5 w-5 rounded bg-current" />
@@ -196,9 +203,9 @@ export default function NavbarClient({
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-[var(--border-soft)] bg-[var(--section-bg)] px-4 py-4 md:hidden">
+        <div className="border-t border-[var(--border-soft)] bg-[var(--section-bg)] px-4 py-4 lg:hidden">
           <div className="mx-auto max-w-7xl space-y-4">
-            <div className="grid gap-2">
+            <div className="grid gap-2"><Link href="/" onClick={() => setMobileOpen(false)} className={getLinkClass("secondary", pathname === "/")}>Home</Link><Link href="/#features" onClick={() => setMobileOpen(false)} className={getLinkClass("secondary", false)}>Platform features</Link>
               {primaryLinks.map((item) => (
                 <Link
                   key={`mobile-${item.href}`}
