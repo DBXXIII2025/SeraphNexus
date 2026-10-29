@@ -1,12 +1,5 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import {
-  PublicActionLink,
-  PublicSiteShell,
-  PublicTopNav,
-  PublicEmptyState,
-} from "@/components/public/PublicLayoutSystem";
 import {
   buildBusinessViewModels,
   type Business,
@@ -14,7 +7,7 @@ import {
   type PlatformSettings,
 } from "./exploreData";
 import ExploreGrid from "./_components/ExploreGrid";
-import { resolvePlatformLogoUrl, resolvePlatformName } from "@/lib/platformBranding";
+import { resolvePlatformName } from "@/lib/platformBranding";
 import { trackLeadEvents } from "@/lib/leadTracker";
 import { SERVICE_CATEGORY_OPTIONS, type ServiceCategory } from "@/lib/serviceCategories";
 
@@ -55,8 +48,12 @@ export default function ExploreClient({
   isLoggedIn: boolean;
   settings: PlatformSettings;
 }) {
+  const params = useSearchParams();
+  const requestedCategory = params.get("category");
+  const initialCategory: MarketplaceCategory = CATEGORY_PILLS.some((pill) => pill.id === requestedCategory) ? requestedCategory as MarketplaceCategory : "all";
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<MarketplaceCategory>("all");
+  const [category, setCategory] = useState<MarketplaceCategory>(initialCategory);
+  useEffect(() => { setCategory(initialCategory); }, [initialCategory]);
   const [serviceCategory, setServiceCategory] = useState<ServiceCategory | "all">("all");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const trackedPageViewRef = useRef(false);
@@ -87,14 +84,6 @@ export default function ExploreClient({
   }, [businessViews]);
 
   const platformName = resolvePlatformName(settings);
-  const platformLogoUrl = resolvePlatformLogoUrl(settings);
-  const platformInitials =
-    platformName
-      .split(/\s+/)
-      .map((part) => part[0]?.toUpperCase() || "")
-      .join("")
-      .slice(0, 2) || "SN";
-
   const createBusinessHref = isLoggedIn
     ? "/onboarding/create-business"
     : "/login?next=/onboarding/create-business";
@@ -119,124 +108,43 @@ export default function ExploreClient({
     );
   }, [businessViews]);
 
+  const categoryTitles: Record<MarketplaceCategory, string> = {
+    all: "Find something worth discovering.",
+    services: "Expert help, made simple.",
+    rentals: "Your next getaway starts here.",
+    food: "Something good is nearby.",
+    shops: "Independent finds. Personal touches.",
+  };
   return (
-    <PublicSiteShell className="public-system-explore">
-      <div className="space-y-4">
-        <PublicTopNav
-          brand={platformName}
-          initials={platformInitials}
-          logoUrl={platformLogoUrl}
-          actions={
-            <>
-              <PublicActionLink href="/explore" tone="primary">
-                Explore
-              </PublicActionLink>
-              <PublicActionLink href={isLoggedIn ? "/admin" : "/login"}>
-                {isLoggedIn ? "Account" : "Login"}
-              </PublicActionLink>
-              <PublicActionLink href={createBusinessHref}>Create Business</PublicActionLink>
-            </>
-          }
-        />
-
-        <section className="rounded-[1.15rem] border border-[var(--border-soft)] bg-[linear-gradient(180deg,rgba(22,25,30,0.98),rgba(17,19,23,0.98))] px-4 py-5 shadow-[0_18px_34px_rgba(0,0,0,0.34)] sm:px-6 sm:py-6">
-          <div className="mx-auto max-w-4xl space-y-5 text-center">
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent-soft)]">
-                Premium Marketplace
-              </p>
-              <h1 className="text-3xl font-semibold leading-tight text-[var(--text-strong)] sm:text-4xl">
-                Explore businesses built for direct action.
-              </h1>
-              <p className="mx-auto max-w-2xl text-sm leading-6 text-[var(--text-soft)] sm:text-[0.95rem]">
-                Search by name, switch categories instantly, and jump straight into booking,
-                renting, ordering, or shopping.
-              </p>
-            </div>
-
-            <div className="mx-auto w-full max-w-2xl">
-              <label className="sr-only" htmlFor="explore-search">
-                Search businesses
-              </label>
-              <input
-                id="explore-search"
-                type="text"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search business name"
-                className="h-12 w-full rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(255,255,255,0.02)] px-5 text-center text-[0.96rem] text-[var(--text-strong)] outline-none transition focus:border-[rgba(212,175,55,0.32)] focus:shadow-[0_0_0_3px_rgba(212,175,55,0.12)]"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {CATEGORY_PILLS.map((pill) => {
-                const active = category === pill.id;
-                return (
-                  <button
-                    key={pill.id}
-                    type="button"
-                    onClick={() => setCategory(pill.id)}
-                    className={
-                      active
-                        ? "inline-flex min-h-[38px] items-center gap-2 rounded-full border border-[rgba(212,175,55,0.32)] bg-[linear-gradient(180deg,rgba(212,175,55,0.18),rgba(176,137,104,0.12))] px-4 text-sm font-semibold text-[var(--text-strong)]"
-                        : "inline-flex min-h-[38px] items-center gap-2 rounded-full border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] px-4 text-sm font-semibold text-[var(--text-soft)] hover:border-[rgba(212,175,55,0.18)] hover:text-[var(--text-strong)]"
-                    }
-                  >
-                    <span>{pill.label}</span>
-                    <span className="rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.16)] px-1.5 py-0.5 text-[11px] text-[var(--text-muted)]">
-                      {categoryCounts[pill.id]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {category === "services" ? (
-              <div className="mx-auto w-full max-w-sm">
-                <label className="sr-only" htmlFor="service-category-filter">
-                  Filter by service category
-                </label>
-                <select
-                  id="service-category-filter"
-                  value={serviceCategory}
-                  onChange={(event) =>
-                    setServiceCategory(event.target.value as ServiceCategory | "all")
-                  }
-                  className="h-11 w-full rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(255,255,255,0.02)] px-4 text-sm text-[var(--text-strong)] outline-none transition focus:border-[rgba(212,175,55,0.32)]"
-                >
-                  <option value="all">All service categories</option>
-                  {SERVICE_CATEGORY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
+    <div className="sn-marketplace min-h-screen bg-[#f7f6f1] text-[#2a302b]">
+      <div className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:px-8">
+        <header className="mb-10 flex flex-wrap items-center justify-between gap-4 border-b border-[#e3e5d9] pb-6">
+          <div><p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#8b7a42]">The Seraph Nexus marketplace</p><h1 className="mt-2 text-2xl font-semibold tracking-tight">{platformName}</h1></div>
+          <div className="flex flex-wrap items-center gap-2">
+            <a href="/" className="rounded-full border border-[#dcded2] bg-white px-5 py-2 text-sm font-medium text-[#374139]">Home</a>
+            <a href={isLoggedIn ? "/admin" : "/login"} className="rounded-full border border-[#dcded2] bg-white px-5 py-2 text-sm font-medium text-[#374139]">{isLoggedIn ? "Account" : "Log in"}</a>
+            <a href={createBusinessHref} className="rounded-full bg-[#e5bc4f] px-5 py-2 text-sm font-semibold text-[#292e28]">Create a business</a>
           </div>
+        </header>
+        <section className="relative overflow-hidden rounded-[2rem] border border-[#e3e5d9] bg-[#edf1e8] px-6 py-12 text-center sm:px-12 sm:py-16">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full bg-[#e7d994]/40 blur-3xl" />
+          <p className="relative text-[11px] font-bold uppercase tracking-[0.28em] text-[#887840]">Discover local possibilities</p>
+          <h2 className="relative mx-auto mt-4 max-w-3xl text-4xl font-semibold leading-tight tracking-[-0.045em] sm:text-6xl">{categoryTitles[category]}</h2>
+          <p className="relative mx-auto mt-5 max-w-xl text-sm leading-7 text-[#69756b] sm:text-base">Explore trusted businesses, find your next favorite, and take the next step in one connected place.</p>
+          <label className="sr-only" htmlFor="explore-search">Search businesses</label>
+          <input id="explore-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search businesses by name…" className="relative mx-auto mt-8 block h-13 w-full max-w-xl rounded-full border border-[#d9ddd1] bg-white px-6 py-3 text-base text-[#28312a] outline-none focus:border-[#ad9145] focus:ring-2 focus:ring-[#eadbaf]" />
         </section>
-
-        <section className="space-y-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--text-strong)]">
-                {filteredBusinesses.length} results
-              </h2>
-              <p className="text-sm text-[var(--text-soft)]">
-                Compact marketplace discovery with direct business actions.
-              </p>
-            </div>
-          </div>
-
-          {filteredBusinesses.length === 0 ? (
-            <PublicEmptyState>
-              <p>No businesses match this search right now.</p>
-            </PublicEmptyState>
-          ) : (
-            <ExploreGrid businesses={filteredBusinesses} />
-          )}
+        <nav aria-label="Marketplace categories" className="my-8 flex flex-wrap items-center justify-center gap-2">
+          {CATEGORY_PILLS.map((pill) => (
+            <button key={pill.id} type="button" aria-pressed={category === pill.id} onClick={() => { setCategory(pill.id); window.history.replaceState(null, "", pill.id === "all" ? "/explore" : `/explore?category=${pill.id}`); }} className={category === pill.id ? "rounded-full border border-[#d3b75f] bg-[#f0d778] px-5 py-2.5 text-sm font-semibold text-[#2b3029]" : "rounded-full border border-[#dde1d6] bg-white px-5 py-2.5 text-sm font-medium text-[#4c594e] transition hover:bg-[#e8eee4]"}>{pill.label} <span className="ml-1 text-xs opacity-70">{categoryCounts[pill.id]}</span></button>
+          ))}
+        </nav>
+        {category === "services" ? <div className="mb-8 flex justify-center"><label className="text-sm font-medium text-[#536054]">Service type <select value={serviceCategory} onChange={(event) => setServiceCategory(event.target.value as ServiceCategory | "all")} className="ml-3 rounded-full border border-[#dce0d3] bg-white px-4 py-2 text-[#303a32]"><option value="all">All services</option>{SERVICE_CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div> : null}
+        <section aria-label="Marketplace results">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-2"><div><p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#a18b49]">Explore the collection</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">{filteredBusinesses.length} {filteredBusinesses.length === 1 ? "business" : "businesses"} to explore</h2></div><p className="text-sm text-[#778076]">Find, connect, book and shop.</p></div>
+          {filteredBusinesses.length === 0 ? <div className="rounded-3xl border border-[#e4e6dc] bg-white px-6 py-16 text-center text-[#687368]">No businesses match your search right now. Try another category or search term.</div> : <ExploreGrid businesses={filteredBusinesses} />}
         </section>
       </div>
-    </PublicSiteShell>
+    </div>
   );
 }
