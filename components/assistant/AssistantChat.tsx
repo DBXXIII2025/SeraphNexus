@@ -575,8 +575,8 @@ export default function AssistantChat({
   }
 
   return (
-    <div className="grid min-h-[720px] xl:grid-cols-[280px,1fr]">
-      <aside className="border-b border-[var(--border-soft)] bg-[var(--surface-raised)] xl:border-b-0 xl:border-r">
+    <div className="seravelle-chat grid min-h-[min(780px,85vh)] min-w-0 overflow-hidden rounded-[1.75rem] border border-[var(--border-soft)] bg-white shadow-sm xl:grid-cols-[260px,minmax(0,1fr)]">
+      <aside className="seravelle-conversations min-w-0 border-b border-[var(--border-soft)] bg-[#f7f7f2] xl:border-b-0 xl:border-r">
         <div className="border-b border-[var(--border-soft)] px-4 py-4">
           <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
             Seravelle
@@ -607,7 +607,7 @@ export default function AssistantChat({
           </div>
         </div>
 
-        <div className="max-h-[260px] overflow-y-auto px-3 py-3 xl:max-h-[calc(720px-118px)]">
+        <div className="max-h-[260px] overflow-y-auto overscroll-contain px-3 py-3 xl:max-h-[min(660px,75vh)]">
           <div className="space-y-2">
             {conversationItems.map((conversation) => {
               const isSelected = conversation.id === selectedConversationId;
@@ -705,8 +705,8 @@ export default function AssistantChat({
         </div>
       </aside>
 
-      <div className="flex min-h-[720px] flex-col">
-        <div className="border-b border-[var(--border-soft)] bg-[var(--surface-raised)] px-5 py-4">
+      <div className="seravelle-thread flex min-h-[min(680px,80vh)] min-w-0 flex-col">
+        <div className="seravelle-thread-header border-b border-[var(--border-soft)] bg-white px-5 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -758,7 +758,7 @@ export default function AssistantChat({
 
         <div
           ref={messagesViewportRef}
-          className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,rgba(212,175,55,0.04),transparent_18%),var(--surface)] px-4 py-4 sm:px-5"
+          className="seravelle-messages min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#fcfcf9] px-4 py-6 sm:px-7"
         >
           {notice ? (
             <div className="mb-4 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
@@ -806,8 +806,8 @@ export default function AssistantChat({
                   key={message.id}
                   className={
                     message.role === "assistant"
-                      ? "mr-auto max-w-[92%] rounded-[1.6rem] border border-[var(--border-soft)] bg-[var(--surface-raised)] px-4 py-4 sm:max-w-[84%]"
-                      : "ml-auto max-w-[92%] rounded-[1.6rem] border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-4 sm:max-w-[78%]"
+                      ? "mr-auto max-w-[94%] rounded-2xl rounded-tl-md border border-[#e7e8df] bg-white px-4 py-3 shadow-sm sm:max-w-[82%]"
+                      : "ml-auto max-w-[94%] rounded-2xl rounded-tr-md border border-[#e8d9a2] bg-[#f7edcf] px-4 py-3 sm:max-w-[78%]"
                   }
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -839,7 +839,7 @@ export default function AssistantChat({
                 return (
                   <div
                     key={action.id}
-                    className="mr-auto max-w-[92%] rounded-[1.8rem] border border-[var(--accent-border)] bg-[linear-gradient(180deg,rgba(212,175,55,0.12),rgba(15,15,15,0.96))] px-4 py-4 sm:max-w-[88%]"
+                    className="mr-auto max-w-[94%] rounded-2xl border border-[#e7d9a9] bg-[#fff9e9] px-4 py-4 sm:max-w-[88%]"
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -868,12 +868,12 @@ export default function AssistantChat({
                       </div>
                     </div>
 
-                    <pre className="mt-4 overflow-x-auto rounded-2xl border border-[var(--border-soft)] bg-black/20 p-3 text-xs leading-5 text-[var(--text-soft)]">
+                    <pre className="mt-4 overflow-x-auto rounded-xl border border-[#e9e6da] bg-white p-3 text-xs leading-5 text-[var(--text-soft)]">
                       {JSON.stringify(action.payload, null, 2)}
                     </pre>
 
                     {action.result && Object.keys(action.result).length > 0 ? (
-                      <pre className="mt-3 overflow-x-auto rounded-2xl border border-[var(--border-soft)] bg-black/10 p-3 text-xs leading-5 text-[var(--text-soft)]">
+                      <pre className="mt-3 overflow-x-auto rounded-xl border border-[#e9e6da] bg-white p-3 text-xs leading-5 text-[var(--text-soft)]">
                         {JSON.stringify(action.result, null, 2)}
                       </pre>
                     ) : null}
