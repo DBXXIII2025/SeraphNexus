@@ -57,6 +57,10 @@ export async function POST(req: Request) {
       });
 
       if (session.mode === "subscription") {
+        if (session.payment_status !== "paid") {
+          logWebhook("subscription_payment_pending", { sessionId: session.id, paymentStatus: session.payment_status });
+          return new Response("OK", { status: 200 });
+        }
         const businessId = asString(session.metadata?.business_id);
         const plan = asString(session.metadata?.plan);
 
