@@ -575,8 +575,8 @@ export default function AssistantChat({
   }
 
   return (
-    <div className="seravelle-chat grid min-h-[min(780px,85vh)] min-w-0 overflow-hidden rounded-[1.75rem] border border-[var(--border-soft)] bg-white shadow-sm xl:grid-cols-[260px,minmax(0,1fr)]">
-      <aside className="seravelle-conversations min-w-0 border-b border-[var(--border-soft)] bg-[#f7f7f2] xl:border-b-0 xl:border-r">
+    <div className="seravelle-chat grid min-h-[min(780px,85vh)] min-w-0 overflow-hidden rounded-[1.75rem] border border-[var(--border-soft)] bg-[#15111e] shadow-sm xl:grid-cols-[260px,minmax(0,1fr)]">
+      <aside className="seravelle-conversations min-w-0 border-b border-[var(--border-soft)] bg-[#100d18] xl:border-b-0 xl:border-r">
         <div className="border-b border-[var(--border-soft)] px-4 py-4">
           <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
             Seravelle
@@ -706,7 +706,7 @@ export default function AssistantChat({
       </aside>
 
       <div className="seravelle-thread flex min-h-[min(680px,80vh)] min-w-0 flex-col">
-        <div className="seravelle-thread-header border-b border-[var(--border-soft)] bg-white px-5 py-4">
+        <div className="seravelle-thread-header border-b border-[var(--border-soft)] bg-[#15111e] px-5 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -758,7 +758,7 @@ export default function AssistantChat({
 
         <div
           ref={messagesViewportRef}
-          className="seravelle-messages min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#fcfcf9] px-4 py-6 sm:px-7"
+          className="seravelle-messages min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#0c0a12] px-4 py-6 sm:px-7"
         >
           {notice ? (
             <div className="mb-4 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-muted)] px-4 py-3 text-sm text-[var(--accent-soft)]">
@@ -806,8 +806,8 @@ export default function AssistantChat({
                   key={message.id}
                   className={
                     message.role === "assistant"
-                      ? "mr-auto max-w-[94%] rounded-2xl rounded-tl-md border border-[#e7e8df] bg-white px-4 py-3 shadow-sm sm:max-w-[82%]"
-                      : "ml-auto max-w-[94%] rounded-2xl rounded-tr-md border border-[#e8d9a2] bg-[#f7edcf] px-4 py-3 sm:max-w-[78%]"
+                      ? "mr-auto max-w-[94%] rounded-2xl rounded-tl-md border border-[#352b43] bg-[#15111e] px-4 py-3 shadow-sm sm:max-w-[82%]"
+                      : "ml-auto max-w-[94%] rounded-2xl rounded-tr-md border border-[#4a3b60] bg-[#251b33] px-4 py-3 sm:max-w-[78%]"
                   }
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -839,7 +839,7 @@ export default function AssistantChat({
                 return (
                   <div
                     key={action.id}
-                    className="mr-auto max-w-[94%] rounded-2xl border border-[#e7d9a9] bg-[#fff9e9] px-4 py-4 sm:max-w-[88%]"
+                    className="mr-auto max-w-[94%] rounded-2xl border border-[#4a3b60] bg-[#1a1425] px-4 py-4 sm:max-w-[88%]"
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -868,12 +868,12 @@ export default function AssistantChat({
                       </div>
                     </div>
 
-                    <pre className="mt-4 overflow-x-auto rounded-xl border border-[#e9e6da] bg-white p-3 text-xs leading-5 text-[var(--text-soft)]">
+                    <pre className="mt-4 overflow-x-auto rounded-xl border border-[#352b43] bg-[#15111e] p-3 text-xs leading-5 text-[var(--text-soft)]">
                       {JSON.stringify(action.payload, null, 2)}
                     </pre>
 
                     {action.result && Object.keys(action.result).length > 0 ? (
-                      <pre className="mt-3 overflow-x-auto rounded-xl border border-[#e9e6da] bg-white p-3 text-xs leading-5 text-[var(--text-soft)]">
+                      <pre className="mt-3 overflow-x-auto rounded-xl border border-[#352b43] bg-[#15111e] p-3 text-xs leading-5 text-[var(--text-soft)]">
                         {JSON.stringify(action.result, null, 2)}
                       </pre>
                     ) : null}
@@ -924,7 +924,7 @@ export default function AssistantChat({
           )}
         </div>
 
-        <div className="seravelle-composer border-t border-[#e7e8df] bg-white px-4 py-4 sm:px-6">
+        <div className="seravelle-composer border-t border-[#352b43] bg-[#15111e] px-4 py-4 sm:px-6">
           {actionError ? (
             <div className="mb-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
               {actionError}
@@ -943,7 +943,7 @@ export default function AssistantChat({
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               placeholder="Ask Seravelle for guidance or have her draft a reply, service, product, menu item, promo code, or booking summary for approval."
-              className="input-field min-h-[72px] max-h-[200px] w-full resize-y rounded-2xl border border-[#dcded4] bg-[#fbfbf8] px-4 py-3 text-sm leading-6 text-[#252b28] shadow-none focus:border-[#d2b45b] focus:outline-none"
+              className="input-field min-h-[72px] max-h-[200px] w-full resize-y rounded-2xl border border-[#4a3b60] bg-[#20172c] px-4 py-3 text-sm leading-6 text-[#f5f1fa] shadow-none focus:border-[#c5a4ff] focus:outline-none"
               maxLength={4000}
               disabled={isLoading || Boolean(initialError) || !isActiveConversation}
             />
