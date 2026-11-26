@@ -1,3 +1,4 @@
+import { publicBusinessMetadata } from "@/lib/publicBusinessSeo";
 import { createClient } from "@/lib/supabase/server";
 import {
   PUBLIC_BUSINESS_ROUTE_SELECT,
@@ -24,6 +25,7 @@ type Params = {
 };
 
 export const dynamic = "force-dynamic";
+export async function generateMetadata({params}:{params:Promise<Params>}){return publicBusinessMetadata((await params).slug);}
 
 export default async function PublicRouterPage({
   params,

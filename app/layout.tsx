@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { isCompanyPath } from "@/lib/companySite";
+import CampaignCapture from "@/components/company/CampaignCapture";
 import RouteShell from "@/components/company/RouteShell";
 import Navbar from "@/components/navigation/Navbar";
 import LegalBrandingNotice from "@/components/legal/LegalBrandingNotice";
@@ -24,11 +25,12 @@ export const metadata: Metadata = {
     title: "Seraph Nexus",
     description:
       "A business operations platform for bookings, commerce, customer activity, and Stripe-powered checkout.",
-    url: "https://seraphnexus.com",
+    images: [{ url: "/api/social-image", width: 1200, height: 630, alt: "SeraphCore Technologies" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Seraph Nexus",
+    images: ["/api/social-image"],
     description:
       "Manage services, rentals, products, orders, promotions, leads, messages, and checkout from one workspace.",
   },
@@ -67,6 +69,7 @@ export default async function RootLayout({
         <div className="app-root-shell flex flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
           <RouteShell initialCompany={isCompanyPage} platformHeader={!hideGlobalHeader ? <Navbar /> : null} platformFooter={!hideGlobalFooter ? <footer className="site-legal-footer"><div className="public-container"><LegalBrandingNotice /></div></footer> : null}>{children}</RouteShell>
         </div>
+        <CampaignCapture />
         <Analytics />
         <SpeedInsights />
       </body>

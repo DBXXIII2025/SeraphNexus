@@ -1,3 +1,4 @@
+import { companyMetadata } from "@/lib/companySeo";
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, Compass, House, LayoutGrid, ShoppingBag, Sparkles, Wind, MessageCircle } from "@/components/landing/LandingIcons";
 import { getPlatformSettings } from "@/lib/platformSettings";
@@ -5,10 +6,7 @@ import { resolvePlatformName } from "@/lib/platformBranding";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Seraph Nexus | Discover what moves you",
-  description: "Discover services, rentals, shops and food. Build your business on one connected platform.",
-};
+export const metadata = companyMetadata("Business operations and marketplace","Discover businesses, bookings, shops and rentals on SeraphNexus.","/nexus");
 
 export default async function HomePage() {
   const settings = await getPlatformSettings();

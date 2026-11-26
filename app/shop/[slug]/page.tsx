@@ -1,3 +1,4 @@
+import { publicBusinessMetadata } from "@/lib/publicBusinessSeo";
 import { createAdminClient } from "@/lib/supabase/server";
 import { fetchBusinessCatalogItems } from "@/lib/catalog";
 import { PUBLIC_BUSINESS_ROUTE_SELECT_LEGACY } from "@/lib/publicBusinessQueries";
@@ -19,6 +20,7 @@ type Params = {
 };
 
 export const dynamic = "force-dynamic";
+export async function generateMetadata({params}:{params:Promise<Params>}){return publicBusinessMetadata((await params).slug);}
 
 export default async function ShopPage({
   params,

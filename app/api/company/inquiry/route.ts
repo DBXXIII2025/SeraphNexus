@@ -1,5 +1,6 @@
 import {NextResponse} from "next/server";
 import {sendEmail} from "@/lib/emailProvider";
+import {cleanCampaign} from "@/lib/campaignAttribution";
 import {companyServices} from "@/lib/companySite";
 const budgets=["Not decided","Under $500","$500–$1,500","$1,500–$5,000","$5,000+"];
 const emailPattern=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,7 +18,7 @@ export async function POST(req:Request){
  if(d.website)return NextResponse.json({error:"Invalid submission."},{status:400});
  const label=companyServices.find(x=>x.slug===service)?.title||(service==="unsure"?"Not sure yet":"");
  if(!name||!business||!emailPattern.test(email)||!label||!budgets.includes(budget)||!goals)return NextResponse.json({error:"Please check all required fields."},{status:400});
- const text=["Name: "+name,"Business: "+business,"Email: "+email,"Service: "+label,"Budget: "+budget,"Goals: "+goals].join("\n");
+ const text=["Name: "+name,"Business: "+business,"Email: "+email,"Service: "+label,"Budget: "+budget,"Goals: "+goals,...Object.entries(cleanCampaign(d.campaign)).map(([key,value])=>key+": "+value)].join("\n");
  await sendEmail({to,subject:"New SeraphCore project inquiry",text,html:"<pre>"+escapeHtml(text)+"</pre>"});
  return NextResponse.json({ok:true});
  }catch{ return NextResponse.json({error:"We could not send your inquiry. Please try again."},{status:502});}

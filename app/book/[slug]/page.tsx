@@ -1,4 +1,5 @@
-﻿import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { publicBusinessMetadata } from "@/lib/publicBusinessSeo";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import {
   PUBLIC_BUSINESS_ROUTE_SELECT,
   PUBLIC_BUSINESS_ROUTE_SELECT_LEGACY,
@@ -27,6 +28,7 @@ type Params = {
 };
 
 export const dynamic = "force-dynamic";
+export async function generateMetadata({params}:{params:Promise<Params>}){return publicBusinessMetadata((await params).slug);}
 
 type ServiceRow = {
   id: string;
@@ -39,27 +41,6 @@ type ServiceRow = {
   is_active?: boolean | null;
   images: ServiceImageRecord[];
 };
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
-  const { slug } = await params;
-
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("businesses")
-    .select("name")
-    .eq("slug", slug)
-    .eq("is_published", true)
-    .single();
-
-  return {
-    title: data?.name || "Business",
-    description: "",
-  };
-}
 
 export default async function BookPage({
   params,

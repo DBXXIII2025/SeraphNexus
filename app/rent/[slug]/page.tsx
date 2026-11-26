@@ -1,4 +1,5 @@
-﻿import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { publicBusinessMetadata } from "@/lib/publicBusinessSeo";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { PUBLIC_BUSINESS_ROUTE_SELECT_LEGACY } from "@/lib/publicBusinessQueries";
 import {
   getCanonicalPublicBusinessRoute,
@@ -28,6 +29,7 @@ type Params = {
 };
 
 export const dynamic = "force-dynamic";
+export async function generateMetadata({params}:{params:Promise<Params>}){return publicBusinessMetadata((await params).slug);}
 
 export default async function RentPage({
   params,
