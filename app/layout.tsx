@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { isCompanyPath } from "@/lib/companySite";
+import CompanyShell from "@/components/company/CompanyShell";
 import Navbar from "@/components/navigation/Navbar";
 import LegalBrandingNotice from "@/components/legal/LegalBrandingNotice";
 
@@ -66,7 +67,7 @@ export default async function RootLayout({
         <div className="app-root-shell flex flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
           {!hideGlobalHeader ? <Navbar /> : null}
           <main id="main-content" className="flex-1" tabIndex={-1}>
-            {children}
+            {isCompanyPage ? <CompanyShell>{children}</CompanyShell> : children}
           </main>
           {!hideGlobalFooter ? (
             <footer className="site-legal-footer">
