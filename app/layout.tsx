@@ -42,13 +42,16 @@ export default async function RootLayout({
 }) {
   const requestHeaders = await headers();
   const currentPath = requestHeaders.get("x-current-path") || "";
+  const isCompanyPage = currentPath === "/" || currentPath === "/project-brief";
   const hideGlobalHeader =
+    isCompanyPage ||
     currentPath === "/login" ||
     currentPath === "/signup" ||
     currentPath === "/forgot-password" ||
     currentPath === "/reset-password" ||
     currentPath.startsWith("/auth/");
   const hideGlobalFooter =
+    isCompanyPage ||
     currentPath.startsWith("/admin") ||
     currentPath.startsWith("/dashboard") ||
     currentPath.startsWith("/platform-admin");
