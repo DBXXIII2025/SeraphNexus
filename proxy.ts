@@ -77,7 +77,7 @@ function isPublicBusinessPath(pathname: string) {
 
 function isBypassedPath(pathname: string) {
   return (
-    pathname.startsWith("/_next") ||
+    pathname === "/seraphcore-logo.webp" || pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
     pathname.startsWith("/auth/callback") ||
     pathname === "/login" ||
@@ -139,7 +139,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
 
-  if (isCompanyPath(pathname) || pathname === "/api/company/inquiry" || pathname === "/sitemap.xml" || pathname === "/robots.txt" || isBypassedPath(pathname)) {
+  if (isCompanyPath(pathname) || pathname === "/api/company/inquiry" || pathname === "/api/social-image" || pathname === "/sitemap.xml" || pathname === "/robots.txt" || isBypassedPath(pathname)) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
