@@ -1,15 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { Metadata } from "next";
+import { companyMetadata, organization, SITE_URL } from "@/lib/companySeo";
+import StructuredData from "@/components/company/StructuredData";
 import { companyServices } from "@/lib/companySite";
 
-export const metadata: Metadata = {
-  title: { absolute: "SeraphCore Technologies | AI, Software & Web Development" },
-  description: "SeraphCore builds business websites, custom software, AI automation and digital growth solutions in the Rio Grande Valley and across the United States.",
-  alternates: { canonical: "/" },
-  openGraph: { title: "SeraphCore Technologies", description: "Technology built around your business.", siteName: "SeraphCore Technologies", type: "website", url: "/" },
-  twitter: { card: "summary", title: "SeraphCore Technologies", description: "AI, software and web development for businesses." },
-};
+export const metadata = companyMetadata("AI, Software & Web Development in Texas", "SeraphCore builds business websites, custom software, AI automation and digital growth solutions in the Rio Grande Valley and across the United States.", "/");
 
 const questions = [
   ["Who do you work with?", "Small and growing businesses in the Rio Grande Valley and across the United States."],
@@ -21,6 +16,7 @@ const questions = [
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0c0a12] text-[#f5f1fa]">
+      <StructuredData data={organization}/><StructuredData data={{"@context":"https://schema.org","@type":"WebSite",name:"SeraphCore Technologies",url:SITE_URL,publisher:{"@id":organization["@id"]}}}/>
       <section className="sc-hero relative isolate overflow-hidden border-b border-white/10">
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_80%_35%,#362052_0%,transparent_55%)]" />
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-24 lg:grid-cols-[1.25fr_1fr] lg:px-12 lg:py-32">
