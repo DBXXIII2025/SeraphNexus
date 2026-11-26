@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "set NODE_OPTIONS=--max-old-space-size=8192 && next dev --webpack",
-    "build": "set NODE_OPTIONS=--max-old-space-size=8192 && next build",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=8192 next dev --webpack",
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "verify:reset": "cross-env NODE_ENV=test SERAPH_NON_LIVE_VERIFY=1 STRIPE_SECRET_KEY=sk_test_verify NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_verify STRIPE_WEBHOOK_SECRET=whsec_verify node scripts/verification-harness.mjs reset",
     "verify:seed": "cross-env NODE_ENV=test SERAPH_NON_LIVE_VERIFY=1 STRIPE_SECRET_KEY=sk_test_verify NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_verify STRIPE_WEBHOOK_SECRET=whsec_verify node scripts/verification-harness.mjs seed",
     "verify:smoke": "cross-env NODE_ENV=test SERAPH_NON_LIVE_VERIFY=1 SERAPH_VERIFICATION_MODE=1 STRIPE_SECRET_KEY=sk_test_verify NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_verify STRIPE_WEBHOOK_SECRET=whsec_verify node scripts/verification-harness.mjs smoke",
     "cleanup:fixtures": "cross-env NODE_ENV=test node scripts/cleanup-fixtures.mjs",
-    "cleanup:fixtures:dry": "cross-env NODE_ENV=test node scripts/cleanup-fixtures.mjs --dry-run"
+    "cleanup:fixtures:dry": "cross-env NODE_ENV=test node scripts/cleanup-fixtures.mjs --dry-run",
+    "typecheck": "tsc --noEmit",
+    "lint:company": "eslint app/page.tsx app/services app/products app/portfolio app/about app/contact app/api/company components/company lib/companySite.ts"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.20",
