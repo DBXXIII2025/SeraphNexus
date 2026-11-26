@@ -1,3 +1,4 @@
+import { companyMetadata } from "@/lib/companySeo";
 import { getActiveBusiness } from "@/lib/getActiveBusiness";
 import { getManagedPricingSnapshot } from "@/lib/platformBilling";
 import { getPlatformAdminSession } from "@/lib/platformAdmin";
@@ -5,10 +6,7 @@ import { normalizeBusinessPlan } from "@/lib/planConfig";
 import { getVisiblePlatformPlans } from "@/lib/platformPlans";
 import PricingClient from "./PricingClient";
 
-export const metadata = {
-  title: "Pricing | Seraph Nexus",
-  description: "Choose a Seraph Nexus plan for the active business workspace.",
-};
+export const metadata = companyMetadata("Platform plans and pricing","Explore SeraphNexus business workspace plans and pricing.","/pricing");
 
 export default async function PricingPage() {
   const { user, isPlatformAdmin } = await getPlatformAdminSession();
