@@ -10,7 +10,8 @@ import {
 import { getRequiredLegalDocumentKeys } from "@/lib/legalDocuments";
 
 function isSafeNextPath(value: string | null) {
-  return Boolean(value && value.startsWith("/"));
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\") || /[\u0000-\u0020]/.test(value)) return false;
+  try { const decoded = decodeURIComponent(value); return !decoded.startsWith("//") && !decoded.includes("\\") && !/[\u0000-\u001f]/.test(decoded); } catch { return false; }
 }
 
 const CANONICAL_HOST = "seraphnexus.com";
