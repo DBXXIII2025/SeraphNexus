@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { isCompanyPath } from "@/lib/companySite";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
@@ -9,7 +10,8 @@ import {
 import { getRequiredLegalDocumentKeys } from "@/lib/legalDocuments";
 
 function isSafeNextPath(value: string | null) {
-  return Boolean(value && value.startsWith("/"));
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\") || /[\u0000-\u0020]/.test(value)) return false;
+  try { const decoded = decodeURIComponent(value); return !decoded.startsWith("//") && !decoded.includes("\\") && !/[\u0000-\u001f]/.test(decoded); } catch { return false; }
 }
 
 const CANONICAL_HOST = "seraphnexus.com";
@@ -136,7 +138,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
 
-  if (isBypassedPath(pathname)) {
+  if (isCompanyPath(pathname) || pathname === "/api/company/inquiry" || pathname === "/sitemap.xml" || pathname === "/robots.txt" || isBypassedPath(pathname)) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 

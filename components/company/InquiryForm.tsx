@@ -1,0 +1,18 @@
+"use client";
+import {useState} from "react";
+import type {FormEvent} from "react";
+import {companyServices} from "@/lib/companySite";
+export default function InquiryForm({initialService}:{initialService:string}){
+ const [status,setStatus]=useState<"idle"|"sending"|"success"|"error">("idle");
+ const [message,setMessage]=useState("");
+ const [brief,setBrief]=useState("");
+ const [copied,setCopied]=useState(false);
+ async function submit(e:FormEvent<HTMLFormElement>){
+ e.preventDefault();if(status==="sending")return;
+ const form=e.currentTarget;const data=Object.fromEntries(new FormData(form));
+ setBrief(["SeraphCore project inquiry",...Object.entries(data).filter(([k])=>k!=="website").map(([k,v])=>k+": "+String(v))].join("\n"));setCopied(false);setStatus("sending");setMessage("");
+ try{const res=await fetch("/api/company/inquiry",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});const result=await res.json();if(!res.ok||result.ok!==true)throw new Error(result.error||"Unable to send your inquiry.");setStatus("success");form.reset();}catch(err){setStatus("error");setMessage(err instanceof Error?err.message:"Unable to send your inquiry.");}
+ }
+ const selected=companyServices.some(x=>x.slug===initialService)?initialService:"unsure";
+ return <div className="sc-panel">{status==="success"?<div role="status"><h2 className="text-2xl font-semibold">Inquiry submitted.</h2><p className="mt-4 text-[#c1b8cd]">Your message was accepted by our email provider for delivery. Thank you for contacting SeraphCore.</p><button className="sc-secondary mt-6" onClick={()=>{setStatus("idle");setBrief("")}}>Send another inquiry</button></div>:<form onSubmit={submit} className="grid gap-5"><div className="grid gap-5 sm:grid-cols-2"><label>Name<input className="sc-field" name="name" required autoComplete="name" maxLength={120}/></label><label>Business<input className="sc-field" name="business" required autoComplete="organization" maxLength={160}/></label></div><label>Email<input className="sc-field" name="email" required type="email" autoComplete="email" maxLength={254}/></label><div className="grid gap-5 sm:grid-cols-2"><label>Service<select className="sc-field" name="service" defaultValue={selected}>{companyServices.map(s=><option key={s.slug} value={s.slug}>{s.title}</option>)}<option value="unsure">Not sure yet</option></select></label><label>Budget<select className="sc-field" name="budget">{["Not decided","Under $500","$500–$1,500","$1,500–$5,000","$5,000+"].map(v=><option key={v}>{v}</option>)}</select></label></div><label>Project goals<textarea className="sc-field" name="goals" required maxLength={3000} rows={5}/></label><div className="hidden" aria-hidden="true"><label>Leave empty<input name="website" tabIndex={-1} autoComplete="off"/></label></div><p className="text-sm text-[#c1b8cd]">By submitting, you agree that SeraphCore may use these details to respond to your inquiry. Your message is sent by email.</p><button type="submit" disabled={status==="sending"} className="sc-primary justify-self-start disabled:opacity-60">{status==="sending"?"Sending…":"Send inquiry ↗"}</button>{status==="error"&&<div role="alert" className="rounded-xl border border-red-400/40 p-4"><p>{message}</p><p className="mt-2 text-sm">Your entries have been retained. You can retry or copy your brief.</p><button type="button" className="sc-secondary mt-4" onClick={async()=>{try{await navigator.clipboard.writeText(brief);setCopied(true)}catch{setCopied(false)}}}>{copied?"Copied":"Copy brief"}</button><textarea aria-label="Copyable project brief" readOnly value={brief} className="sc-field mt-3" rows={4}/></div>}</form>}</div>
+}

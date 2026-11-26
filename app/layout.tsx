@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { isCompanyPath } from "@/lib/companySite";
+import RouteShell from "@/components/company/RouteShell";
 import Navbar from "@/components/navigation/Navbar";
 import LegalBrandingNotice from "@/components/legal/LegalBrandingNotice";
 
@@ -42,7 +44,7 @@ export default async function RootLayout({
 }) {
   const requestHeaders = await headers();
   const currentPath = requestHeaders.get("x-current-path") || "";
-  const isCompanyPage = currentPath === "/" || currentPath === "/project-brief";
+  const isCompanyPage = isCompanyPath(currentPath);
   const hideGlobalHeader =
     isCompanyPage ||
     currentPath === "/login" ||
@@ -63,17 +65,7 @@ export default async function RootLayout({
           Skip to main content
         </a>
         <div className="app-root-shell flex flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
-          {!hideGlobalHeader ? <Navbar /> : null}
-          <main id="main-content" className="flex-1" tabIndex={-1}>
-            {children}
-          </main>
-          {!hideGlobalFooter ? (
-            <footer className="site-legal-footer">
-              <div className="public-container">
-                <LegalBrandingNotice />
-              </div>
-            </footer>
-          ) : null}
+          <RouteShell initialCompany={isCompanyPage} platformHeader={!hideGlobalHeader ? <Navbar /> : null} platformFooter={!hideGlobalFooter ? <footer className="site-legal-footer"><div className="public-container"><LegalBrandingNotice /></div></footer> : null}>{children}</RouteShell>
         </div>
         <Analytics />
         <SpeedInsights />

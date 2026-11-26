@@ -1613,3 +1613,20 @@ body:has(.sn-marketplace) .app-root-shell {
 .sn-marketplace input::placeholder { color: #879186; }
 .sn-marketplace button:focus-visible,
 .sn-marketplace a:focus-visible { outline: 3px solid #b49b50; outline-offset: 3px; }
+
+/* Scoped company experience; do not alter platform themes. */
+.sc-company { --text-main:#f5f1fa; --text-strong:#fff; --text-soft:#c1b8cd; --accent:#c5a4ff; --accent-contrast:#170e24; color-scheme:dark; }
+.sc-company a { text-decoration:none; }
+.sc-company a:focus-visible,.sc-company button:focus-visible,.sc-company summary:focus-visible,.sc-company input:focus-visible,.sc-company select:focus-visible,.sc-company textarea:focus-visible { outline:2px solid #c5a4ff; outline-offset:4px; }
+.sc-company .sc-heading { font-size:clamp(2.5rem,5vw,4.5rem); line-height:1.08; font-weight:600; letter-spacing:-.045em; }
+.sc-company .sc-eyebrow { color:#d1b47a; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.18em; }
+.sc-company .sc-panel { background:#15111e; border:1px solid #ffffff1a; border-radius:1.5rem; padding:clamp(1.25rem,3vw,2.25rem); min-width:0; }
+.sc-company .sc-primary,.sc-company .sc-secondary { display:inline-flex; align-items:center; justify-content:center; min-height:46px; border-radius:999px; padding:.75rem 1.4rem; font-weight:600; font-size:.95rem; text-decoration:none; }
+.sc-company .sc-primary { background:#c5a4ff!important; color:#170e24!important; border:1px solid #c5a4ff; }
+.sc-company .sc-primary:hover { background:#ddc8ff!important; }
+.sc-company .sc-secondary { color:#f5f1fa; background:transparent; border:1px solid #ffffff40; }
+.sc-company .sc-nav { color:#d1c7df; font-size:.925rem; padding-block:.65rem; }
+.sc-company .sc-nav:hover,.sc-company footer a:hover { color:#c5a4ff; }
+.sc-company .sc-field { display:block; width:100%; min-width:0; min-height:46px; margin-top:.5rem; padding:.8rem 1rem; border:1px solid #ffffff35; border-radius:.75rem; background:#20172c; color:#fff; font:inherit; }
+.sc-company .sc-hero { background-image:radial-gradient(ellipse at 80% 30%,#392356 0%,transparent 62%)!important; }
+@media(prefers-reduced-motion:reduce){.sc-company *{transition:none!important;scroll-behavior:auto!important;}}
