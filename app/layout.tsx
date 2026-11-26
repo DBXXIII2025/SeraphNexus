@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { isCompanyPath } from "@/lib/companySite";
 import Navbar from "@/components/navigation/Navbar";
 import LegalBrandingNotice from "@/components/legal/LegalBrandingNotice";
 
@@ -42,7 +43,7 @@ export default async function RootLayout({
 }) {
   const requestHeaders = await headers();
   const currentPath = requestHeaders.get("x-current-path") || "";
-  const isCompanyPage = currentPath === "/" || currentPath === "/project-brief";
+  const isCompanyPage = isCompanyPath(currentPath);
   const hideGlobalHeader =
     isCompanyPage ||
     currentPath === "/login" ||
