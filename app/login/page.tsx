@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -24,6 +23,8 @@ function getLoginErrorMessage(message: string | null | undefined) {
     return "Email or password is incorrect.";
   }
 
+  if (/fetch|network|load failed|timeout|hostname|unavailable/.test(normalized)) return "The authentication service is temporarily unreachable. Please retry once service is restored.";
+
   if (normalized.includes("email not confirmed")) {
     return "Confirm your email address before signing in.";
   }
@@ -36,7 +37,6 @@ function getLoginErrorMessage(message: string | null | undefined) {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,10 +49,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
   const nextParam = searchParams.get("next");
   const nextPath =
-    nextParam && nextParam.startsWith("/") ? nextParam : "/admin";
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") && !nextParam.includes("\\") && !/[\u0000-\u0020]/.test(nextParam) ? nextParam : "/admin";
   const resetStatus = searchParams.get("reset");
   const platformInitials =
     platformBrand.siteName
@@ -111,19 +110,14 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(getLoginErrorMessage(error.message));
-      setLoading(false);
-      return;
-    }
-
-    router.push(nextPath);
-    router.refresh();
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) { setError(getLoginErrorMessage(error.message)); return; }
+      window.location.assign(nextPath);
+    } catch (err) {
+      setError(getLoginErrorMessage(err instanceof Error ? err.message : "network unavailable"));
+    } finally { setLoading(false); }
   };
 
   return (
@@ -165,8 +159,9 @@ export default function LoginPage() {
           You will continue to the correct workspace route after sign-in.
         </div>
 
-        <label className="mb-2 block text-sm text-[var(--text-soft)]">Email</label>
+        <label htmlFor="login-email" className="mb-2 block text-sm text-[var(--text-soft)]">Email</label>
         <input
+          id="login-email"
           type="email"
           className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
           value={email}
@@ -176,8 +171,9 @@ export default function LoginPage() {
           required
         />
 
-        <label className="mb-2 block text-sm text-[var(--text-soft)]">Password</label>
+        <label htmlFor="login-password" className="mb-2 block text-sm text-[var(--text-soft)]">Password</label>
         <input
+          id="login-password"
           type="password"
           className="mb-3 w-full rounded-md border border-[var(--border-soft)] bg-[var(--surface)] p-2 text-[var(--text-main)] outline-none focus:ring-2 focus:ring-[#D1D5DB]"
           value={password}
@@ -203,12 +199,12 @@ export default function LoginPage() {
         ) : null}
 
         {error && (
-          <div className="mb-3 text-sm text-[var(--destructive)]">{error}</div>
+          <div role="alert" className="mb-3 text-sm text-[var(--destructive)]">{error}</div>
         )}
 
         <button
           type="submit"
-          className="inline-flex rounded-md bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex w-full justify-center rounded-md bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] transition hover:bg-[var(--accent-soft)] active:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
           disabled={loading || !email || !password}
         >
           {loading ? "Signing in..." : "Sign In"}

@@ -80,6 +80,7 @@ function isBypassedPath(pathname: string) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
     pathname.startsWith("/auth/callback") ||
+    pathname === "/login" ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/legal")
   );
