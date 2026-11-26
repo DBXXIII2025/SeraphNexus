@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { companyServices } from "@/lib/companySite";
 
@@ -30,9 +31,7 @@ export default function HomePage() {
             <div className="mt-9 flex flex-wrap gap-3"><Link href="/contact" className="sc-primary">Plan your project ↗</Link><Link href="/portfolio" className="sc-secondary">Explore our work</Link></div>
             <p className="mt-8 text-sm text-[#b7acc6]">Based in the Rio Grande Valley, Texas · Serving businesses nationwide</p>
           </div>
-          <div aria-hidden="true" className="relative mx-auto grid aspect-square w-full max-w-sm place-items-center rounded-full border border-[#c5a4ff]/20">
-            <div className="absolute inset-[10%] rotate-45 rounded-[25%] border border-[#c5a4ff]/30"/><div className="absolute inset-[20%] rounded-full border border-[#c7a66b]/40"/><div className="absolute inset-[28%] rotate-45 rounded-2xl border border-[#c5a4ff]/50 bg-[#251539]/80"/><span className="relative text-8xl text-[#dcc4ff]">✧</span>
-          </div>
+          <div className="mx-auto w-full max-w-[256px] sm:max-w-[288px]"><Image src="/seraphcore-logo.webp" alt="SeraphCore silver S emblem with purple illumination" width={256} height={256} priority unoptimized className="h-auto w-full rounded-[18%] shadow-[0_0_60px_rgba(139,45,255,0.18)]" /></div>
         </div>
       </section>
       <section id="services" className="mx-auto max-w-7xl px-6 py-20 lg:px-12">
