@@ -1,3 +1,4 @@
+import { companyMetadata } from "@/lib/companySeo";
 import { createClient } from "@/lib/supabase/server";
 import {
   PUBLIC_EXPLORE_BUSINESSES_SELECT,
@@ -7,10 +8,7 @@ import { getPlatformSettings } from "@/lib/platformSettings";
 import ExploreClient from "./ExploreClient";
 import { isMissingServiceCategoryColumnError } from "@/lib/serviceCategories";
 
-export const metadata = {
-  title: "Explore Businesses | Seraph Nexus",
-  description: "Browse published services, restaurants, rentals, shops, and creators.",
-};
+export const metadata = companyMetadata("Explore businesses","Browse published services, restaurants, rentals, shops and creators on SeraphNexus.","/explore");
 
 export default async function ExplorePage() {
   const supabase = await createClient();
