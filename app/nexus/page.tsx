@@ -3,6 +3,8 @@ import { ArrowUpRight, CalendarDays, Compass, House, LayoutGrid, ShoppingBag, Sp
 import { getPlatformSettings } from "@/lib/platformSettings";
 import { resolvePlatformName } from "@/lib/platformBranding";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Seraph Nexus | Discover what moves you",
   description: "Discover services, rentals, shops and food. Build your business on one connected platform.",
@@ -12,7 +14,7 @@ export default async function HomePage() {
   const settings = await getPlatformSettings();
   const name = resolvePlatformName(settings);
   return (
-    <main className="sn-home min-h-screen bg-[#f7f6f1] text-[#262823]">
+    <div className="sn-home min-h-screen bg-[#f7f6f1] text-[#262823]">
       <section className="sn-hero relative isolate overflow-hidden border-b border-[#e9e8df] px-5 pb-16 pt-20 sm:px-8 lg:pb-20 lg:pt-28">
         <div aria-hidden="true" className="sn-hero-orb absolute -left-28 top-8 h-80 w-80 rounded-full bg-[#dfe6d7] opacity-60 blur-3xl" />
         <div aria-hidden="true" className="sn-hero-orb absolute -right-20 top-12 h-96 w-96 rounded-full bg-[#efe3b5] opacity-45 blur-3xl" />
@@ -65,6 +67,6 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 gap-3 sm:min-w-72"><div className="rounded-2xl border border-[#e7e7dc] bg-white p-5"><CalendarDays className="mb-3 text-[#8b8657]" /><span className="block text-sm font-semibold">Bookings</span></div><div className="rounded-2xl border border-[#e7e7dc] bg-white p-5"><ShoppingBag className="mb-3 text-[#8b8657]" /><span className="block text-sm font-semibold">Orders</span></div><div className="rounded-2xl border border-[#e7e7dc] bg-white p-5"><MessageCircle className="mb-3 text-[#8b8657]" /><span className="block text-sm font-semibold">Customers</span></div><div className="rounded-2xl border border-[#e7e7dc] bg-white p-5"><LayoutGrid className="mb-3 text-[#8b8657]" /><span className="block text-sm font-semibold">Workspace</span></div></div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
