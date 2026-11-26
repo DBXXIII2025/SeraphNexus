@@ -78,12 +78,13 @@ export default function NavbarClient({
   const createBusinessHref = isLoggedIn
     ? "/onboarding/create-business"
     : "/login?next=/onboarding/create-business";
-  const homeHref = "/";
+  const homeHref = "/nexus";
   const exploreActive = pathname === "/explore" || pathname.startsWith("/b/");
 
   const primaryLinks: NavLinkItem[] = [
+    { href: "/", label: "SeraphCore", emphasis: "ghost" },
     { href: "/explore", label: "Marketplace", emphasis: "ghost" },
-    { href: "/#features", label: "For businesses", emphasis: "ghost" },
+    { href: "/nexus#features", label: "For businesses", emphasis: "ghost" },
     { href: "/pricing", label: "Pricing", emphasis: "ghost" },
   ];
 
@@ -143,7 +144,7 @@ export default function NavbarClient({
               <Link href="/explore?category=rentals" className={getLinkClass("ghost", false)}>Rentals</Link>
               <Link href="/explore?category=shops" className={getLinkClass("ghost", false)}>Shops</Link>
               <Link href="/explore?category=food" className={getLinkClass("ghost", false)}>Food &amp; drinks</Link>
-              <Link href="/#features" className={getLinkClass("ghost", false)}>Platform features</Link>
+              <Link href="/nexus#features" className={getLinkClass("ghost", false)}>Platform features</Link>
               <Link href="/pricing" className={getLinkClass("ghost", pathname.startsWith("/pricing"))}>Plans & pricing</Link>
             </div>
           </details>
@@ -175,8 +176,9 @@ export default function NavbarClient({
 
       </div>
       <nav aria-label="Mobile navigation" className="flex flex-wrap items-center justify-center gap-1 border-t border-[var(--border-soft)] px-3 py-2 lg:hidden">
+        <Link href="/" className={getLinkClass("ghost", false)}>SeraphCore</Link>
         <Link href="/explore" className={getLinkClass("ghost", exploreActive)}>Marketplace</Link>
-        <Link href="/#features" className={getLinkClass("ghost", false)}>For businesses</Link>
+        <Link href="/nexus#features" className={getLinkClass("ghost", false)}>For businesses</Link>
         <Link href="/pricing" className={getLinkClass("ghost", pathname.startsWith("/pricing"))}>Pricing</Link>
         {actionLinks.map((item) => (
           <Link key={item.href + item.label} href={item.href} className={getLinkClass(item.emphasis, pathname.startsWith(item.href))}>{item.label}</Link>
