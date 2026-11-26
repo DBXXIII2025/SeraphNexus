@@ -62,13 +62,13 @@ export default function ExploreBusinessCard({
   }
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-[#e1e5da] bg-white shadow-[0_12px_28px_-25px_rgba(30,50,35,0.35)] transition duration-200 hover:-translate-y-1 hover:border-[#c8d6c5] hover:shadow-lg">
+    <article className="group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-[#352b43] bg-[#15111e] shadow-[0_12px_28px_-25px_rgba(30,50,35,0.35)] transition duration-200 hover:-translate-y-1 hover:border-[#9873d2] hover:shadow-lg">
       <Link
         href={business.routeState.href}
         onClick={handleBusinessClick}
         className="block flex-1 no-underline"
       >
-        <div className="relative h-44 overflow-hidden border-b border-[#e4e8dc] bg-[#eaf0e6]">
+        <div className="relative h-44 overflow-hidden border-b border-[#352b43] bg-[#20172c]">
           {business.thumbnailUrl ? (
             <Image
               src={business.thumbnailUrl}
@@ -79,29 +79,29 @@ export default function ExploreBusinessCard({
               unoptimized
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[#e8eee4]">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#cdd8c8] bg-white text-sm font-semibold uppercase tracking-[0.08em] text-[#806e36]">
+            <div className="flex h-full w-full items-center justify-center bg-[#251b33]">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#4a3b60] bg-[#15111e] text-sm font-semibold uppercase tracking-[0.08em] text-[#c5a4ff]">
                 {business.initials}
               </span>
             </div>
           )}
 
-          <div className="absolute left-2.5 top-2.5 inline-flex items-center rounded-full border border-[#dfe3d6] bg-white/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.11em] text-[var(--accent-soft)]">
+          <div className="absolute left-2.5 top-2.5 inline-flex items-center rounded-full border border-[#352b43] bg-[#15111e] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.11em] text-[var(--accent-soft)]">
             {formatBusinessType(business.business_type)}
           </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-3">
           <div className="space-y-1">
-            <h3 className="line-clamp-1 text-[0.93rem] font-semibold leading-5 text-[#29332c]">
+            <h3 className="line-clamp-1 text-[0.93rem] font-semibold leading-5 text-[#f5f1fa]">
               {business.displayName}
             </h3>
             {business.serviceCategoryLabel ? (
-              <span className="inline-flex rounded-full border border-[rgba(212,175,55,0.18)] bg-[#f4f5ef] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--accent-soft)]">
+              <span className="inline-flex rounded-full border border-[rgba(197,164,255,0.18)] bg-[#251b33] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--accent-soft)]">
                 {business.serviceCategoryLabel}
               </span>
             ) : null}
-            <p className="line-clamp-2 text-[12px] leading-[1.35] text-[#68746a]">
+            <p className="line-clamp-2 text-[12px] leading-[1.35] text-[#c1b8cd]">
               {summary}
             </p>
           </div>
@@ -110,14 +110,14 @@ export default function ExploreBusinessCard({
 
       <div className="px-3 pb-3">
         <div className="mt-auto flex items-center justify-between gap-2">
-          <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.1em] text-[#6e7b70]">
+          <span className="rounded-full border border-[var(--border-soft)] bg-[rgba(255,255,255,0.02)] px-2 py-1 text-[10px] font-medium uppercase tracking-[0.1em] text-[#c1b8cd]">
             {actionLabel}
           </span>
 
           <Link
             href={business.routeState.href}
             onClick={handleCtaClick}
-            className="inline-flex min-h-[32px] items-center justify-center rounded-full border border-[rgba(212,175,55,0.32)] bg-[#e5bc4f] px-3 text-[12px] font-semibold text-[#29332c] no-underline"
+            className="inline-flex min-h-[32px] items-center justify-center rounded-full border border-[rgba(197,164,255,0.32)] bg-[#c5a4ff] px-3 text-[12px] font-semibold text-[#170e24] no-underline"
           >
             {actionLabel}
           </Link>

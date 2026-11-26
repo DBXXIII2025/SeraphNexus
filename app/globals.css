@@ -6,45 +6,45 @@
   --app-viewport-height: 100vh;
   --font-body: Arial, Helvetica, sans-serif;
   --font-heading: Arial, Helvetica, sans-serif;
-  --page-bg: #0b0c0e;
-  --section-bg: #111317;
-  --surface: #111317;
-  --surface-muted: #0f1114;
-  --surface-raised: #16191e;
-  --panel: #111317;
-  --panel-strong: #16191e;
-  --bg-card: #16191e;
+  --page-bg: #0c0a12;
+  --section-bg: #15111e;
+  --surface: #15111e;
+  --surface-muted: #100d18;
+  --surface-raised: #20172c;
+  --panel: #15111e;
+  --panel-strong: #20172c;
+  --bg-card: #20172c;
   --border: rgba(255, 255, 255, 0.06);
   --border-soft: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(212, 175, 55, 0.18);
-  --accent: #d4af37;
-  --accent-strong: #b08968;
-  --accent-soft: #e6c76a;
-  --accent-muted: rgba(212, 175, 55, 0.08);
-  --accent-border: rgba(212, 175, 55, 0.18);
-  --accent-contrast: #0b0c0e;
-  --active-bg: rgba(212, 175, 55, 0.12);
-  --muted-bg: #16191e;
+  --border-strong: rgba(197, 164, 255, 0.18);
+  --accent: #c5a4ff;
+  --accent-strong: #9873d2;
+  --accent-soft: #ddc8ff;
+  --accent-muted: rgba(197, 164, 255, 0.08);
+  --accent-border: rgba(197, 164, 255, 0.18);
+  --accent-contrast: #170e24;
+  --active-bg: rgba(197, 164, 255, 0.12);
+  --muted-bg: #20172c;
   --destructive: #f87171;
   --destructive-bg: rgba(248, 113, 113, 0.12);
   --destructive-border: rgba(248, 113, 113, 0.26);
-  --success: #c2a96a;
-  --success-bg: rgba(212, 175, 55, 0.12);
-  --success-border: rgba(212, 175, 55, 0.24);
+  --success: #86d9ac;
+  --success-bg: rgba(134, 217, 172, 0.12);
+  --success-border: rgba(134, 217, 172, 0.24);
   --warning: #e6c76a;
   --warning-bg: rgba(230, 199, 106, 0.14);
   --warning-border: rgba(230, 199, 106, 0.24);
-  --info: #b08968;
-  --info-bg: rgba(176, 137, 104, 0.14);
-  --info-border: rgba(176, 137, 104, 0.26);
-  --text-main: #cfc8bb;
-  --text-strong: #f3efe7;
-  --text-soft: #8a8376;
-  --text-muted: #8a8376;
+  --info: #a9c7ff;
+  --info-bg: rgba(169, 199, 255, 0.14);
+  --info-border: rgba(169, 199, 255, 0.26);
+  --text-main: #f5f1fa;
+  --text-strong: #fff;
+  --text-soft: #c1b8cd;
+  --text-muted: #c1b8cd;
   --shadow-soft: 0 16px 34px rgba(0, 0, 0, 0.3);
   --shadow-card: 0 18px 42px rgba(0, 0, 0, 0.38);
   --shadow-premium: 0 24px 56px rgba(0, 0, 0, 0.46);
-  --focus-ring: 0 0 0 3px rgba(212, 175, 55, 0.18);
+  --focus-ring: 0 0 0 3px rgba(197, 164, 255, 0.18);
   --bg-main: var(--page-bg);
   --surface-dark-undertone: var(--section-bg);
   --surface-dark-soft: var(--surface-muted);
@@ -214,8 +214,8 @@ button,
 
 .btn-secondary:hover,
 .btn-ghost:hover {
-  background: rgba(212, 175, 55, 0.08) !important;
-  border-color: rgba(212, 175, 55, 0.32) !important;
+  background: rgba(197, 164, 255, 0.08) !important;
+  border-color: rgba(197, 164, 255, 0.32) !important;
   color: var(--text-strong) !important;
 }
 
@@ -529,9 +529,9 @@ a:focus-visible {
 .admin-system {
   min-height: var(--app-viewport-height);
   background:
-    radial-gradient(circle at top left, rgba(212, 175, 55, 0.08), transparent 28%),
-    radial-gradient(circle at top right, rgba(176, 137, 104, 0.06), transparent 24%),
-    linear-gradient(180deg, #0b0c0e 0%, #0d0f12 52%, #0b0c0e 100%) !important;
+    radial-gradient(circle at top left, rgba(197, 164, 255, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(152, 115, 210, 0.06), transparent 24%),
+    linear-gradient(180deg, #0c0a12 0%, #120e1a 52%, #0c0a12 100%) !important;
   color: var(--text-main) !important;
 }
 
@@ -565,7 +565,7 @@ a:focus-visible {
   position: relative;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent) !important;
-  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(17, 19, 23, 0.98)) !important;
+  background: linear-gradient(180deg, rgba(32, 23, 44, 0.98), rgba(21, 17, 30, 0.98)) !important;
   color: var(--text-main) !important;
   box-shadow: 0 22px 40px -34px rgba(0, 0, 0, 0.68) !important;
 }
@@ -634,8 +634,8 @@ a:focus-visible {
   justify-content: center;
   overflow: hidden;
   border-radius: 0.95rem;
-  border: 1px solid rgba(212, 175, 55, 0.18) !important;
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.14), rgba(176, 137, 104, 0.08)) !important;
+  border: 1px solid rgba(197, 164, 255, 0.18) !important;
+  background: linear-gradient(180deg, rgba(197, 164, 255, 0.14), rgba(152, 115, 210, 0.08)) !important;
   color: var(--accent) !important;
 }
 
@@ -723,7 +723,7 @@ a:focus-visible {
   overscroll-behavior: contain;
   padding-right: 0.2rem;
   scrollbar-width: thin;
-  scrollbar-color: rgba(212, 175, 55, 0.24) transparent;
+  scrollbar-color: rgba(197, 164, 255, 0.24) transparent;
 }
 
 .admin-sidebar-scroll::-webkit-scrollbar {
@@ -737,8 +737,8 @@ a:focus-visible {
 .admin-sidebar-scroll::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
-    rgba(212, 175, 55, 0.22),
-    rgba(176, 137, 104, 0.18)
+    rgba(197, 164, 255, 0.22),
+    rgba(152, 115, 210, 0.18)
   );
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -747,8 +747,8 @@ a:focus-visible {
 .admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     180deg,
-    rgba(212, 175, 55, 0.32),
-    rgba(176, 137, 104, 0.26)
+    rgba(197, 164, 255, 0.32),
+    rgba(152, 115, 210, 0.26)
   );
 }
 
@@ -796,7 +796,7 @@ a:focus-visible {
   justify-content: center;
   border-radius: 0.7rem;
   border: 1px solid color-mix(in srgb, var(--border-soft) 68%, transparent) !important;
-  background: rgba(212, 175, 55, 0.06) !important;
+  background: rgba(197, 164, 255, 0.06) !important;
 }
 
 .admin-nav-label {
@@ -808,21 +808,21 @@ a:focus-visible {
 }
 
 .admin-nav-link-active {
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.18), rgba(176, 137, 104, 0.12)) !important;
+  background: linear-gradient(180deg, rgba(197, 164, 255, 0.18), rgba(152, 115, 210, 0.12)) !important;
   color: var(--text-strong) !important;
-  border-color: rgba(212, 175, 55, 0.32) !important;
+  border-color: rgba(197, 164, 255, 0.32) !important;
   box-shadow: inset 0 0 0 1px rgba(230, 199, 106, 0.05), 0 16px 28px -24px rgba(0, 0, 0, 0.7) !important;
 }
 
 .admin-nav-link-active .admin-nav-glyph {
-  background: rgba(212, 175, 55, 0.14) !important;
-  border-color: rgba(212, 175, 55, 0.24) !important;
+  background: rgba(197, 164, 255, 0.14) !important;
+  border-color: rgba(197, 164, 255, 0.24) !important;
 }
 
 .admin-action-primary {
-  background: linear-gradient(180deg, #e6c76a, #d4af37) !important;
+  background: linear-gradient(180deg, #ddc8ff, #c5a4ff) !important;
   color: var(--accent-contrast) !important;
-  border-color: rgba(212, 175, 55, 0.42) !important;
+  border-color: rgba(197, 164, 255, 0.42) !important;
 }
 
 .admin-action-secondary {
@@ -872,7 +872,7 @@ a:focus-visible {
 .dashboard-metric-card {
   border-radius: 1rem;
   border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent);
-  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(17, 19, 23, 0.98));
+  background: linear-gradient(180deg, rgba(32, 23, 44, 0.98), rgba(21, 17, 30, 0.98));
   box-shadow: 0 22px 40px -34px rgba(0, 0, 0, 0.68);
 }
 
@@ -897,7 +897,7 @@ a:focus-visible {
 .admin-system .form-section {
   border-radius: 1rem !important;
   border: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent) !important;
-  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(17, 19, 23, 0.98)) !important;
+  background: linear-gradient(180deg, rgba(32, 23, 44, 0.98), rgba(21, 17, 30, 0.98)) !important;
   box-shadow: 0 22px 40px -34px rgba(0, 0, 0, 0.68) !important;
 }
 
@@ -923,7 +923,7 @@ a:focus-visible {
   min-height: 1.8rem;
   border-radius: 999px !important;
   border: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent) !important;
-  background: rgba(212, 175, 55, 0.08) !important;
+  background: rgba(197, 164, 255, 0.08) !important;
   padding: 0.18rem 0.7rem !important;
   color: var(--text-main) !important;
   font-size: 0.72rem;
@@ -1081,7 +1081,7 @@ a:focus-visible {
   width: 2.5rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(212, 175, 55, 0.18) !important;
+  border: 1px solid rgba(197, 164, 255, 0.18) !important;
   background: var(--accent-muted) !important;
   color: var(--accent) !important;
 }
@@ -1188,7 +1188,7 @@ a:focus-visible {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(212, 175, 55, 0.18) !important;
+  border: 1px solid rgba(197, 164, 255, 0.18) !important;
   background: var(--accent-muted) !important;
   color: var(--accent) !important;
   font-weight: 700;
@@ -1197,7 +1197,7 @@ a:focus-visible {
 .public-chip {
   display: inline-flex;
   width: fit-content;
-  border: 1px solid rgba(212, 175, 55, 0.18) !important;
+  border: 1px solid rgba(197, 164, 255, 0.18) !important;
   padding: 0.25rem 0.5rem;
   background: var(--accent-muted) !important;
   color: var(--accent) !important;
@@ -1328,7 +1328,7 @@ a:focus-visible {
   overflow: hidden;
   border-radius: 0.95rem;
   border: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, rgba(22, 25, 30, 0.98), rgba(17, 19, 23, 0.98)) !important;
+  background: linear-gradient(180deg, rgba(32, 23, 44, 0.98), rgba(21, 17, 30, 0.98)) !important;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
 }
 
@@ -1351,27 +1351,27 @@ a:focus-visible {
 }
 
 
-/* Editorial marketplace landing page: scoped so dashboards and checkout stay unchanged. */
+/* Shared SeraphCore palette for marketplace landing and platform surfaces. */
 body:has(.sn-home) {
-  background: #f7f6f1;
-  color: #282c27;
+  background: #0c0a12;
+  color: #f5f1fa;
 }
 body:has(.sn-home) .app-root-shell {
-  --page-bg: #f7f6f1;
-  --section-bg: #fbfaf6;
-  --surface: #ffffff;
-  --surface-muted: #f3f2eb;
-  --surface-raised: #ffffff;
-  --border-soft: #e7e7dd;
-  --border-strong: #d8d8cd;
-  --accent: #e8c75d;
-  --accent-muted: #f5eed7;
-  --accent-contrast: #252b28;
-  --text-main: #343b35;
-  --text-strong: #252b28;
-  --text-soft: #626a62;
-  --text-muted: #7a8076;
-  color-scheme: light;
+  --page-bg: #0c0a12;
+  --section-bg: #100d18;
+  --surface: #15111e;
+  --surface-muted: #120e1a;
+  --surface-raised: #15111e;
+  --border-soft: #352b43;
+  --border-strong: #4a3b60;
+  --accent: #c5a4ff;
+  --accent-muted: #251b33;
+  --accent-contrast: #170e24;
+  --text-main: #f5f1fa;
+  --text-strong: #f5f1fa;
+  --text-soft: #c1b8cd;
+  --text-muted: #b7acc6;
+  color-scheme: dark;
 }
 .sn-home a,
 body:has(.sn-home) .app-root-shell > div a {
@@ -1383,13 +1383,13 @@ body:has(.sn-home) .app-root-shell > div a {
 .sn-home .sn-feature-card {
   background-image: none;
 }
-.sn-home .sn-card-service { background-color: #e8eee6; }
-.sn-home .sn-card-rental { background-color: #f0e3dd; }
-.sn-home .sn-card-shop { background-color: #293632; }
-.sn-home .sn-card-business { background-color: #f0d778; }
+.sn-home .sn-card-service { background-color: #15111e; }
+.sn-home .sn-card-rental { background-color: #1a1425; }
+.sn-home .sn-card-shop { background-color: #20172c; }
+.sn-home .sn-card-business { background-color: #251b33; }
 body:has(.sn-home) .site-brand-mark {
-  border-color: #e4dfcf !important;
-  background: #f5eed7 !important;
+  border-color: #4a3b60 !important;
+  background: #251b33 !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .sn-home .sn-feature-card { transition: none; }
@@ -1401,47 +1401,45 @@ body:has(.sn-home) .site-brand-mark {
    Layout and permissions remain controlled by their existing components. */
 body:has(.admin-system),
 body:has(.public-business-page) {
-  background: #f7f6f1;
+  background: #0c0a12;
 }
 body:has(.admin-system) .app-root-shell,
 body:has(.public-business-page) .app-root-shell {
-  --page-bg: #f7f6f1;
-  --section-bg: #fbfaf6;
-  --surface: #ffffff;
-  --surface-muted: #f2f2eb;
-  --surface-raised: #ffffff;
-  --border: #e6e6dc;
-  --border-soft: #e6e6dc;
-  --border-strong: #d9d7c8;
-  --accent: #d9b64d;
-  --accent-soft: #9b7c29;
-  --accent-muted: #f6efd9;
-  --accent-contrast: #252b28;
-  --text-main: #3d453f;
-  --text-strong: #252b28;
-  --text-soft: #687168;
-  --text-muted: #7d847b;
-  --shadow-card: 0 15px 35px -28px rgba(38, 43, 38, .34);
-  --shadow-soft: 0 12px 28px -24px rgba(38, 43, 38, .25);
-  color-scheme: light;
+  --page-bg: #0c0a12;
+  --section-bg: #100d18;
+  --surface: #15111e;
+  --surface-muted: #120e1a;
+  --surface-raised: #15111e;
+  --border: #352b43;
+  --border-soft: #352b43;
+  --border-strong: #4a3b60;
+  --accent: #c5a4ff;
+  --accent-soft: #ddc8ff;
+  --accent-muted: #251b33;
+  --accent-contrast: #170e24;
+  --text-main: #f5f1fa;
+  --text-strong: #f5f1fa;
+  --text-soft: #c1b8cd;
+  --text-muted: #b7acc6;
+  --shadow-card: 0 15px 35px -28px rgba(0,0,0, .34);
+  --shadow-soft: 0 12px 28px -24px rgba(0,0,0, .25);
+  color-scheme: dark;
 }
 .admin-system {
-  background: #f7f6f1 !important;
-  color: #3d453f !important;
+  background: #0c0a12 !important;
+  color: #f5f1fa !important;
 }
-.admin-system * {
-  border-color: #e6e6dc !important;
-}
+
 .admin-system-sidebar,
 .admin-system .admin-panel,
 .admin-system .admin-page-header,
 .admin-system .admin-topnav,
 .admin-system .admin-sidebar-section {
-  background: #ffffff !important;
-  color: #3d453f !important;
-  border: 1px solid #e6e6dc !important;
+  background: #15111e !important;
+  color: #f5f1fa !important;
+  border: 1px solid #352b43 !important;
   border-radius: 1.5rem;
-  box-shadow: 0 14px 34px -29px rgba(38,43,38,.30) !important;
+  box-shadow: 0 14px 34px -29px rgba(0,0,0,.30) !important;
 }
 .admin-system-sidebar::before,
 .admin-system .admin-panel::before,
@@ -1454,22 +1452,22 @@ body:has(.public-business-page) .app-root-shell {
 .admin-system .admin-page-title,
 .admin-system .section-title,
 .admin-system .admin-brand-name {
-  color: #252b28 !important;
+  color: #f5f1fa !important;
   letter-spacing: -.025em;
 }
 .admin-system .admin-eyebrow,
 .admin-system .admin-sidebar-eyebrow,
 .admin-system .section-kicker {
-  color: #977e37 !important;
+  color: #d1b47a !important;
 }
 .admin-system .admin-sidebar-heading,
 .admin-system .admin-muted {
-  color: #687168 !important;
+  color: #c1b8cd !important;
 }
 .admin-system .admin-brand-mark {
-  border-color: #e8dfc6 !important;
-  background: #f6efd9 !important;
-  color: #846923 !important;
+  border-color: #4a3b60 !important;
+  background: #251b33 !important;
+  color: #c5a4ff !important;
 }
 .admin-system .admin-shell-grid {
   max-width: 1680px;
@@ -1487,15 +1485,15 @@ body:has(.public-business-page) .app-root-shell {
 .admin-system .surface-panel,
 .admin-system .empty-state,
 .admin-system .form-section {
-  background: #fff !important;
-  color: #3d453f !important;
-  border: 1px solid #e6e6dc !important;
+  background: #15111e !important;
+  color: #f5f1fa !important;
+  border: 1px solid #352b43 !important;
   border-radius: 1.25rem;
-  box-shadow: 0 12px 30px -28px rgba(38,43,38,.25) !important;
+  box-shadow: 0 12px 30px -28px rgba(0,0,0,.25) !important;
 }
 body:has(.public-business-page) .public-business-page {
-  background: #f7f6f1 !important;
-  color: #303831 !important;
+  background: #0c0a12 !important;
+  color: #f5f1fa !important;
 }
 body:has(.public-business-page) .public-profile-shell-full {
   max-width: 76rem;
@@ -1505,14 +1503,14 @@ body:has(.public-business-page) .public-topnav,
 body:has(.public-business-page) .public-hero,
 body:has(.public-business-page) .public-section,
 body:has(.public-business-page) .public-gallery-frame {
-  border: 1px solid #e7e6da !important;
+  border: 1px solid #352b43 !important;
   border-radius: 1.5rem;
-  background: #ffffff !important;
-  color: #303831 !important;
-  box-shadow: 0 15px 35px -30px rgba(38,43,38,.28) !important;
+  background: #15111e !important;
+  color: #f5f1fa !important;
+  box-shadow: 0 15px 35px -30px rgba(0,0,0,.28) !important;
 }
 body:has(.public-business-page) .public-hero {
-  background: #f3f1e6 !important;
+  background: #1a1425 !important;
 }
 body:has(.public-business-page) .public-gallery-frame {
   overflow: hidden;
@@ -1549,7 +1547,7 @@ body:has(.public-business-page) .public-chip {
     overflow-x: hidden !important;
     overscroll-behavior-y: contain;
     scrollbar-width: thin;
-    scrollbar-color: #c8b778 transparent;
+    scrollbar-color: #9873d2 transparent;
     padding-bottom: 1.5rem;
   }
   .admin-sidebar-scroll .admin-sidebar-section {
@@ -1561,60 +1559,60 @@ body:has(.public-business-page) .public-chip {
   }
 }
 .admin-sidebar-scroll:focus-visible {
-  outline: 2px solid #d9b64d;
+  outline: 2px solid #c5a4ff;
   outline-offset: -2px;
 }
 /* Seravelle chat: isolated visual styling, existing conversation/actions APIs retained. */
 .seravelle-chat {
-  --text-main: #343b35;
-  --text-strong: #252b28;
-  --text-soft: #687168;
-  --text-muted: #7d847b;
-  --surface: #fff;
-  --surface-raised: #fff;
-  --border-soft: #e7e8df;
-  --accent-muted: #f7edcf;
-  --accent-soft: #876d24;
-  color: #343b35;
+  --text-main: #f5f1fa;
+  --text-strong: #f5f1fa;
+  --text-soft: #c1b8cd;
+  --text-muted: #b7acc6;
+  --surface: #15111e;
+  --surface-raised: #15111e;
+  --border-soft: #352b43;
+  --accent-muted: #251b33;
+  --accent-soft: #ddc8ff;
+  color: #f5f1fa;
 }
 .seravelle-chat .seravelle-conversations,
 .seravelle-chat .seravelle-thread,
 .seravelle-chat .seravelle-messages { min-width: 0; }
-.seravelle-chat .seravelle-messages { scrollbar-width: thin; scrollbar-color: #d8d8ca transparent; }
-.seravelle-chat .seravelle-composer textarea:focus-visible { box-shadow: 0 0 0 3px #eadba5; }
+.seravelle-chat .seravelle-messages { scrollbar-width: thin; scrollbar-color: #4a3b60 transparent; }
+.seravelle-chat .seravelle-composer textarea:focus-visible { box-shadow: 0 0 0 3px #4a3b60; }
 .seravelle-chat .seravelle-conversations button:focus-visible,
-.seravelle-chat .seravelle-composer button:focus-visible { outline: 2px solid #ad8c2d; outline-offset: 2px; }
+.seravelle-chat .seravelle-composer button:focus-visible { outline: 2px solid #c5a4ff; outline-offset: 2px; }
 
 
 /* Marketplace category pages use the same editorial palette as the new landing page. */
 body:has(.sn-marketplace) {
-  background: #f7f6f1 !important;
-  color-scheme: light;
+  background: #0c0a12 !important;
+  color-scheme: dark;
 }
 body:has(.sn-marketplace) .app-root-shell {
-  --page-bg: #f7f6f1;
-  --section-bg: #fbfaf6;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-muted: #f2f4ee;
-  --border-soft: #e1e5da;
-  --border-strong: #cfd9cb;
-  --accent: #e5bc4f;
-  --accent-muted: #f7edcf;
-  --accent-contrast: #29332c;
-  --text-main: #354139;
-  --text-strong: #29332c;
-  --text-soft: #68746a;
-  --text-muted: #778076;
-  color-scheme: light;
+  --page-bg: #0c0a12;
+  --section-bg: #100d18;
+  --surface: #15111e;
+  --surface-raised: #15111e;
+  --surface-muted: #120e1a;
+  --border-soft: #352b43;
+  --border-strong: #4a3b60;
+  --accent: #c5a4ff;
+  --accent-muted: #251b33;
+  --accent-contrast: #170e24;
+  --text-main: #f5f1fa;
+  --text-strong: #f5f1fa;
+  --text-soft: #c1b8cd;
+  --text-muted: #b7acc6;
+  color-scheme: dark;
 }
-.sn-home .sn-card-shop { background-color: #dbe8d6 !important; }
+.sn-home .sn-card-shop { background-color: #20172c !important; }
 .sn-marketplace a { text-decoration: none; }
-.sn-marketplace input::placeholder { color: #879186; }
+.sn-marketplace input::placeholder { color: #b7acc6; }
 .sn-marketplace button:focus-visible,
-.sn-marketplace a:focus-visible { outline: 3px solid #b49b50; outline-offset: 3px; }
+.sn-marketplace a:focus-visible { outline: 3px solid #c5a4ff; outline-offset: 3px; }
 
-/* Scoped company experience; do not alter platform themes. */
+/* Company-specific layout, using the shared SeraphCore palette. */
 .sc-company { --text-main:#f5f1fa; --text-strong:#fff; --text-soft:#c1b8cd; --accent:#c5a4ff; --accent-contrast:#170e24; color-scheme:dark; }
 .sc-company a { text-decoration:none; }
 .sc-company a:focus-visible,.sc-company button:focus-visible,.sc-company summary:focus-visible,.sc-company input:focus-visible,.sc-company select:focus-visible,.sc-company textarea:focus-visible { outline:2px solid #c5a4ff; outline-offset:4px; }
