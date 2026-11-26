@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { isCompanyPath } from "@/lib/companySite";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
@@ -136,7 +137,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
 
-  if (isBypassedPath(pathname)) {
+  if (isCompanyPath(pathname) || pathname === "/api/company/inquiry" || pathname === "/sitemap.xml" || pathname === "/robots.txt" || isBypassedPath(pathname)) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
